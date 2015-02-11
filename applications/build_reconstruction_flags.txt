@@ -1,0 +1,53 @@
+# Input/output files.
+# Set these if a matches file is not present. Images should be a filepath with a
+# wildcard e.g., /home/my_username/my_images/*.jpg
+ --images=
+--output_matches_file=
+
+# If a matches file has already been created, set the filepath here. This avoids
+# having to recompute all features and matches.
+--matches_file=
+
+# The calibration file indicates possibly known calibration e.g, from EXIF or
+# explicit calibration. Theia attempts to extract EXIF focal lengths if calibration
+# is not supplied for a given image.
+--calibration_file=
+--output_reconstruction=
+
+# Feature extraction and two view matching.
+--descriptor=SIFT
+--matching_strategy=CASCADE_HASHING
+--lowes_ratio=0.65
+--min_num_inliers_for_valid_match=30
+--max_sampson_error_for_verified_match=4.0
+--bundle_adjust_two_view_geometry=true
+
+# Building a reconstruction.
+--reconstruction_estimator=NONLINEAR
+--max_track_length=50
+--initialize_focal_lengths_from_median_estimate=true
+--constant_camera_intrinsics=true
+--max_reprojection_error_pixels=4.0
+--num_retriangulation_iterations=1
+
+# View graph filtering.
+--refine_relative_translations_after_rotation_estimation=true
+--max_view_graph_cycle_error_degrees=2.0
+--post_rotation_filtering_degrees=5.0
+
+# Position estimation.
+--position_estimation_min_num_tracks_per_view=0
+--position_estimation_max_num_reweighted_iterations=20
+
+# Triangulation options.
+--min_triangulation_angle_degrees=4.0
+--triangulation_reprojection_error_pixels=15.0
+--bundle_adjust_tracks=true
+
+# Set to the number of threads you want to use.
+--num_threads=1
+
+# Logging verbosity.
+--logtostderr
+# Uncomment this if you want lots of logging.
+--v=1

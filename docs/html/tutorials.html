@@ -1,0 +1,253 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Tutorials &mdash; Theia Vision Library</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="Theia Vision Library" href="index.html"/>
+        <link rel="next" title="Contributing to Theia" href="contributions.html"/>
+        <link rel="prev" title="Structure from Motion (SfM)" href="sfm.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="index.html" class="fa fa-home"> Theia Vision Library</a>
+        
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+        
+            <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="building.html">Building Theia Library</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="building.html#dependencies">Dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="building.html#building">Building</a></li>
+<li class="toctree-l2"><a class="reference internal" href="building.html#customizing-the-build">Customizing the build</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="image.html">Image</a></li>
+<li class="toctree-l1"><a class="reference internal" href="features.html">Features</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="features.html#keypoints">Keypoints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#keypoint-detector">Keypoint Detector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#descriptors">Descriptors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#descriptorextractor">DescriptorExtractor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#feature-matching">Feature Matching</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ransac.html">Ransac</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ransac.html#estimator"><tt class="docutils literal"><span class="pre">Estimator</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="ransac.html#using-the-ransac-classes">Using the RANSAC classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ransac.html#instances-of-ransac-methods">Instances of RANSAC Methods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ransac.html#implementing-a-new-ransac-method">Implementing a New RANSAC Method</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pose.html">Pose and Resectioning</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#perspective-three-point-p3p">Perspective Three Point (P3P)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#five-point-relative-pose">Five Point Relative Pose</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#four-point-algorithm-for-homography">Four Point Algorithm for Homography</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#eight-point-algorithm-for-fundamental-matrix">Eight Point Algorithm for Fundamental Matrix</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#perspective-n-point">Perspective N-Point</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#four-point-focal-length">Four Point Focal Length</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#five-point-focal-length-and-radial-distortion">Five Point Focal Length and Radial Distortion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#three-point-relative-pose-with-a-partially-known-rotation">Three Point Relative Pose with a Partially Known Rotation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#four-point-relative-pose-with-a-partially-known-rotation">Four Point Relative Pose with a Partially Known Rotation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="math.html">Math</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="math.html#closed-form-polynomial-solver">Closed Form Polynomial Solver</a></li>
+<li class="toctree-l2"><a class="reference internal" href="math.html#generic-polynomial-solver">Generic Polynomial Solver</a></li>
+<li class="toctree-l2"><a class="reference internal" href="math.html#guass-jordan">Guass-Jordan</a></li>
+<li class="toctree-l2"><a class="reference internal" href="math.html#sequential-probability-ratio-test">Sequential Probability Ratio Test</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sfm.html">Structure from Motion (SfM)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#views-and-tracks">Views and Tracks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#twoviewinfo">TwoViewInfo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#camera">Camera</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#reconstruction">Reconstruction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#global-sfm-pipeline">Global SfM Pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#estimating-global-poses">Estimating Global Poses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#triangulation">Triangulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#bundle-adjustment">Bundle Adjustment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#similarity-transformation">Similarity Transformation</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributions.html">Contributing to Theia</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="contributions.html#style-and-testing">Style and Testing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contributions.html#cmake">CMake</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contributions.html#developing-for-theia">Developing for Theia</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contributions.html#submitting-a-change-to-theia">Submitting a change to Theia</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="bibliography.html">Bibliography</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="license.html#citation">Citation</a></li>
+</ul>
+</li>
+</ul>
+
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">Theia Vision Library</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>Tutorials</li>
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <div class="section" id="tutorials">
+<span id="chapter-tutorials"></span><h1>Tutorials<a class="headerlink" href="#tutorials" title="Permalink to this headline">¶</a></h1>
+<p>We have written a set of tutorials to help get you started with using Theia. These tutorials do not represent the entire scope of the Theia library, but should still provide an example of the types of applications Theia empowers you to build.</p>
+<p><strong>Tutorials are coming soon...</strong></p>
+<p>We attempt to provide sufficient documentation in these tutorials but often further documentation can be found in the source code itself. Additionally, (nearly) every file is covered by a unit test that can be viewed as an example use case of the various methods and classes in Theia. If you have looked at the documentation, the source code, and the unit tests and still have confusion please email <a class="reference external" href="http://groups.google.com/group/theia-vision-library">the Theia mailing list</a></p>
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="contributions.html" class="btn btn-neutral float-right" title="Contributing to Theia">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="sfm.html" class="btn btn-neutral" title="Structure from Motion (SfM)"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014, Chris Sweeney.
+    </p>
+  </div>
+
+  <a href="https://github.com/snide/sphinx_rtd_theme">Sphinx theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML">
+  MathJax.Hub.Config({
+    "HTML-CSS": {
+      availableFonts: ["TeX"]
+    }
+  });
+</script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+  
+ 
+<!-- Google Analytics Code -->
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-46196711-1', 'ucsb.edu');
+  ga('send', 'pageview');
+
+</script>
+
+
+</body>
+</html>

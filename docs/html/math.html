@@ -1,0 +1,368 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Math &mdash; Theia Vision Library</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="Theia Vision Library" href="index.html"/>
+        <link rel="next" title="Structure from Motion (SfM)" href="sfm.html"/>
+        <link rel="prev" title="Pose and Resectioning" href="pose.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="index.html" class="fa fa-home"> Theia Vision Library</a>
+        
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+        
+            <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="building.html">Building Theia Library</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="building.html#dependencies">Dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="building.html#building">Building</a></li>
+<li class="toctree-l2"><a class="reference internal" href="building.html#customizing-the-build">Customizing the build</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="image.html">Image</a></li>
+<li class="toctree-l1"><a class="reference internal" href="features.html">Features</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="features.html#keypoints">Keypoints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#keypoint-detector">Keypoint Detector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#descriptors">Descriptors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#descriptorextractor">DescriptorExtractor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#feature-matching">Feature Matching</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ransac.html">Ransac</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ransac.html#estimator"><tt class="docutils literal"><span class="pre">Estimator</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="ransac.html#using-the-ransac-classes">Using the RANSAC classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ransac.html#instances-of-ransac-methods">Instances of RANSAC Methods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ransac.html#implementing-a-new-ransac-method">Implementing a New RANSAC Method</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pose.html">Pose and Resectioning</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#perspective-three-point-p3p">Perspective Three Point (P3P)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#five-point-relative-pose">Five Point Relative Pose</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#four-point-algorithm-for-homography">Four Point Algorithm for Homography</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#eight-point-algorithm-for-fundamental-matrix">Eight Point Algorithm for Fundamental Matrix</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#perspective-n-point">Perspective N-Point</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#four-point-focal-length">Four Point Focal Length</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#five-point-focal-length-and-radial-distortion">Five Point Focal Length and Radial Distortion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#three-point-relative-pose-with-a-partially-known-rotation">Three Point Relative Pose with a Partially Known Rotation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#four-point-relative-pose-with-a-partially-known-rotation">Four Point Relative Pose with a Partially Known Rotation</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">Math</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#closed-form-polynomial-solver">Closed Form Polynomial Solver</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#generic-polynomial-solver">Generic Polynomial Solver</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#guass-jordan">Guass-Jordan</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#sequential-probability-ratio-test">Sequential Probability Ratio Test</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sfm.html">Structure from Motion (SfM)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#global-sfm-pipeline">Global SfM Pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#views-and-tracks">Views and Tracks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#twoviewinfo">TwoViewInfo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#camera">Camera</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#reconstruction">Reconstruction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#estimating-global-poses">Estimating Global Poses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#triangulation">Triangulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#bundle-adjustment">Bundle Adjustment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#similarity-transformation">Similarity Transformation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributions.html">Contributing to Theia</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="contributions.html#style-and-testing">Style and Testing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contributions.html#cmake">CMake</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contributions.html#developing-for-theia">Developing for Theia</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contributions.html#submitting-a-change-to-theia">Submitting a change to Theia</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="bibliography.html">Bibliography</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="license.html#citation">Citation</a></li>
+</ul>
+</li>
+</ul>
+
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">Theia Vision Library</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>Math</li>
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <div class="section" id="math">
+<span id="documentation-math"></span><h1>Math<a class="headerlink" href="#math" title="Permalink to this headline">¶</a></h1>
+<p>At the root of computer vision is a heavy amount of math and probability. Theia contains various math functions implemented with a generic interface for ease of use.</p>
+<div class="section" id="closed-form-polynomial-solver">
+<span id="section-closed-form-poly"></span><h2>Closed Form Polynomial Solver<a class="headerlink" href="#closed-form-polynomial-solver" title="Permalink to this headline">¶</a></h2>
+<p>Many problems in vision rely on solving a polynomial quickly. For small degrees
+(n &lt;= 4) this can be done in closed form, making them exceptionally fast. We
+have implemented solvers for these cases.</p>
+<dl class="function">
+<dt id="SolveQuadraticReals__double.double.double.doubleP">
+int <tt class="descname">SolveQuadraticReals</tt><big>(</big>double <em>a</em>, double <em>b</em>, double <em>c</em>, double* <em>roots</em><big>)</big><a class="headerlink" href="#SolveQuadraticReals__double.double.double.doubleP" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="SolveQuadratic__double.double.double.std::complex:double:P">
+int <tt class="descname">SolveQuadratic</tt><big>(</big>double <em>a</em>, double <em>b</em>, double <em>c</em>, std::complex&lt;double&gt;* <em>roots</em><big>)</big><a class="headerlink" href="#SolveQuadratic__double.double.double.std::complex:double:P" title="Permalink to this definition">¶</a></dt>
+<dd><p>Provides solutions to the equation <span class="math">\(a*x^2 + b*x + c = 0\)</span></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="SolveCubicReals__double.double.double.double.doubleP">
+int <tt class="descname">SolveCubicReals</tt><big>(</big>double <em>a</em>, double <em>b</em>, double <em>c</em>, double <em>d</em>, double* <em>roots</em><big>)</big><a class="headerlink" href="#SolveCubicReals__double.double.double.double.doubleP" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="SolveCubic__double.double.double.double.std::complex:double:P">
+int <tt class="descname">SolveCubic</tt><big>(</big>double <em>a</em>, double <em>b</em>, double <em>c</em>, double <em>d</em>, std::complex&lt;double&gt;* <em>roots</em><big>)</big><a class="headerlink" href="#SolveCubic__double.double.double.double.std::complex:double:P" title="Permalink to this definition">¶</a></dt>
+<dd><p>Provides solutions to the equation <span class="math">\(a*x^3 + b*x^2 + c*x + d = 0\)</span> using <a class="reference external" href="http://en.wikipedia.org/wiki/Cubic_function#Cardano.27s_method">Cardano&#8217;s</a> method.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="SolveQuarticReals__double.double.double.double.double.doubleP">
+int <tt class="descname">SolveQuarticReals</tt><big>(</big>double <em>a</em>, double <em>b</em>, double <em>c</em>, double <em>d</em>, double <em>e</em>, double* <em>roots</em><big>)</big><a class="headerlink" href="#SolveQuarticReals__double.double.double.double.double.doubleP" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="SolveQuartic__double.double.double.double.double.std::complex:double:P">
+int <tt class="descname">SolveQuartic</tt><big>(</big>double <em>a</em>, double <em>b</em>, double <em>c</em>, double <em>d</em>, double <em>e</em>, std::complex&lt;double&gt;* <em>roots</em><big>)</big><a class="headerlink" href="#SolveQuartic__double.double.double.double.double.std::complex:double:P" title="Permalink to this definition">¶</a></dt>
+<dd><p>Provides solutions to the equation <span class="math">\(a*x^4 + b*x^3 + c*x^2 + d*x + e = 0\)</span> using <a class="reference external" href="http://en.wikipedia.org/wiki/Quartic_function#Ferrari.27s_solution">Ferrari&#8217;s method</a> to reduce to problem to a depressed cubic.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="generic-polynomial-solver">
+<span id="section-generic-poly"></span><h2>Generic Polynomial Solver<a class="headerlink" href="#generic-polynomial-solver" title="Permalink to this headline">¶</a></h2>
+<p>For polynomials of degree &gt; 4 there are no easy closed-form solutions, making
+the problem of finding roots much more difficult. However, we have implemented
+several functions that will solve for polynomial roots. For all polynomials we
+require that the largest degree appears first and the smallest degree appears
+last in the input VectorXd.</p>
+<dl class="function">
+<dt id="FindPolynomialRoots__Eigen::VectorXdCR.Eigen::VectorXdP.Eigen::VectorXdP">
+bool <tt class="descname">FindPolynomialRoots</tt><big>(</big>const Eigen::VectorXd&amp; <em>polynomial</em>, Eigen::VectorXd* <em>real</em>, Eigen::VectorXd* <em>imaginary</em><big>)</big><a class="headerlink" href="#FindPolynomialRoots__Eigen::VectorXdCR.Eigen::VectorXdP.Eigen::VectorXdP" title="Permalink to this definition">¶</a></dt>
+<dd><p>Roots are computed using the Companion Matrix with balancing to help improve
+the condition of the matrix system we solve. This is a reliable, stable method
+for computing roots but is most often the slowest method.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="FindRealPolynomialRoots__Eigen::VectorXdCR.Eigen::VectorXdP">
+bool <tt class="descname">FindRealPolynomialRoots</tt><big>(</big>const Eigen::VectorXd&amp; <em>polynomial</em>, Eigen::VectorXd* <em>real</em><big>)</big><a class="headerlink" href="#FindRealPolynomialRoots__Eigen::VectorXdCR.Eigen::VectorXdP" title="Permalink to this definition">¶</a></dt>
+<dd><p>Using the Companion Matrix method above, we return only the real roots of the polynomial.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="FindRealPolynomialRootsSturm__Eigen::VectorXdCR.Eigen::VectorXdP">
+bool <tt class="descname">FindRealPolynomialRootsSturm</tt><big>(</big>const Eigen::VectorXd&amp; <em>coeffs</em>, Eigen::VectorXd* <em>real_roots</em><big>)</big><a class="headerlink" href="#FindRealPolynomialRootsSturm__Eigen::VectorXdCR.Eigen::VectorXdP" title="Permalink to this definition">¶</a></dt>
+<dd><p>Real roots are bracketed within a boundary by analyzing Sturm sequences. Once
+a root has been isolated to a bound, an iterative solver is used to determine
+the actual root.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="FindRealRootIterative__Eigen::VectorXdCR.doubleC.doubleC.iC">
+double <tt class="descname">FindRealRootIterative</tt><big>(</big>const Eigen::VectorXd&amp; <em>polynomial</em>, const double <em>x0</em>, const double <em>epsilon</em>, const int <em>max_iter</em><big>)</big><a class="headerlink" href="#FindRealRootIterative__Eigen::VectorXdCR.doubleC.doubleC.iC" title="Permalink to this definition">¶</a></dt>
+<dd><p>Finds a single polynomials root iteratively based on the starting position <span class="math">\(x_0\)</span> and
+guaranteed precision of epsilon.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="guass-jordan">
+<span id="section-gauss-jordan"></span><h2>Guass-Jordan<a class="headerlink" href="#guass-jordan" title="Permalink to this headline">¶</a></h2>
+<dl class="function">
+<dt id="GaussJordan__Eigen::MatrixBase:Derived:P.i">
+void <tt class="descname">GaussJordan</tt><big>(</big>Eigen::MatrixBase&lt;Derived&gt;* <em>input</em>, int <em>max_rows</em><em>=99999</em><big>)</big><a class="headerlink" href="#GaussJordan__Eigen::MatrixBase:Derived:P.i" title="Permalink to this definition">¶</a></dt>
+<dd><p>Perform traditional Gauss-Jordan elimination on an Eigen3 matrix. If
+<tt class="docutils literal"><span class="pre">max_rows</span></tt> is specified, it will on perform Gauss-Jordan on the first
+<tt class="docutils literal"><span class="pre">max_rows</span></tt> number of rows. This is useful for problems where your system is
+extremely overdetermined and you do not need all rows to be solved.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="sequential-probability-ratio-test">
+<span id="section-sprt"></span><h2>Sequential Probability Ratio Test<a class="headerlink" href="#sequential-probability-ratio-test" title="Permalink to this headline">¶</a></h2>
+<p>Modified version of Wald&#8217;s <a class="reference external" href="http://en.wikipedia.org/wiki/Sequential_probability_ratio_test">SPRT</a> as <a class="reference internal" href="bibliography.html#matas" id="id1">[Matas]</a> et. al. implement it in &#8220;Randomized
+RANSAC with Sequential Probability Ratio Test&#8221;</p>
+<dl class="function">
+<dt id="CalculateSPRTDecisionThreshold__double.double.double.i">
+double <tt class="descname">CalculateSPRTDecisionThreshold</tt><big>(</big>double <em>sigma</em>, double <em>epsilon</em>, double <em>time_compute_model_ratio</em><em>=200.0</em>, int <em>num_models_verified</em><em>=1</em><big>)</big><a class="headerlink" href="#CalculateSPRTDecisionThreshold__double.double.double.i" title="Permalink to this definition">¶</a></dt>
+<dd><p><tt class="docutils literal"><span class="pre">sigma</span></tt>: Probability of rejecting a good model (Bernoulli parameter).</p>
+<p><tt class="docutils literal"><span class="pre">epsilon</span></tt>: Inlier ratio.</p>
+<p><tt class="docutils literal"><span class="pre">time_compute_model_ratio</span></tt>: Computing the model parameters from a sample takes the same time as verification of time_compute_model_ratio data points. Matas et. al. use 200.</p>
+<p><tt class="docutils literal"><span class="pre">num_model_verified</span></tt>: Number of models that are verified per sample.</p>
+<p><tt class="docutils literal"><span class="pre">Returns</span></tt>:  The SPRT decision threshold based on the input parameters.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="SequentialProbabilityRatioTest__std::vector:double:CR.double.double.double.double.iP.doubleP">
+bool <tt class="descname">SequentialProbabilityRatioTest</tt><big>(</big>const std::vector&lt;double&gt;&amp; <em>residuals</em>, double <em>error_thresh</em>, double <em>sigma</em>, double <em>epsilon</em>, double <em>decision_threshold</em>, int* <em>num_tested_points</em>, double* <em>observed_inlier_ratio</em><big>)</big><a class="headerlink" href="#SequentialProbabilityRatioTest__std::vector:double:CR.double.double.double.double.iP.doubleP" title="Permalink to this definition">¶</a></dt>
+<dd><p>Modified version of Wald&#8217;s SPRT as <a class="reference internal" href="bibliography.html#matas" id="id2">[Matas]</a> et. al. implement it in &#8220;Randomized
+RANSAC with Sequential Probability Ratio Test&#8221;. See the paper for more
+details.</p>
+<p><tt class="docutils literal"><span class="pre">residuals</span></tt>: Error residuals to use for SPRT analysis.</p>
+<p><tt class="docutils literal"><span class="pre">error_thresh</span></tt>: Error threshold for determining when Datum fits the model.</p>
+<p><tt class="docutils literal"><span class="pre">sigma</span></tt>: Probability of rejecting a good model.</p>
+<p><tt class="docutils literal"><span class="pre">epsilon</span></tt>: Inlier ratio.</p>
+<p><tt class="docutils literal"><span class="pre">decision_threshold</span></tt>: The decision threshold at which to terminate.</p>
+<p><tt class="docutils literal"><span class="pre">observed_inlier_ratio</span></tt>: Output parameter of inlier ratio tested.</p>
+</dd></dl>
+
+</div>
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="sfm.html" class="btn btn-neutral float-right" title="Structure from Motion (SfM)">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="pose.html" class="btn btn-neutral" title="Pose and Resectioning"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014, Chris Sweeney.
+    </p>
+  </div>
+
+  <a href="https://github.com/snide/sphinx_rtd_theme">Sphinx theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML">
+  MathJax.Hub.Config({
+    "HTML-CSS": {
+      availableFonts: ["TeX"]
+    }
+  });
+</script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+  
+ 
+<!-- Google Analytics Code -->
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-46196711-1', 'ucsb.edu');
+  ga('send', 'pageview');
+
+</script>
+
+
+</body>
+</html>

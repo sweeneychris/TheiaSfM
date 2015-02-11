@@ -1,0 +1,192 @@
+# Config file for Theia - Find Theia & dependencies.
+#
+# This file is used by CMake when FIND_PACKAGE( Theia ) is invoked (and
+# the directory containing this file is present in CMAKE_MODULE_PATH).
+#
+# This module defines the following variables:
+#
+# Theia_FOUND / THEIA_FOUND: True iff Theia has been successfully found. Both
+#                            variables are set as although FindPackage() only
+#                            references Theia_FOUND in Config mode, given the
+#                            conventions for <package>_FOUND when FindPackage()
+#                            is called in Module mode, users could reasonably
+#                            expect to use THEIA_FOUND instead.
+# THEIA_VERSION: Version of Theia found.
+# THEIA_INCLUDE_DIRS: Include directories for Theia and the dependencies which
+#                     appear in the Theia public API and are thus required to
+#                     use Theia.
+# THEIA_LIBRARIES: Libraries for Theia and all dependencies against which Theia
+#                  was compiled. This will not include any optional dependencies
+#                  that were disabled when Theia was compiled.
+#
+# The following variables are also defined for legacy compatibility only.
+# Any new code should not use them as they do not conform to the standard CMake
+# FindPackage naming conventions.
+#
+# THEIA_INCLUDES = ${THEIA_INCLUDE_DIRS}.
+
+# Called if we failed to find Theia or any of it's required dependencies,
+# unsets all public (designed to be used externally) variables and reports
+# error message at priority depending upon [REQUIRED/QUIET/<NONE>] argument.
+MACRO(THEIA_REPORT_NOT_FOUND REASON_MSG)
+  # FindPackage() only references Theia_FOUND, and requires it to be explicitly
+  # set FALSE to denote not found (not merely undefined).
+  SET(Theia_FOUND FALSE)
+  SET(THEIA_FOUND FALSE)
+  UNSET(THEIA_INCLUDE_DIRS)
+  UNSET(THEIA_LIBRARIES)
+
+  # Reset the CMake module path to its state when this script was called.
+  SET(CMAKE_MODULE_PATH ${CALLERS_CMAKE_MODULE_PATH})
+
+  # Note <package>_FIND_[REQUIRED/QUIETLY] variables defined by FindPackage()
+  # use the camelcase library name, not uppercase.
+  IF (Theia_FIND_QUIETLY)
+    MESSAGE(STATUS "Failed to find Theia - " ${REASON_MSG} ${ARGN})
+  ELSE (Theia_FIND_REQUIRED)
+    MESSAGE(FATAL_ERROR "Failed to find Theia - " ${REASON_MSG} ${ARGN})
+  ELSE()
+    # Neither QUIETLY nor REQUIRED, use SEND_ERROR which emits an error
+    # that prevents generation, but continues configuration.
+    MESSAGE(SEND_ERROR "Failed to find Theia - " ${REASON_MSG} ${ARGN})
+  ENDIF ()
+  RETURN()
+ENDMACRO(THEIA_REPORT_NOT_FOUND)
+
+# Get the (current, i.e. installed) directory containing this file.
+GET_FILENAME_COMPONENT(THEIA_CURRENT_CONFIG_INSTALL_DIR
+  "${CMAKE_CURRENT_LIST_FILE}" PATH)
+
+MESSAGE("current config install dir = ${THEIA_CURRENT_CONFIG_INSTALL_DIR}")
+
+# Record the state of the CMake module path when this script was called so
+# that we can ensure that we leave it in the same state on exit as it was
+# on entry, but modify it locally.
+SET(CALLERS_CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH})
+# Reset CMake module path to the installation directory of this script,
+# thus we will use the FindPackage() scripts shipped with Theia to find
+# Theia' dependencies, even if the user has equivalently named FindPackage()
+# scripts in their project.
+SET(CMAKE_MODULE_PATH ${THEIA_CURRENT_CONFIG_INSTALL_DIR})
+
+# Build the absolute root install directory as a relative path (determined when
+# Theia was configured & built) from the current install directory for this
+# this file.  This allows for the install tree to be relocated, after Theia was
+# built, outside of CMake.
+GET_FILENAME_COMPONENT(CURRENT_ROOT_INSTALL_DIR
+  ${THEIA_CURRENT_CONFIG_INSTALL_DIR}/@INSTALL_ROOT_REL_CONFIG_INSTALL_DIR@ ABSOLUTE)
+IF (NOT EXISTS ${CURRENT_ROOT_INSTALL_DIR})
+  THEIA_REPORT_NOT_FOUND(
+    "Theia install root: ${CURRENT_ROOT_INSTALL_DIR}, "
+    "determined from relative path from TheiaConfg.cmake install location: "
+    "${THEIA_CURRENT_CONFIG_INSTALL_DIR}, does not exist. Either the install "
+    "directory was deleted, or the install tree was only partially relocated "
+    "outside of CMake after Theia was built.")
+ENDIF (NOT EXISTS ${CURRENT_ROOT_INSTALL_DIR})
+
+# Set the version.
+SET(THEIA_VERSION @THEIA_VERSION@ )
+
+# Set the include directories for Theia (itself).
+SET(THEIA_INCLUDE_DIR "${CURRENT_ROOT_INSTALL_DIR}/include")
+IF (NOT EXISTS ${THEIA_INCLUDE_DIR}/theia/theia.h)
+  THEIA_REPORT_NOT_FOUND(
+    "Theia install root: ${CURRENT_ROOT_INSTALL_DIR}, "
+    "determined from relative path from TheiaConfg.cmake install location: "
+    "${THEIA_CURRENT_CONFIG_INSTALL_DIR}, does not contain Theia headers. "
+    "Either the install directory was deleted, or the install tree was only "
+    "partially relocated outside of CMake after Theia was built.")
+ENDIF (NOT EXISTS ${THEIA_INCLUDE_DIR}/theia/theia.h)
+
+# Append the include directories for all (potentially optional) dependencies
+# with which Theia was compiled, the libraries themselves come in via
+# TheiaTargets-<release/debug>.cmake as link libraries for Theia target.
+SET(THEIA_INCLUDE_DIRS ${THEIA_INCLUDE_DIR})
+
+# Eigen.
+# Flag set during configuration and build of Theia.
+SET(THEIA_EIGEN_VERSION @EIGEN_VERSION@)
+# Append the locations of Eigen when Theia was built to the search path hints.
+LIST(APPEND EIGEN_INCLUDE_DIR_HINTS @EIGEN_INCLUDE_DIR@)
+# Search quietly s/t we control the timing of the error message if not found.
+FIND_PACKAGE(Eigen ${THEIA_EIGEN_VERSION} EXACT QUIET)
+IF (EIGEN_FOUND)
+  MESSAGE(STATUS "Found required Theia dependency: "
+    "Eigen version ${THEIA_EIGEN_VERSION} in ${EIGEN_INCLUDE_DIRS}")
+ELSE (EIGEN_FOUND)
+  THEIA_REPORT_NOT_FOUND("Missing required Theia "
+    "dependency: Eigen version ${THEIA_EIGEN_VERSION}, please set "
+    "EIGEN_INCLUDE_DIR.")
+ENDIF (EIGEN_FOUND)
+LIST(APPEND THEIA_INCLUDE_DIRS ${EIGEN_INCLUDE_DIRS})
+
+# Ceres.
+# Append the locations of ceres when Theia was built to the search path hints.
+LIST(APPEND CERES_INCLUDE_DIR_HINTS @CERES_INCLUDE_DIR@)
+GET_FILENAME_COMPONENT(THEIA_BUILD_CERES_LIBRARY_DIR @CERES_LIBRARIES@ PATH)
+LIST(APPEND CERES_LIBRARY_DIR_HINTS ${THEIA_BUILD_CERES_LIBRARY_DIR})
+# Search quietly s/t we control the timing of the error message if not found.
+FIND_PACKAGE(Ceres QUIET)
+IF (CERES_FOUND)
+  MESSAGE(STATUS "Found required Theia dependency: "
+    "Ceres in ${CERES_INCLUDE_DIRS}")
+ELSE (CERES_FOUND)
+  THEIA_REPORT_NOT_FOUND("Missing required Theia "
+    "dependency: Ceres, please set CERES_INCLUDE_DIR.")
+ENDIF (CERES_FOUND)
+LIST(APPEND THEIA_INCLUDE_DIRS ${CERES_INCLUDE_DIRS})
+
+# Glog.
+# Append the locations of glog when Theia was built to the search path hints.
+LIST(APPEND GLOG_INCLUDE_DIR_HINTS @GLOG_INCLUDE_DIR@)
+GET_FILENAME_COMPONENT(THEIA_BUILD_GLOG_LIBRARY_DIR @GLOG_LIBRARY@ PATH)
+LIST(APPEND GLOG_LIBRARY_DIR_HINTS ${THEIA_BUILD_GLOG_LIBRARY_DIR})
+# Search quietly s/t we control the timing of the error message if not found.
+FIND_PACKAGE(Glog QUIET)
+IF (GLOG_FOUND)
+  MESSAGE(STATUS "Found required Theia dependency: "
+    "Glog in ${GLOG_INCLUDE_DIRS}")
+ELSE (GLOG_FOUND)
+  THEIA_REPORT_NOT_FOUND("Missing required Theia "
+    "dependency: Glog, please set GLOG_INCLUDE_DIR.")
+ENDIF (GLOG_FOUND)
+LIST(APPEND THEIA_INCLUDE_DIRS ${GLOG_INCLUDE_DIRS})
+
+# Import exported Theia targets.
+MESSAGE("current config install dir = ${THEIA_CURRENT_CONFIG_INSTALL_DIR}")
+IF (NOT TARGET theia AND NOT Theia_BINARY_DIR)
+  INCLUDE(${THEIA_CURRENT_CONFIG_INSTALL_DIR}/TheiaTargets.cmake)
+ENDIF (NOT TARGET theia AND NOT Theia_BINARY_DIR)
+# Set the expected XX_LIBRARIES variable for FindPackage().
+SET(THEIA_LIBRARIES theia)
+
+# Add the libraries included with the distribution.
+SET(THEIA_INTERNAL_LIB_PREFIX ${THEIA_INCLUDE_DIR}/theia/libraries)
+SET(THEIA_INTERNAL_LIBS_INCLUDES
+  ${THEIA_INTERNAL_LIB_PREFIX}
+  ${THEIA_INTERNAL_LIB_PREFIX}/agast
+  ${THEIA_INTERNAL_LIB_PREFIX}/cimg
+  ${THEIA_INTERNAL_LIB_PREFIX}/easyexif
+  ${THEIA_INTERNAL_LIB_PREFIX}/gtest
+  ${THEIA_INTERNAL_LIB_PREFIX}/gtest/include
+  ${THEIA_INTERNAL_LIB_PREFIX}/optimo
+  ${THEIA_INTERNAL_LIB_PREFIX}/statx
+  ${THEIA_INTERNAL_LIB_PREFIX}/stlplus3
+  ${THEIA_INTERNAL_LIB_PREFIX}/vlfeat)
+
+LIST(APPEND THEIA_INCLUDE_DIRS ${THEIA_INTERNAL_LIBS_INCLUDES})
+
+# Set legacy include directories variable for backwards compatibility.
+SET(THEIA_INCLUDES ${THEIA_INCLUDE_DIRS})
+
+# Reset CMake module path to its state when this script was called.
+SET(CMAKE_MODULE_PATH ${CALLERS_CMAKE_MODULE_PATH})
+
+# As we use THEIA_REPORT_NOT_FOUND() to abort, if we reach this point we have
+# found Theia and all required dependencies.
+MESSAGE(STATUS "Found Theia version: ${THEIA_VERSION} "
+    "installed in: ${CURRENT_ROOT_INSTALL_DIR}")
+# Set THEIA_FOUND to be equivalent to Theia_FOUND, which is set to TRUE by
+# FindPackage() if this file is found and run, and after which Theia_FOUND
+# is not (explicitly, i.e. undefined does not count) set to FALSE.
+SET(THEIA_FOUND TRUE)

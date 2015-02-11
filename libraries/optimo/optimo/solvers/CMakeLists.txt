@@ -1,0 +1,12 @@
+# Tests:
+IF (${OPTIMO_BUILD_TESTING})
+  GTEST(gradient_descent_tests)
+  GTEST(newton_tests)
+  GTEST(primal_dual_lp_tests)
+  GTEST(primal_dual_qp_tests)
+  IF (SUITESPARSE_FOUND)
+    GTEST(sparse_primal_dual_lp_tests)
+    GTEST(sparse_primal_dual_qp_tests)
+  ENDIF(SUITESPARSE_FOUND)
+  GTEST(bfgs_tests)
+ENDIF (${OPTIMO_BUILD_TESTING})

@@ -1,0 +1,398 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Image &mdash; Theia Vision Library</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="Theia Vision Library" href="index.html"/>
+        <link rel="next" title="Features" href="features.html"/>
+        <link rel="prev" title="Building Theia Library" href="building.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="index.html" class="fa fa-home"> Theia Vision Library</a>
+        
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+        
+            <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="building.html">Building Theia Library</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="building.html#dependencies">Dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="building.html#building">Building</a></li>
+<li class="toctree-l2"><a class="reference internal" href="building.html#customizing-the-build">Customizing the build</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">Image</a></li>
+<li class="toctree-l1"><a class="reference internal" href="features.html">Features</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="features.html#keypoints">Keypoints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#keypoint-detector">Keypoint Detector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#descriptors">Descriptors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#descriptorextractor">DescriptorExtractor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#feature-matching">Feature Matching</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ransac.html">Ransac</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ransac.html#estimator"><tt class="docutils literal"><span class="pre">Estimator</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="ransac.html#using-the-ransac-classes">Using the RANSAC classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ransac.html#instances-of-ransac-methods">Instances of RANSAC Methods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ransac.html#implementing-a-new-ransac-method">Implementing a New RANSAC Method</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pose.html">Pose and Resectioning</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#perspective-three-point-p3p">Perspective Three Point (P3P)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#five-point-relative-pose">Five Point Relative Pose</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#four-point-algorithm-for-homography">Four Point Algorithm for Homography</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#eight-point-algorithm-for-fundamental-matrix">Eight Point Algorithm for Fundamental Matrix</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#perspective-n-point">Perspective N-Point</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#four-point-focal-length">Four Point Focal Length</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#five-point-focal-length-and-radial-distortion">Five Point Focal Length and Radial Distortion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#three-point-relative-pose-with-a-partially-known-rotation">Three Point Relative Pose with a Partially Known Rotation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#four-point-relative-pose-with-a-partially-known-rotation">Four Point Relative Pose with a Partially Known Rotation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="math.html">Math</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="math.html#closed-form-polynomial-solver">Closed Form Polynomial Solver</a></li>
+<li class="toctree-l2"><a class="reference internal" href="math.html#generic-polynomial-solver">Generic Polynomial Solver</a></li>
+<li class="toctree-l2"><a class="reference internal" href="math.html#guass-jordan">Guass-Jordan</a></li>
+<li class="toctree-l2"><a class="reference internal" href="math.html#sequential-probability-ratio-test">Sequential Probability Ratio Test</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sfm.html">Structure from Motion (SfM)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#views-and-tracks">Views and Tracks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#twoviewinfo">TwoViewInfo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#camera">Camera</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#reconstruction">Reconstruction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#global-sfm-pipeline">Global SfM Pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#estimating-global-poses">Estimating Global Poses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#triangulation">Triangulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#bundle-adjustment">Bundle Adjustment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#similarity-transformation">Similarity Transformation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributions.html">Contributing to Theia</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="contributions.html#style-and-testing">Style and Testing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contributions.html#cmake">CMake</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contributions.html#developing-for-theia">Developing for Theia</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contributions.html#submitting-a-change-to-theia">Submitting a change to Theia</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="bibliography.html">Bibliography</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="license.html#citation">Citation</a></li>
+</ul>
+</li>
+</ul>
+
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">Theia Vision Library</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>Image</li>
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <div class="section" id="image">
+<span id="documentation-image"></span><h1>Image<a class="headerlink" href="#image" title="Permalink to this headline">¶</a></h1>
+<p>Theia provides a basic <a class="reference internal" href="#Image:T:" title="Image&lt;T&gt;"><tt class="xref cpp cpp-class docutils literal"><span class="pre">Image&lt;T&gt;</span></tt></a> class to use for SfM and SLAM
+applications. The class is fairly lightweight, and is largely a wrapper for the
+<a class="reference external" href="http://cimg.sourceforge.net/">CImg</a> but allows for more general use. It is
+templated on the data type for the pixels (e.g. float, uchar, int) and is the
+standard image class that used for feature detection within Theia.</p>
+<dl class="class">
+<dt id="Image:T:">
+<em class="property">class </em><tt class="descname">Image&lt;T&gt;</tt><a class="headerlink" href="#Image:T:" title="Permalink to this definition">¶</a></dt>
+<dd><p>Images can be stored either as RGB or grayscale, and the number of channels
+used to describe an image can be determined with <cite>:func:Channels</cite>. We have
+<cite>typdef Image&lt;float&gt; FloatImage</cite> for convenience. Images can be easily read in
+from a file upon contruction or with the <a class="reference internal" href="#Read__ssCR" title="Read"><tt class="xref cpp cpp-func docutils literal"><span class="pre">Read()</span></tt></a> command.</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">FloatImage</span> <span class="nf">my_rgb_image</span><span class="p">(</span><span class="n">img_filename</span><span class="p">);</span>
+
+<span class="c1">// Convert to grayscale.</span>
+<span class="n">FloatImage</span> <span class="n">my_grayscale_image</span> <span class="o">=</span> <span class="n">my_rgb_image</span><span class="p">.</span><span class="n">AsGrayscaleImage</span><span class="p">();</span>
+
+<span class="c1">// ... do some stuff ... //</span>
+
+<span class="c1">// Write the image back out.</span>
+<span class="n">my_rgb_image</span><span class="p">.</span><span class="n">Write</span><span class="p">(</span><span class="n">out_filename</span><span class="p">);</span>
+<span class="n">my_grayscale_image</span><span class="p">.</span><span class="n">Write</span><span class="p">(</span><span class="n">out_filename</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Once an image is loaded, pixel values can be accessed with <tt class="docutils literal"><span class="pre">()</span></tt>
+operators. Pixels are referenced in x, y, c order (c is the color channel).</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="c1">// Load RGB and scale images.</span>
+<span class="n">FloatImage</span> <span class="nf">my_img</span><span class="p">(</span><span class="s">&quot;test_img.jpg&quot;</span><span class="p">);</span>
+
+<span class="c1">// Get the middle pixel location.</span>
+<span class="kt">int</span> <span class="n">middle_y</span> <span class="o">=</span> <span class="n">my_img</span><span class="p">.</span><span class="n">Rows</span><span class="p">()</span><span class="o">/</span><span class="mi">2</span><span class="p">;</span>
+<span class="kt">int</span> <span class="n">middle_x</span> <span class="o">=</span> <span class="n">my_img</span><span class="p">.</span><span class="n">Cols</span><span class="p">()</span><span class="o">/</span><span class="mi">2</span><span class="p">;</span>
+
+<span class="c1">// Grab the middle pixel.</span>
+<span class="k">const</span> <span class="kt">float</span> <span class="n">middle_r_pixel</span> <span class="o">=</span> <span class="n">my_img</span><span class="p">(</span><span class="n">middle_x</span><span class="p">,</span> <span class="n">middle_y</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+<span class="k">const</span> <span class="kt">float</span> <span class="n">middle_g_pixel</span> <span class="o">=</span> <span class="n">my_img</span><span class="p">(</span><span class="n">middle_x</span><span class="p">,</span> <span class="n">middle_y</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+<span class="k">const</span> <span class="kt">float</span> <span class="n">middle_b_pixel</span> <span class="o">=</span> <span class="n">my_img</span><span class="p">(</span><span class="n">middle_x</span><span class="p">,</span> <span class="n">middle_y</span><span class="p">,</span> <span class="mi">2</span><span class="p">);</span>
+
+<span class="c1">// Output the RGB Pixel value.</span>
+<span class="n">LOG</span><span class="p">(</span><span class="n">INFO</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;red = &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">middle_r_pixel</span><span class="p">.</span><span class="n">red</span>
+          <span class="o">&lt;&lt;</span> <span class="s">&quot; green = &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">middle_g_pixel</span><span class="p">.</span><span class="n">green</span>
+          <span class="o">&lt;&lt;</span> <span class="s">&quot; blue = &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">middle_b_pixel</span><span class="p">.</span><span class="n">blue</span><span class="p">;</span>
+
+<span class="c1">// Convert to grayscale.</span>
+<span class="n">my_img</span><span class="p">.</span><span class="n">ConvertToGrayscaleImage</span><span class="p">();</span>
+
+<span class="c1">// Get the grayscale pixel value.</span>
+<span class="k">const</span> <span class="kt">float</span> <span class="n">middle_gray_pixel</span> <span class="o">=</span> <span class="n">my_img</span><span class="p">(</span><span class="n">middle_x</span><span class="p">,</span> <span class="n">middle_y</span><span class="p">);</span>
+
+<span class="c1">// Output the grayscale pixel value.</span>
+<span class="n">LOG</span><span class="p">(</span><span class="n">INFO</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;gray = &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">middle_gray_pixel</span><span class="p">;</span>
+</pre></div>
+</div>
+<p>We also read in the EXIF information to determine the focal length. Currently,
+we only make the focal length publicly accesible but we save all EXIF data and
+more functionality can be easily added if needed.</p>
+<div class="highlight-c++"><div class="highlight"><pre><span class="n">FloatImage</span> <span class="nf">my_img</span><span class="p">(</span><span class="s">&quot;test_img.jpg&quot;</span><span class="p">);</span>
+<span class="k">const</span> <span class="kt">double</span> <span class="n">focal_length_in_pixels</span><span class="p">;</span>
+<span class="k">if</span> <span class="p">(</span><span class="n">my_img</span><span class="p">.</span><span class="n">FocalLengthPixels</span><span class="p">(</span><span class="o">&amp;</span><span class="n">focal_length_pixels</span><span class="p">))</span> <span class="p">{</span>
+  <span class="n">LOG</span><span class="p">(</span><span class="n">INFO</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Focal length from EXIF is: &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">focal_length_pixels</span><span class="p">;</span>
+<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+  <span class="n">LOG</span><span class="p">(</span><span class="n">INFO</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;Could not extract the focal length from EXIF data.&quot;</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<p>We have also implemented some useful member functions of the <tt class="xref cpp cpp-class docutils literal"><span class="pre">Image</span></tt> class. For a full list of functions, <cite>theia/image/image.h</cite></p>
+<dl class="function">
+<dt id="RowsC">
+int <tt class="descname">Rows</tt><big>(</big><big>)</big><tt class="descclassname"> const</tt><a class="headerlink" href="#RowsC" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="ColsC">
+int <tt class="descname">Cols</tt><big>(</big><big>)</big><tt class="descclassname"> const</tt><a class="headerlink" href="#ColsC" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="ChannelsC">
+int <tt class="descname">Channels</tt><big>(</big><big>)</big><tt class="descclassname"> const</tt><a class="headerlink" href="#ChannelsC" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="Data">
+T* <tt class="descname">Data</tt><big>(</big><big>)</big><a class="headerlink" href="#Data" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="DataC">
+const T* <tt class="descname">Data</tt><big>(</big><big>)</big><tt class="descclassname"> const</tt><a class="headerlink" href="#DataC" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="Read__ssCR">
+void <tt class="descname">Read</tt><big>(</big>const std::string&amp; <em>filename</em><big>)</big><a class="headerlink" href="#Read__ssCR" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="Write__ssCR">
+void <tt class="descname">Write</tt><big>(</big>const std::string&amp; <em>filename</em><big>)</big><a class="headerlink" href="#Write__ssCR" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="ConvertToGrayscaleImage">
+void <tt class="descname">ConvertToGrayscaleImage</tt><big>(</big><big>)</big><a class="headerlink" href="#ConvertToGrayscaleImage" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="ConvertToRGBImage">
+void <tt class="descname">ConvertToRGBImage</tt><big>(</big><big>)</big><a class="headerlink" href="#ConvertToRGBImage" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="AsGrayscaleImageC">
+Image&lt;T&gt; <tt class="descname">AsGrayscaleImage</tt><big>(</big><big>)</big><tt class="descclassname"> const</tt><a class="headerlink" href="#AsGrayscaleImageC" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="AsRGBImageC">
+Image&lt;T&gt; <tt class="descname">AsRGBImage</tt><big>(</big><big>)</big><tt class="descclassname"> const</tt><a class="headerlink" href="#AsRGBImageC" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="Image:T:::IntegrateC">
+Image&lt;T&gt; <tt class="descclassname">Image&lt;T&gt;::</tt><tt class="descname">Integrate</tt><big>(</big><big>)</big><tt class="descclassname"> const</tt><a class="headerlink" href="#Image:T:::IntegrateC" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="Image:T:::Resize__i.i">
+void <tt class="descclassname">Image&lt;T&gt;::</tt><tt class="descname">Resize</tt><big>(</big>int <em>new_rows</em>, int <em>new_cols</em><big>)</big><a class="headerlink" href="#Image:T:::Resize__i.i" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="Image:T:::Resize__double">
+void <tt class="descclassname">Image&lt;T&gt;::</tt><tt class="descname">Resize</tt><big>(</big>double <em>scale</em><big>)</big><a class="headerlink" href="#Image:T:::Resize__double" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="Image:T:::HalfSample__Image:T:PC">
+void <tt class="descclassname">Image&lt;T&gt;::</tt><tt class="descname">HalfSample</tt><big>(</big>Image&lt;T&gt;* <em>out_image</em><big>)</big><tt class="descclassname"> const</tt><a class="headerlink" href="#Image:T:::HalfSample__Image:T:PC" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="Image:T:::TwoThirdsSample__Image:T:PC">
+void <tt class="descclassname">Image&lt;T&gt;::</tt><tt class="descname">TwoThirdsSample</tt><big>(</big>Image&lt;T&gt;* <em>out_image</em><big>)</big><tt class="descclassname"> const</tt><a class="headerlink" href="#Image:T:::TwoThirdsSample__Image:T:PC" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="features.html" class="btn btn-neutral float-right" title="Features">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="building.html" class="btn btn-neutral" title="Building Theia Library"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014, Chris Sweeney.
+    </p>
+  </div>
+
+  <a href="https://github.com/snide/sphinx_rtd_theme">Sphinx theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML">
+  MathJax.Hub.Config({
+    "HTML-CSS": {
+      availableFonts: ["TeX"]
+    }
+  });
+</script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+  
+ 
+<!-- Google Analytics Code -->
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-46196711-1', 'ucsb.edu');
+  ga('send', 'pageview');
+
+</script>
+
+
+</body>
+</html>

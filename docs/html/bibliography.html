@@ -1,0 +1,477 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Bibliography &mdash; Theia Vision Library</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="Theia Vision Library" href="index.html"/>
+        <link rel="next" title="License" href="license.html"/>
+        <link rel="prev" title="Contributing to Theia" href="contributions.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="index.html" class="fa fa-home"> Theia Vision Library</a>
+        
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+        
+            <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="building.html">Building Theia Library</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="building.html#dependencies">Dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="building.html#building">Building</a></li>
+<li class="toctree-l2"><a class="reference internal" href="building.html#customizing-the-build">Customizing the build</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="image.html">Image</a></li>
+<li class="toctree-l1"><a class="reference internal" href="features.html">Features</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="features.html#keypoints">Keypoints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#keypoint-detector">Keypoint Detector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#descriptors">Descriptors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#descriptorextractor">DescriptorExtractor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#feature-matching">Feature Matching</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ransac.html">Ransac</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ransac.html#estimator"><tt class="docutils literal"><span class="pre">Estimator</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="ransac.html#using-the-ransac-classes">Using the RANSAC classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ransac.html#instances-of-ransac-methods">Instances of RANSAC Methods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ransac.html#implementing-a-new-ransac-method">Implementing a New RANSAC Method</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pose.html">Pose and Resectioning</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#perspective-three-point-p3p">Perspective Three Point (P3P)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#five-point-relative-pose">Five Point Relative Pose</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#four-point-algorithm-for-homography">Four Point Algorithm for Homography</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#eight-point-algorithm-for-fundamental-matrix">Eight Point Algorithm for Fundamental Matrix</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#perspective-n-point">Perspective N-Point</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#four-point-focal-length">Four Point Focal Length</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#five-point-focal-length-and-radial-distortion">Five Point Focal Length and Radial Distortion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#three-point-relative-pose-with-a-partially-known-rotation">Three Point Relative Pose with a Partially Known Rotation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#four-point-relative-pose-with-a-partially-known-rotation">Four Point Relative Pose with a Partially Known Rotation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="math.html">Math</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="math.html#closed-form-polynomial-solver">Closed Form Polynomial Solver</a></li>
+<li class="toctree-l2"><a class="reference internal" href="math.html#generic-polynomial-solver">Generic Polynomial Solver</a></li>
+<li class="toctree-l2"><a class="reference internal" href="math.html#guass-jordan">Guass-Jordan</a></li>
+<li class="toctree-l2"><a class="reference internal" href="math.html#sequential-probability-ratio-test">Sequential Probability Ratio Test</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sfm.html">Structure from Motion (SfM)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#views-and-tracks">Views and Tracks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#twoviewinfo">TwoViewInfo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#camera">Camera</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#reconstruction">Reconstruction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#global-sfm-pipeline">Global SfM Pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#estimating-global-poses">Estimating Global Poses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#triangulation">Triangulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#bundle-adjustment">Bundle Adjustment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#similarity-transformation">Similarity Transformation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributions.html">Contributing to Theia</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="contributions.html#style-and-testing">Style and Testing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contributions.html#cmake">CMake</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contributions.html#developing-for-theia">Developing for Theia</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contributions.html#submitting-a-change-to-theia">Submitting a change to Theia</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">Bibliography</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="license.html#citation">Citation</a></li>
+</ul>
+</li>
+</ul>
+
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">Theia Vision Library</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>Bibliography</li>
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <div class="section" id="bibliography">
+<span id="sec-bibliography"></span><h1>Bibliography<a class="headerlink" href="#bibliography" title="Permalink to this headline">¶</a></h1>
+<table class="docutils citation" frame="void" id="alahi" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[Alahi]</td><td>A. Alahi, R. Ortiz, and P. Vandergheynst. <strong>FREAK: Fast Retina
+Keypoint</strong>. <em>In IEEE Conference on Computer Vision and Pattern Recognition,
+CVPR 2012</em></td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="bujnak" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[Bujnak]</td><td>M. Bujnak, Z. Kukelova, and T. Pajdla. <strong>A General Solution to the
+P4P Problem for Camera with Unknown Focal Length</strong>. <em>Computer Vision and Pattern
+Recognition</em>, 2008. IEEE Conference on.</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="cheng" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[Cheng]</td><td>Cheng, J. and Leng, C. and Wu, J. and Cui, H. <strong>Hanqing LuFast and
+Accurate Image Matching with Cascade Hashing for 3D Reconstruction</strong>. <em>Computer
+Vision and Pattern Recognition (CVPR)</em>, 2014.</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="chum" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[Chum]</td><td>O. Chum and J. Matas. 2005. <strong>Matching with PROSAC - Progressive
+Sample Consensus</strong>. <em>In Proceedings of the 2005 IEEE Computer Society
+Conference on Computer Vision and Pattern Recognition (CVPR&#8216;05)</em> - Volume 1 -
+Volume 01 (CVPR &#8216;05), Vol. 1. IEEE Computer Society, Washington, DC, USA,
+220-226</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="chumrandomizedransac" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[ChumRandomizedRansac]</td><td>Chum, O. and Matas, J. <strong>Randomized RANSAC and T(d,d)
+test</strong>, <em>BMVC</em> 2002</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="brief" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[BRIEF]</td><td>Calonder, M. and Lepetit, V. and, Strecha, C. and Fua, P. <strong>BRIEF:
+Binary Robust Independent Elementary Features</strong>, <em>11th European Conference
+on Computer Vision (ECCV)</em>, September 2010</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="fischler" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[Fischler]</td><td>M. Fischler and R. Bolles. 1981. <strong>Random sample consensus: a
+paradigm for model fitting with applications to image analysis and automated
+cartography</strong>. <em>Commun. ACM</em> 24, 6 (June 1981), 381-395.</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="fragoso" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[Fragoso]</td><td>V. Fragoso, P. Sen, S. Rodriguez, and M. Turk. <strong>EVSAC:
+Accelerating Hypotheses Generation by Modeling Matching Scores with
+Extreme Value Theory</strong>. In Proceedings of the IEEE International
+Conference in Computer Vision (ICCV), Sydney, Australia, December 2013.</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="hartleyzisserman" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[HartleyZisserman]</td><td>R.I. Hartley &amp; A. Zisserman, <strong>Multiview
+Geometry in Computer Vision</strong>, Cambridge University Press, 2004.</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="hesch" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[Hesch]</td><td>J. Hesch, S. Roumeliotis. <strong>A Direct Least-Squares (DLS) Approach for PnP</strong>,
+<em>In Proceedings of the IEEE International Conference on Computer Vision (ICCV) 2013</em></td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="kneip" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[Kneip]</td><td>L. Kneip, D. Scaramuzza, R. Siegwart, <strong>A Novel Parametrization of the
+Perspective-Three-Point Problem for a Direct Computation of Absolute Camera
+Position and Orientation</strong>, <em>In Proceedings of The IEEE Conference on Computer Vision
+and Pattern Recognition (CVPR)</em>. Colorado Springs, USA. June 2011.</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="jiangiccv" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[JiangICCV]</td><td>Jiang, N. and Cui, Z., and Tan, P. <strong>A Global Linear Method for
+Camera Pose Registration</strong>, <em>International Conference on Computer Vision
+(ICCV)</em>, 2013.</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="kukelova" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[Kukelova]</td><td>Z. Kukelova, M. Bujnak, T. Pajdla. <strong>Real-time Solution to the
+Absolute Pose Problem with Unknown Radial Distortion and Focal Length</strong>. <em>In
+Proceedings of the International Conference on Computer Vision (ICCV) 2013</em></td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="leutenegger" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[Leutenegger]</td><td>S. Leutenegger, M. Chli and R. Siegwart, <strong>BRISK: Binary Robust
+Invariant Scalable Keypoints</strong>, <em>In Proceedings of the IEEE International
+Conference on Computer Vision (ICCV) 2011</em></td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="lindstrom" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[Lindstrom]</td><td>Lindstrom, P. <strong>Triangulation Made Easy</strong>, <em>In Proceedings of the
+IEEE Conference on Computer Vision and Pattern Recognition</em>, 2010.</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="lowe" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[Lowe]</td><td>David G. Lowe, <strong>Object recognition from local scale-invariant features</strong>,
+<em>International Conference on Computer Vision, Corfu, Greece (September 1999)</em>,
+pp. 1150-1157</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="matas" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[Matas]</td><td>J. Matas and O. Chum. 2005. <strong>Randomized RANSAC with Sequential
+Probability Ratio Test</strong>. <em>In Proceedings of the Tenth IEEE International
+Conference on Computer Vision - Volume 2 (ICCV &#8216;05)</em>, Vol. 2. IEEE Computer
+Society, Washington, DC, USA, 1727-1732.</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="mair" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[Mair]</td><td>E. Mair, G. D. Hager, D. Burschka, M. Suppa, and G. Hirzinger.
+<strong>Adaptive and generic corner detection based on the accelerated segment test</strong>.
+<em>In Proceedings of the European Conference on Computer Vision (ECCV&#8216;10)</em>,
+September 2010.</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="mouloniccv" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[MoulonICCV]</td><td>Moulon, P. and Monasse, P. and Marlet, R. <strong>Global Fusion of
+Relative Motions for Robust, Accurate and Scalable Structure from Motion</strong>
+<em>International Conference on Computer Vision (ICCV)</em>, 2013.</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="nister" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[Nister]</td><td>David Nistér. 2004. <strong>An Efficient Solution to the Five-Point Relative
+Pose Problem</strong>. <em>IEEE Trans. Pattern Anal. Mach. Intell</em>. 26, 6 (June 2004),
+756-777.</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="raguram" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[Raguram]</td><td>R. Raguram, J.M. Frahm, and M. Pollefeys. 2008. <strong>A
+Comparative Analysis of RANSAC Techniques Leading to Adaptive Real-Time
+Random Sample Consensus</strong>. <em>In Proceedings of the 10th European Conference on
+Computer Vision: Part II (ECCV &#8216;08)</em>, David Forsyth, Philip Torr, and Andrew
+Zisserman (Eds.). Springer-Verlag, Berlin, Heidelberg, 500-513</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="raguramfrahm" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[RaguramFrahm]</td><td>R. Raguram, J.M. Frahm. <strong>RECON: Scale-Adaptive Robust
+Estimation via Residual Consensus</strong>. <em>International Conference on Computer
+Vision (ICCV)</em>, 2011.</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="stewenius5pt" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[Stewenius5pt]</td><td>H. Stewénius, C. Engels, D. Nistér. <strong>Recent developments on
+direct relative orientation</strong>. <em>ISPRS Journal of Photogrammetry and Remote
+Sensing</em>, 2006</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="sweeneygdls" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[SweeneyGDLS]</td><td>C. Sweeney, V. Fragoso, T. Hollerer, M. Turk. <strong>gDLS: A
+Scalable Solution to the Generalized Pose and Scale Problem</strong>. <em>European
+Conference on Computer Vision (ECCV)</em>, 2014</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="sweeneyqep" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[SweeneyQEP]</td><td>C. Sweeney, J. Flynn, M. Turk. <strong>Solving for Relative Pose with a
+Partially Known Rotation is a Quadratic Eigenvalue Problem</strong>. <em>International
+Conference on 3D Vision (3DV)</em>, 2014</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="torr" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[Torr]</td><td>P. H. S. Torr and A. Zisserman. 2000. <strong>MLESAC: a new robust estimator
+with application to estimating image geometry</strong>. <em>Comput. Vis. Image
+Underst</em>. 78, 1 (April 2000), 138-156.</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="umeyama" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[Umeyama]</td><td>Umeyama, S. <strong>Least-squares estimation of transformation parameters
+between two point patterns</strong>. <em>IEEE Transactions on Pattern Analysis and Machine
+Intelligence</em>, 1991.</td></tr>
+</tbody>
+</table>
+<table class="docutils citation" frame="void" id="wilsoneccv" rules="none">
+<colgroup><col class="label" /><col /></colgroup>
+<tbody valign="top">
+<tr><td class="label">[WilsonECCV]</td><td>Wilson, K. and Snavely, N. <strong>Robust Global Translation with 1DSfM</strong>
+<em>European Conference on Computer Vision</em>, 2014.</td></tr>
+</tbody>
+</table>
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="license.html" class="btn btn-neutral float-right" title="License">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="contributions.html" class="btn btn-neutral" title="Contributing to Theia"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014, Chris Sweeney.
+    </p>
+  </div>
+
+  <a href="https://github.com/snide/sphinx_rtd_theme">Sphinx theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML">
+  MathJax.Hub.Config({
+    "HTML-CSS": {
+      availableFonts: ["TeX"]
+    }
+  });
+</script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+  
+ 
+<!-- Google Analytics Code -->
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-46196711-1', 'ucsb.edu');
+  ga('send', 'pageview');
+
+</script>
+
+
+</body>
+</html>

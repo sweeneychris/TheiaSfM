@@ -1,0 +1,663 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Features &mdash; Theia Vision Library</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="Theia Vision Library" href="index.html"/>
+        <link rel="next" title="Ransac" href="ransac.html"/>
+        <link rel="prev" title="Image" href="image.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="index.html" class="fa fa-home"> Theia Vision Library</a>
+        
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+        
+            <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="building.html">Building Theia Library</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="building.html#dependencies">Dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="building.html#building">Building</a></li>
+<li class="toctree-l2"><a class="reference internal" href="building.html#customizing-the-build">Customizing the build</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="image.html">Image</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">Features</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#keypoints">Keypoints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#keypoint-detector">Keypoint Detector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#descriptors">Descriptors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#descriptorextractor">DescriptorExtractor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#feature-matching">Feature Matching</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ransac.html">Ransac</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ransac.html#estimator"><tt class="docutils literal"><span class="pre">Estimator</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="ransac.html#using-the-ransac-classes">Using the RANSAC classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ransac.html#instances-of-ransac-methods">Instances of RANSAC Methods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ransac.html#implementing-a-new-ransac-method">Implementing a New RANSAC Method</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="pose.html">Pose and Resectioning</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#perspective-three-point-p3p">Perspective Three Point (P3P)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#five-point-relative-pose">Five Point Relative Pose</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#four-point-algorithm-for-homography">Four Point Algorithm for Homography</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#eight-point-algorithm-for-fundamental-matrix">Eight Point Algorithm for Fundamental Matrix</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#perspective-n-point">Perspective N-Point</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#four-point-focal-length">Four Point Focal Length</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#five-point-focal-length-and-radial-distortion">Five Point Focal Length and Radial Distortion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#three-point-relative-pose-with-a-partially-known-rotation">Three Point Relative Pose with a Partially Known Rotation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="pose.html#four-point-relative-pose-with-a-partially-known-rotation">Four Point Relative Pose with a Partially Known Rotation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="math.html">Math</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="math.html#closed-form-polynomial-solver">Closed Form Polynomial Solver</a></li>
+<li class="toctree-l2"><a class="reference internal" href="math.html#generic-polynomial-solver">Generic Polynomial Solver</a></li>
+<li class="toctree-l2"><a class="reference internal" href="math.html#guass-jordan">Guass-Jordan</a></li>
+<li class="toctree-l2"><a class="reference internal" href="math.html#sequential-probability-ratio-test">Sequential Probability Ratio Test</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sfm.html">Structure from Motion (SfM)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#views-and-tracks">Views and Tracks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#twoviewinfo">TwoViewInfo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#camera">Camera</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#reconstruction">Reconstruction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#global-sfm-pipeline">Global SfM Pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#estimating-global-poses">Estimating Global Poses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#triangulation">Triangulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#bundle-adjustment">Bundle Adjustment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#similarity-transformation">Similarity Transformation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributions.html">Contributing to Theia</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="contributions.html#style-and-testing">Style and Testing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contributions.html#cmake">CMake</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contributions.html#developing-for-theia">Developing for Theia</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contributions.html#submitting-a-change-to-theia">Submitting a change to Theia</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="bibliography.html">Bibliography</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="license.html#citation">Citation</a></li>
+</ul>
+</li>
+</ul>
+
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">Theia Vision Library</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>Features</li>
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <div class="section" id="features">
+<span id="documentation-features"></span><h1>Features<a class="headerlink" href="#features" title="Permalink to this headline">¶</a></h1>
+<p>Feature detection and description is a major area of focus in Computer Vision. While SIFT remains the gold standard because of its robustness and matching performance, many other detectors and descriptors are used and often have other competitive advantages. Theia presents friendly classes for feature detection and decription such that the interface is always the same regardless of the methods used. Note that all keypoint and descriptor extraction methods we perform automatic conversion to grayscale images if necessary.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">The keypoint detection and descriptor extraction methods here are generally not thread-safe. Use with caution when multi-threading.</p>
+</div>
+<div class="section" id="keypoints">
+<h2>Keypoints<a class="headerlink" href="#keypoints" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="Keypoint">
+<em class="property">class </em><tt class="descname">Keypoint</tt><a class="headerlink" href="#Keypoint" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>The base <a class="reference internal" href="#Keypoint" title="Keypoint"><tt class="xref cpp cpp-class docutils literal"><span class="pre">Keypoint</span></tt></a> class is a glorified struct that holds information about a keypoint that has been detected with a <a class="reference internal" href="#KeypointDetector" title="KeypointDetector"><tt class="xref cpp cpp-class docutils literal"><span class="pre">KeypointDetector</span></tt></a>. Information about the keypoint&#8217;s position, strength, scale, and orientation can be easily added and retrieved. The type of keypoint can be retrieved with the <tt class="xref cpp cpp-func docutils literal"><span class="pre">keypoint_type()</span></tt> function.</p>
+<dl class="class">
+<dt>
+<em class="property">class </em><tt class="descname">Keypoint</tt></dt>
+<dd><div class="highlight-c++"><div class="highlight"><pre><span class="k">class</span> <span class="nc">Keypoint</span> <span class="p">{</span>
+ <span class="nl">public:</span>
+   <span class="k">enum</span> <span class="n">KeypointType</span> <span class="p">{</span>
+       <span class="n">INVALID</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+       <span class="n">OTHER</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+       <span class="n">SIFT</span><span class="p">,</span>
+       <span class="n">AGAST</span><span class="p">,</span>
+       <span class="n">BRISK</span>
+       <span class="p">};</span>
+
+   <span class="n">Keypoint</span><span class="p">(</span><span class="kt">double</span> <span class="n">x</span><span class="p">,</span> <span class="kt">double</span> <span class="n">y</span><span class="p">,</span> <span class="n">KeypointType</span> <span class="n">type</span><span class="p">);</span>
+   <span class="o">~</span><span class="n">Keypoint</span><span class="p">()</span> <span class="p">{}</span>
+
+   <span class="c1">// Required Keypoint type.</span>
+   <span class="kr">inline</span> <span class="n">KeypointType</span> <span class="n">keypoint_type</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+   <span class="kr">inline</span> <span class="kt">void</span> <span class="nf">set_keypoint_type</span><span class="p">(</span><span class="n">KeypointType</span> <span class="n">type</span><span class="p">);</span>
+
+   <span class="c1">// Required Variable x.</span>
+   <span class="kr">inline</span> <span class="kt">double</span> <span class="n">x</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+   <span class="kr">inline</span> <span class="kt">void</span> <span class="nf">set_x</span><span class="p">(</span><span class="kt">double</span> <span class="n">x</span><span class="p">);</span>
+
+   <span class="c1">// Required Variable y.</span>
+   <span class="kr">inline</span> <span class="kt">double</span> <span class="n">y</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+   <span class="kr">inline</span> <span class="kt">void</span> <span class="nf">set_y</span><span class="p">(</span><span class="kt">double</span> <span class="n">y</span><span class="p">);</span>
+
+   <span class="c1">// Optional variable strength.</span>
+   <span class="kr">inline</span> <span class="kt">bool</span> <span class="n">has_strength</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+   <span class="kr">inline</span> <span class="kt">double</span> <span class="n">strength</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+   <span class="kr">inline</span> <span class="kt">void</span> <span class="nf">set_strength</span><span class="p">(</span><span class="kt">double</span> <span class="n">strength</span><span class="p">);</span>
+
+   <span class="c1">// Optional variable scale.</span>
+   <span class="kr">inline</span> <span class="kt">bool</span> <span class="n">has_scale</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+   <span class="kr">inline</span> <span class="kt">double</span> <span class="n">scale</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+   <span class="kr">inline</span> <span class="kt">void</span> <span class="nf">set_scale</span><span class="p">(</span><span class="kt">double</span> <span class="n">scale</span><span class="p">);</span>
+
+   <span class="c1">// Optional variable orientation.</span>
+   <span class="kr">inline</span> <span class="kt">bool</span> <span class="n">has_orientation</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+   <span class="kr">inline</span> <span class="kt">double</span> <span class="n">orientation</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+   <span class="kr">inline</span> <span class="kt">void</span> <span class="nf">set_orientation</span><span class="p">(</span><span class="kt">double</span> <span class="n">orientation</span><span class="p">);</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+</dd></dl>
+
+</div>
+<div class="section" id="keypoint-detector">
+<h2>Keypoint Detector<a class="headerlink" href="#keypoint-detector" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="KeypointDetector">
+<em class="property">class </em><tt class="descname">KeypointDetector</tt><a class="headerlink" href="#KeypointDetector" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>Detecting keypoints with Theia is very simple, and we have implemented a number of keypoint detectors that are commonly used in Computer Vision. Each keypoint detector is derived from the virtual class <a class="reference internal" href="#KeypointDetector" title="KeypointDetector"><tt class="xref cpp cpp-class docutils literal"><span class="pre">KeypointDetector</span></tt></a>. Each derived class must implement the <tt class="xref cpp cpp-func docutils literal"><span class="pre">DetectKeypoints()</span></tt> method</p>
+<dl class="class">
+<dt>
+<em class="property">class </em><tt class="descname">KeypointDetector</tt></dt>
+<dd><dl class="function">
+<dt id="KeypointDetector::Initialize">
+bool <tt class="descname">Initialize</tt><big>(</big><big>)</big><a class="headerlink" href="#KeypointDetector::Initialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method initializes any internal parameters that must be generated,
+precalculated, or otherwise are independent of the image. The
+<a class="reference internal" href="#KeypointDetector::Initialize" title="KeypointDetector::Initialize"><tt class="xref cpp cpp-func docutils literal"><span class="pre">Initialize()</span></tt></a> function must be called before using the keypoint
+detector.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="KeypointDetector::DetectKeypoints__FloatImageCR.std::vector:Keypoint:P">
+bool <tt class="descname">DetectKeypoints</tt><big>(</big>const FloatImage&amp; <em>input_image</em>, std::vector&lt;Keypoint&gt;* <em>output_keypoints</em><big>)</big><a class="headerlink" href="#KeypointDetector::DetectKeypoints__FloatImageCR.std::vector:Keypoint:P" title="Permalink to this definition">¶</a></dt>
+<dd><p><tt class="docutils literal"><span class="pre">input_image</span></tt>: The image that you want to detect keypoints on.</p>
+<p><tt class="docutils literal"><span class="pre">ouput_keypoints</span></tt>: A pointer to a vector that will hold the keypoints
+detected. Note that the vector should be empty when passed to this
+function. The caller is responsible for deleting the keypoints.</p>
+</dd></dl>
+
+<div class="highlight-c++"><div class="highlight"><pre><span class="c1">// Assume var keypoint_detector was created with one of the constructors below.</span>
+
+<span class="n">FloatImage</span> <span class="nf">input_image</span><span class="p">(</span><span class="n">input_image_filename</span><span class="p">);</span>
+<span class="k">const</span> <span class="kt">bool</span> <span class="n">initialization_success</span> <span class="o">=</span> <span class="n">keypoint_detector</span><span class="p">.</span><span class="n">Initialize</span><span class="p">();</span>
+
+<span class="c1">// Container for the detected keypoints.</span>
+<span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Keypoint</span><span class="o">&gt;</span> <span class="n">detected_keypoint</span><span class="p">;</span>
+<span class="k">const</span> <span class="kt">bool</span> <span class="n">detection_success</span> <span class="o">=</span>
+    <span class="n">keypoint_detector</span><span class="p">.</span><span class="n">DetectKeypoints</span><span class="p">(</span><span class="n">input_image</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">detected_keypoints</span><span class="p">);</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<p>The following keypoint detectors have been implemented in Theia (class constructors are given):</p>
+<dl class="function">
+<dt id="SiftDetector::SiftDetector__i.i.i">
+ <tt class="descclassname">SiftDetector::</tt><tt class="descname">SiftDetector</tt><big>(</big>int <em>num_octaves</em>, int <em>num_scale_levels</em>, int <em>first_octave</em><big>)</big><a class="headerlink" href="#SiftDetector::SiftDetector__i.i.i" title="Permalink to this definition">¶</a></dt>
+<dd><p>The algorithm originally proposed by <a class="reference internal" href="bibliography.html#lowe" id="id1">[Lowe]</a> that uses the <a class="reference external" href="http://www.vlfeat.org">VLFeat</a> as the underlying engine.</p>
+<p>Specify the number of image octaves, number of scale levels per octave, and
+where the first octave should start. The default constructor sets these values
+to values -1 (i.e., as many octaves as can be generated), 3, and 0 (i.e., the
+source image)</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="AgastDetector::AgastDetector__AstPattern.i.b">
+ <tt class="descclassname">AgastDetector::</tt><tt class="descname">AgastDetector</tt><big>(</big>AstPattern <em>pattern</em>, int <em>threshold</em>, bool <em>nonmax_suppression</em><big>)</big><a class="headerlink" href="#AgastDetector::AgastDetector__AstPattern.i.b" title="Permalink to this definition">¶</a></dt>
+<dd><p>The improved FAST detection scheme of <a class="reference internal" href="bibliography.html#mair" id="id2">[Mair]</a> et al.</p>
+<p><tt class="docutils literal"><span class="pre">enum</span> <span class="pre">AstPattern</span></tt> specifies one of 4 types of sampling patterns for the
+AGAST corner detect: <tt class="docutils literal"><span class="pre">AGAST5_8</span></tt> is the AGAST pattern with an 8 pixel mask,
+<tt class="docutils literal"><span class="pre">AGAST7_12D</span></tt> is the AGAST diamond pattern with a 12 pixel mask,
+<tt class="docutils literal"><span class="pre">AGAST7_12S</span></tt> is the square configuration, and <tt class="docutils literal"><span class="pre">OAST9_16</span></tt> is the 16 pixel
+mask. By default, we the detector uses <tt class="docutils literal"><span class="pre">AGAST5_8</span></tt> with a threshold of 30 and
+nonmaximum suppression turn on. More details on the configurations can be
+found at the <a class="reference external" href="http://www6.in.tum.de/Main/ResearchAgast">AGAST Project website</a></p>
+</dd></dl>
+
+<dl class="function">
+<dt id="BriskDetector::BriskDetector__i.i">
+ <tt class="descclassname">BriskDetector::</tt><tt class="descname">BriskDetector</tt><big>(</big>int <em>threshold</em>, int <em>num_octaves</em><big>)</big><a class="headerlink" href="#BriskDetector::BriskDetector__i.i" title="Permalink to this definition">¶</a></dt>
+<dd><p>The &#8220;Binary Robust Invariant Scalable Keypoints&#8221; algorithm of <a class="reference internal" href="bibliography.html#leutenegger" id="id3">[Leutenegger]</a>
+et al.</p>
+<p>Specify the threshold for keypoint scores (default is 30) and the number of
+octaves to downsample the image (default is 3).</p>
+</dd></dl>
+
+</div>
+<div class="section" id="descriptors">
+<h2>Descriptors<a class="headerlink" href="#descriptors" title="Permalink to this headline">¶</a></h2>
+<p>Theia uses a semi-generic interface for all descriptor types, namely, floating point and binary descriptors. For floating point descriptors (e.g., SIFT) we use Eigen::VectorXf and set the number of entries to equal the dimension of the descriptor. This way, we can utilize Eigen&#8217;s speed and optimizations to get the most efficient and accurate representation of the descriptors. For binary descriptors, we define a new type in the Eigen namespace: <tt class="docutils literal"><span class="pre">Eigen::BinaryVectorX</span></tt>. This vector is a custom type (defined in theia/alignment/alignment.h) that holds binary descriptors such that each bit corresponds to the descriptor dimension. This allows for the same interface between float and binary descriptors, while still utilizing the efficiency of SSE instructions when available.</p>
+</div>
+<div class="section" id="descriptorextractor">
+<h2>DescriptorExtractor<a class="headerlink" href="#descriptorextractor" title="Permalink to this headline">¶</a></h2>
+<dl class="class">
+<dt id="DescriptorExtractor">
+<em class="property">class </em><tt class="descname">DescriptorExtractor</tt><a class="headerlink" href="#DescriptorExtractor" title="Permalink to this definition">¶</a></dt>
+<dd><p>We enforce a <a class="reference internal" href="#DescriptorExtractor" title="DescriptorExtractor"><tt class="xref cpp cpp-class docutils literal"><span class="pre">DescriptorExtractor</span></tt></a> interface similar to the
+<a class="reference internal" href="#KeypointDetector" title="KeypointDetector"><tt class="xref cpp cpp-class docutils literal"><span class="pre">KeypointDetector</span></tt></a> so that we can extract descriptors at runtime. Each
+descriptor has a corresponding extractor class that is used to compute that
+descriptor given keypoints. However, we must call the <a class="reference internal" href="#DescriptorExtractor::Initialize" title="DescriptorExtractor::Initialize"><tt class="xref cpp cpp-func docutils literal"><span class="pre">Initialize()</span></tt></a>
+method before computing descriptors.</p>
+<dl class="function">
+<dt id="DescriptorExtractor::Initialize">
+bool <tt class="descname">Initialize</tt><big>(</big><big>)</big><a class="headerlink" href="#DescriptorExtractor::Initialize" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method initializes any internal parameters that must be generated,
+precalculated, or otherwise are independent of the image. The
+<a class="reference internal" href="#DescriptorExtractor::Initialize" title="DescriptorExtractor::Initialize"><tt class="xref cpp cpp-func docutils literal"><span class="pre">Initialize()</span></tt></a> function must be called before using the descriptor
+extractor.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="DescriptorExtractor::DescriptorExtractor::ComputeDescriptor__FloatImageCR.KeypointCR.Eigen::VectorXfP">
+bool <tt class="descclassname">DescriptorExtractor::</tt><tt class="descname">ComputeDescriptor</tt><big>(</big>const FloatImage&amp; <em>input_image</em>, const Keypoint&amp; <em>keypoint</em>, Eigen::VectorXf* <em>float_descriptor</em><big>)</big><a class="headerlink" href="#DescriptorExtractor::DescriptorExtractor::ComputeDescriptor__FloatImageCR.KeypointCR.Eigen::VectorXfP" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="DescriptorExtractor::DescriptorExtractor::ComputeDescriptor__FloatImageCR.KeypointCR.Eigen::BinaryVectorXfP">
+bool <tt class="descclassname">DescriptorExtractor::</tt><tt class="descname">ComputeDescriptor</tt><big>(</big>const FloatImage&amp; <em>input_image</em>, const Keypoint&amp; <em>keypoint</em>, Eigen::BinaryVectorXf* <em>binary_descriptor</em><big>)</big><a class="headerlink" href="#DescriptorExtractor::DescriptorExtractor::ComputeDescriptor__FloatImageCR.KeypointCR.Eigen::BinaryVectorXfP" title="Permalink to this definition">¶</a></dt>
+<dd><p>This method computes the descriptor of a single keypoint.</p>
+<p><tt class="docutils literal"><span class="pre">input_image</span></tt>: The image that you want to detect keypoints on.</p>
+<p><tt class="docutils literal"><span class="pre">keypoint</span></tt>: The keypoint that the descriptor will be computed from.</p>
+<p><tt class="docutils literal"><span class="pre">float_descriptor</span> <span class="pre">or</span> <span class="pre">binary_descriptor</span></tt>: The descriptor computed for the
+given keypoint.</p>
+<p><tt class="docutils literal"><span class="pre">returns</span></tt>: True on if the descriptor was extracted, false otherwise.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="DescriptorExtractor::DescriptorExtractor::ComputeDescriptors__FloatImageCR.std::vector:Keypoint:P.std::vector:Eigen::VectorXf:P">
+bool <tt class="descclassname">DescriptorExtractor::</tt><tt class="descname">ComputeDescriptors</tt><big>(</big>const FloatImage&amp; <em>input_image</em>, std::vector&lt;Keypoint&gt;* <em>keypoints</em>, std::vector&lt;Eigen::VectorXf&gt;* <em>float_descriptors</em><big>)</big><a class="headerlink" href="#DescriptorExtractor::DescriptorExtractor::ComputeDescriptors__FloatImageCR.std::vector:Keypoint:P.std::vector:Eigen::VectorXf:P" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="DescriptorExtractor::DescriptorExtractor::ComputeDescriptors__FloatImageCR.std::vector:Keypoint:P.std::vector:Eigen::BinaryVectorXf:P">
+bool <tt class="descclassname">DescriptorExtractor::</tt><tt class="descname">ComputeDescriptors</tt><big>(</big>const FloatImage&amp; <em>input_image</em>, std::vector&lt;Keypoint&gt;* <em>keypoints</em>, std::vector&lt;Eigen::BinaryVectorXf&gt;* <em>binary_descriptors</em><big>)</big><a class="headerlink" href="#DescriptorExtractor::DescriptorExtractor::ComputeDescriptors__FloatImageCR.std::vector:Keypoint:P.std::vector:Eigen::BinaryVectorXf:P" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute many descriptors from the input keypoints. Note that not all
+keypoints are guaranteed to result in a descriptor. Only valid descriptors
+(and feature positions) are returned in the output parameters.</p>
+<p><tt class="docutils literal"><span class="pre">input_image</span></tt>: The image that you want to detect keypoints on.</p>
+<p><tt class="docutils literal"><span class="pre">keypoints</span></tt>: An input vector of the keypoint pointers that will have
+descriptors extracted. Keypoints that were not able to have a descriptor
+extracted are removed.</p>
+<p><tt class="docutils literal"><span class="pre">float_descriptors</span> <span class="pre">or</span> <span class="pre">binary_descriptors</span></tt>: A container for the descriptors
+that have been created based on the type of descriptor that is being
+extracted. Eigen::VectorXf is used for extracting float descriptors (e.g.,
+SIFT) while Eigen::BinaryVectorX is used for float descriptors.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="DescriptorExtractor::DescriptorExtractor::DetectAndExtractDescriptors__FloatImageCR.std::vector:Keypoint:P.std::vector:Eigen::VectorXf:P">
+bool <tt class="descclassname">DescriptorExtractor::</tt><tt class="descname">DetectAndExtractDescriptors</tt><big>(</big>const FloatImage&amp; <em>input_image</em>, std::vector&lt;Keypoint&gt;* <em>keypoints</em>, std::vector&lt;Eigen::VectorXf&gt;* <em>float_descriptors</em><big>)</big><a class="headerlink" href="#DescriptorExtractor::DescriptorExtractor::DetectAndExtractDescriptors__FloatImageCR.std::vector:Keypoint:P.std::vector:Eigen::VectorXf:P" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="DescriptorExtractor::DescriptorExtractor::DetectAndExtractDescriptors__FloatImageCR.std::vector:Keypoint:P.std::vector:Eigen::BinaryVectorXf:P">
+bool <tt class="descclassname">DescriptorExtractor::</tt><tt class="descname">DetectAndExtractDescriptors</tt><big>(</big>const FloatImage&amp; <em>input_image</em>, std::vector&lt;Keypoint&gt;* <em>keypoints</em>, std::vector&lt;Eigen::BinaryVectorXf&gt;* <em>binary_descriptors</em><big>)</big><a class="headerlink" href="#DescriptorExtractor::DescriptorExtractor::DetectAndExtractDescriptors__FloatImageCR.std::vector:Keypoint:P.std::vector:Eigen::BinaryVectorXf:P" title="Permalink to this definition">¶</a></dt>
+<dd><p>Detects keypoints and extracts descriptors using the default keypoint
+detector for the corresponding descriptor. For SIFT, this is the SIFT
+keypoint detector, and for BRIEF, BRISK, and FREAK this is the BRISK
+keypoint detector. This has the potential to be faster because it may avoid
+recomputing certain member variables.</p>
+<p><tt class="docutils literal"><span class="pre">input_image</span></tt>: The image that you want to detect keypoints on.</p>
+<p><tt class="docutils literal"><span class="pre">keypoints</span></tt>: An output vector of the keypoint points that have been
+detected and successfully had descriptors extracted.</p>
+<p><tt class="docutils literal"><span class="pre">float_descriptors</span> <span class="pre">or</span> <span class="pre">binary_descriptors</span></tt>: A container for the descriptors
+that have been created based on the type of descriptor that is being
+extracted. Eigen::VectorXf is used for extracting float descriptors (e.g.,
+SIFT) while Eigen::BinaryVectorX is used for float descriptors.</p>
+</dd></dl>
+
+<div class="highlight-c++"><div class="highlight"><pre><span class="c1">// Open image we want to extract features from.</span>
+<span class="n">FloatImage</span> <span class="nf">input_image</span><span class="p">(</span><span class="n">input_image_filename</span><span class="p">);</span>
+
+<span class="c1">// Detect keypoints.</span>
+<span class="n">SiftDetector</span> <span class="n">sift_keypoint_detector</span><span class="p">;</span>
+<span class="kt">bool</span> <span class="n">keypoint_detector_init</span> <span class="o">=</span> <span class="n">sift_keypoint_detector</span><span class="p">.</span><span class="n">Initialize</span><span class="p">();</span>
+<span class="k">const</span> <span class="kt">bool</span> <span class="n">keypoint_init_success</span> <span class="o">=</span> <span class="n">sift_keypoint_detector</span><span class="p">.</span><span class="n">Initialize</span><span class="p">();</span>
+<span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Keypoint</span><span class="o">&gt;</span> <span class="n">sift_keypoints</span><span class="p">;</span>
+<span class="k">const</span> <span class="kt">bool</span> <span class="n">detection_success</span> <span class="o">=</span>
+    <span class="n">sift_keypoint_detector</span><span class="p">.</span><span class="n">DetectKeypoints</span><span class="p">(</span><span class="n">input_image</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">sift_keypoints</span><span class="p">);</span>
+
+<span class="c1">// Initialize descriptor extractor.</span>
+<span class="n">SiftDescriptorExtractor</span> <span class="n">sift_extractor</span><span class="p">;</span>
+<span class="k">const</span> <span class="kt">bool</span> <span class="n">descriptor_init_succes</span> <span class="o">=</span> <span class="n">sift_extractor</span><span class="p">.</span><span class="n">Initialize</span><span class="p">();</span>
+
+<span class="c1">// E.g., compute a single descriptor</span>
+<span class="n">Eigen</span><span class="o">::</span><span class="n">VectorXf</span> <span class="n">sift_descriptor</span><span class="p">;</span>
+<span class="kt">bool</span> <span class="n">sift_success</span> <span class="o">=</span>
+  <span class="n">sift_extractor</span><span class="p">.</span><span class="n">ComputeDescriptor</span><span class="p">(</span><span class="n">input_image</span><span class="p">,</span> <span class="n">keypoint</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="o">&amp;</span><span class="n">sift_descriptor</span><span class="p">);</span>
+
+<span class="c1">// E.g., compute many descriptors.</span>
+<span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Eigen</span><span class="o">::</span><span class="n">VectorXf</span><span class="o">&gt;</span> <span class="n">sift_descriptors</span><span class="p">;</span>
+<span class="k">const</span> <span class="kt">bool</span> <span class="n">extraction_success</span> <span class="o">=</span>
+  <span class="n">sift_extractor</span><span class="p">.</span><span class="n">ComputeDescriptors</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">sift_keypoints</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">sift_descriptors</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<p>We implement the following descriptor extractors (and corresponding descriptors)
+in Theia (constructors are given).</p>
+<dl class="class">
+<dt id="SiftDescriptorExtractor">
+<em class="property">class </em><tt class="descname">SiftDescriptorExtractor</tt><a class="headerlink" href="#SiftDescriptorExtractor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="SiftDescriptorExtractor::SiftDescriptorExtractor__i.i.i">
+ <tt class="descclassname">SiftDescriptorExtractor::</tt><tt class="descname">SiftDescriptorExtractor</tt><big>(</big>int <em>num_octaves</em>, int <em>num_scale_levels</em>, int <em>first_octave</em><big>)</big><a class="headerlink" href="#SiftDescriptorExtractor::SiftDescriptorExtractor__i.i.i" title="Permalink to this definition">¶</a></dt>
+<dd><p>The algorithm originally proposed by <a class="reference internal" href="bibliography.html#lowe" id="id4">[Lowe]</a> that uses the <a class="reference external" href="http://www.vlfeat.org">VLFeat</a> as the underlying engine.</p>
+<p>We only implement the standard 128-dimension descriptor. Specify the number
+of image octaves, number of scale levels per octave, and where the first
+octave should start. The default constructor sets these values to values -1
+(i.e., as many octaves as can be generated), 3, and 0 (i.e., the source
+image). Typically these parameters are set to match the <tt class="xref cpp cpp-class docutils literal"><span class="pre">SiftDetector</span></tt>
+parameters.</p>
+</dd></dl>
+
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This algorithm is patented and commercial use requires a license.</p>
+</div>
+<dl class="class">
+<dt id="BriefDescriptorExtractor">
+<em class="property">class </em><tt class="descname">BriefDescriptorExtractor</tt><a class="headerlink" href="#BriefDescriptorExtractor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="function">
+<dt id="BriefDescriptorExtractor__i.iC">
+ <tt class="descname">BriefDescriptorExtractor</tt><big>(</big>int <em>patch_sample_size</em>, const int <em>num_bytes</em><big>)</big><a class="headerlink" href="#BriefDescriptorExtractor__i.iC" title="Permalink to this definition">¶</a></dt>
+<dd><p>The <a class="reference internal" href="bibliography.html#brief" id="id6">[BRIEF]</a> algorithm is a binary algorithm that operates on local image
+patches around a keypoint or a point of interest. The binary values are set
+by randomly choosing two pixels to compare within the patch. The same random
+pattern must be used in order to compare BRIEF descriptors (each
+<a class="reference internal" href="#BriefDescriptorExtractor" title="BriefDescriptorExtractor"><tt class="xref cpp cpp-class docutils literal"><span class="pre">BriefDescriptorExtractor</span></tt></a> object creates exactly one pattern that
+may be used repeatedly).</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="FreakDescriptorExtractor">
+<em class="property">class </em><tt class="descname">FreakDescriptorExtractor</tt><a class="headerlink" href="#FreakDescriptorExtractor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This algorithm is currently unstable. Further testing is required.</p>
+</div>
+<dl class="function">
+<dt id="FreakDescriptorExtractor::FreakDescriptorExtractor__b.b.i">
+ <tt class="descclassname">FreakDescriptorExtractor::</tt><tt class="descname">FreakDescriptorExtractor</tt><big>(</big>bool <em>rotation_invariant</em>, bool <em>scale_invariant</em>, int <em>num_octaves</em><big>)</big><a class="headerlink" href="#FreakDescriptorExtractor::FreakDescriptorExtractor__b.b.i" title="Permalink to this definition">¶</a></dt>
+<dd><p>The &#8220;Fast Retina Keypoint&#8221; algorithm for binary descriptors proposed by <a class="reference internal" href="bibliography.html#alahi" id="id7">[Alahi]</a> et al.</p>
+<p><tt class="docutils literal"><span class="pre">rotation_invariant</span></tt>: Set to true if you want to normalize the orientation of the keypoints before computing the descriptor.</p>
+<p><tt class="docutils literal"><span class="pre">scale_invariant</span></tt>: Set to true if you want to normalize the scale of keypoints before computing the descriptor.</p>
+<p><tt class="docutils literal"><span class="pre">num_octaves</span></tt>: The number of octaves that the keypoints span.</p>
+<p>The <a class="reference internal" href="#FreakDescriptorExtractor" title="FreakDescriptorExtractor"><tt class="xref cpp cpp-class docutils literal"><span class="pre">FreakDescriptorExtractor</span></tt></a> is typically used with the
+<tt class="xref cpp cpp-class docutils literal"><span class="pre">BriskDetector</span></tt> to detect keypoints.</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="BriskDescriptorExtractor">
+<em class="property">class </em><tt class="descname">BriskDescriptorExtractor</tt><a class="headerlink" href="#BriskDescriptorExtractor" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This algorithm is currently unstable. Further testing is required.</p>
+</div>
+<dl class="function">
+<dt id="BriskDescriptorExtractor::BriskDescriptorExtractor__b.b.float">
+ <tt class="descclassname">BriskDescriptorExtractor::</tt><tt class="descname">BriskDescriptorExtractor</tt><big>(</big>bool <em>rotation_invariant</em>, bool <em>scale_invariant</em>, float <em>pattern_scale</em><big>)</big><a class="headerlink" href="#BriskDescriptorExtractor::BriskDescriptorExtractor__b.b.float" title="Permalink to this definition">¶</a></dt>
+<dd><p>The &#8220;Binary Robust Invariant Scalable Keypoints&#8221; algorithm for binary descriptors of <a class="reference internal" href="bibliography.html#leutenegger" id="id8">[Leutenegger]</a>
+et al.</p>
+<p><tt class="docutils literal"><span class="pre">rotation_invariant</span></tt>: Set to true if you want to normalize the orientation of the keypoints before computing the descriptor.</p>
+<p><tt class="docutils literal"><span class="pre">scale_invariant</span></tt>: Set to true if you want to normalize the scale of keypoints before computing the descriptor.</p>
+<p><tt class="docutils literal"><span class="pre">pattern_scale</span></tt>: Scale of the BRISK pattern to use.</p>
+</dd></dl>
+
+</div>
+<div class="section" id="feature-matching">
+<h2>Feature Matching<a class="headerlink" href="#feature-matching" title="Permalink to this headline">¶</a></h2>
+<p>Features are useful in SfM because they can provide sparse matches between
+images, which can then provide geometric constrainst for the poses between these
+images. As such, feature matching is a very critical process in the context of
+multi-view geometry. We provide a generic interface for feature matching that
+works with binary descriptors or float descriptors.</p>
+<dl class="class">
+<dt id="FeatureMatcher">
+<em class="property">class </em><tt class="descname">FeatureMatcher</tt><a class="headerlink" href="#FeatureMatcher" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<div class="highlight-c++"><div class="highlight"><pre> <span class="c1">// Struct to hold a feature match.</span>
+ <span class="k">struct</span> <span class="n">FeatureMatch</span><span class="p">{</span>
+   <span class="c1">// Indices of the matched features in image 1 and 2.</span>
+   <span class="kt">int</span> <span class="n">feature1_ind</span><span class="p">;</span>
+   <span class="kt">int</span> <span class="n">feature2_ind</span><span class="p">;</span>
+   <span class="kt">float</span> <span class="n">distance</span><span class="p">;</span>
+ <span class="p">};</span>
+
+<span class="c1">// Holds all the feature matches between a pair of images.</span>
+<span class="k">struct</span> <span class="n">ImagePairMatch</span> <span class="p">{</span>
+  <span class="kt">int</span> <span class="n">image1_ind</span><span class="p">;</span>
+  <span class="kt">int</span> <span class="n">image2_ind</span><span class="p">;</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">FeatureMatch</span><span class="o">&gt;</span> <span class="n">matches</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="c1">// Options for matching two sets of features.</span>
+<span class="k">struct</span> <span class="n">FeatureMatcherOptions</span> <span class="p">{</span>
+  <span class="c1">// Only symmetric matches are kept.</span>
+  <span class="kt">bool</span> <span class="n">keep_only_symmetric_matches</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+
+  <span class="c1">// Maximum distance (threshold) between descriptors to consider a candidate</span>
+  <span class="c1">// match as valid.</span>
+  <span class="kt">float</span> <span class="n">max_match_distance</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">numeric_limits</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;::</span><span class="n">max</span><span class="p">();</span>
+
+  <span class="c1">// Only keep the matches that pass the lowes ratio test such that the distance</span>
+  <span class="c1">// of the best best match is less than lowes_ratio of the distance of the</span>
+  <span class="c1">// second nearest neighbor match.</span>
+  <span class="kt">bool</span> <span class="n">use_lowes_ratio</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+  <span class="kt">float</span> <span class="n">lowes_ratio</span> <span class="o">=</span> <span class="mf">0.8</span><span class="p">;</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<p>Each <a class="reference internal" href="#FeatureMatcher" title="FeatureMatcher"><tt class="xref cpp cpp-class docutils literal"><span class="pre">FeatureMatcher</span></tt></a> implements two matching methods. The
+<a class="reference internal" href="#FeatureMatcher" title="FeatureMatcher"><tt class="xref cpp cpp-class docutils literal"><span class="pre">FeatureMatcher</span></tt></a> is templated on a <tt class="xref cpp cpp-class docutils literal"><span class="pre">DistanceMetric</span></tt> that describes
+how to compute the distance between two matches (we provide L2 and Hamming).</p>
+<dl class="function">
+<dt id="Match__FeatureMatcherOptionsCR.std::vector:DescriptorType:CR.std::vector:DescriptorType:CR.std::vector:FeatureMatch:P">
+bool <tt class="descname">Match</tt><big>(</big>const FeatureMatcherOptions&amp; <em>options</em>, const std::vector&lt;DescriptorType&gt;&amp; <em>desc_1</em>, const std::vector&lt;DescriptorType&gt;&amp; <em>desc_2</em>, std::vector&lt;FeatureMatch&gt;* <em>matches</em><big>)</big><a class="headerlink" href="#Match__FeatureMatcherOptionsCR.std::vector:DescriptorType:CR.std::vector:DescriptorType:CR.std::vector:FeatureMatch:P" title="Permalink to this definition">¶</a></dt>
+<dd><p>Match the descriptors from two images and outputs the matches based on the
+<tt class="xref cpp cpp-class docutils literal"><span class="pre">FeatureMatcherOptions</span></tt> that were input. The return value is true if
+the matching was susccessful.</p>
+</dd></dl>
+
+<dl class="function">
+<dt id="MatchAllPairs__FeatureMatcherOptionsCR.iC.std::vector:std::vector:DescriptorType::CR.std::vector:ImagePairMatch:P">
+bool <tt class="descname">MatchAllPairs</tt><big>(</big>const FeatureMatcherOptions&amp; <em>options</em>, const int <em>num_threads</em>, const std::vector&lt;std::vector&lt;DescriptorType&gt;&gt;&amp; <em>descriptors</em>, std::vector&lt;ImagePairMatch&gt;* <em>image_pair_matches</em><big>)</big><a class="headerlink" href="#MatchAllPairs__FeatureMatcherOptionsCR.iC.std::vector:std::vector:DescriptorType::CR.std::vector:ImagePairMatch:P" title="Permalink to this definition">¶</a></dt>
+<dd><p>Given a set of images, this method computes the feature matches between each
+possible image pair in the set. This method is multithreaded with the
+specified number of threads to speed up the matching process. All
+multithreaded matching methods are thread-safe.</p>
+</dd></dl>
+
+<p>We have implemented two types of <a class="reference internal" href="#FeatureMatcher" title="FeatureMatcher"><tt class="xref cpp cpp-class docutils literal"><span class="pre">FeatureMatcher</span></tt></a> with the interface described above.</p>
+<dl class="class">
+<dt id="BruteForceFeatureMatcher">
+<em class="property">class </em><tt class="descname">BruteForceFeatureMatcher</tt><a class="headerlink" href="#BruteForceFeatureMatcher" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>Matches are computed using an exhausitve brute force search through all
+matches. The search is the slowest but has the highest accuracy.</p>
+<dl class="class">
+<dt id="CascadeHashingFeatureMatcher">
+<em class="property">class </em><tt class="descname">CascadeHashingFeatureMatcher</tt><a class="headerlink" href="#CascadeHashingFeatureMatcher" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<p>Features are matched through a cascade hashing approach as described by
+<a class="reference internal" href="bibliography.html#cheng" id="id9">[Cheng]</a>. Hash tables with extremely fast lookups are created without needing to
+train the data, resulting in an extremely fast and accurate matcher. This is the
+recommended approach for matching image sets.</p>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">This method is tuned specifically for image to image matching and is only
+applicable to float descriptors such as SIFT.</p>
+</div>
+</div>
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="ransac.html" class="btn btn-neutral float-right" title="Ransac">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="image.html" class="btn btn-neutral" title="Image"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014, Chris Sweeney.
+    </p>
+  </div>
+
+  <a href="https://github.com/snide/sphinx_rtd_theme">Sphinx theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML">
+  MathJax.Hub.Config({
+    "HTML-CSS": {
+      availableFonts: ["TeX"]
+    }
+  });
+</script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+  
+ 
+<!-- Google Analytics Code -->
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-46196711-1', 'ucsb.edu');
+  ga('send', 'pageview');
+
+</script>
+
+
+</body>
+</html>

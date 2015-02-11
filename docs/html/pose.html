@@ -1,0 +1,455 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Pose and Resectioning &mdash; Theia Vision Library</title>
+  
+
+  
+  
+
+  
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700,400italic,700italic|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+    <link rel="top" title="Theia Vision Library" href="index.html"/>
+        <link rel="next" title="Math" href="math.html"/>
+        <link rel="prev" title="Ransac" href="ransac.html"/> 
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.6.2/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+          <a href="index.html" class="fa fa-home"> Theia Vision Library</a>
+        
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+        
+            <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="building.html">Building Theia Library</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="building.html#dependencies">Dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="building.html#building">Building</a></li>
+<li class="toctree-l2"><a class="reference internal" href="building.html#customizing-the-build">Customizing the build</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="image.html">Image</a></li>
+<li class="toctree-l1"><a class="reference internal" href="features.html">Features</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="features.html#keypoints">Keypoints</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#keypoint-detector">Keypoint Detector</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#descriptors">Descriptors</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#descriptorextractor">DescriptorExtractor</a></li>
+<li class="toctree-l2"><a class="reference internal" href="features.html#feature-matching">Feature Matching</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ransac.html">Ransac</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="ransac.html#estimator"><tt class="docutils literal"><span class="pre">Estimator</span></tt></a></li>
+<li class="toctree-l2"><a class="reference internal" href="ransac.html#using-the-ransac-classes">Using the RANSAC classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ransac.html#instances-of-ransac-methods">Instances of RANSAC Methods</a></li>
+<li class="toctree-l2"><a class="reference internal" href="ransac.html#implementing-a-new-ransac-method">Implementing a New RANSAC Method</a></li>
+</ul>
+</li>
+<li class="toctree-l1 current"><a class="current reference internal" href="">Pose and Resectioning</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#perspective-three-point-p3p">Perspective Three Point (P3P)</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#five-point-relative-pose">Five Point Relative Pose</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#four-point-algorithm-for-homography">Four Point Algorithm for Homography</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#eight-point-algorithm-for-fundamental-matrix">Eight Point Algorithm for Fundamental Matrix</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#perspective-n-point">Perspective N-Point</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#four-point-focal-length">Four Point Focal Length</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#five-point-focal-length-and-radial-distortion">Five Point Focal Length and Radial Distortion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#three-point-relative-pose-with-a-partially-known-rotation">Three Point Relative Pose with a Partially Known Rotation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#four-point-relative-pose-with-a-partially-known-rotation">Four Point Relative Pose with a Partially Known Rotation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="math.html">Math</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="math.html#closed-form-polynomial-solver">Closed Form Polynomial Solver</a></li>
+<li class="toctree-l2"><a class="reference internal" href="math.html#generic-polynomial-solver">Generic Polynomial Solver</a></li>
+<li class="toctree-l2"><a class="reference internal" href="math.html#guass-jordan">Guass-Jordan</a></li>
+<li class="toctree-l2"><a class="reference internal" href="math.html#sequential-probability-ratio-test">Sequential Probability Ratio Test</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="sfm.html">Structure from Motion (SfM)</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#views-and-tracks">Views and Tracks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#twoviewinfo">TwoViewInfo</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#camera">Camera</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#reconstruction">Reconstruction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#global-sfm-pipeline">Global SfM Pipeline</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#estimating-global-poses">Estimating Global Poses</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#triangulation">Triangulation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#bundle-adjustment">Bundle Adjustment</a></li>
+<li class="toctree-l2"><a class="reference internal" href="sfm.html#similarity-transformation">Similarity Transformation</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="tutorials.html">Tutorials</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributions.html">Contributing to Theia</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="contributions.html#style-and-testing">Style and Testing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contributions.html#cmake">CMake</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contributions.html#developing-for-theia">Developing for Theia</a></li>
+<li class="toctree-l2"><a class="reference internal" href="contributions.html#submitting-a-change-to-theia">Submitting a change to Theia</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="bibliography.html">Bibliography</a></li>
+<li class="toctree-l1"><a class="reference internal" href="license.html">License</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="license.html#citation">Citation</a></li>
+</ul>
+</li>
+</ul>
+
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">Theia Vision Library</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>Pose and Resectioning</li>
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <div class="section" id="pose-and-resectioning">
+<span id="documentation-pose"></span><h1>Pose and Resectioning<a class="headerlink" href="#pose-and-resectioning" title="Permalink to this headline">¶</a></h1>
+<p>Theia contains efficient and robust implementations of the following pose and
+resectioning algorithms. We attempted to make each method as general as possible so that users were not tied to Theia data structures to use the methods. The interface for all pose methods uses Eigen types for feature positions, 3D positions, and pose rotations and translations.</p>
+<div class="section" id="perspective-three-point-p3p">
+<span id="section-p3p"></span><h2>Perspective Three Point (P3P)<a class="headerlink" href="#perspective-three-point-p3p" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><dl class="function">
+<dt id="PoseFromThreePoints__Eigen::Vector2dCA.Eigen::Vector3dCA.std::vector:Eigen::Matrix3d:P.std::vector:Eigen::Vector3d:P">
+bool <tt class="descname">PoseFromThreePoints</tt><big>(</big>const Eigen::Vector2d <em>feature_position</em>[3], const Eigen::Vector3d <em>world_point</em>[3], std::vector&lt;Eigen::Matrix3d&gt;* <em>solution_rotations</em>, std::vector&lt;Eigen::Vector3d&gt;* <em>solution_translations</em><big>)</big><a class="headerlink" href="#PoseFromThreePoints__Eigen::Vector2dCA.Eigen::Vector3dCA.std::vector:Eigen::Matrix3d:P.std::vector:Eigen::Vector3d:P" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes camera pose using the three point algorithm and returns all
+possible solutions (up to 4). Follows steps from the paper &#8220;A Novel
+Parameterization of the Perspective-Three-Point Problem for a direct
+computation of Absolute Camera position and Orientation&#8221; by <a class="reference internal" href="bibliography.html#kneip" id="id1">[Kneip]</a>. This
+algorithm has been proven to be up to an order of magnitude faster than
+other methods. The output rotation and translation define world-to-camera
+transformation.</p>
+<p><tt class="docutils literal"><span class="pre">feature_position</span></tt>: Image points corresponding to model points. These should be
+calibrated image points as opposed to pixel values.</p>
+<p><tt class="docutils literal"><span class="pre">world_point</span></tt>: 3D location of features.</p>
+<p><tt class="docutils literal"><span class="pre">solution_rotations</span></tt>: the rotation matrix of the candidate solutions</p>
+<p><tt class="docutils literal"><span class="pre">solution_translation</span></tt>: the translation of the candidate solutions</p>
+<p><tt class="docutils literal"><span class="pre">returns</span></tt>: Whether the pose was computed successfully, along with the
+output parameters <tt class="docutils literal"><span class="pre">rotation</span></tt> and <tt class="docutils literal"><span class="pre">translation</span></tt> filled with the valid
+poses.</p>
+</dd></dl>
+
+</div></blockquote>
+</div>
+<div class="section" id="five-point-relative-pose">
+<span id="section-five-point-essential-matrix"></span><h2>Five Point Relative Pose<a class="headerlink" href="#five-point-relative-pose" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><dl class="function">
+<dt id="FivePointRelativePose__Eigen::Vector2dCA.Eigen::Vector2dCA.std::vector:Eigen::Matrix3d:P.std::vector:Eigen::Vector3d:P">
+bool <tt class="descname">FivePointRelativePose</tt><big>(</big>const Eigen::Vector2d <em>image1_points</em>[5], const Eigen::Vector2d <em>image2_points</em>[5], std::vector&lt;Eigen::Matrix3d&gt;* <em>rotation</em>, std::vector&lt;Eigen::Vector3d&gt;* <em>translation</em><big>)</big><a class="headerlink" href="#FivePointRelativePose__Eigen::Vector2dCA.Eigen::Vector2dCA.std::vector:Eigen::Matrix3d:P.std::vector:Eigen::Vector3d:P" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the relative pose between two cameras using 5 corresponding
+points. Algorithm is implemented based on &#8220;Recent Developments on Direct
+Relative Orientation&#8221; by <a class="reference internal" href="bibliography.html#stewenius5pt" id="id2">[Stewenius5pt]</a>. This algorithm is known to be more
+numerically stable while only slightly slower than the <a class="reference internal" href="bibliography.html#nister" id="id3">[Nister]</a> method. The
+rotation and translation returned are defined such that
+<span class="math">\(E=[t]_{\times} * R\)</span> and <span class="math">\(y^\top * E * x = 0\)</span> where <span class="math">\(y\)</span>
+are points from image2 and <span class="math">\(x\)</span> are points from image1.</p>
+<p><tt class="docutils literal"><span class="pre">image1_points</span></tt>: Location of features on the image plane of image 1.</p>
+<p><tt class="docutils literal"><span class="pre">image2_points</span></tt>: Location of features on the image plane of image 2.</p>
+<p><tt class="docutils literal"><span class="pre">returns</span></tt>: Output the number of poses computed as well as the relative
+rotation and translation.</p>
+</dd></dl>
+
+</div></blockquote>
+</div>
+<div class="section" id="four-point-algorithm-for-homography">
+<span id="section-four-point-homography"></span><h2>Four Point Algorithm for Homography<a class="headerlink" href="#four-point-algorithm-for-homography" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><dl class="function">
+<dt id="FourPointHomography__std::vector:Eigen::Vector2d:CR.std::vector:Eigen::Vector2d:CR.Eigen::Matrix3dP">
+bool <tt class="descname">FourPointHomography</tt><big>(</big>const std::vector&lt;Eigen::Vector2d&gt;&amp; <em>image_1_points</em>, const std::vector&lt;Eigen::Vector2d&gt;&amp; <em>image_2_points</em>, Eigen::Matrix3d* <em>homography</em><big>)</big><a class="headerlink" href="#FourPointHomography__std::vector:Eigen::Vector2d:CR.std::vector:Eigen::Vector2d:CR.Eigen::Matrix3dP" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the 2D <a class="reference external" href="http://en.wikipedia.org/wiki/Homography_(computer_vision)">homography</a> mapping points
+in image 1 to image 2 such that: <span class="math">\(x' = Hx\)</span> where <span class="math">\(x\)</span> is a point in
+image 1 and <span class="math">\(x'\)</span> is a point in image 2. The algorithm implemented is
+the DLT algorithm based on algorithm 4.2 in <a class="reference internal" href="bibliography.html#hartleyzisserman" id="id4">[HartleyZisserman]</a>.</p>
+<p><tt class="docutils literal"><span class="pre">image_1_points</span></tt>: Image points from image 1. At least 4 points must be
+passed in.</p>
+<p><tt class="docutils literal"><span class="pre">image_2_points</span></tt>: Image points from image 2. At least 4 points must be
+passed in.</p>
+<p><tt class="docutils literal"><span class="pre">homography</span></tt>: The computed 3x3 homography matrix.</p>
+</dd></dl>
+
+</div></blockquote>
+</div>
+<div class="section" id="eight-point-algorithm-for-fundamental-matrix">
+<span id="section-eight-point"></span><h2>Eight Point Algorithm for Fundamental Matrix<a class="headerlink" href="#eight-point-algorithm-for-fundamental-matrix" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><dl class="function">
+<dt id="EightPointFundamentalMatrix__std::vector:Eigen::Vector2d:CR.std::vector:Eigen::Vector2d:CR.Eigen::Matrix3dP">
+bool <tt class="descname">EightPointFundamentalMatrix</tt><big>(</big>const std::vector&lt;Eigen::Vector2d&gt;&amp; <em>image_1_points</em>, const std::vector&lt;Eigen::Vector2d&gt;&amp; <em>image_2_points</em>, Eigen::Matrix3d* <em>fundamental_matrix</em><big>)</big><a class="headerlink" href="#EightPointFundamentalMatrix__std::vector:Eigen::Vector2d:CR.std::vector:Eigen::Vector2d:CR.Eigen::Matrix3dP" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the <a class="reference external" href="http://en.wikipedia.org/wiki/Fundamental_matrix_(computer_vision)">fundamental matrix</a> relating
+image points between two images such that <span class="math">\(x' F x = 0\)</span> for all
+correspondences <span class="math">\(x\)</span> and <span class="math">\(x'\)</span> in images 1 and 2 respectively. The
+normalized eight point algorithm is a speedy estimation of the fundamental
+matrix (Alg 11.1 in <a class="reference internal" href="bibliography.html#hartleyzisserman" id="id5">[HartleyZisserman]</a>) that minimizes an algebraic error.</p>
+<p><tt class="docutils literal"><span class="pre">image_1_points</span></tt>: Image points from image 1. At least 8 points must be
+passed in.</p>
+<p><tt class="docutils literal"><span class="pre">image_2_points</span></tt>: Image points from image 2. At least 8 points must be
+passed in.</p>
+<p><tt class="docutils literal"><span class="pre">fundamental_matrix</span></tt>: The computed fundamental matrix.</p>
+<p><tt class="docutils literal"><span class="pre">returns:</span></tt> true on success, false on failure.</p>
+</dd></dl>
+
+</div></blockquote>
+</div>
+<div class="section" id="perspective-n-point">
+<span id="section-dls-pnp"></span><h2>Perspective N-Point<a class="headerlink" href="#perspective-n-point" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><dl class="function">
+<dt id="DlsPnp__std::vector:Eigen::Vector2d:CR.std::vector:Eigen::Vector3d:CR.std::vector:Eigen::Quaterniond:P.std::vector:Eigen::Vector3d:P">
+void <tt class="descname">DlsPnp</tt><big>(</big>const std::vector&lt;Eigen::Vector2d&gt;&amp; <em>feature_position</em>, const std::vector&lt;Eigen::Vector3d&gt;&amp; <em>world_point</em>, std::vector&lt;Eigen::Quaterniond&gt;* <em>solution_rotation</em>, std::vector&lt;Eigen::Vector3d&gt;* <em>solution_translation</em><big>)</big><a class="headerlink" href="#DlsPnp__std::vector:Eigen::Vector2d:CR.std::vector:Eigen::Vector3d:CR.std::vector:Eigen::Quaterniond:P.std::vector:Eigen::Vector3d:P" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the camera pose using the Perspective N-point method from &#8220;A Direct
+Least-Squares (DLS) Method for PnP&#8221; by <a class="reference internal" href="bibliography.html#hesch" id="id6">[Hesch]</a> and Stergios Roumeliotis. This
+method is extremely scalable and highly accurate for the PnP problem. A
+minimum of 4 points are required, but there is no maximum number of points
+allowed as this is a least-squared approach. Theoretically, up to 27 solutions
+may be returned, but in practice only 4 real solutions arise and in almost all
+cases where n &gt;= 6 there is only one solution which places the observed points
+in front of the camera. The returned rotation and translations are
+world-to-camera transformations.</p>
+<p><tt class="docutils literal"><span class="pre">feature_position</span></tt>: Normalized image rays corresponding to model points. Must
+contain at least 4 points.</p>
+<p><tt class="docutils literal"><span class="pre">points_3d</span></tt>: 3D location of features. Must correspond to the image_ray of
+the same index. Must contain the same number of points as image_ray, and at
+least 4.</p>
+<p><tt class="docutils literal"><span class="pre">solution_rotation</span></tt>: the rotation quaternion of the candidate solutions</p>
+<p><tt class="docutils literal"><span class="pre">solution_translation</span></tt>: the translation of the candidate solutions</p>
+</dd></dl>
+
+</div></blockquote>
+</div>
+<div class="section" id="four-point-focal-length">
+<span id="section-four-point-focal-length"></span><h2>Four Point Focal Length<a class="headerlink" href="#four-point-focal-length" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><dl class="function">
+<dt id="FourPointPoseAndFocalLength__std::vector:Eigen::Vector2d:CR.std::vector:Eigen::Vector3d:CR.std::vector:Eigen::Matrix:double.3.4::P">
+int <tt class="descname">FourPointPoseAndFocalLength</tt><big>(</big>const std::vector&lt;Eigen::Vector2d&gt;&amp; <em>feature_positions</em>, const std::vector&lt;Eigen::Vector3d&gt;&amp; <em>world_points</em>, std::vector&lt;Eigen::Matrix&lt;double, 3, 4&gt;&gt;* <em>projection_matrices</em><big>)</big><a class="headerlink" href="#FourPointPoseAndFocalLength__std::vector:Eigen::Vector2d:CR.std::vector:Eigen::Vector3d:CR.std::vector:Eigen::Matrix:double.3.4::P" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the camera pose and unknown focal length of an image given four 2D-3D
+correspondences, following the method of <a class="reference internal" href="bibliography.html#bujnak" id="id7">[Bujnak]</a>. This method involves
+computing a grobner basis from a modified constraint of the focal length and
+pose projection.</p>
+<p><tt class="docutils literal"><span class="pre">feature_position</span></tt>: Normalized image rays corresponding to model points. Must
+contain at least 4 points.</p>
+<p><tt class="docutils literal"><span class="pre">points_3d</span></tt>: 3D location of features. Must correspond to the image_ray of
+the same index. Must contain the same number of points as image_ray, and at
+least 4.</p>
+<p><tt class="docutils literal"><span class="pre">projection_matrices</span></tt>: The solution world-to-camera projection matrices,
+inclusive of the unknown focal length. For a focal length f and a camera
+calibration matrix <span class="math">\(K=diag(f, f, 1)\)</span>, the projection matrices returned
+are of the form <span class="math">\(P = K * [R | t]\)</span>.</p>
+</dd></dl>
+
+</div></blockquote>
+</div>
+<div class="section" id="five-point-focal-length-and-radial-distortion">
+<span id="section-five-point-focal-length-radial-distortion"></span><h2>Five Point Focal Length and Radial Distortion<a class="headerlink" href="#five-point-focal-length-and-radial-distortion" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><dl class="function">
+<dt id="FivePointFocalLengthRadialDistortion__std::vector:Eigen::Vector2d:CR.std::vector:Eigen::Vector3d:CR.iC.std::vector:Eigen::Matrix:double.3.4::P.std::vector:std::vector:double::P">
+bool <tt class="descname">FivePointFocalLengthRadialDistortion</tt><big>(</big>const std::vector&lt;Eigen::Vector2d&gt;&amp; <em>feature_positions</em>, const std::vector&lt;Eigen::Vector3d&gt;&amp; <em>world_points</em>, const int <em>num_radial_distortion_params</em>, std::vector&lt;Eigen::Matrix&lt;double, 3, 4&gt;&gt;* <em>projection_matrices</em>, std::vector&lt;std::vector&lt;double&gt;&gt;* <em>radial_distortions</em><big>)</big><a class="headerlink" href="#FivePointFocalLengthRadialDistortion__std::vector:Eigen::Vector2d:CR.std::vector:Eigen::Vector3d:CR.iC.std::vector:Eigen::Matrix:double.3.4::P.std::vector:std::vector:double::P" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the absolute pose, focal length, and radial distortion of a camera
+using five 3D-to-2D correspondences <a class="reference internal" href="bibliography.html#kukelova" id="id8">[Kukelova]</a>. The method solves for the
+projection matrix (up to scale) by using a cross product constraint on the
+standard projection equation. This allows for simple solution to the first two
+rows of the projection matrix, and the third row (which contains the focal
+length and distortion parameters) can then be solved with SVD on the remaining
+constraint equations from the first row of the projection matrix. See the
+paper for more details.</p>
+<p><tt class="docutils literal"><span class="pre">feature_positions</span></tt>: the 2D location of image features. Exactly five
+features must be passed in.</p>
+<p><tt class="docutils literal"><span class="pre">world_points</span></tt>: 3D world points corresponding to the features
+observed. Exactly five points must be passed in.</p>
+<dl class="docutils">
+<dt><tt class="docutils literal"><span class="pre">num_radial_distortion_params</span></tt>: The number of radial distortion paramters to</dt>
+<dd>solve for. Must be 1, 2, or 3.</dd>
+<dt><tt class="docutils literal"><span class="pre">projection_matrices</span></tt>: Camera projection matrices (that encapsulate focal</dt>
+<dd>length). These solutions are only valid up to scale.</dd>
+</dl>
+<p><tt class="docutils literal"><span class="pre">radial_distortions</span></tt>: Each entry of this vector contains a vector with the
+radial distortion parameters (up to 3, but however many were specified in
+<tt class="docutils literal"><span class="pre">num_radial_distortion_params</span></tt>).</p>
+<p><tt class="docutils literal"><span class="pre">return</span></tt>: true if successful, false if not.</p>
+</dd></dl>
+
+</div></blockquote>
+</div>
+<div class="section" id="three-point-relative-pose-with-a-partially-known-rotation">
+<h2>Three Point Relative Pose with a Partially Known Rotation<a class="headerlink" href="#three-point-relative-pose-with-a-partially-known-rotation" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><dl class="function">
+<dt id="ThreePointRelativePosePartialRotation__Eigen::Vector3dCR.Eigen::Vector3dCA.Eigen::Vector3dCA.std::vector:Eigen::Quaterniond:P.std::vector:Eigen::Vector3d:P">
+void <tt class="descname">ThreePointRelativePosePartialRotation</tt><big>(</big>const Eigen::Vector3d&amp; <em>rotation_axis</em>, const Eigen::Vector3d <em>image_1_rays</em>[3], const Eigen::Vector3d <em>image_2_rays</em>[3], std::vector&lt;Eigen::Quaterniond&gt;* <em>soln_rotations</em>, std::vector&lt;Eigen::Vector3d&gt;* <em>soln_translations</em><big>)</big><a class="headerlink" href="#ThreePointRelativePosePartialRotation__Eigen::Vector3dCR.Eigen::Vector3dCA.Eigen::Vector3dCA.std::vector:Eigen::Quaterniond:P.std::vector:Eigen::Vector3d:P" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the relative pose between two cameras using 3 correspondences and a
+known vertical direction as a Quadratic Eigenvalue Problem <a class="reference internal" href="bibliography.html#sweeneyqep" id="id9">[SweeneyQEP]</a>. Up
+to 6 solutions are returned such that <span class="math">\(image_2_rays = R *
+image_1_rays + t\)</span>. The <tt class="docutils literal"><span class="pre">axis</span></tt> that is passed in as a known axis of
+rotation (when considering rotations as an angle axis). This is equivalent
+to aligning the two cameras to a common direction such as the vertical
+direction, which can be done using IMU data.</p>
+</dd></dl>
+
+</div></blockquote>
+</div>
+<div class="section" id="four-point-relative-pose-with-a-partially-known-rotation">
+<h2>Four Point Relative Pose with a Partially Known Rotation<a class="headerlink" href="#four-point-relative-pose-with-a-partially-known-rotation" title="Permalink to this headline">¶</a></h2>
+<blockquote>
+<div><dl class="function">
+<dt id="FourPointRelativePosePartialRotation__Eigen::Vector3dCR.Eigen::Vector3dCA.Eigen::Vector3dCA.Eigen::Vector3dCA.Eigen::Vector3dCA.std::vector:Eigen::Quaterniond:P.std::vector:Eigen::Vector3d:P">
+void <tt class="descname">FourPointRelativePosePartialRotation</tt><big>(</big>const Eigen::Vector3d&amp; <em>rotation_axis</em>, const Eigen::Vector3d <em>image_1_origins</em>[4], const Eigen::Vector3d <em>image_1_rays</em>[4], const Eigen::Vector3d <em>image_2_origins</em>[4], const Eigen::Vector3d <em>image_2_rays</em>[4], std::vector&lt;Eigen::Quaterniond&gt;* <em>soln_rotations</em>, std::vector&lt;Eigen::Vector3d&gt;* <em>soln_translations</em><big>)</big><a class="headerlink" href="#FourPointRelativePosePartialRotation__Eigen::Vector3dCR.Eigen::Vector3dCA.Eigen::Vector3dCA.Eigen::Vector3dCA.Eigen::Vector3dCA.std::vector:Eigen::Quaterniond:P.std::vector:Eigen::Vector3d:P" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the relative pose between two generalized cameras using 4
+correspondences and a known vertical direction as a Quadratic Eigenvalue
+Problem <a class="reference internal" href="bibliography.html#sweeneyqep" id="id10">[SweeneyQEP]</a>. A generalized camera is a camera setup with multiple
+cameras such that the cameras do not have the same center of projection
+(e.g., a multi-camera rig mounted on a car). Up to 8 solutions are returned
+such that <span class="math">\(image_2_rays = R * image_1_rays + t\)</span>. The <tt class="docutils literal"><span class="pre">axis</span></tt> that is
+passed in as a known axis of rotation (when considering rotations as an
+angle axis). This is equivalent to aligning the two cameras to a common
+direction such as the vertical direction, which can be done using IMU data.</p>
+</dd></dl>
+
+</div></blockquote>
+</div>
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="math.html" class="btn btn-neutral float-right" title="Math">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="ransac.html" class="btn btn-neutral" title="Ransac"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2014, Chris Sweeney.
+    </p>
+  </div>
+
+  <a href="https://github.com/snide/sphinx_rtd_theme">Sphinx theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+      <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_HTML">
+  MathJax.Hub.Config({
+    "HTML-CSS": {
+      availableFonts: ["TeX"]
+    }
+  });
+</script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+  
+ 
+<!-- Google Analytics Code -->
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-46196711-1', 'ucsb.edu');
+  ga('send', 'pageview');
+
+</script>
+
+
+</body>
+</html>
