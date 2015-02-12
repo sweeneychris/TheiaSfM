@@ -190,7 +190,7 @@ void RenderScene() {
   glPointParameterf(GL_POINT_SIZE_MIN, 0.1f);
   glPointParameterf(GL_POINT_SIZE_MAX, 8.0f);
 
-  // the coordinates for calcluting point attenuation:
+  // the coordinates for calculating point attenuation:
   GLfloat point_size_coords[3];
   point_size_coords[0] = 1.0f;
   point_size_coords[1] = 0.055f;
