@@ -29,7 +29,7 @@ view the same objects. To do this, we must create a :class:`ViewGraph`.
   #. Match features to obtain image correspondences.
   #. Estimate camera poses from two-view matches and geometries.
 
-INSERT FIGURE HERE!!!
+.. TODO:: Insert figure.
 
 #1. and #2. have been covered in other sections, so we will focus on creating a
 reconstruction from two-view matches and geometry. First, we will describe the
@@ -40,7 +40,7 @@ Reconstruction
 
 .. class:: Reconstruction
 
-INSERT FIGURE HERE
+.. TODO:: Insert figure.
 
 At the core of our SfM pipeline is an SfM :class:`Reconstruction`. A
 :class:`Reconstruction` is the representation of a 3D reconstuction consisting
@@ -347,7 +347,13 @@ known. We use a nonlinear optimization to estimate camera positions based. Given
 pairwise relative translations from :class:`TwoViewInfo` and the estimated
 rotation, the constraint
 
-  .. math:: R_i * \dfrac{c_j - c_i}{||c_j - c_i||} = t_{i,j}
+  .. math:: R_i * (c_j - c_i) = \alpha_{i,j} * t_{i,j}
+
+Where :math:`\alpha_{i,j} = ||c_j - c_i||^2`. This ensures that we optimize for
+positions that agree with the relative positions computed in two-view
+estimation. In reality, we drop the constraint on :math:`alpha` and treat it as
+a slack variable. This helps convergence and makes the problem a bit easier to
+solve.
 
 Triangulation
 =============

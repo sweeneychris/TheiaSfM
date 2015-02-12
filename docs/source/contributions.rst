@@ -56,7 +56,7 @@ project.
 
    .. code-block:: bash
 
-      git clone https://review.gerrithub.io/sweeneychris/Theia
+      git clone https://review.gerrithub.io/sweeneychris/TheiaSfM
 
 
 4. Build Theia, following the instructions in
