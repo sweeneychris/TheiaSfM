@@ -116,5 +116,5 @@ Bibliography
    between two point patterns**. *IEEE Transactions on Pattern Analysis and Machine
    Intelligence*, 1991.
 
-.. [WilsonECCV] Wilson, K. and Snavely, N. **Robust Global Translation with 1DSfM**
+.. [WilsonECCV2014] Wilson, K. and Snavely, N. **Robust Global Translation with 1DSfM**
    *European Conference on Computer Vision*, 2014.

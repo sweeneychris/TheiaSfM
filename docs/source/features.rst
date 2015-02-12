@@ -73,18 +73,18 @@ Detecting keypoints with Theia is very simple, and we have implemented a number 
 
 .. class:: KeypointDetector
 
-  .. function:: bool Initialize()
+.. function:: bool KeypointDetector::Initialize()
 
     This method initializes any internal parameters that must be generated,
     precalculated, or otherwise are independent of the image. The
     :func:`Initialize()` function must be called before using the keypoint
     detector.
 
-  .. function:: bool DetectKeypoints(const FloatImage& input_image, std::vector<Keypoint>* output_keypoints)
+.. function:: bool KeypointDetector::DetectKeypoints(const FloatImage& input_image, std::vector<Keypoint>* output_keypoints)
 
-    ``input_image``: The image that you want to detect keypoints on.
+  ``input_image``: The image that you want to detect keypoints on.
 
-    ``ouput_keypoints``: A pointer to a vector that will hold the keypoints
+  ``ouput_keypoints``: A pointer to a vector that will hold the keypoints
     detected. Note that the vector should be empty when passed to this
     function. The caller is responsible for deleting the keypoints.
 
@@ -150,29 +150,29 @@ DescriptorExtractor
   descriptor given keypoints. However, we must call the :func:`Initialize()`
   method before computing descriptors.
 
-  .. function:: bool Initialize()
+.. function:: bool DescriptorExtractor::Initialize()
 
-    This method initializes any internal parameters that must be generated,
-    precalculated, or otherwise are independent of the image. The
-    :func:`Initialize()` function must be called before using the descriptor
-    extractor.
+  This method initializes any internal parameters that must be generated,
+  precalculated, or otherwise are independent of the image. The
+  :func:`Initialize()` function must be called before using the descriptor
+  extractor.
 
-  .. function:: bool DescriptorExtractor::ComputeDescriptor(const FloatImage& input_image, const Keypoint& keypoint, Eigen::VectorXf* float_descriptor)
-  .. function:: bool DescriptorExtractor::ComputeDescriptor(const FloatImage& input_image, const Keypoint& keypoint, Eigen::BinaryVectorXf* binary_descriptor)
+.. function:: bool DescriptorExtractor::ComputeDescriptor(const FloatImage& input_image, const Keypoint& keypoint, Eigen::VectorXf* float_descriptor)
+.. function:: bool DescriptorExtractor::ComputeDescriptor(const FloatImage& input_image, const Keypoint& keypoint, Eigen::BinaryVectorXf* binary_descriptor)
 
-    This method computes the descriptor of a single keypoint.
+  This method computes the descriptor of a single keypoint.
 
-    ``input_image``: The image that you want to detect keypoints on.
+  ``input_image``: The image that you want to detect keypoints on.
 
-    ``keypoint``: The keypoint that the descriptor will be computed from.
+  ``keypoint``: The keypoint that the descriptor will be computed from.
 
-    ``float_descriptor or binary_descriptor``: The descriptor computed for the
-    given keypoint.
+  ``float_descriptor or binary_descriptor``: The descriptor computed for the
+  given keypoint.
 
-    ``returns``: True on if the descriptor was extracted, false otherwise.
+  ``returns``: True on if the descriptor was extracted, false otherwise.
 
-  .. function:: bool DescriptorExtractor::ComputeDescriptors(const FloatImage& input_image, std::vector<Keypoint>* keypoints, std::vector<Eigen::VectorXf>* float_descriptors)
-  .. function:: bool DescriptorExtractor::ComputeDescriptors(const FloatImage& input_image, std::vector<Keypoint>* keypoints, std::vector<Eigen::BinaryVectorXf>* binary_descriptors)
+.. function:: bool DescriptorExtractor::ComputeDescriptors(const FloatImage& input_image, std::vector<Keypoint>* keypoints, std::vector<Eigen::VectorXf>* float_descriptors)
+.. function:: bool DescriptorExtractor::ComputeDescriptors(const FloatImage& input_image, std::vector<Keypoint>* keypoints, std::vector<Eigen::BinaryVectorXf>* binary_descriptors)
 
     Compute many descriptors from the input keypoints. Note that not all
     keypoints are guaranteed to result in a descriptor. Only valid descriptors
@@ -189,8 +189,8 @@ DescriptorExtractor
     extracted. Eigen::VectorXf is used for extracting float descriptors (e.g.,
     SIFT) while Eigen::BinaryVectorX is used for float descriptors.
 
-  .. function:: bool DescriptorExtractor::DetectAndExtractDescriptors(const FloatImage& input_image, std::vector<Keypoint>* keypoints, std::vector<Eigen::VectorXf>* float_descriptors)
-  .. function:: bool DescriptorExtractor::DetectAndExtractDescriptors(const FloatImage& input_image, std::vector<Keypoint>* keypoints, std::vector<Eigen::BinaryVectorXf>* binary_descriptors)
+.. function:: bool DescriptorExtractor::DetectAndExtractDescriptors(const FloatImage& input_image, std::vector<Keypoint>* keypoints, std::vector<Eigen::VectorXf>* float_descriptors)
+.. function:: bool DescriptorExtractor::DetectAndExtractDescriptors(const FloatImage& input_image, std::vector<Keypoint>* keypoints, std::vector<Eigen::BinaryVectorXf>* binary_descriptors)
 
     Detects keypoints and extracts descriptors using the default keypoint
     detector for the corresponding descriptor. For SIFT, this is the SIFT
@@ -256,7 +256,7 @@ in Theia (constructors are given).
 
 .. class:: BriefDescriptorExtractor
 
-.. function:: BriefDescriptorExtractor(int patch_sample_size, const int num_bytes)
+.. function:: BriefDescriptorExtractor::BriefDescriptorExtractor(int patch_sample_size, const int num_bytes)
 
    The [BRIEF]_ algorithm is a binary algorithm that operates on local image
    patches around a keypoint or a point of interest. The binary values are set
@@ -310,56 +310,114 @@ works with binary descriptors or float descriptors.
 
 .. class:: FeatureMatcher
 
-.. code-block:: c++
+The :class:`FeatureMatcher` is templated on a :class:`DistanceMetric` that
+describes how to compute the distance between two matches (we provide L2 and
+Hamming). The matcher is intended for all-to-all matching for SfM reconstruction.
 
-   // Struct to hold a feature match.
-   struct FeatureMatch{
-     // Indices of the matched features in image 1 and 2.
-     int feature1_ind;
-     int feature2_ind;
-     float distance;
-   };
+.. function:: void FeatureMatcher::AddImage(const std::vector<Keypoint>* keypoints, const std::vector<DescriptorType>* descriptors)
 
-  // Holds all the feature matches between a pair of images.
-  struct ImagePairMatch {
-    int image1_ind;
-    int image2_ind;
-    std::vector<FeatureMatch> matches;
-  };
+  Adds an image to the matcher with no known intrinsics for this image. The
+  caller still owns the keypoints and descriptors so they must remain valid
+  objects throughout the matching.
 
-  // Options for matching two sets of features.
-  struct FeatureMatcherOptions {
-    // Only symmetric matches are kept.
-    bool keep_only_symmetric_matches = true;
+.. function:: void FeatureMatcherAddImage(const std::vector<Keypoint>* keypoints, const std::vector<DescriptorType>* descriptors, const CameraIntrinsics& intrinsics)
 
-    // Maximum distance (threshold) between descriptors to consider a candidate
-    // match as valid.
-    float max_match_distance = std::numeric_limits<float>::max();
+  Adds an image to the matcher with the known camera intrinsics. The
+  intrinsics (if known) are useful for geometric verification. The caller
+  still owns the keypoints and descriptors so they must remain valid objects
+  throughout the matching.
 
-    // Only keep the matches that pass the lowes ratio test such that the distance
-    // of the best best match is less than lowes_ratio of the distance of the
-    // second nearest neighbor match.
-    bool use_lowes_ratio = true;
-    float lowes_ratio = 0.8;
-  };
+.. function:: void FeatureMatcher::MatchImages(const FeatureMatcherOptions& matcher_options, std::vector<ImagePairMatch>* matches)
 
-Each :class:`FeatureMatcher` implements two matching methods. The
-:class:`FeatureMatcher` is templated on a :class:`DistanceMetric` that describes
-how to compute the distance between two matches (we provide L2 and Hamming).
+  Matches features between all images. No geometric verification is
+  performed. Only the matches which pass the have greater than
+  min_num_feature_matches are returned.
 
-.. function:: bool Match(const FeatureMatcherOptions& options, const std::vector<DescriptorType>& desc_1, const std::vector<DescriptorType>& desc_2, std::vector<FeatureMatch>* matches)
+.. function:: void FeatureMatcher::MatchImagesWithGeometricVerification(const FeatureMatcherOptions& matcher_options, const VerifyTwoViewMatchesOptions& verification_options, std::vector<ImagePairMatch>* matches)
 
-  Match the descriptors from two images and outputs the matches based on the
-  :class:`FeatureMatcherOptions` that were input. The return value is true if
-  the matching was susccessful.
+  Matches features between all images. Only the matches that pass the
+  geometric verification are returned. Camera intrinsics are used for
+  geometric verification if the image was added with known intrinsics.
 
-.. function:: bool MatchAllPairs(const FeatureMatcherOptions& options, const int num_threads, const std::vector<std::vector<DescriptorType> >& descriptors, std::vector<ImagePairMatch>* image_pair_matches)
+.. NOTE:: This method is tuned specifically for image to image matching and is only
+   applicable to float descriptors such as SIFT.
 
-  Given a set of images, this method computes the feature matches between each
-  possible image pair in the set. This method is multithreaded with the
-  specified number of threads to speed up the matching process. All
-  multithreaded matching methods are thread-safe.
+.. class:: ImagePairMatch
 
+Matches are defined as feature coordinates between two image. If geometric
+verification is performed then the two-view geometry is also specified and the
+returned matches are only the inlier matches after geometric verification.
+
+.. member:: int ImagePairMatch::image1_index
+.. member:: int ImagePairMatch::image2_index
+
+  The index of the current image pair that has been matched. This index is
+  relative to the order that images were input with the
+  :func:`FeatureMatcher::AddImage` method.
+
+.. member:: TwoViewInfo FeatureMatcher::twoview_info
+
+  If geometric verification is performed, then the ``twoview_info`` describes
+  the two-view geometry (i.e., relative pose) between the two images.
+
+.. member:: std::vector<:class:`FeatureCorrespondence`> FeatureMatcher::correspondences
+
+  A :class:`FeatureCorrespondence` contains two Eigen::Vector2d's named
+  feature1, and feature2. These represent the image coordinates of the matched
+  features. If geometric verification is performed then these features are the
+  inlier features.
+
+.. class:: FeatureMatcherOptions
+
+  The options specified for feature matching. Adjusting these optiosn will
+  change the number of matched features as well as the quality for matching.
+
+.. member:: int FeatureMatcherOptions::num_threads
+
+  DEFAULT: ``1``
+
+  The number of threads to use for image-to-image matching. The more threads
+  used, the faster the matching will be.
+
+.. member:: bool FeatureMatcherOptions::keep_only_symmetric_matches
+
+  DEFAULT: ``true``
+
+  The quality of feature matching can be greatly improved by only keeping
+  matches that are mutual. That is, for feature ``x`` in image 1 and feature
+  ``y`` in image 2, a high quality match is formed when ``y`` is the best match
+  for ``x`` and ``x`` is also the best match for ``y``. When
+  ``keep_only_symmetric_matches`` is enabled, only mutual matches are considered
+  valid.
+
+.. member:: bool FeatureMatcherOptions::use_lowes_ratio
+
+  DEFAULT: ``true``
+
+.. member:: float FeatureMatcherOptions::lowes_ratio
+
+  DEFAULT: ``0.8``
+
+  Good feature matches should be very apparent. That is, the best match for a
+  given feature should be much better than all other candidate matches for a
+  given feature. Lowes ratio is defined as the ratio between the top match
+  distance and the second best match distance. If this ratio is higher than
+  ``lowes_ratio`` then that means that the top match is not much better than the
+  second best match. If ``use_lowes_ratio`` is set to ``true`` then only the
+  feature matches which pass the Lowes ratio test are kept.
+
+.. member:: int FeatureMatcherOptions::min_num_feature_matches
+
+  DEFAULT: ``30``
+
+  Images are only considered to be successfully matched if they contain a
+  sufficient number of feature matches between them. ``min_num_feature_matches``
+  is the minimum number of valid feature matches (or verified matches) that must
+  exist between two images in order to consider the matches as valid. All other
+  matches are considered failed matches and are not added to the output.
+
+Matching Strategies
+-------------------
 
 We have implemented two types of :class:`FeatureMatcher` with the interface described above.
 
@@ -375,5 +433,29 @@ Features are matched through a cascade hashing approach as described by
 train the data, resulting in an extremely fast and accurate matcher. This is the
 recommended approach for matching image sets.
 
-.. NOTE:: This method is tuned specifically for image to image matching and is only
-   applicable to float descriptors such as SIFT.
+
+Using the feature matcher
+-------------------------
+
+The intended use for these classes is for matching photos in image collections,
+so all pairwise matches are computed. Matching with geometric verification is
+also possible. Typical use case is:
+
+.. code-block:: c++
+
+      FeatureMatcher matcher;
+      for (int i = 0; i < num_images_to_match; i++) {
+        matcher.AddImage(keypoints[i], descriptors[i]);
+
+       // Or, you could add the image with known intrinsics for use during
+       // geometric verification.
+        matcher.AddImage(keypoints[i], descriptors[i], intrinsics[i]);
+      }
+      std::vector<ImagePairMatch> matches;
+      FeatureMatcherOptions matcher_options;
+      matcher.MatchImages(matcher_options, &matches);
+          Or, with geometric verification:
+      VerifyTwoViewMatchesOptions geometric_verification_options;
+      matcher.MatchImages(match_options,
+                          geometric_verification_options,
+                          &matches);

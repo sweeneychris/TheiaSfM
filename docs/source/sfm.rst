@@ -2,7 +2,7 @@
 
 .. default-domain:: cpp
 
-.. _documentation-sfm:
+.. _chapter-sfm:
 
 ===========================
 Structure from Motion (SfM)
@@ -17,7 +17,7 @@ incremental SfM in that it considers the entire view graph at the same time
 instead of incrementally adding more and more images to the
 :class:`Reconstruction`. Global SfM methods have been proven to be very fast
 with comparable or better accuracy to incremental SfM approaches (See
-[JiangICCV]_, [MoulonICCV]_, [WilsonECCV]_), and they are much more readily
+[JiangICCV]_, [MoulonICCV]_, [WilsonECCV2014]_), and they are much more readily
 parallelized. After we have obtained camera poses, we perform triangulation and
 :class:`BundleAdjustment` to obtain a valid 3D reconstruction consisting of
 cameras and 3D points.
@@ -29,7 +29,7 @@ view the same objects. To do this, we must create a :class:`ViewGraph`.
   #. Match features to obtain image correspondences.
   #. Estimate camera poses from two-view matches and geometries.
 
-INSERT FIGURE HERE!!!
+.. TODO:: Insert figure.
 
 #1. and #2. have been covered in other sections, so we will focus on creating a
 reconstruction from two-view matches and geometry. First, we will describe the
@@ -40,7 +40,7 @@ Reconstruction
 
 .. class:: Reconstruction
 
-INSERT FIGURE HERE
+.. TODO:: Insert figure.
 
 At the core of our SfM pipeline is an SfM :class:`Reconstruction`. A
 :class:`Reconstruction` is the representation of a 3D reconstuction consisting
@@ -57,38 +57,38 @@ Views see a given Track) stays accurate. Views and Tracks are given a unique ID
 when added to the :class:`Reconstruction` to help make use of these structures
 lightweight and efficient.
 
-.. function:: ViewId AddView(const std::string& view_name)
+.. function:: ViewId Reconstruction::AddView(const std::string& view_name)
 
     Adds a view to the reconstruction with the default initialization. The ViewId
     returned is guaranteed to be unique or will be kInvalidViewId if the method
     fails. Each view is uniquely identified by the view name (a good view name could
     be the filename of the image).
 
-.. function:: bool RemoveView(const ViewId view_id)
+.. function:: bool Reconstruction::RemoveView(const ViewId view_id)
 
     Removes the view from the reconstruction and removes all references to the view in
     the tracks.
 
     .. NOTE:: Any tracks that have length 0 after the view is removed will also be removed.
 
-.. function:: int NumViews() const
-.. function:: int NumTracks() const
+.. function:: int Reconstruction::NumViews() const
+.. function:: int Reconstruction::NumTracks() const
 
-.. function:: const View* View(const ViewId view_id) const
-.. function:: View* MutableView(const ViewId view_id)
+.. function:: const View* Reconstruction::View(const ViewId view_id) const
+.. function:: View* Reconstruction::MutableView(const ViewId view_id)
 
     Returns the View or a nullptr if the track does not exist.
 
-.. function:: std::vector<ViewId> ViewIds() const
+.. function:: std::vector<ViewId> Reconstruction::ViewIds() const
 
     Return all ViewIds in the reconstruction.
 
-.. function:: ViewId ViewIdFromName(const std::string& view_name) const
+.. function:: ViewId Reconstruction::ViewIdFromName(const std::string& view_name) const
 
     Returns to ViewId of the view name, or kInvalidViewId if the view does not
     exist.
 
-.. function:: TrackId AddTrack(const std::vector<std::pair<ViewId, Feature> >& track)
+.. function:: TrackId Reconstruction::AddTrack(const std::vector<std::pair<ViewId, Feature> >& track)
 
     Add a track to the reconstruction with all of its features across views that observe
     this track. Each pair contains a feature and the corresponding View name
@@ -97,18 +97,18 @@ lightweight and efficient.
     estimate the position of the track. The TrackId returned will be unique or
     will be kInvalidTrackId if the method fails.
 
-.. function:: bool RemoveTrack(const TrackId track_id)
+.. function:: bool Reconstruction::RemoveTrack(const TrackId track_id)
 
     Removes the track from the reconstruction and from any Views that observe this
     track. Returns true on success and false on failure (e.g., the track does
     not exist).
 
-.. function:: const Track* Track(const TrackId track_id) const
-.. function:: Track* MutableTrack(const TrackId track_id)
+.. function:: const Track* Reconstruction::Track(const TrackId track_id) const
+.. function:: Track* Reconstruction::MutableTrack(const TrackId track_id)
 
     Returns the Track or a nullptr if the track does not exist.
 
-.. function:: std::vector<TrackId> TrackIds() const
+.. function:: std::vector<TrackId> Reconstruction::TrackIds() const
 
     Return all TrackIds in the reconstruction.
 
@@ -117,7 +117,7 @@ ViewGraph
 
 .. class:: ViewGraph
 
-INSERT FIGURE HERE
+.. TODO:: INSERT FIGURE HERE
 
 A :class:`ViewGraph` is a basic SfM construct that is created from two-view
 matching information. Any pair of views that have a view correlation form an
@@ -273,7 +273,7 @@ distortion) in a simple and efficient manner.
 In addition to typical getter/setter methods for the camera parameters, the
 :class:`Camera` class also defines several helper functions:.
 
-.. function:: bool InitializeFromProjectionMatrix(const int image_width, const int image_height, const Matrix3x4d projection_matrix)
+.. function:: bool Camera::InitializeFromProjectionMatrix(const int image_width, const int image_height, const Matrix3x4d projection_matrix)
 
     Initializes the camera intrinsic and extrinsic parameters from the
     projection matrix by decomposing the matrix with a RQ decomposition.
@@ -281,15 +281,15 @@ In addition to typical getter/setter methods for the camera parameters, the
     .. NOTE:: The projection matrix does not contain information about radial
         distortion, so those parameters will need to be set separately.
 
-.. function:: void GetProjectionMatrix(Matrix3x4d* pmatrix) const
+.. function:: void Camera::GetProjectionMatrix(Matrix3x4d* pmatrix) const
 
     Returns the projection matrix. Does not include radial distortion.
 
-.. function:: void GetCalibrationMatrix(Eigen::Matrix3d* kmatrix) const
+.. function:: void Camera::GetCalibrationMatrix(Eigen::Matrix3d* kmatrix) const
 
     Returns the calibration matrix in the form specified above.
 
-.. function:: Eigen::Vector3d PixelToUnitDepthRay(const Eigen::Vector2d& pixel) const
+.. function:: Eigen::Vector3d Camera::PixelToUnitDepthRay(const Eigen::Vector2d& pixel) const
 
     Converts the pixel point to a ray in 3D space such that the origin of the
     ray is at the camera center and the direction is the pixel direction rotated
@@ -322,6 +322,208 @@ follows:
   #. Bundle adjust the reconstruction.
   #. (Optional) Attempt to estimate any remaining 3D points and bundle adjust again.
 
+.. class:: ReconstructionEstimator
+
+  This is the base class for which all SfM reconstruction pipelines derive
+  from. The reconstruction estimation type can be specified at runtime, though
+  currently only ``NONLINEAR`` is implemented.
+
+.. function:: ReconstructionEstimator::ReconstructionEstimator(const ReconstructorEstimatorOptions& options)
+
+.. function:: ReconstructionEstimator::ReconstructionEstimatorSummary Estimate(const ViewGraph& view_graph, Reconstruction* reconstruction)
+
+  Estimates the cameras poses and 3D points from a view graph. The details of
+  each step in the estimation process are described below.
+
+.. class:: ReconstructorEstimatorOptions
+
+.. member:: ReconstructionEstimatorType ReconstructorEstimatorOptions::reconstruction_estimator_type
+
+  DEFAULT: ``ReconstructionEstimatorType::NONLINEAR``
+
+  Type of reconstruction estimation to use.
+
+.. member:: int ReconstructorEstimatorOptions::num_threads
+
+  DEFAULT: ``1``
+
+  Number of threads to use during the various stages of reconstruction.
+
+.. member:: double ReconstructorEstimatorOptions::max_reprojection_error_in_pixels
+
+  DEFAULT: ``5.0``
+
+  Maximum reprojection error. This is used to determine inlier correspondences
+  for absolute pose estimation. Additionally, this is the threshold used for
+  filtering outliers after bundle adjustment.
+
+.. member:: int ReconstructorEstimatorOptions::num_retriangulation_iterations
+
+  DEFAULT: ``1``
+
+  After computing a model and performing an initial BA, the reconstruction can
+  be further improved (and even densified) if we attempt to retriangulate any
+  tracks that are currently unestimated. For each retriangulation iteration we
+  do the following:
+
+  #. Remove features that are above max_reprojection_error_in_pixels.
+  #. Triangulate all unestimated tracks.
+  #. Perform full bundle adjustment.
+
+.. member:: bool ReconstructorEstimatorOptions::initialize_focal_lengths_from_median_estimate
+
+  DEFAULT: ``false``
+
+  By default, focal lengths for uncalibrated cameras are initialized by setting
+  the focal length to a value that corresponds to a reasonable field of view. If
+  this is true, then we initialize the focal length of all uncalibrated cameras
+  to the median value obtained from decomposing the fundamental matrix of all
+  view pairs connected to that camera. Cameras with calibration or EXIF
+  information are always calibrated using that information regardless of this
+  parameter.
+
+.. member:: double ReconstructorEstimatorOptions::ransac_confidence
+
+  DEFAULT: ``0.9999``
+
+  Confidence using during RANSAC. This determines the quality and termination
+  speed of RANSAC.
+
+.. member:: int ReconstructorEstimatorOptions::ransac_min_iterations
+
+  DEFAULT: ``50``
+
+  Minimum number of iterations for RANSAC.
+
+.. member:: int ReconstructorEstimatorOptions::ransac_max_iterations
+
+  DEFAULT: ``1000``
+
+  Maximum number of iterations for RANSAC.
+
+.. member:: bool ReconstructorEstimatorOptions::ransac_use_mle
+
+  DEFAULT: ``true``
+
+  Using the MLE quality assesment (as opposed to simply an inlier count) can
+  improve the quality of a RANSAC estimation with virtually no computational
+  cost.
+
+.. member:: double ReconstructorEstimatorOptions::max_rotation_error_in_view_graph_cycles
+
+  DEFAULT: ``3.0``
+
+  Before orientations are estimated, some "bad" edges may be removed from the
+  view graph by determining the consistency of rotation estimations in loops
+  within the view graph. By examining loops of size 3 (i.e., triplets) the
+  concatenated relative rotations should result in a perfect identity
+  rotation. Any edges that break this consistency may be removed prior to
+  rotation estimation.
+
+.. member:: double ReconstructorEstimatorOptions::rotation_filtering_max_difference_degrees
+
+  DEFAULT: ``5.0``
+
+  After orientations are estimated, view pairs may be filtered/removed if the
+  relative rotation of the view pair differs from the relative rotation formed
+  by the global orientation estimations. That is, measure the angulaar distance
+  between :math:`R_{i,j}` and :math:`R_j * R_i^T` and if it greater than
+  ``rotation_filtering_max_difference_degrees`` than we remove that view pair
+  from the graph. Adjust this threshold to control the threshold at which
+  rotations are filtered.
+
+.. member:: bool ReconstructorEstimatorOptions::refine_relative_translations_after_rotation_estimation
+
+  DEFAULT: ``true``
+
+  Refine the relative translations based on the epipolar error and known
+  rotation estimations. This can improve the quality of the translation
+  estimation.
+
+.. member:: int ReconstructorEstimatorOptions::translation_filtering_num_iterations
+
+  DEFAULT: ``48``
+
+.. member:: double ReconstructorEstimatorOptions::translation_filtering_projection_tolerance
+
+  DEFAULT: ``0.1``
+
+  Before the camera positions are estimated, it is wise to remove any relative
+  translations estimates that are low quality. We perform filtering using the
+  1dSfM technique of [WilsonECCV2014]_. See
+  theia/sfm/filter_view_pairs_from_relative_translation.h for more information.
+
+.. member:: double ReconstructorEstimatorOptions::rotation_estimation_robust_loss_scale
+
+  DEFAULT: ``0.1``
+
+  Robust loss function width for nonlinear rotation estimation.
+
+
+.. member:: double ReconstructorEstimatorOptions::position_estimation_robust_loss_scale
+
+  DEFAULT: ``1.0``
+
+  Robust loss function width to use for the first iteration of nonlinear position estimation.
+
+.. member:: int ReconstructorEstimatorOptions::position_estimation_min_num_tracks_per_view
+
+  DEFAULT: ``10``
+
+  Number of point to camera correspondences used for nonlinear position
+  estimation.
+
+.. member:: double ReconstructorEstimatorOptions::position_estimation_point_to_camera_weight
+
+  DEFAULT: ``0.5``
+
+  Weight of point to camera constraints with respect to camera to camera
+  constraints.
+
+.. member:: int ReconstructorEstimatorOptions::position_estimation_max_reweighted_iterations
+
+  DEFAULT: ``100``
+
+  Maximum number of reweighted iterations to perform for iteratively reweighted
+  least squares. Set to 0 if only a single robust optimization is desired.
+
+.. member:: double ReconstructorEstimatorOptions::min_triangulation_angle_degrees
+
+  DEFAULT: ``3.0``
+
+  In order to triangulate features accurately, there must be a sufficient
+  baseline between the cameras relative to the depth of the point. Points with a
+  very high depth and small baseline are very inaccurate. We require that at
+  least one pair of cameras has a sufficient viewing angle to the estimated
+  track in order to consider the estimation successful.
+
+.. member:: bool ReconstructorEstimatorOptions::bundle_adjust_tracks
+
+  DEFAULT: ``true``
+
+  Bundle adjust a track immediately after estimating it.
+
+.. member:: double ReconstructorEstimatorOptions::triangulation_max_reprojection_error_in_pixels
+
+  DEFAULT: ``10.0``
+
+  The reprojection error to use for determining a valid triangulation. If the
+  reprojection error of any observation is greater than this value then we can
+  consider the triangluation unsuccessful.
+
+.. member:: int ReconstructorEstimatorOptions::min_cameras_for_iterative_solver
+
+  DEFAULT: ``1000``
+
+  Use SPARSE_SCHUR for problems smaller than this size and ITERATIVE_SCHUR
+  for problems larger than this size.
+
+.. member:: bool ReconstructorEstimatorOptions::constant_camera_intrinsics
+
+  DEFAULT: ``false``
+
+  If accurate calibration is known ahead of time then it is recommended to
+  set the camera intrinsics constant during bundle adjustment.
 
 Estimating Global Rotations
 ===========================
@@ -339,6 +541,13 @@ computed. The optimization usually converges within just a few iterations and
 provides a very accurate result. The nonlinear optimization is initialized by
 forming a random spanning tree of the view graph and walking along the edges.
 
+.. function:: bool EstimateRotationsNonlinear(const std::unordered_map<ViewIdPair, Eigen::Vector3d>& relative_rotations, const double robust_loss_width, std::unordered_map<ViewId, Eigen::Vector3d>* global_orientations)
+
+  Using the relative rotations and an initial guess for the global rotations,
+  minimize the error between the relative rotations and the global
+  orientations. We use as SoftL1Loss for robustness to outliers.
+
+
 Estimating Global Positions
 ===========================
 
@@ -347,13 +556,138 @@ known. We use a nonlinear optimization to estimate camera positions based. Given
 pairwise relative translations from :class:`TwoViewInfo` and the estimated
 rotation, the constraint
 
-  .. math:: R_i * \dfrac{c_j - c_i}{||c_j - c_i||} = t_{i,j}
+  .. math:: R_i * (c_j - c_i) = \alpha_{i,j} * t_{i,j}
+
+Where :math:`\alpha_{i,j} = ||c_j - c_i||^2`. This ensures that we optimize for
+positions that agree with the relative positions computed in two-view
+estimation. In reality, we drop the constraint on :math:`alpha` and treat it as
+a slack variable. This helps convergence and makes the problem a bit easier to
+solve.
+
+We (optionally) will perform an iteratively reweighted least squares (IRLS)
+approach to solve the problem. For reach iteration, we perform a minimization
+and reweight each error term by a metric related to the current error
+residual. This way, terms with gross errors (which are likely to be outliers)
+are not weighed as heavily. The IRLS approach usually converges in less than 10
+iterations, but a limit on the maximum number of reweighted iterations may be
+set at runtime. The first iteration (regardless of whether IRLS iterations are
+used) is always performed with a Huber loss function to maintain robustness to
+outliers.
+
+.. class:: NonlinearPositionEstimatorOptions
+
+.. member:: int NonlinearPositionEstimatorOptions::num_threads
+
+   DEFAULT: ``1``
+
+   Number of threads to use with Ceres for nonlinear optimization.
+
+.. member:: bool NonlinearPositionEstimatorOptions::verbose
+
+   DEFAULT: ``false``
+
+   Set to true for verbose logging.
+
+.. member:: int NonlinearPositionEstimatorOptions::max_num_iterations
+
+   DEFAULT: ``400``
+
+   The maximum number of iterations for each minimization (i.e., for a single
+   IRLS iteration).
+
+.. member:: double NonlinearPositionEstimatorOptions::robust_loss_width
+
+   DEFAULT: ``1.0``
+
+   The width of the robust Huber loss function used in the first minimization
+   iteration.
+
+.. member:: int NonlinearPositionEstimatorOptions::min_num_points_per_view
+
+   DEFAULT: ``0``
+
+   The number of 3D point-to-camera constraints to use for position
+   recovery. Using points-to-camera constraints can sometimes improve robustness
+   to collinear scenes. Points are taken from tracks in the reconstruction such
+   that the minimum number of points is used such that each view has at least
+   ``min_num_points_per_view`` point-to-camera constraints.
+
+.. member:: double NonlinearPositionEstimatorOptions::point_to_camera_weight
+
+   DEFAULT: ``0.5``
+
+   Each point-to-camera constraint (if any) is weighted by
+   ``point_to_camera_weight`` compared to the camera-to-camera weights.
+
+.. member:: int NonlinearPositionEstimatorOptions::max_num_reweighted_iterations
+
+   DEFAULT: ``100``
+
+   The maximum number of reweighted iterations to perform for IRLS. Usually IRLS
+   converges within 10-15 iterations. Set to 0 if no reweighted iterations
+   should be performed -- this will result in a single minimization with the
+   Huber loss function.
+
+.. member:: double NonlinearPositionEstimatorOptions::reweighted_convergence_tolerance
+
+   DEFAULT: ``5e-3``
+
+   A tolerance term to measure the convergence of the IRLS. Lower this value to
+   perform more IRLS iterations and increase it to perform fewer.
+
+.. class:: NonlinearPositionEstimator
+
+  .. function:: NonlinearPositionEstimator(const NonlinearPositionEstimatorOptions& options, const Reconstruction& reconstruction, const std::unordered_map<ViewIdPair, TwoViewInfo>& view_pairs)
+
+      The constructor takes the options for the nonlinear position estimator, as
+      well as const references to the reconstruction (which contains camera and
+      track information) and the two view geometry information that will be use
+      to recover the positions.
+
+  .. function:: bool EstimatePositions(const std::unordered_map<ViewId, Eigen::Vector3d>& orientation, std::unordered_map<ViewId, Eigen::Vector3d>* positions)
+
+    Estimates the positions of cameras given the global orientation estimates by
+    using the nonlinear algorithm described above. Only positions that have an
+    orientation set are estimated. Returns true upons success and false on failure.
 
 Triangulation
 =============
 
   Triangulation in structure from motion calculates the 3D position of an image
-  coordinate that has been tracked through several, if not many, images.
+  coordinate that has been tracked through two or more images. All cameras with
+  an estimated camera pose are used to estimate the 3D point of a track.
+
+  .. class:: EstimateTrackOptions
+
+  .. member:: bool EstimateTrackOptions::bundle_adjustment
+
+    DEFAULT: ``true``
+
+    Bundle adjust the track (holding all camera parameters constant) after
+    initial estimation. This is highly recommended in order to obtain good 3D
+    point estimations.
+
+  .. member:: double EstimateTrackOptions::max_acceptable_reprojection_error_pixels
+
+    DEFAULT: ``5.0``
+
+    Track estimation is only considered successful if the reprojection error for
+    all observations is less than this value.
+
+  .. member:: double EstimateTrackOptions::min_triangulation_angle_degrees
+
+    DEFAULT: ``3.0``
+
+    In order to triangulate features accurately, there must be a sufficient
+    baseline between the cameras relative to the depth of the point. Points with
+    a very high depth and small baseline are very inaccurate. We require that at
+    least one pair of cameras has a sufficient viewing angle to the estimated
+    track in order to consider the estimation successful.
+
+  .. function:: bool EstimateAllTracks(const EstimateTrackOptions& options, const int num_threads, Reconstruction* reconstruction)
+
+    Performs (potentially multithreaded) track estimation. Track estimation is
+    embarassingly parallel so multithreading is recommended.
 
   .. cpp:function:: bool Triangulate(const Matrix3x4d& pose1, const Matrix3x4d& pose2, const Eigen::Vector2d& point1, const Eigen::Vector2d& point2, Eigen::Vector4d* triangulated_point)
 
@@ -417,7 +751,101 @@ Triangulation
 Bundle Adjustment
 =================
 
-.. NOTE:: Docmentation coming soon...
+We perform bundle adjustment using `Ceres Solver
+<https://code.google.com/p/ceres-solver/>`_ for nonlinear optimization. Given a
+:class:`Reconstruction`, we optimize over all cameras and 3D points to minimize
+the reprojection error.
+
+.. class:: BundleAdjustmentOptions
+
+.. member:: ceres::LinearSolverType BundleAdjustmentOptions::linear_solver_type
+
+  DEFAULT: ``ceres::SPARSE_SCHUR``
+
+  ceres::DENSE_SCHUR is recommended for problems with fewer than 100 cameras,
+  ceres::SPARSE_SCHUR for up to 1000 cameras, and ceres::ITERATIVE_SCHUR for
+  larger problems.
+
+.. member:: ceres::PreconditionerType BundleAdjustmentOptions::preconditioner_type
+
+  DEFAULT: ``ceres::SCHUR_JACOBI``
+
+  If ceres::ITERATIVE_SCHUR is used, then this preconditioner will be used.
+
+.. member:: ceres::VisibilityClusteringType BundleAdjustmentOptions::visibility_clustering_type
+
+   DEFAULT: ``ceres::SINGLE_LINKAGE``
+
+.. member:: bool BundleAdjustmentOptions::verbose
+
+  DEFAULT: ``false``
+
+  Set to true for verbose logging.
+
+.. member:: bool BundleAdjustmentOptions::constant_camera_intrinsics
+
+  DEFAULT: ``false``
+
+  If set to true, the camera intrinsics are held constant during
+  optimization. This is useful if the calibration is precisely known ahead of
+  time.
+
+.. member:: int BundleAdjustmentOptions::num_threads
+
+  DEFAULT: ``1``
+
+  The number of threads used by Ceres for optimization. More threads means
+  faster solving time.
+
+.. member:: int BundleAdjustmentOptions::max_num_iterations
+
+  DEFAULT: ``500``
+
+  Maximum number of iterations for Ceres to perform before exiting.
+
+.. member:: double BundleAdjustmentOptions::max_solver_time_in_seconds
+
+  DEFAULT: ``3600.0``
+
+  Maximum solver time is set to 1 hour.
+
+.. member:: bool BundleAdjustmentOptions::use_inner_iterations
+
+  DEFAULT: ``true``
+
+  Inner iterations can help improve the quality of the optimization.
+
+.. member:: double BundleAdjustmentOptions::function_tolerance
+
+  DEFAULT: ``1e-6``
+
+  Ceres parameter for determining convergence.
+
+.. member:: double BundleAdjustmentOptions::gradient_tolerance
+
+  DEFAULT: ``1e-10``
+
+  Ceres parameter for determining convergence.
+
+.. member:: double BundleAdjustmentOptions::parameter_tolerance
+
+  DEFAULT: ``1e-8``
+
+  Ceres parameter for determining convergence.
+
+.. member:: double BundleAdjustmentOptions::max_trust_region_radius
+
+  DEFAULT: ``1e12``
+
+  Maximum size that the trust region radius can grow during optimization. By
+  default, we use a value lower than the Ceres default (1e16) to improve solution quality.
+
+.. function:: BundleAdjustmentSummary BundleAdjustReconstruction(const BundleAdjustmentOptions& options, Reconstruction* reconstruction)
+
+  Performs full bundle adjustment on a reconstruction to optimize the camera reprojection
+  error. The BundleAdjustmentSummary returned contains information about the
+  success of the optimization, the initial and final costs, and the time
+  required for various steps of bundle adjustment.
 
 Similarity Transformation
 =========================

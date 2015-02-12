@@ -10,7 +10,7 @@ Theia
 Theia is a computer vision library developed by `Chris Sweeney <http://cs.ucsb.edu/~cmsweeney>`_ aimed at providing efficient and reliable
 algorithms for Structure from Motion (SfM). The goal of this library is to provide researchers with an out of the box tool for multi-view reconstruction that can be easily extended. Many common algorithms for pose, feature detection and description, matching, and reconstruction have been implemented. All contain simple interfaces, limited dependencies, and extensive documentation.
 
-* Download the latest `release <https://github.com/sweeneychris/Theia>`_ or clone the
+* Download the latest `release <https://github.com/sweeneychris/TheiaSfM>`_ or clone the
   `repo <https://github.com/sweeneychris/Theia>`_ for development.
 
 * Read the :ref:`chapter-api` and the :ref:`chapter-applications` to learn more about Theia
@@ -23,7 +23,8 @@ algorithms for Structure from Motion (SfM). The goal of this library is to provi
 Documentation
 =============
 
-To use Theia, simply add the following line to your program after you build and link the library:
+To use Theia, simply add the following line to your program after you build and
+link the library:
 
 ``#include <theia/theia.h>``
 

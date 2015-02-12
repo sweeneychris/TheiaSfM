@@ -81,17 +81,17 @@ standard image class that used for feature detection within Theia.
 
 We have also implemented some useful member functions of the :class:`Image` class. For a full list of functions, `theia/image/image.h`
 
-.. function:: int Rows() const
-.. function:: int Cols() const
-.. function:: int Channels() const
-.. function:: T* Data()
-.. function:: const T* Data() const
-.. function:: void Read(const std::string& filename)
-.. function:: void Write(const std::string& filename)
-.. function:: void ConvertToGrayscaleImage()
-.. function:: void ConvertToRGBImage()
-.. function:: Image<T> AsGrayscaleImage() const
-.. function:: Image<T> AsRGBImage() const
+.. function:: int Image\<T\>::Rows() const
+.. function:: int Image\<T\>::Cols() const
+.. function:: int Image\<T\>::Channels() const
+.. function:: T* Image\<T\>::Data()
+.. function:: const T* Image\<T\>::Data() const
+.. function:: void Image\<T\>::Read(const std::string& filename)
+.. function:: void Image\<T\>::Write(const std::string& filename)
+.. function:: void Image\<T\>::ConvertToGrayscaleImage()
+.. function:: void Image\<T\>::ConvertToRGBImage()
+.. function:: Image<T> Image\<T\>::AsGrayscaleImage() const
+.. function:: Image<T> Image\<T\>::AsRGBImage() const
 .. function:: Image\<T\> Image\<T\>::Integrate() const
 .. function:: void Image\<T\>::Resize(int new_rows, int new_cols)
 .. function:: void Image\<T\>::Resize(double scale)

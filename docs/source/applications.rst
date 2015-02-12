@@ -41,7 +41,7 @@ Build Reconstruction
 
 This application will build a 3D reconstruction from a set of images or a set of
 image matches. Detailed documentation for the structure-from-motion pipeline can
-be found at :ref:`chapter-sfm`. Many parameters can be set at runtime (too many
+be found at :ref:`_documentation-sfm`. Many parameters can be set at runtime (too many
 to list here), and we provide an example of the possible settings in
 applications/build_reconstruction_flags.txt. This flags file may be run by
 executing the command:

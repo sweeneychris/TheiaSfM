@@ -98,53 +98,68 @@ pieces of information describing the ransac run.
 
 .. class:: RansacParameters
 
-  ``error_thresh``: Error threshold to determin inliers for RANSAC (e.g.,
-     squared reprojection error). This is what will be used by the estimator to
-     determine inliers.
+.. member:: double RansacParameter::error_thresh
 
-  ``failure_probability``: The failure probability of RANSAC. Set to 0.01 means
-        that RANSAC has a 1% chance of missing the correct pose. The default value is
-        0.01
+  DEFAULT: ``No default``
 
-  ``min_inlier_ratio``: The minimal assumed inlier ratio, i.e., it is assumed
-      that the given set of correspondences has an inlier ratio of at least
-      min_inlier_ratio. This is required to limit the number of RANSAC
-      iteratios. The default ratio is 0.1
+   Error threshold to determine inliers for RANSAC (e.g., squared reprojection
+   error). This is what will be used by the estimator to determine inliers.
 
-  ``min_iterations``: The minimum number of iterations to perform before exiting RANSAC.
+.. member:: double RansacParameter::failure_probability
 
-  ``max_iterations``: Another way to specify the maximal number of RANSAC
-      iterations. In effect, the maximal number of iterations is set to
-      min(max_ransac_iterations, T), where T is the number of iterations
-      corresponding to min_inlier_ratio.  This variable is useful if RANSAC is
-      to be applied iteratively, i.e., first applying RANSAC with an
-      min_inlier_ratio of x, then with one of x-y and so on, and we want to
-      avoid repeating RANSAC iterations.  However, the preferable way to limit
-      the number of RANSAC iterations is to set min_inlier_ratio and leave
-      max_ransac_iterations to its default value.  Per default, this variable is
-      set to std::numeric_limits<int>::max().
+  DEFAULT: ``0.01``
 
-  ``use_mle``: When set to ``true``, the MLE score [Torr]_ is used instead of
-      the inlier count. Thi is useful way to improve the performance of RANSAC in
-      most cases.
+  The failure probability of RANSAC. Set to 0.01 means that RANSAC has a 1%
+  chance of missing the correct pose.
 
-  ``use_Tdd_test``: Whether to use the T_{d,d}, with d=1, test proposed in [ChumRandomizedRansac]_
-      After computing the model, RANSAC selects one match at random and evaluates all
-      poses. If the point is an outlier to one pose, the corresponding pose is
-      rejected. Notice that if the pose solver returns multiple poses, then at
-      most one pose is correct. If the selected match is correct, then only the
-      correct pose will pass the test. Per default, the test is disabled.
-      NOTE: Not currently implemented!
+.. member:: double RansacParameter::min_inlier_ratio
+
+  DEFAULT: ``0.0``
+
+  The minimal assumed inlier ratio, i.e., it is assumed that the given set of
+  correspondences has an inlier ratio of at least min_inlier_ratio. This is
+  required to limit the number of RANSAC iteratios.
+
+.. member:: int RansacParameter::min_iterations
+
+  DEFAULT: ``100``
+
+  The minimum number of iterations to perform before exiting RANSAC.
+
+.. member:: int RansacParameter::max_iterations
+
+  DEFAULT: ``std::numeric_limits<int>::max()``
+
+   Another way to specify the maximal number of RANSAC iterations. In effect,
+   the maximal number of iterations is set to min(max_ransac_iterations, T),
+   where T is the number of iterations corresponding to min_inlier_ratio.  This
+   variable is useful if RANSAC is to be applied iteratively, i.e., first
+   applying RANSAC with an min_inlier_ratio of x, then with one of x-y and so
+   on, and we want to avoid repeating RANSAC iterations.  However, the
+   preferable way to limit the number of RANSAC iterations is to set
+   min_inlier_ratio and leave max_ransac_iterations to its default value.
+
+.. member:: bool RansacParameter::use_mle
+
+  DEFAULT: ``false``
+
+  When set to ``true``, the MLE score [Torr]_ is used instead of the inlier
+  count. This is useful way to improve the performance of RANSAC in most cases.
 
 .. class:: RansacSummary
 
-  ``inliers``: A std::vector<int> container with inlier indices.
+.. member:: std::vector<int> RansacSummary::inliers
 
-  ``num_iterations``: Number of iterations required.
+  A std::vector<int> container with inlier indices.
 
-  ``confidence``: The observed confidence of the model based on the inlier ratio
-       and the number of iterations performed.
+.. member:: int RansacSummary::num_iterations
 
+  Number of iterations required.
+
+.. member:: double RansacSummary::confidence
+
+  The observed confidence of the model based on the inlier ratio and the number
+  of iterations performed.
 
 We will illustrate the use of the RANSAC class with a simple line estimation example.
 
@@ -244,7 +259,7 @@ constructor. The constructors for each method are specified as follows
 
   The standard `RANSAC <http://en.wikipedia.org/wiki/RANSAC>`_ implementation as originally proposed by Fischler et. al. [Fischler]_
 
-  .. function:: Ransac(const RansacParams& params, const Estimator& estimator)
+.. function:: Ransac::Ransac(const RansacParams& params, const Estimator& estimator)
 
 .. class:: Prosac
 
@@ -254,9 +269,9 @@ constructor. The constructors for each method are specified as follows
    then progressively sampling the rest of the data set. In the worst case, this
    algorithm degenerates to RANSAC, but typically is significantly faster.
 
-  .. function:: Prosac(const RansacParams& params, const Estimator& estimator)
+.. function:: Prosac::Prosac(const RansacParams& params, const Estimator& estimator)
 
-  **NOTE:** the :func:`Estimate` method for prosace assumes the data is sorted
+  .. NOTE:: The :func:`Estimate` method for prosace assumes the data is sorted
     by quality! That is, that the highest quality data point is first, and the
     worst quality data point is last in the input vector.
 
@@ -268,16 +283,14 @@ constructor. The constructors for each method are specified as follows
   pursuing only the models which are most likely to lead to high quality
   results. This results in a very fast method which can be used for real-time applications.
 
-  .. function:: Arrsac(const RansacParams& params, const Estimator& estimator, int max_candidate_hyps = 500, int block_size = 100)
+.. function:: Arrsac::Arrsac(const RansacParams& params, const Estimator& estimator, int max_candidate_hyps = 500, int block_size = 100)
 
      ``max_candidate_hyps``: Maximum number of hypotheses in the initial hypothesis set
 
      ``block_size``: Number of data points a hypothesis is evaluated against before preemptive ordering is used.
 
-
-  **NOTE**: This method works for all the unit tests currently in
-  Theia, but needs to be tested further to ensure correctness. Use with
-  caution.
+  .. NOTE:: This method works for all the unit tests currently in Theia, but
+    needs to be tested further to ensure correctness. Use with caution.
 
 .. class:: Evsac
 
@@ -288,7 +301,7 @@ constructor. The constructors for each method are specified as follows
   sampling strategy tends to achieve a fast convergence, even when the
   inlier ratio is small.
 
-  .. function:: Evsac(const RansacParameters& ransac_params, const ModelEstimator& estimator, const Eigen::MatrixXd& sorted_distances, const double predictor_threshold, const FittingMethod fitting_method)
+.. function:: Evsac::Evsac(const RansacParameters& ransac_params, const ModelEstimator& estimator, const Eigen::MatrixXd& sorted_distances, const double predictor_threshold, const FittingMethod fitting_method)
 
      ``ransac_params``: The ransac parameters.
 

@@ -202,11 +202,11 @@ Three Point Relative Pose with a Partially Known Rotation
 
     Computes the relative pose between two cameras using 3 correspondences and a
     known vertical direction as a Quadratic Eigenvalue Problem [SweeneyQEP]_. Up
-    to 6 solutions are returned such that :math:`image_2_rays = R *
-    image_1_rays + t`. The ``axis`` that is passed in as a known axis of
-    rotation (when considering rotations as an angle axis). This is equivalent
-    to aligning the two cameras to a common direction such as the vertical
-    direction, which can be done using IMU data.
+    to 6 solutions are returned such that :math:`x_2 = R * x_1 + t` for rays
+    :math:`x_1` in image 1 and rays :math:`x_2` in image 2. The ``axis`` that is
+    passed in as a known axis of rotation (when considering rotations as an
+    angle axis). This is equivalent to aligning the two cameras to a common
+    direction such as the vertical direction, which can be done using IMU data.
 
 Four Point Relative Pose with a Partially Known Rotation
 ========================================================
@@ -218,8 +218,8 @@ Four Point Relative Pose with a Partially Known Rotation
     Problem [SweeneyQEP]_. A generalized camera is a camera setup with multiple
     cameras such that the cameras do not have the same center of projection
     (e.g., a multi-camera rig mounted on a car). Up to 8 solutions are returned
-    such that :math:`image_2_rays = R * image_1_rays + t`. The ``axis`` that is
-    passed in as a known axis of rotation (when considering rotations as an
-    angle axis). This is equivalent to aligning the two cameras to a common
-    direction such as the vertical direction, which can be done using IMU data.
-
+    such that :math:`x_2 = R * x_1 + t` for rays :math:`x_1` in image 1 and rays
+    :math:`x_2` in image 2. The axis that is passed in as a known axis of
+    rotation (when considering rotations as an angle axis). This is equivalent
+    to aligning the two cameras to a common direction such as the vertical
+    direction, which can be done using IMU data.
