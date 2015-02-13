@@ -57,8 +57,6 @@ ENDMACRO(THEIA_REPORT_NOT_FOUND)
 GET_FILENAME_COMPONENT(THEIA_CURRENT_CONFIG_INSTALL_DIR
   "${CMAKE_CURRENT_LIST_FILE}" PATH)
 
-MESSAGE("current config install dir = ${THEIA_CURRENT_CONFIG_INSTALL_DIR}")
-
 # Record the state of the CMake module path when this script was called so
 # that we can ensure that we leave it in the same state on exit as it was
 # on entry, but modify it locally.
