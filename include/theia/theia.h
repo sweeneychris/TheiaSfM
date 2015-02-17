@@ -71,6 +71,7 @@
 #include "theia/math/closed_form_polynomial_solver.h"
 #include "theia/math/distribution.h"
 #include "theia/math/graph/connected_components.h"
+#include "theia/math/l1_solver.h"
 #include "theia/math/matrix/gauss_jordan.h"
 #include "theia/math/matrix/rq_decomposition.h"
 #include "theia/math/polynomial.h"
