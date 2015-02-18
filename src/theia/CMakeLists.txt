@@ -96,6 +96,7 @@ SET(THEIA_SRC
   sfm/pose/essential_matrix_utils.cc
   sfm/pose/estimate_positions_nonlinear.cc
   sfm/pose/estimate_rotations_nonlinear.cc
+  sfm/pose/estimate_rotations_robust.cc
   sfm/pose/five_point_focal_length_radial_distortion.cc
   sfm/pose/five_point_relative_pose.cc
   sfm/pose/four_point_focal_length.cc
@@ -116,6 +117,7 @@ SET(THEIA_SRC
   sfm/track.cc
   sfm/track_builder.cc
   sfm/transformation/align_point_clouds.cc
+  sfm/transformation/align_rotations.cc
   sfm/transformation/gdls_similarity_transform.cc
   sfm/triangulation/triangulation.cc
   sfm/twoview_info.cc
@@ -206,6 +208,7 @@ IF (BUILD_TESTING)
   GTEST(sfm/pose/eight_point_fundamental_matrix)
   GTEST(sfm/pose/essential_matrix_utils)
   GTEST(sfm/pose/estimate_positions_nonlinear)
+  GTEST(sfm/pose/estimate_rotations_robust)
   GTEST(sfm/pose/five_point_focal_length_radial_distortion)
   GTEST(sfm/pose/five_point_relative_pose)
   GTEST(sfm/pose/four_point_focal_length)
@@ -220,6 +223,7 @@ IF (BUILD_TESTING)
   GTEST(sfm/track)
   GTEST(sfm/track_builder)
   GTEST(sfm/transformation/align_point_clouds)
+  GTEST(sfm/transformation/align_rotations)
   GTEST(sfm/transformation/gdls_similarity_transform)
   GTEST(sfm/triangulation/triangulation)
   GTEST(sfm/twoview_info)
