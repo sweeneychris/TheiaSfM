@@ -93,6 +93,7 @@ SET(THEIA_SRC
   sfm/pose/dls_pnp.cc
   sfm/pose/eight_point_fundamental_matrix.cc
   sfm/pose/essential_matrix_utils.cc
+  sfm/pose/estimate_positions_linear.cc
   sfm/pose/estimate_positions_nonlinear.cc
   sfm/pose/estimate_rotations_nonlinear.cc
   sfm/pose/estimate_rotations_robust.cc
