@@ -42,6 +42,37 @@
 
 namespace theia {
 
+// These are template overrides that allow the sparse linear solvers to work
+// with sparse or dense matrices. The sparseView() method is not implemented for
+// Eigen::SparseMatrix.
+namespace l1_solver_internal {
+
+void AnalyzePattern(
+    const Eigen::SparseMatrix<double>& spd_mat,
+    Eigen::SimplicialLDLT<Eigen::SparseMatrix<double> >* linear_solver) {
+  linear_solver->analyzePattern(spd_mat);
+}
+
+void AnalyzePattern(
+    const Eigen::MatrixXd& spd_mat,
+    Eigen::SimplicialLDLT<Eigen::SparseMatrix<double> >* linear_solver) {
+  linear_solver->analyzePattern(spd_mat.sparseView());
+}
+
+void Factorize(
+    const Eigen::SparseMatrix<double>& spd_mat,
+    Eigen::SimplicialLDLT<Eigen::SparseMatrix<double> >* linear_solver) {
+  linear_solver->factorize(spd_mat);
+}
+
+void Factorize(
+    const Eigen::MatrixXd& spd_mat,
+    Eigen::SimplicialLDLT<Eigen::SparseMatrix<double> >* linear_solver) {
+  linear_solver->factorize(spd_mat.sparseView());
+}
+
+}  // l1_solver_internal
+
 // An L1 norm approximation solver. This class will attempt to solve the
 // problem: || A * x - b || under L1-norm (as opposed to L2 i.e. "least-squares"
 // norm). This problem can be cast as a simple linear program which, in turn, is
@@ -72,7 +103,7 @@ class L1Solver {
     // Analyze the sparsity pattern once. Only the values of the entries will be
     // changed with each iteration.
     const MatrixType spd_mat = a_.transpose() * a_;
-    linear_solver_.analyzePattern(spd_mat.sparseView());
+    l1_solver_internal::AnalyzePattern(spd_mat, &linear_solver_);
     CHECK_EQ(linear_solver_.info(), Eigen::Success);
   }
 
@@ -140,7 +171,7 @@ class L1Solver {
         w1 - a_.transpose() * ((sig2.cwiseQuotient(sig1)).cwiseProduct(w2));
     const MatrixType lhs = a_.transpose() * sigx.asDiagonal() * a_;
 
-    linear_solver_.factorize(lhs.sparseView());
+    l1_solver_internal::Factorize(lhs, &linear_solver_);
     dx_ = linear_solver_.solve(w1p);
 
     CHECK_EQ(linear_solver_.info(), Eigen::Success);
