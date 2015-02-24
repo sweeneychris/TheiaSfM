@@ -65,6 +65,7 @@ std::vector<Eigen::Vector3d> world_points;
 // Parameters for OpenGL.
 int mouse_down_x[3], mouse_down_y[3];
 float rot_x = 0.0f, rot_y = 0.0f;
+float prev_x, prev_y;
 float distance = 100.0;
 Eigen::Vector3d origin = Eigen::Vector3d::Zero();
 bool mouse_rotates = false;
@@ -219,6 +220,8 @@ void MouseButton(int button, int state, int x, int y) {
   if (state == GLUT_DOWN && button <= 2) {
     mouse_down_x[button] = x;
     mouse_down_y[button] = y;
+    prev_x = x;
+    prev_y = y;
     if (button == GLUT_LEFT_BUTTON) mouse_rotates = true;
     return;
   }
@@ -240,9 +243,13 @@ void MouseButton(int button, int state, int x, int y) {
 }
 
 void MouseMove(int x, int y) {
+  const double rotate_factor = 0.5f;
   if (mouse_rotates) {
-    rot_x -= (y - mouse_down_y[GLUT_LEFT_BUTTON]) * 0.05f;
-    rot_y -= (x - mouse_down_x[GLUT_LEFT_BUTTON]) * 0.05f;
+    // notice x & y difference (i.e., changes in x are to rotate about y-axis)
+    rot_x -= rotate_factor * (y - prev_y);
+    rot_y -= rotate_factor * (x - prev_x);
+    prev_x = x;
+    prev_y = y;
   }
 }
 
