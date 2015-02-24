@@ -34,6 +34,7 @@
 
 #include <theia/theia.h>
 #include <glog/logging.h>
+#include <gflags/gflags.h>
 
 #include <fstream>  // NOLINT
 #include <string>
