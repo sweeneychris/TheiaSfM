@@ -47,25 +47,25 @@ namespace theia {
 // Eigen::SparseMatrix.
 namespace l1_solver_internal {
 
-void AnalyzePattern(
+inline void AnalyzePattern(
     const Eigen::SparseMatrix<double>& spd_mat,
     Eigen::SimplicialLDLT<Eigen::SparseMatrix<double> >* linear_solver) {
   linear_solver->analyzePattern(spd_mat);
 }
 
-void AnalyzePattern(
+inline void AnalyzePattern(
     const Eigen::MatrixXd& spd_mat,
     Eigen::SimplicialLDLT<Eigen::SparseMatrix<double> >* linear_solver) {
   linear_solver->analyzePattern(spd_mat.sparseView());
 }
 
-void Factorize(
+inline void Factorize(
     const Eigen::SparseMatrix<double>& spd_mat,
     Eigen::SimplicialLDLT<Eigen::SparseMatrix<double> >* linear_solver) {
   linear_solver->factorize(spd_mat);
 }
 
-void Factorize(
+inline void Factorize(
     const Eigen::MatrixXd& spd_mat,
     Eigen::SimplicialLDLT<Eigen::SparseMatrix<double> >* linear_solver) {
   linear_solver->factorize(spd_mat.sparseView());
