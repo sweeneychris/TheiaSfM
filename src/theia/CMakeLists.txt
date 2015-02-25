@@ -54,6 +54,7 @@ SET(THEIA_SRC
   io/reconstruction_writer.cc
   io/sift_binary_file.cc
   io/sift_text_file.cc
+  io/sift_vsfm_file.cc
   io/write_matches.cc
   math/closed_form_polynomial_solver.cc
   math/polynomial.cc
