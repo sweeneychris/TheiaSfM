@@ -57,6 +57,7 @@
 #include "theia/io/reconstruction_writer.h"
 #include "theia/io/sift_binary_file.h"
 #include "theia/io/sift_text_file.h"
+#include "theia/io/sift_vsfm_file.h"
 #include "theia/io/write_matches.h"
 #include "theia/matching/brute_force_feature_matcher.h"
 #include "theia/matching/cascade_hasher.h"
