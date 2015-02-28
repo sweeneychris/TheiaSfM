@@ -175,25 +175,36 @@ std::unordered_map<ViewIdPair, double> ProjectTranslationsOntoAxis(
 }
 
 // This chooses a random axis based on the given relative translations.
-Vector3d ChooseRandomAxis(
-    const std::unordered_map<ViewIdPair, Vector3d>& relative_translations) {
-  // Choose a random element in the relative translations.
-  const int random_index = RandInt(0, relative_translations.size() - 1);
-  auto it = relative_translations.begin();
-  std::advance(it, random_index);
-  Eigen::AngleAxisd noise_rotation(DegToRad(RandGaussian(0, 5.0)),
-                                   Vector3d::Random().normalized());
-  return noise_rotation * (it->second);
+void ComputeMeanVariance(
+    const std::unordered_map<ViewIdPair, Vector3d>& relative_translations,
+    Vector3d* mean,
+    Vector3d* variance) {
+  mean->setZero();
+  variance->setZero();
+  for (const auto& translation : relative_translations) {
+    *mean += translation.second;
+  }
+  *mean /= static_cast<double>(relative_translations.size());
+
+  for (const auto& translation : relative_translations) {
+    *variance += (translation.second - *mean).cwiseAbs2();
+  }
+  *variance /= static_cast<double>(relative_translations.size() - 1);
 }
 
 // Performs a single iterations of the translation filtering. This method is
 // thread-safe.
 void TranslationFilteringIteration(
     const std::unordered_map<ViewIdPair, Vector3d>& relative_translations,
+    const Vector3d& direction_mean,
+    const Vector3d& direction_variance,
     std::mutex* mutex,
     std::unordered_map<ViewIdPair, double>* bad_edge_weight) {
   // Get a random vector to project all relative translations on to.
-  const Vector3d& random_axis = ChooseRandomAxis(relative_translations);
+  const Vector3d random_axis(
+      RandGaussian(direction_mean[0], direction_variance[0]),
+      RandGaussian(direction_mean[1], direction_variance[1]),
+      RandGaussian(direction_mean[2], direction_variance[2]));
 
   // Project all vectors.
   const std::unordered_map<ViewIdPair, double>&
@@ -243,11 +254,18 @@ void FilterViewPairsFromRelativeTranslation(
   const std::unordered_map<ViewIdPair, Vector3d>& rotated_translations =
       RotateRelativeTranslationsToGlobalFrame(orientations, *view_pairs);
 
+  Vector3d translation_mean, translation_variance;
+  ComputeMeanVariance(rotated_translations,
+                      &translation_mean,
+                      &translation_variance);
+
   std::unique_ptr<ThreadPool> pool(new ThreadPool(options.num_threads));
   std::mutex mutex;
   for (int i = 0; i < options.num_iterations; i++) {
     pool->Add(TranslationFilteringIteration,
               rotated_translations,
+              translation_mean,
+              translation_variance,
               &mutex,
               &bad_edge_weight);
   }
@@ -258,6 +276,8 @@ void FilterViewPairsFromRelativeTranslation(
       options.translation_projection_tolerance * options.num_iterations;
   int num_view_pairs_removed = 0;
   for (const auto& view_pair : bad_edge_weight) {
+    VLOG(3) << "View pair (" << view_pair.first.first << ", "
+            << view_pair.first.second << ") projection = " << view_pair.second;
     if (view_pair.second > max_aggregated_projection_tolerance) {
       view_pairs->erase(view_pair.first);
       ++num_view_pairs_removed;
