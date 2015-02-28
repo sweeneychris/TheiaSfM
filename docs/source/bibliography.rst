@@ -12,6 +12,9 @@ Bibliography
    P4P Problem for Camera with Unknown Focal Length**. *Computer Vision and Pattern
    Recognition*, 2008. IEEE Conference on.
 
+.. [ChatterjeeICCV13] Chatterjee, A. and Govindu, V. **Efficient and Robust Large-
+   Scale Rotation Averaging** *International Conference on Computer Vision (ICCV)*, 2013.
+
 .. [Cheng] Cheng, J. and Leng, C. and Wu, J. and Cui, H. **Hanqing LuFast and
    Accurate Image Matching with Cascade Hashing for 3D Reconstruction**. *Computer
    Vision and Pattern Recognition (CVPR)*, 2014.

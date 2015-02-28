@@ -1,4 +1,4 @@
-.. _chapter-applications:
+.. _`chapter-applications`:
 
 ============
 Applications
@@ -6,7 +6,9 @@ Applications
 
 There are several applications that come with Theia right out of the box. These
 applications are useful on their own, and also help provide context for how
-Theia can be used for your own applications.
+Theia can be used for your own applications. Only minimal documentation is
+provided here, but a full description of command line arguments and more can be
+found within each application file.
 
 Features
 ========
@@ -31,7 +33,7 @@ written to a specified output directory.
 
 .. code-block:: bash
 
-  ./bin/match_features --input_imgs=/path/to/images/*.jpg --img_output_dir=/path/to/output --num_threads=4 --descriptor=SIFT --matcher=brute_force --lowes_ratio=0.8
+  ./bin/match_descriptors --input_imgs=/path/to/images/*.jpg --img_output_dir=/path/to/output --num_threads=4 --descriptor=SIFT --matcher=brute_force --lowes_ratio=0.8
 
 Reconstructions
 ===============
@@ -41,7 +43,7 @@ Build Reconstruction
 
 This application will build a 3D reconstruction from a set of images or a set of
 image matches. Detailed documentation for the structure-from-motion pipeline can
-be found at :ref:`_documentation-sfm`. Many parameters can be set at runtime (too many
+be found at :ref:`chapter-sfm`. Many parameters can be set at runtime (too many
 to list here), and we provide an example of the possible settings in
 applications/build_reconstruction_flags.txt. This flags file may be run by
 executing the command:
@@ -75,12 +77,21 @@ considered valid.
 Compute Reconstruction Statistics
 ---------------------------------
 
-Computes reprojection error, etc.
+Computes some basic information about reconstructions such as reprojection
+error, number of cameras, 3D points, and the average number of observations per
+3D point.
 
 View Reconstruction
 -------------------
 
 A very, very basic OpenGL point cloud viewer. Improvements are very welcome!
+
+.. code-block:: bash
+
+  ./bin/view_reconstruction --reconstruction=/path/to/theia/reconstruction
+
+The reconstruction file can be generated using the :class:`ReconstructionWriter`.
+
 
 Create Calibration File From EXIF
 ---------------------------------

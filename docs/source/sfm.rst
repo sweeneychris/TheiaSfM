@@ -2,7 +2,7 @@
 
 .. default-domain:: cpp
 
-.. _chapter-sfm:
+.. _`chapter-sfm`:
 
 ===========================
 Structure from Motion (SfM)
@@ -532,14 +532,17 @@ Theia estimates the global rotations of cameras robustly using a nonlinear
 optimization. Using the relative rotations obtained from all
 :class:`TwoViewInfo`, we enforce the constraint that
 
-  :math:`R_{i,j} = R_j * R_i^T`
+.. math:: :label: rotation_constraint
+
+  R_{i,j} = R_j * R_i^T`
 
 We use the angle-axis representation of rotations to ensure that proper
 rotations are formed. All pairwise constraints are put into a nonlinear
 optimization with a robust loss function and the global orienations are
 computed. The optimization usually converges within just a few iterations and
 provides a very accurate result. The nonlinear optimization is initialized by
-forming a random spanning tree of the view graph and walking along the edges.
+forming a random spanning tree of the view graph and walking along the
+edges. There are two potential methods that may be used.
 
 .. function:: bool EstimateRotationsNonlinear(const std::unordered_map<ViewIdPair, Eigen::Vector3d>& relative_rotations, const double robust_loss_width, std::unordered_map<ViewId, Eigen::Vector3d>* global_orientations)
 
@@ -547,6 +550,39 @@ forming a random spanning tree of the view graph and walking along the edges.
   minimize the error between the relative rotations and the global
   orientations. We use as SoftL1Loss for robustness to outliers.
 
+
+However, this method is very sensitive to initialization. We recommend to use
+the :class:`RobustRotationEstimator` of [ChatterjeeICCV13]_. This rotation
+estimator is similar in spirit to :func:`EstimateRotationsNonlinear`, however,
+it utilizes L1 minimization to maintain efficiency to outliers. After several
+iterations of L1 minimization, an iteratively reweighted least squares approach
+is used to refine the solution.
+
+.. member:: int RobustRotationEstimator::Options::max_num_l1_iterations
+
+   DEFAULT: ``5``
+
+   Maximum number of L1 iterations to perform before performing the reweighted
+   least squares minimization. Typically only a very small number of L1
+   iterations are needed.
+
+.. member:: int RobustRotationEstimator::Options::max_num_irls_iterations
+
+   DEFAULT: ``100``
+
+   Maximum number of reweighted least squares iterations to perform. These steps
+   are much faster than the L2 iterations.
+
+.. function:: RobustRotationEstimator::RobustRotationEstimator(const RobustRotationEstimator::Options& options, const std::unordered_map<ViewIdPair, Eigen::Vector3d>& relative_rotations)
+
+  The options and the relative rotations remain constant throughout the rotation
+  estimation and are passed in the constructor.
+
+.. function:: bool RobustRotationEstimator::EstimateRotations(std::unordered_map<ViewId, Eigen::Vector3d>* global_orientations)
+
+  Estimates the global orientation using the robust method described above. An
+  initial estimation for the rotations is required. [ChatterjeeICCV13]_ suggests
+  to use a random spanning tree to initialize the rotations.
 
 Estimating Global Positions
 ===========================
