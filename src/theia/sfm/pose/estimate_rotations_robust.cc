@@ -119,6 +119,7 @@ bool RobustRotationEstimator::EstimateRotations(
 
   if (!SolveIRLS()) {
     LOG(ERROR) << "Could not solve the least squares error step.";
+    return false;
   }
 
   return true;

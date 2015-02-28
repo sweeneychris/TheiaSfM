@@ -53,27 +53,6 @@ using Eigen::Vector3d;
 
 namespace {
 
-class TestableRobustRotationEstimator : public RobustRotationEstimator {
- public:
-  TestableRobustRotationEstimator(
-      const Options& options,
-      const std::unordered_map<ViewIdPair, Eigen::Vector3d>& relative_rotations)
-      : RobustRotationEstimator(options, relative_rotations) {}
-
-  // Make these methods public so that they are testable.
-  using RobustRotationEstimator::EstimateRotations;
-  using RobustRotationEstimator::ComputeRotationError;
-  using RobustRotationEstimator::UpdateGlobalRotations;
-
-  // Accessor methods for retrieving rotation parameters.
-  const Eigen::VectorXd RotationChange() const {
-    return this->rotation_change_;
-  }
-  const Eigen::VectorXd RelativeRotationError() const {
-    return this->relative_rotation_error_;
-  }
-};
-
 // Computes R_ij = R_j * R_i^t.
 Vector3d RelativeRotationFromTwoRotations(const Vector3d& rotation1,
                                           const Vector3d& rotation2,
@@ -147,8 +126,7 @@ class EstimateRotationsRobustTest : public ::testing::Test {
 
     // Estimate the rotations.
     RobustRotationEstimator::Options options;
-    TestableRobustRotationEstimator rotation_estimator(options,
-                                                       relative_orientations_);
+    RobustRotationEstimator rotation_estimator(options, relative_orientations_);
 
     // Set the initial rotation estimations.
     std::unordered_map<ViewId, Vector3d> estimated_rotations;

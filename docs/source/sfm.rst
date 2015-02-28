@@ -551,7 +551,9 @@ edges. There are two potential methods that may be used.
   orientations. We use as SoftL1Loss for robustness to outliers.
 
 
-However, this method is very sensitive to initialization. We recommend to use
+.. class:: RobustRotationEstimator
+
+The nonlinear method above is very sensitive to initialization. We recommend to use
 the :class:`RobustRotationEstimator` of [ChatterjeeICCV13]_. This rotation
 estimator is similar in spirit to :func:`EstimateRotationsNonlinear`, however,
 it utilizes L1 minimization to maintain efficiency to outliers. After several
