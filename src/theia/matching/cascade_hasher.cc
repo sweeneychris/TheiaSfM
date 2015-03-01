@@ -174,6 +174,7 @@ void CascadeHasher::MatchImages(
     const double lowes_ratio,
     std::vector<IndexedFeatureMatch>* matches) const {
   static const int kNumTopCandidates = 10;
+  const double sq_lowes_ratio = lowes_ratio * lowes_ratio;
   L2 l2_distance;
 
   // Reserve space for the matches.
@@ -263,7 +264,7 @@ void CascadeHasher::MatchImages(
 
     // Only add to output matches if it passes the ratio test.
     if (candidate_euclidean_distances[0].first >
-        candidate_euclidean_distances[1].first * lowes_ratio) {
+        candidate_euclidean_distances[1].first * sq_lowes_ratio) {
       continue;
     }
 

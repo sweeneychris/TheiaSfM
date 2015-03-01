@@ -79,6 +79,9 @@ bool BruteForceFeatureMatcher<DistanceMetric>::MatchImagePair(
     const int image1_index,
     const int image2_index,
     std::vector<FeatureCorrespondence>* matched_features) {
+  const double sq_lowes_ratio =
+      this->matcher_options_.lowes_ratio * this->matcher_options_.lowes_ratio;
+
   const std::vector<DescriptorType>& descriptors1 =
       *(this->descriptors_[image1_index]);
   const std::vector<DescriptorType>& descriptors2 =
@@ -104,8 +107,7 @@ bool BruteForceFeatureMatcher<DistanceMetric>::MatchImagePair(
     // Add to the matches vector if lowes ratio test is turned off or it is
     // turned on and passes the test.
     if (!this->matcher_options_.use_lowes_ratio ||
-        temp_matches[0].distance <
-            this->matcher_options_.lowes_ratio * temp_matches[1].distance) {
+        temp_matches[0].distance < sq_lowes_ratio * temp_matches[1].distance) {
       matches.emplace_back(temp_matches[0]);
     }
   }
@@ -135,7 +137,7 @@ bool BruteForceFeatureMatcher<DistanceMetric>::MatchImagePair(
       // turned on and passes the test.
       if (!this->matcher_options_.use_lowes_ratio ||
           temp_matches[0].distance <
-              this->matcher_options_.lowes_ratio * temp_matches[1].distance) {
+              sq_lowes_ratio * temp_matches[1].distance) {
         reverse_matches.emplace_back(temp_matches[0]);
       }
     }
