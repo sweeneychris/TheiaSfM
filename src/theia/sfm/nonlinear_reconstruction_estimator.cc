@@ -47,7 +47,7 @@
 #include "theia/sfm/reconstruction_estimator_options.h"
 #include "theia/sfm/reconstruction_estimator_utils.h"
 #include "theia/sfm/pose/estimate_positions_nonlinear.h"
-#include "theia/sfm/pose/estimate_rotations_nonlinear.h"
+#include "theia/sfm/pose/estimate_rotations_robust.h"
 #include "theia/sfm/view_graph/orientations_from_view_graph.h"
 #include "theia/sfm/twoview_info.h"
 #include "theia/sfm/view_graph/remove_disconnected_view_pairs.h"
@@ -252,8 +252,8 @@ ReconstructionEstimatorSummary NonlinearReconstructionEstimator::Estimate(
 }
 
 bool NonlinearReconstructionEstimator::FilterInitialViewGraph() {
-  FilterViewPairsFromCycles(options_.max_rotation_error_in_view_graph_cycles,
-                            &view_pairs_);
+  // TODO(cmsweeney): Remove any view pairs that do not have a sufficient number
+  // of inliers.
 
   // Only reconstruct the largest connected component.
   RemoveDisconnectedViewPairs(&view_pairs_);
@@ -274,10 +274,10 @@ void NonlinearReconstructionEstimator::EstimateGlobalRotations() {
   OrientationsFromViewGraph(*view_graph_, random_starting_view, &orientations_);
   const auto& relative_rotations =
       RelativeRotationsFromTwoViewInfos(view_pairs_);
-  CHECK(EstimateRotationsNonlinear(
-      relative_rotations,
-      options_.rotation_estimation_robust_loss_scale,
-      &orientations_))
+  RobustRotationEstimator::Options rotation_estimator_options;
+  RobustRotationEstimator rotation_estimator(rotation_estimator_options,
+                                             relative_rotations);
+  CHECK(rotation_estimator.EstimateRotations(&orientations_))
       << "Could not estimate rotations.";
 }
 
