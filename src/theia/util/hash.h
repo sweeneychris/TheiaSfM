@@ -39,6 +39,17 @@
 
 // This file defines hash functions for stl containers.
 namespace std {
+namespace {
+
+// Combines the hash of v with the current hash value seed. This is the
+// recommended approach from Boost.
+template <class T>
+inline void HashCombine(const T& v, std::size_t* seed) {
+  std::hash<T> hasher;
+  *seed ^= hasher(v) + 0x9e3779b9 + (*seed << 6) + (*seed >> 2);
+}
+
+}  // namespace
 
 // STL does not implement hashing for pairs, so a simple pair hash is done here.
 template <typename T1, typename T2> struct hash<std::pair<T1, T2> > {
@@ -47,7 +58,10 @@ template <typename T1, typename T2> struct hash<std::pair<T1, T2> > {
   std::hash<T2> h2;
 
   size_t operator()(const std::pair<T1, T2>& e) const {
-    return h1(e.first) + h2(e.second) * 99181;
+    size_t seed = 0;
+    HashCombine(e.first, &seed);
+    HashCombine(e.second, &seed);
+    return seed;
   }
 };
 
