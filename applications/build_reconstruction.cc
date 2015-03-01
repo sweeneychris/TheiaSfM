@@ -261,7 +261,9 @@ void AddMatchesToReconstructionBuilder(
 void AddImagesToReconstructionBuilder(
     ReconstructionBuilder* reconstruction_builder) {
   std::vector<std::string> image_files;
-  CHECK(theia::GetFilepathsFromWildcard(FLAGS_images, &image_files));
+  CHECK(theia::GetFilepathsFromWildcard(FLAGS_images, &image_files))
+      << "Could not find images that matched the filepath: " << FLAGS_images
+      << ". NOTE that the ~ filepath is not supported.";
 
   // Load calibration file if it is provided.
   std::unordered_map<std::string, theia::CameraIntrinsicsPrior>
