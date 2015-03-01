@@ -67,8 +67,6 @@ class ConnectedComponents {
     int size;
   };
 
-  typedef typename std::unordered_map<T, Root>::iterator DisjointSetIterator;
-
   ConnectedComponents()
       : max_connected_component_size_(std::numeric_limits<T>::max()) {}
 
@@ -86,21 +84,26 @@ class ConnectedComponents {
   // component larger than the maximum allowable size then we simply create a
   // new connected component.
   void AddEdge(const T& node1, const T& node2) {
-    DisjointSetIterator it1 = FindOrInsert(node1);
-    DisjointSetIterator it2 = FindOrInsert(node2);
+    Root* root1 = FindOrInsert(node1);
+    Root* root2 = FindOrInsert(node2);
 
     // If the nodes are already part of the same connected component then do
     // nothing. If merging the connected components will create a connected
     // component larger than the max size then do nothing.
-    if (it1->second.id == it2->second.id ||
-        it1->second.size + it2->second.size > max_connected_component_size_) {
+    if (root1->id == root2->id ||
+        root1->size + root2->size > max_connected_component_size_) {
       return;
     }
 
-    // Union the two connected components.
-    it1->second.size += it2->second.size;
-    it2->second.id = it1->first;
-    it2->second.size = 0;
+    // Union the two connected components. Balance the tree better by attaching
+    // the smaller tree to the larger one.
+    if (root1->size < root2->size) {
+      root2->size += root1->size;
+      *root1 = *root2;
+    } else {
+      root1->size += root2->size;
+      *root2 = *root1;
+    }
   }
 
   // Computes the connected components and returns the disjointed sets.
@@ -108,36 +111,40 @@ class ConnectedComponents {
       std::unordered_map<T, std::unordered_set<T> >* connected_components) {
     CHECK_NOTNULL(connected_components)->clear();
 
-    for (const auto& it : disjoint_set_) {
-      DisjointSetIterator root_it = FindOrInsert(it.first);
-      (*connected_components)[root_it->second.id].insert(it.first);
+    for (const auto& node : disjoint_set_) {
+      const Root* root = FindRoot(node.first);
+      (*connected_components)[root->id].insert(node.first);
     }
   }
 
  private:
-  // Finds the root node of the specified node, or inserts the node as a new
-  // connected component if it does not already exist.
-  DisjointSetIterator FindOrInsert(const T& node) {
-    // Insert the node if it does not already exist.
-    if (!ContainsKey(disjoint_set_, node)) {
+  // Attempts to find the root of the tree, or otherwise inserts the node.
+  Root* FindOrInsert(const T& node) {
+    const Root* parent = FindOrNull(disjoint_set_, node);
+    // If we cannot find the node in the disjoint set list, insert it.
+    if (parent == nullptr) {
       InsertOrDie(&disjoint_set_, node, Root(node, 1));
-      return disjoint_set_.find(node);
+      return FindOrNull(disjoint_set_, node);
     }
 
-    // Perform a recursive search to find the root node.
-    DisjointSetIterator it = disjoint_set_.find(node);
-    while (it != disjoint_set_.end() && it->first != it->second.id) {
-      it = disjoint_set_.find(it->second.id);
+    return FindRoot(node);
+  }
+
+  // Perform a recursive search to find the root of the node. We flatten the
+  // tree structure as we proceed so that finding the root is always a few
+  // (hopefully one) steps away.
+  Root* FindRoot(const T& node) {
+    Root* parent = CHECK_NOTNULL(FindOrNull(disjoint_set_, node));
+
+    // If this node is a root, return the node itself.
+    if (node == parent->id) {
+      return parent;
     }
 
-    // If the recursion ends in a bad root then the connected component is
-    // ill-formed. Return with an error logged.
-    if (it == disjoint_set_.end()) {
-      LOG(ERROR) << "Could not find the root to the node. The connected "
-                    "components graph is corrupted!";
-    }
-
-    return it;
+    // Otherwise, recusively search for the root.
+    Root* root = FindRoot(parent->id);
+    *parent = *root;
+    return root;
   }
 
   uint64_t max_connected_component_size_;
