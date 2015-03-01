@@ -36,16 +36,22 @@
 
 #include <ceres/rotation.h>
 #include <Eigen/Core>
-#include <queue>
+#include <algorithm>
 #include <unordered_map>
 
 #include "theia/util/map_util.h"
+#include "theia/sfm/twoview_info.h"
 #include "theia/sfm/types.h"
 #include "theia/sfm/view_graph/view_graph.h"
 
 namespace theia {
-
 namespace {
+
+typedef std::pair<TwoViewInfo, ViewIdPair> HeapElement;
+
+bool SortHeapElement(const HeapElement& h1, const HeapElement& h2) {
+  return h1.first.num_verified_matches > h2.first.num_verified_matches;
+}
 
 // Computes the orientation of the neighbor camera based on the orientation of
 // the source camera and the relative rotation between the cameras.
@@ -73,6 +79,25 @@ Eigen::Vector3d ComputeOrientation(const Eigen::Vector3d& source_orientation,
   return orientation;
 }
 
+// Adds all the edges of view_id to the heap. Only edges that do not already
+// have an orientation estimation are added.
+void AddEdgesToHeap(
+    const ViewGraph& view_graph,
+    const std::unordered_map<ViewId, Eigen::Vector3d>& orientations,
+    const ViewId view_id,
+    std::vector<HeapElement >* heap) {
+  const auto* edges = view_graph.GetEdgesForView(view_id);
+  for (const auto& edge : *edges) {
+    // Only add edges to the heap that contain a vertex that has not been seen.
+    if (ContainsKey(orientations, edge.first)) {
+      continue;
+    }
+
+    heap->emplace_back(edge.second, ViewIdPair(view_id, edge.first));
+    std::push_heap(heap->begin(), heap->end(), SortHeapElement);
+  }
+}
+
 }  // namespace
 
 void OrientationsFromViewGraph(
@@ -82,32 +107,35 @@ void OrientationsFromViewGraph(
   CHECK(view_graph.HasView(root_view_id))
       << "The root node does not exist in the view graph.";
 
-  std::queue<ViewId> views_to_visit;
+  // We use a heap to determine the next edges to add to the minimum spanning
+  // tree.
+  std::vector<HeapElement> heap;
 
-  // Set the root value and push it to the queue.
+  // Set the root value.
   (*orientations)[root_view_id] = Eigen::Vector3d::Zero();
-  views_to_visit.push(root_view_id);
-  while (!views_to_visit.empty()) {
-    const ViewId view_id = views_to_visit.front();
-    views_to_visit.pop();
-    const Eigen::Vector3d& source_orientation =
-        FindOrDie(*orientations, view_id);
+  AddEdgesToHeap(view_graph, *orientations, root_view_id, &heap);
 
-    // Add all the neigbors that have not been visited.
-    const auto* neighbors = view_graph.GetEdgesForView(view_id);
-    for (const auto& neighbor : *neighbors) {
-      if (ContainsKey(*orientations, neighbor.first)) {
-        continue;
-      }
+  while (!heap.empty()) {
+    const HeapElement next_edge = heap.front();
+    // Remove the best edge.
+    std::pop_heap(heap.begin(), heap.end(), SortHeapElement);
+    heap.pop_back();
 
-      // Compute the orientation and add it to the result.
-      (*orientations)[neighbor.first] = ComputeOrientation(source_orientation,
-                                                           neighbor.second,
-                                                           view_id,
-                                                           neighbor.first);
-      // Add the neighbor to the queue.
-      views_to_visit.push(neighbor.first);
+    // If the edge contains two vertices that have already been added then do
+    // nothing.
+    if (ContainsKey(*orientations, next_edge.second.second)) {
+      continue;
     }
+
+    // Compute the orientation for the vertex.
+    (*orientations)[next_edge.second.second] = ComputeOrientation(
+        FindOrDie(*orientations, next_edge.second.first),
+        next_edge.first,
+        next_edge.second.first,
+        next_edge.second.second);
+
+    // Add all edges to the heap.
+    AddEdgesToHeap(view_graph, *orientations, next_edge.second.second, &heap);
   }
 }
 
