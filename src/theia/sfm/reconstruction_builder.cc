@@ -273,13 +273,22 @@ void ReconstructionBuilder::CameraIntrinsicsFromCameraIntrinsicsPriors(
   }
 }
 
+void ReconstructionBuilder::InitializeReconstructionAndViewGraph(
+    Reconstruction* reconstruction, ViewGraph* view_graph) {
+  reconstruction_.reset(std::move(reconstruction));
+  view_graph_.reset(std::move(view_graph));
+}
+
 bool ReconstructionBuilder::BuildReconstruction(
     std::vector<Reconstruction*>* reconstructions) {
   CHECK_GT(view_graph_->NumViews(), 0)
       << "You must add images with the reconstruction "
          "builder before calling BuildReconstruction.";
 
-  track_builder_->BuildTracks(reconstruction_.get());
+  // Build tracks if they were not explicitly specified.
+  if (reconstruction_->NumTracks() == 0) {
+    track_builder_->BuildTracks(reconstruction_.get());
+  }
 
   while (reconstruction_->NumViews() > 2) {
     std::unique_ptr<ReconstructionEstimator> reconstruction_estimator(

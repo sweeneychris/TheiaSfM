@@ -159,6 +159,9 @@ ReconstructionEstimatorSummary NonlinearReconstructionEstimator::Estimate(
   // Get view pairs.
   view_pairs_ = view_graph.GetAllEdges();
 
+  LOG(INFO) << "Computing a reconstruction from " << view_pairs_.size()
+            << " initial view pairs.";
+
   // Step 1. Filter the initial view graph and remove any bad two view
   // geometries.
   LOG(INFO) << "Filtering the intial view graph.";

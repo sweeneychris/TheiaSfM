@@ -4,9 +4,6 @@ TARGET_LINK_LIBRARIES(match_descriptors theia ${GFLAGS_LIBRARIES})
 ADD_EXECUTABLE(extract_features extract_features.cc)
 TARGET_LINK_LIBRARIES(extract_features theia ${GFLAGS_LIBRARIES})
 
-ADD_EXECUTABLE(export_1dsfm_matches export_1dsfm_matches.cc)
-TARGET_LINK_LIBRARIES(export_1dsfm_matches theia ${GFLAGS_LIBRARIES})
-
 ADD_EXECUTABLE(convert_sift_key_file convert_sift_key_file.cc)
 TARGET_LINK_LIBRARIES(convert_sift_key_file theia ${GFLAGS_LIBRARIES} ${GLOG_LIBRARIES})
 
@@ -24,6 +21,9 @@ TARGET_LINK_LIBRARIES(compute_two_view_geometry theia ${GFLAGS_LIBRARIES} ${GLOG
 
 ADD_EXECUTABLE(build_reconstruction build_reconstruction.cc)
 TARGET_LINK_LIBRARIES(build_reconstruction theia ${GFLAGS_LIBRARIES} ${GLOG_LIBRARIES})
+
+ADD_EXECUTABLE(build_1dsfm_reconstruction build_1dsfm_reconstruction.cc)
+TARGET_LINK_LIBRARIES(build_1dsfm_reconstruction theia ${GFLAGS_LIBRARIES} ${GLOG_LIBRARIES})
 
 # A demo program that will load a Reconstruction and render it in OpenGL.
 find_package(OpenGL REQUIRED)

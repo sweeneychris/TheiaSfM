@@ -50,6 +50,7 @@
 #include "theia/image/keypoint_detector/keypoint.h"
 #include "theia/image/keypoint_detector/keypoint_detector.h"
 #include "theia/image/keypoint_detector/sift_detector.h"
+#include "theia/io/read_1dsfm.h"
 #include "theia/io/read_bundler_files.h"
 #include "theia/io/read_calibration.h"
 #include "theia/io/read_matches.h"

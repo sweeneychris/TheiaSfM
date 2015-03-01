@@ -117,7 +117,16 @@ class ReconstructionBuilder {
                        const std::string& image2,
                        const ImagePairMatch& matches);
 
+  // Extracts features and performs matching with geometric verification.
   bool ExtractAndMatchFeatures();
+
+  // Initializes the reconstruction and view graph explicitly. This method
+  // should be used as an alternative to the Add* methods.
+  //
+  // NOTE: The ReconstructionBuilder takses ownership of the reconstruction and
+  // view graph.
+  void InitializeReconstructionAndViewGraph(Reconstruction* reconstruction,
+                                            ViewGraph* view_graph);
 
   // Estimates a Structure-from-Motion reconstruction using the specified
   // ReconstructionEstimator. Features are first extracted and matched if

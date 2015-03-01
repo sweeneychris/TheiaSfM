@@ -47,6 +47,7 @@ SET(THEIA_SRC
   image/keypoint_detector/brisk_detector.cc
   image/keypoint_detector/brisk_impl.cc
   image/keypoint_detector/sift_detector.cc
+  io/read_1dsfm.cc
   io/read_bundler_files.cc
   io/read_calibration.cc
   io/read_matches.cc
