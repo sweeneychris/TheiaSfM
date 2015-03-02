@@ -56,21 +56,16 @@ SET(THEIA_SRC
   io/sift_binary_file.cc
   io/sift_text_file.cc
   io/write_matches.cc
+  matching/cascade_hasher.cc
+  matching/cascade_hashing_feature_matcher.cc
+  matching/feature_matcher_utils.cc
   math/closed_form_polynomial_solver.cc
   math/polynomial.cc
   math/probability/sequential_probability_ratio.cc
   math/sturm_chain.cc
-  util/filesystem.cc
-  util/random.cc
-  util/stringprintf.cc
-  util/threadpool.cc
-  util/timer.cc
-  matching/cascade_hasher.cc
-  matching/cascade_hashing_feature_matcher.cc
-  matching/feature_matcher_utils.cc
+  sfm/bundle_adjustment/bundle_adjust_track.cc
   sfm/bundle_adjustment/bundle_adjust_two_views.cc
   sfm/bundle_adjustment/bundle_adjustment.cc
-  sfm/bundle_adjustment/bundle_adjust_track.cc
   sfm/bundle_adjustment/optimize_relative_position_with_known_rotation.cc
   sfm/camera/camera.cc
   sfm/camera/projection_matrix_utils.cc
@@ -128,6 +123,11 @@ SET(THEIA_SRC
   sfm/view_graph/remove_disconnected_view_pairs.cc
   sfm/view_graph/triplet_extractor.cc
   sfm/view_graph/view_graph.cc
+  util/filesystem.cc
+  util/random.cc
+  util/stringprintf.cc
+  util/threadpool.cc
+  util/timer.cc
   )
 
 SET(THEIA_LIBRARY_DEPENDENCIES

@@ -1,4 +1,4 @@
-// Copyright (C) 2014 The Regents of the University of California (Regents).
+// Copyright (C) 2015 The Regents of the University of California (Regents).
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -43,45 +43,6 @@
 
 DEFINE_string(reconstruction, "", "Reconstruction file");
 
-class Histogram {
- public:
-  // Initialize the historgram with its buckets.
-  explicit Histogram(const std::vector<int>& boundaries)
-      : boundaries_(boundaries) {
-    histogram_count_.resize(boundaries_.size());
-  }
-
-  // Add a value to the histogram count.
-  void Add(const int value) {
-    for (int i = 0; i < boundaries_.size() - 1; i++) {
-      if (value < boundaries_[i + 1]) {
-        ++histogram_count_[i];
-        return;
-      }
-    }
-
-    ++histogram_count_[boundaries_.size() - 1];
-  }
-
-  // Returns the histogram printed in a message.
-  std::string Print() {
-    std::string msg = "";
-    for (int i = 0; i < boundaries_.size() - 1; i++) {
-      msg += theia::StringPrintf("[%d - %d) = %d ", boundaries_[i],
-                                 boundaries_[i + 1], histogram_count_[i]);
-      msg += "\n";
-    }
-    const int max_index = boundaries_.size() - 1;
-    msg += theia::StringPrintf("> %d = %d", boundaries_[max_index],
-                               histogram_count_[max_index]);
-    return msg;
-  }
-
- private:
-  std::vector<int> boundaries_;
-  std::vector<int> histogram_count_;
-};
-
 void ComputeReprojectionErrors(const theia::Reconstruction& reconstruction) {
   std::vector<double> reprojection_errors;
   int num_projections_behind_camera = 0;
@@ -122,12 +83,12 @@ void ComputeReprojectionErrors(const theia::Reconstruction& reconstruction) {
 void ComputeTrackLengthHistogram(const theia::Reconstruction& reconstruction) {
   std::vector<int> histogram_bins = {2, 3,  4,  5,  6,  7, 8,
                                      9, 10, 15, 20, 25, 50};
-  Histogram histogram(histogram_bins);
+  theia::Histogram<int> histogram(histogram_bins);
   for (const theia::TrackId track_id : reconstruction.TrackIds()) {
     const theia::Track* track = reconstruction.Track(track_id);
     histogram.Add(track->NumViews());
   }
-  const std::string hist_msg = histogram.Print();
+  const std::string hist_msg = histogram.PrintString();
   LOG(INFO) << "Track lengths = \n" << hist_msg;
 }
 
