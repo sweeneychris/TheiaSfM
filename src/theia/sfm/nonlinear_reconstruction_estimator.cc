@@ -255,8 +255,17 @@ ReconstructionEstimatorSummary NonlinearReconstructionEstimator::Estimate(
 }
 
 bool NonlinearReconstructionEstimator::FilterInitialViewGraph() {
-  // TODO(cmsweeney): Remove any view pairs that do not have a sufficient number
-  // of inliers.
+  // Remove any view pairs that do not have a sufficient number of inliers.
+  std::unordered_set<ViewIdPair> view_pairs_to_remove;
+  for (const auto& view_pair : view_pairs_) {
+    if (view_pair.second.num_verified_matches <
+        options_.min_num_two_view_inliers) {
+      view_pairs_to_remove.insert(view_pair.first);
+    }
+  }
+  for (const ViewIdPair view_id_pair : view_pairs_to_remove) {
+    view_pairs_.erase(view_id_pair);
+  }
 
   // Only reconstruct the largest connected component.
   RemoveDisconnectedViewPairs(&view_pairs_);

@@ -55,6 +55,10 @@ struct ReconstructionEstimatorOptions {
   // threshold used for filtering outliers after bundle adjustment.
   double max_reprojection_error_in_pixels = 5.0;
 
+  // Any edges in the view graph with fewer than min_num_two_view_inliers will
+  // be removed as an initial filtering step.
+  int min_num_two_view_inliers = 30;
+
   // After computing a model and performing an initial BA, the reconstruction
   // can be further improved (and even densified) if we attempt (again) to
   // retriangulate any tracks that are currently unestimated. For each
@@ -78,14 +82,6 @@ struct ReconstructionEstimatorOptions {
   bool ransac_use_mle = true;
 
   // --------------- Rotation Filtering Options --------------- //
-
-  // Before orientations are estimated, some "bad" edges may be removed from the
-  // view graph by determining the consistency of rotation estimations in loops
-  // within the view graph. By examining loops of size 3 (i.e., triplets) the
-  // concatenated relative rotations should result in a perfect identity
-  // rotation. Any edges that break this consistency may be removed prior to
-  // rotation estimation.
-  double max_rotation_error_in_view_graph_cycles = 3.0;
 
   // After orientations are estimated, view pairs may be filtered/removed if the
   // relative rotation of the view pair differs from the relative rotation

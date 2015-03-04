@@ -60,6 +60,11 @@ struct ReconstructionBuilderOptions {
   // matching, estimation, etc.) will use this number of threads.
   int num_threads = 1;
 
+  // By default, the ReconstructionBuilder will attempt to reconstruct as many
+  // models as possible from the input data. If set to true, only the largest
+  // connected component is reconstructed.
+  bool reconstruct_largest_connected_component = false;
+
   // Maximum allowable track length. Tracks that are too long are exceedingly
   // likely to contain outliers.
   int max_track_length = 20;

@@ -329,6 +329,12 @@ bool ReconstructionBuilder::BuildReconstruction(
         CreateEstimatedSubreconstruction(*reconstruction_));
     RemoveEstimatedViewsAndTracks(reconstruction_.get(), view_graph_.get());
 
+    // Exit after the first reconstruction estimation if only the single largest
+    // reconstruction is desired.
+    if (options_.reconstruct_largest_connected_component) {
+      return reconstructions->size() > 0;
+    }
+
     if (reconstruction_->NumViews() < 3) {
       LOG(INFO) << "No more reconstructions can be estimated.";
       return reconstructions->size() > 0;

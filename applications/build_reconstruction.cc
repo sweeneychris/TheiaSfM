@@ -81,6 +81,10 @@ DEFINE_bool(bundle_adjust_two_view_geometry, true,
 // Reconstruction building options.
 DEFINE_string(reconstruction_estimator, "NONLINEAR",
               "Type of global SfM reconstruction estimation to use.");
+DEFINE_bool(reconstruct_largest_connected_component, false,
+            "If set to true, only the single largest connected component is "
+            "reconstructed. Otherwise, as many models as possible are "
+            "estimated.");
 DEFINE_int32(max_track_length, 20, "Maximum length of a track.");
 DEFINE_bool(initialize_focal_lengths_from_median_estimate, false,
             "If false, initialize focal lengths from a median viewing angle if "
@@ -102,15 +106,13 @@ DEFINE_bool(refine_relative_translations_after_rotation_estimation, true,
             "Refine the relative translation estimation after computing the "
             "absolute rotations. This can help improve the accuracy of the "
             "position estimation.");
-DEFINE_double(max_view_graph_cycle_error_degrees, 3.0,
-              "Maximum rotation error for a cycle in the view graph.");
 DEFINE_double(post_rotation_filtering_degrees, 5.0,
               "Max degrees difference in relative rotation and rotation "
               "estimates for rotation filtering.");
 
 // Position estimation options.
 DEFINE_int32(
-    position_estimation_min_num_tracks_per_view, 6,
+    position_estimation_min_num_tracks_per_view, 0,
     "Minimum number of point to camera constraints for position estimation.");
 DEFINE_int32(position_estimation_max_num_reweighted_iterations, 100,
              "Maximum number of reweighted iterations to perform for position "
@@ -118,10 +120,10 @@ DEFINE_int32(position_estimation_max_num_reweighted_iterations, 100,
              "desired.");
 
 // Triangulation options.
-DEFINE_double(min_triangulation_angle_degrees, 3.0,
+DEFINE_double(min_triangulation_angle_degrees, 4.0,
               "Minimum angle between views for triangulation.");
 DEFINE_double(
-    triangulation_reprojection_error_pixels, 10.0,
+    triangulation_reprojection_error_pixels, 15.0,
     "Max allowable reprojection error on initial triangulation of points.");
 DEFINE_bool(bundle_adjust_tracks, true,
             "Set to true to optimize tracks immediately upon estimation.");
@@ -185,6 +187,8 @@ ReconstructionBuilderOptions SetReconstructionBuilderOptions() {
   options.matching_strategy = GetMatchingStrategyType(FLAGS_matching_strategy);
   options.matching_options.lowes_ratio = FLAGS_lowes_ratio;
   options.min_num_inlier_matches = FLAGS_min_num_inliers_for_valid_match;
+  options.reconstruction_estimator_options.min_num_two_view_inliers =
+      FLAGS_min_num_inliers_for_valid_match;
   options.geometric_verification_options.estimate_twoview_info_options
       .max_sampson_error_pixels = FLAGS_max_sampson_error_for_verified_match;
   options.geometric_verification_options.bundle_adjustment =
@@ -196,6 +200,8 @@ ReconstructionBuilderOptions SetReconstructionBuilderOptions() {
 
   options.reconstruction_estimator_options.reconstruction_estimator_type =
       GetReconstructionEstimatorType(FLAGS_reconstruction_estimator);
+  options.reconstruct_largest_connected_component =
+      FLAGS_reconstruct_largest_connected_component;
   options.reconstruction_estimator_options
       .initialize_focal_lengths_from_median_estimate =
       FLAGS_initialize_focal_lengths_from_median_estimate;
@@ -207,9 +213,6 @@ ReconstructionBuilderOptions SetReconstructionBuilderOptions() {
   options.reconstruction_estimator_options
       .refine_relative_translations_after_rotation_estimation =
       FLAGS_refine_relative_translations_after_rotation_estimation;
-  options.reconstruction_estimator_options
-      .max_rotation_error_in_view_graph_cycles =
-      FLAGS_max_view_graph_cycle_error_degrees;
   options.reconstruction_estimator_options
       .rotation_filtering_max_difference_degrees =
       FLAGS_post_rotation_filtering_degrees;
