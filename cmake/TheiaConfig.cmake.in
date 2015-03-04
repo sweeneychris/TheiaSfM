@@ -37,7 +37,7 @@ MACRO(THEIA_REPORT_NOT_FOUND REASON_MSG)
   UNSET(THEIA_LIBRARIES)
 
   # Reset the CMake module path to its state when this script was called.
-  SET(CMAKE_MODULE_PATH ${CALLERS_CMAKE_MODULE_PATH})
+  SET(CMAKE_MODULE_PATH ${THEIA_CALLERS_CMAKE_MODULE_PATH})
 
   # Note <package>_FIND_[REQUIRED/QUIETLY] variables defined by FindPackage()
   # use the camelcase library name, not uppercase.
@@ -60,7 +60,7 @@ GET_FILENAME_COMPONENT(THEIA_CURRENT_CONFIG_INSTALL_DIR
 # Record the state of the CMake module path when this script was called so
 # that we can ensure that we leave it in the same state on exit as it was
 # on entry, but modify it locally.
-SET(CALLERS_CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH})
+SET(THEIA_CALLERS_CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH})
 # Reset CMake module path to the installation directory of this script,
 # thus we will use the FindPackage() scripts shipped with Theia to find
 # Theia' dependencies, even if the user has equivalently named FindPackage()
@@ -178,7 +178,7 @@ LIST(APPEND THEIA_INCLUDE_DIRS ${THEIA_INTERNAL_LIBS_INCLUDES})
 SET(THEIA_INCLUDES ${THEIA_INCLUDE_DIRS})
 
 # Reset CMake module path to its state when this script was called.
-SET(CMAKE_MODULE_PATH ${CALLERS_CMAKE_MODULE_PATH})
+SET(CMAKE_MODULE_PATH ${THEIA_CALLERS_CMAKE_MODULE_PATH})
 
 # As we use THEIA_REPORT_NOT_FOUND() to abort, if we reach this point we have
 # found Theia and all required dependencies.
