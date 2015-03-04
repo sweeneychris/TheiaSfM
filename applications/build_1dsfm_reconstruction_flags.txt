@@ -10,7 +10,6 @@
 
 # View graph filtering.
 --refine_relative_translations_after_rotation_estimation=true
---max_view_graph_cycle_error_degrees=2.0
 --post_rotation_filtering_degrees=5.0
 
 # Position estimation.

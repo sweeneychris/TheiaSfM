@@ -72,8 +72,6 @@ DEFINE_bool(refine_relative_translations_after_rotation_estimation, true,
             "Refine the relative translation estimation after computing the "
             "absolute rotations. This can help improve the accuracy of the "
             "position estimation.");
-DEFINE_double(max_view_graph_cycle_error_degrees, 3.0,
-              "Maximum rotation error for a cycle in the view graph.");
 DEFINE_double(post_rotation_filtering_degrees, 5.0,
               "Max degrees difference in relative rotation and rotation "
               "estimates for rotation filtering.");
@@ -135,9 +133,6 @@ ReconstructionBuilderOptions SetReconstructionBuilderOptions() {
   options.reconstruction_estimator_options
       .refine_relative_translations_after_rotation_estimation =
       FLAGS_refine_relative_translations_after_rotation_estimation;
-  options.reconstruction_estimator_options
-      .max_rotation_error_in_view_graph_cycles =
-      FLAGS_max_view_graph_cycle_error_degrees;
   options.reconstruction_estimator_options
       .rotation_filtering_max_difference_degrees =
       FLAGS_post_rotation_filtering_degrees;
