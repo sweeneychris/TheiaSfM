@@ -143,7 +143,10 @@ class L1Solver {
 
       // Solve for the direction of the newton step. For L1 minimization this is
       // a special-case which is more simple than the general LP.
-      ComputeNewtonStep(tau);
+      if (!ComputeNewtonStep(tau)) {
+        LOG(WARNING) << "Could not compute Newton step.";
+        return;
+      }
 
       // Compute the maximum step size to remain a feasible solution.
       ComputeStepSize(tau);
@@ -152,7 +155,7 @@ class L1Solver {
 
  private:
   // Determines the primal-dual search direction from the linear program.
-  void ComputeNewtonStep(const double tau) {
+  bool ComputeNewtonStep(const double tau) {
     const double inv_tau = 1.0 / tau;
     const Eigen::VectorXd x_quotient = lambda1_.cwiseQuotient(primal_penalty1_);
     const Eigen::VectorXd y_quotient = lambda2_.cwiseQuotient(primal_penalty2_);
@@ -171,9 +174,16 @@ class L1Solver {
         w1 - a_.transpose() * ((sig2.cwiseQuotient(sig1)).cwiseProduct(w2));
     const MatrixType lhs = a_.transpose() * sigx.asDiagonal() * a_;
 
+    // Factorize the matrix based on the current linear system. If factorization
+    // fails, return false.
     l1_solver_internal::Factorize(lhs, &linear_solver_);
-    dx_ = linear_solver_.solve(w1p);
+    if (linear_solver_.info() != Eigen::Success) {
+      LOG(WARNING) << "Failed to compute a Sparse Cholesky factorization for "
+                      "Simplicial LDLT.";
+      return false;
+    }
 
+    dx_ = linear_solver_.solve(w1p);
     CHECK_EQ(linear_solver_.info(), Eigen::Success);
 
     adx_ = a_ * dx_;
@@ -185,6 +195,7 @@ class L1Solver {
     dlambda2_ =
         (lambda2_.cwiseQuotient(primal_penalty2_)).cwiseProduct(adx_ + dy_) -
         lambda2_ - (inv_tau * primal_penalty2_.array().inverse()).matrix();
+    return true;
   }
 
   // Computes a step size to ensure that the solution will lie within the
@@ -249,21 +260,21 @@ class L1Solver {
     // primal_penalty1, primal_penalty2 > 0.
     double step_size = ComputeFeasibleStep();
 
-    lambda1_ += step_size * dlambda1_;
-    lambda2_ += step_size * dlambda2_;
-
-    // Precompute some values.
-    rdual = ((-lambda1_ - lambda2_).array() + 1.0).matrix().squaredNorm();
-
-    Eigen::VectorXd x_p, y_p, axp, atvp;
+    Eigen::VectorXd x_p, y_p, lambda1_p, lambda2_p, axp, atvp;
     for (int i = 0; i < kMaxBacktrackIterations; i++) {
       x_p = *x_ + step_size * dx_;
       y_p = y_ + step_size * dy_;
+
       axp = ax_ + step_size * adx_;
       atvp = atv_ + step_size * atdv;
+
+      lambda1_p = lambda1_ + step_size * dlambda1_;
+      lambda2_p = lambda2_ + step_size * dlambda2_;
+
       primal_penalty1_ = axp - rhs_ - y_p;
       primal_penalty2_ = -axp + rhs_ - y_p;
 
+      rdual = ((-lambda1_p - lambda2_p).array() + 1.0).matrix().squaredNorm();
       temp1 = (-lambda1_.cwiseProduct(primal_penalty1_)).array() + inv_tau;
       temp2 = (-lambda2_.cwiseProduct(primal_penalty2_)).array() + inv_tau;
       const double step_norm =
@@ -277,6 +288,8 @@ class L1Solver {
 
     *x_ = x_p;
     y_ = y_p;
+    lambda1_ = lambda1_p;
+    lambda2_ = lambda2_p;
     ax_ = axp;
     atv_ = atvp;
   }
