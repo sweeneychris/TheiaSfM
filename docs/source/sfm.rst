@@ -12,7 +12,7 @@ Theia has a full Structure-from-Motion pipeline that is extremely efficient. Our
 overall pipeline consists of several steps. First, we extract features (SIFT is
 the default). Then, we perform two-view matching and geometric verification to
 obtain relative poses between image pairs and create a :class:`ViewGraph`. Next,
-we perform global pose estimation with gloabl SfM. Global SfM is different from
+we perform global pose estimation with global SfM. Global SfM is different from
 incremental SfM in that it considers the entire view graph at the same time
 instead of incrementally adding more and more images to the
 :class:`Reconstruction`. Global SfM methods have been proven to be very fast

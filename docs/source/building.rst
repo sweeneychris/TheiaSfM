@@ -72,8 +72,4 @@ It is possible to customize the build process by passing appropriate flags to
 
 #. ``-DBUILD_TESTING=OFF``: Use this flag to enable or disable building the unit tests. By default, this option is enabled.
 
-#. ``-DOPENMP=OFF``: By default, Theia uses OpenMP to multithread/parallelize certain parts of the code. Certain platforms don't play nice with this, so you can disable this option.
-
-#. ``-DBUILD_TUTORIALS=OFF``: By default, building Theia will build several tutorial programs to demonstrate some uses of the library. You can disable this option.
-
 #. ``-DBUILD_DOCUMENTATION=ON``: Turn this flag to ``ON`` to build the documentation with Theia. This option is disabled by default.
