@@ -84,13 +84,43 @@ error, number of cameras, 3D points, and the average number of observations per
 View Reconstruction
 -------------------
 
-A very, very basic OpenGL point cloud viewer. Improvements are very welcome!
+A very basic OpenGL point cloud viewer.
+
+.. NOTE:: I am not an OpenGL expert so I welcome and encourage any improvements
+          to the reconstruction viewer.
 
 .. code-block:: bash
 
   ./bin/view_reconstruction --reconstruction=/path/to/theia/reconstruction
 
 The reconstruction file can be generated using the :class:`ReconstructionWriter`.
+
+The viewer currently displays all points with black, though in the future we may
+record pixel color data. The cameras are displayed according to their intrinsic
+parameters, so the size and shape of the camera wireframes is indicative of the
+principal points, image width and height, and the focal length.
+
+The controls are:
+
+  ``LEFT MOUSE CLICK + DRAG``: Moves the position of the scene relative to the
+  current viewpoint i.e., dragging left will move the scene to the left, etc.
+
+  ``RIGHT MOUSE CLICK + DRAG``: Rotates the camera around the scene.
+
+  ``MOUSE SCROLL UP or z``: Zooms the camera into the scene.
+
+  ``MOUSE SCROLL DOWN or SHIFT + z``: Zooms the camera away from the scene.
+
+  ``f``: Decreases the size of the cameras relative to the scene.
+
+  ``SHIFT + f``: Increases the size of the cameras relative to the scene.
+
+  ``p``: Decrease the size of the points in the point cloud (``NOTE``: there is
+  a minimum size).
+
+  ``P``: Increase the size of the points in the point cloud.
+
+  ``c``: Toggle to choose whether to display or not display camera wireframes.
 
 
 Create Calibration File From EXIF

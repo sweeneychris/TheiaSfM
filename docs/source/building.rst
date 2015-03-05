@@ -5,7 +5,7 @@ Building Theia Library
 ======================
 
 Theia source code and documentation are hosted on `Github
-<https://github.com/kip622/Theia>`_ where you can always grab the latest version
+<https://github.com/sweeneychris/TheiaSfM>`_ where you can always grab the latest version
 
 .. _section-dependencies:
 
