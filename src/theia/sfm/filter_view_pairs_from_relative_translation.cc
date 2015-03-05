@@ -50,8 +50,9 @@
 #include "theia/sfm/types.h"
 
 namespace theia {
-
 using Eigen::Vector3d;
+
+namespace {
 
 // Helper struct to maintain the graph for the translation projection problem.
 struct MFASNode {
@@ -237,6 +238,8 @@ void TranslationFilteringIteration(
     }
   }
 }
+
+}  // namespace
 
 void FilterViewPairsFromRelativeTranslation(
     const FilterViewPairsFromRelativeTranslationOptions& options,
