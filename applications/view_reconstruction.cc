@@ -68,11 +68,11 @@ float rot_x = 0.0f, rot_y = 0.0f;
 float prev_x, prev_y;
 float distance = 100.0;
 Eigen::Vector3d origin = Eigen::Vector3d::Zero();
-bool mouse_rotates = false;
+bool mouse_rotates = false, mouse_moves = false;
 bool draw_cameras = true;
 
 float point_size = 1.0;
-float camera_scale = 1.0;
+float normalized_focal_length = 1.0;
 
 void GetPerspectiveParams(double* aspect_ratio, double* fovy) {
   int width = 800;
@@ -154,18 +154,40 @@ void DrawCamera(const theia::Camera& camera) {
   glm[15] = 1.0;
   glMultMatrixd(glm);
 
-  glScalef(camera_scale, camera_scale, camera_scale);
-
-  // Draw Camera
+  // Draw Cameras.
   glColor3f(1.0, 0.0, 0.0);
+
+  const double image_width = (camera.ImageWidth() == 0)
+                                 ? 2 * camera.PrincipalPointX()
+                                 : camera.ImageWidth();
+  const double image_height = (camera.ImageHeight() == 0)
+                                  ? 2 * camera.PrincipalPointY()
+                                  : camera.ImageHeight();
+
+  // Use the camera calibration to display the cameras.
+  Eigen::Matrix3d calibration_matrix;
+  camera.GetCalibrationMatrix(&calibration_matrix);
+  const Eigen::Matrix3d inv_calibration = calibration_matrix.inverse();
+  const Eigen::Vector3d top_left =
+      normalized_focal_length * (inv_calibration * Eigen::Vector3d(0, 0, 1));
+  const Eigen::Vector3d top_right =
+      normalized_focal_length *
+      (inv_calibration * Eigen::Vector3d(image_width, 0, 1));
+  const Eigen::Vector3d bottom_right =
+      normalized_focal_length *
+      (inv_calibration * Eigen::Vector3d(image_width, image_height, 1));
+  const Eigen::Vector3d bottom_left =
+      normalized_focal_length *
+      (inv_calibration * Eigen::Vector3d(0, image_height, 1));
+
   glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
   glBegin(GL_TRIANGLE_FAN);
   glVertex3f(0.0, 0.0, 0.0);
-  glVertex3f(1.0, 1.0, 1.0);
-  glVertex3f(1.0, -1.0, 1.0);
-  glVertex3f(-1.0, -1.0, 1.0);
-  glVertex3f(-1.0, 1.0, 1.0);
-  glVertex3f(1.0, 1.0, 1.0);
+  glVertex3f(top_right[0], top_right[1], top_right[2]);
+  glVertex3f(top_left[0], top_left[1], top_left[2]);
+  glVertex3f(bottom_left[0], bottom_left[1], bottom_left[2]);
+  glVertex3f(bottom_right[0], bottom_right[1], bottom_right[2]);
+  glVertex3f(top_right[0], top_right[1], top_right[2]);
   glEnd();
   glPopMatrix();
 }
@@ -174,10 +196,9 @@ void RenderScene() {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   glLoadIdentity();
-  glTranslatef(0.0f, 0.0f, -distance);
+  glTranslatef(-origin[0], -origin[1], -distance);
   glRotatef(180.0f + rot_x, 1.0f, 0.0f, 0.0f);
   glRotatef(-rot_y, 0.0f, 1.0f, 0.0f);
-  glTranslatef(-origin[0], -origin[1], -origin[2]);
   glClearColor(1.0f, 1.0f, 1.0f, 0.0f);
 
   // Plot the point cloud.
@@ -185,11 +206,8 @@ void RenderScene() {
   glEnable(GL_BLEND);
   glEnable(GL_POINT_SMOOTH);
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-  glPointParameterf(GL_POINT_SIZE_MIN, 0.0);
 
   glPointSize(point_size);
-  glPointParameterf(GL_POINT_SIZE_MIN, 0.1f);
-  glPointParameterf(GL_POINT_SIZE_MAX, 8.0f);
 
   // the coordinates for calculating point attenuation:
   GLfloat point_size_coords[3];
@@ -199,7 +217,7 @@ void RenderScene() {
   glPointParameterfv(GL_POINT_DISTANCE_ATTENUATION, point_size_coords);
 
   // Draw the points.
-  glColor3f(0.0, 0.0, 0.0);
+  glColor3f(0.01, 0.01, 0.01);
   glBegin(GL_POINTS);
   for (int i = 0; i < world_points.size(); i++) {
     glVertex3d(world_points[i].x(), world_points[i].y(), world_points[i].z());
@@ -222,12 +240,21 @@ void MouseButton(int button, int state, int x, int y) {
     mouse_down_y[button] = y;
     prev_x = x;
     prev_y = y;
-    if (button == GLUT_LEFT_BUTTON) mouse_rotates = true;
+
+    if (button == GLUT_RIGHT_BUTTON) {
+      mouse_rotates = true;
+    } else if (button == GLUT_LEFT_BUTTON) {
+      mouse_moves = true;
+    }
     return;
   }
 
-  if (state == GLUT_UP && button == GLUT_LEFT_BUTTON) {
+  if (state == GLUT_UP && button == GLUT_RIGHT_BUTTON) {
     mouse_rotates = false;
+  }
+
+  if (state == GLUT_UP && button == GLUT_LEFT_BUTTON) {
+    mouse_moves = false;
   }
 
   // scroll event - wheel reports as button 3 (scroll up) and button 4 (scroll
@@ -243,11 +270,17 @@ void MouseButton(int button, int state, int x, int y) {
 }
 
 void MouseMove(int x, int y) {
-  const double rotate_factor = 0.5f;
   if (mouse_rotates) {
+    const double rotate_factor = 0.5f;
     // notice x & y difference (i.e., changes in x are to rotate about y-axis)
     rot_x -= rotate_factor * (y - prev_y);
     rot_y -= rotate_factor * (x - prev_x);
+    prev_x = x;
+    prev_y = y;
+  } else if (mouse_moves) {
+    const double mouse_factor = 0.03f;
+    origin.x() -= mouse_factor * (x - prev_x);
+    origin.y() += mouse_factor * (y - prev_y);
     prev_x = x;
     prev_y = y;
   }
@@ -260,13 +293,12 @@ void Keyboard(unsigned char key, int x, int y) {
       rot_x = 0.0f;
       rot_y = 0.0f;
       point_size = 1.0;
-
       origin = Eigen::Vector3d::Zero();
       break;
-    case 'a':
+    case 'z':
       distance /= 1.2f;
       break;
-    case 'z':
+    case 'Z':
       distance *= 1.2f;
       break;
     case 'p':
@@ -276,22 +308,10 @@ void Keyboard(unsigned char key, int x, int y) {
       point_size *= 1.2;
       break;
     case 'f':
-      camera_scale /= 1.2;
+      normalized_focal_length /= 1.2;
       break;
     case 'F':
-      camera_scale *= 1.2;
-      break;
-    case 'u':
-      origin[0] += 10.0;
-      break;
-    case 'U':
-      origin[0] -= 10.0;
-      break;
-    case 'i':
-      origin[2] += 10.0;
-      break;
-    case 'I':
-      origin[2] -= 10.0;
+      normalized_focal_length *= 1.2;
       break;
     case 'c':
       draw_cameras = !draw_cameras;
@@ -302,7 +322,6 @@ void Keyboard(unsigned char key, int x, int y) {
 // initialize viewport etc.
 void Init() {
   glMatrixMode(GL_PROJECTION);
-
   glLoadIdentity();
 
   double aspect_ratio, fovy;  // set the correct perspective.
