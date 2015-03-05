@@ -109,8 +109,9 @@ bool FeatureExtractor::Extract(
   CHECK_NOTNULL(descriptors)->resize(filenames.size());
 
   // The thread pool will wait to finish all jobs when it goes out of scope.
-  std::unique_ptr<ThreadPool> feature_extractor_pool(
-      new ThreadPool(options_.num_threads));
+  const int num_threads =
+      std::min(options_.num_threads, static_cast<int>(filenames.size()));
+  ThreadPool feature_extractor_pool(num_threads);
   for (int i = 0; i < filenames.size(); i++) {
     if (!FileExists(filenames[i])) {
       LOG(ERROR) << "Could not extract features for " << filenames[i]
@@ -120,7 +121,7 @@ bool FeatureExtractor::Extract(
 
     keypoints->at(i) = new std::vector<Keypoint>();
     descriptors->at(i) = new std::vector<DescriptorType>();
-    feature_extractor_pool->Add(
+    feature_extractor_pool.Add(
         &FeatureExtractor::ExtractFeatures<DescriptorType>,
         this,
         filenames[i],

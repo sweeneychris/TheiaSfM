@@ -214,11 +214,11 @@ void FeatureMatcher<DistanceMetric>::MatchImagesWithGeometricVerification(
   // multiple matches at a time than add each matching task to the pool. This is
   // sort of like OpenMP's dynamic schedule in that it is able to balance
   // threads fairly efficiently.
-  std::unique_ptr<ThreadPool> pool(
-      new ThreadPool(matcher_options_.num_threads));
+  const int num_threads =
+      std::min(matcher_options_.num_threads, num_pairs_to_match);
+  std::unique_ptr<ThreadPool> pool(new ThreadPool(num_threads));
   const int interval_step =
-      std::min(this->kMaxThreadingStepSize_,
-               num_pairs_to_match / matcher_options_.num_threads);
+      std::min(this->kMaxThreadingStepSize_, num_pairs_to_match / num_threads);
   for (int i = 0; i < pairs_to_match_.size(); i += interval_step) {
     const int end_interval = std::min(num_pairs_to_match, i + interval_step);
     pool->Add(&FeatureMatcher::MatchAndVerifyImagePairs,
