@@ -635,6 +635,9 @@ inline float BriskScaleSpace::getScoreMaxAbove(const uint8_t layer,
                                                float& dx,    // NOLINT
                                                float& dy) {  // NOLINT
   ismax = false;
+  dx = 0;
+  dy = 0;
+
   // relevant floating point coordinates
   float x_1;
   float x1;
