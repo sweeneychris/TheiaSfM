@@ -67,7 +67,7 @@ bool ConvertSiftKeyFile(const std::string& input_sift_key_file,
 
 int main(int argc, char* argv[]) {
   google::InitGoogleLogging(argv[0]);
-  google::ParseCommandLineFlags(&argc, &argv, true);
+  THEIA_GFLAGS_NAMESPACE::ParseCommandLineFlags(&argc, &argv, true);
 
   // Load the SIFT descriptors into the cameras.
   CHECK(ConvertSiftKeyFile(FLAGS_input_sift_key_file,

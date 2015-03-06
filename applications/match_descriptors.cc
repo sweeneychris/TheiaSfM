@@ -153,7 +153,7 @@ void ExtractAndMatchFeatures(
 }
 
 int main(int argc, char *argv[]) {
-  google::ParseCommandLineFlags(&argc, &argv, true);
+  THEIA_GFLAGS_NAMESPACE::ParseCommandLineFlags(&argc, &argv, true);
   google::InitGoogleLogging(argv[0]);
 
   std::vector<theia::FloatImage*> images;

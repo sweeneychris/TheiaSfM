@@ -124,10 +124,12 @@ IF (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
   ENDIF(HAVE_RETURN_TYPE_C_LINKAGE)
 ENDIF ()
 
-# GFlags
+# GFlags. The namespace patch is borrow from Ceres Solver (see license in
+# FindGflags.cmake)
 FIND_PACKAGE(Gflags REQUIRED)
 IF (GFLAGS_FOUND)
-  MESSAGE("-- Found Google Flags: ${GFLAGS_INCLUDE_DIRS}")
+  MESSAGE("-- Found Google Flags: ${GFLAGS_INCLUDE_DIRS} in namespace: ${GFLAGS_NAMESPACE}")
+  ADD_DEFINITIONS(-DTHEIA_GFLAGS_NAMESPACE=${GFLAGS_NAMESPACE})
 ELSE (GLOG_FOUND)
   MESSAGE(FATAL_ERROR "Can't find Google FLAGS.")
 ENDIF (GFLAGS_FOUND)
