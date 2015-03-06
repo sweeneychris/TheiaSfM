@@ -166,7 +166,7 @@ void InitializeFrom1DSFM(ReconstructionBuilder* reconstruction_builder) {
 }
 
 int main(int argc, char *argv[]) {
-  google::ParseCommandLineFlags(&argc, &argv, true);
+  THEIA_GFLAGS_NAMESPACE::ParseCommandLineFlags(&argc, &argv, true);
   google::InitGoogleLogging(argv[0]);
 
   CHECK_GT(FLAGS_output_reconstruction.size(), 0)

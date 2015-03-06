@@ -42,7 +42,7 @@ DEFINE_string(test_datadir, "", "The location of the test data.");
 int main(int argc, char *argv[]) {
   google::InitGoogleLogging(argv[0]);
   ::testing::InitGoogleTest(&argc, argv);
-  google::ParseCommandLineFlags(&argc, &argv, true);
+  THEIA_GFLAGS_NAMESPACE::ParseCommandLineFlags(&argc, &argv, true);
   LOG(INFO) << "running tests with logs enabled";
   return RUN_ALL_TESTS();
 }

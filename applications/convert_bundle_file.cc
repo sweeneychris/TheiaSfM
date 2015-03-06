@@ -49,7 +49,7 @@ DEFINE_string(output_reconstruction_file, "",
 
 int main(int argc, char* argv[]) {
   google::InitGoogleLogging(argv[0]);
-  google::ParseCommandLineFlags(&argc, &argv, true);
+  THEIA_GFLAGS_NAMESPACE::ParseCommandLineFlags(&argc, &argv, true);
 
   // Load the SIFT descriptors into the cameras.
   std::unique_ptr<theia::Reconstruction> reconstruction(
