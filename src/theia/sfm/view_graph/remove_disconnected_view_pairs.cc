@@ -38,6 +38,7 @@
 #include <algorithm>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 #include "theia/math/graph/connected_components.h"
 #include "theia/util/hash.h"
@@ -45,6 +46,36 @@
 #include "theia/sfm/types.h"
 
 namespace theia {
+
+namespace {
+
+// Creates a map of view ids to all pairs that contain the view id. Essentially,
+// this is a map of vertices to edges in a view graph.
+void CreateViewtoViewPairsMap(
+    const std::unordered_map<ViewIdPair, TwoViewInfo>& view_pairs,
+    std::unordered_map<ViewId, std::vector<ViewIdPair> >*
+        view_to_view_pair_map) {
+  for (const auto& view_pair : view_pairs) {
+    (*view_to_view_pair_map)[view_pair.first.first].push_back(view_pair.first);
+    (*view_to_view_pair_map)[view_pair.first.second].push_back(view_pair.first);
+  }
+}
+
+// Removes all view pairs that contain the view_id from the viewing graph.
+void RemoveViewFromViewPairs(
+    const ViewId& view_id,
+    const std::unordered_map<ViewId, std::vector<ViewIdPair> >&
+        view_to_view_pair_map,
+    std::unordered_map<ViewIdPair, TwoViewInfo>* view_pairs) {
+  const std::vector<ViewIdPair>& view_pairs_to_remove =
+      FindOrDie(view_to_view_pair_map, view_id);
+
+  for (const ViewIdPair view_id_pair : view_pairs_to_remove) {
+    view_pairs->erase(view_id_pair);
+  }
+}
+
+}  // namespace
 
 // Removes all view pairs that are not part of the largest connected component.
 void RemoveDisconnectedViewPairs(
@@ -69,19 +100,23 @@ void RemoveDisconnectedViewPairs(
     }
   }
 
-  // Remove all view pairs not in the largest connected component.
+  // Gather all edges for a particular view.
+  std::unordered_map<ViewId, std::vector<ViewIdPair> > view_to_view_pair_map;
+  CreateViewtoViewPairsMap(*view_pairs, &view_to_view_pair_map);
+
+  // Remove all view pairs containing a view to remove (i.e. the ones that are
+  // not in the largest connectedcomponent).
   const int num_view_pairs_before_filtering = view_pairs->size();
   for (const auto& connected_component : connected_components) {
     if (connected_component.first == largest_cc_root_id) {
       continue;
     }
-    const ViewId view_id1 = connected_component.first;
 
+    // NOTE: The connected component will contain the root id as well, so we do
+    // not explicity have to remove connected_component.first since it will
+    // exist in connected_components.second
     for (const ViewId view_id2 : connected_component.second) {
-      const ViewIdPair view_id_pair = (view_id1 < view_id2)
-                                          ? ViewIdPair(view_id1, view_id2)
-                                          : ViewIdPair(view_id2, view_id1);
-      view_pairs->erase(view_id_pair);
+      RemoveViewFromViewPairs(view_id2, view_to_view_pair_map, view_pairs);
     }
   }
 
