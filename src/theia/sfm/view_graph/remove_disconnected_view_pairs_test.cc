@@ -63,6 +63,7 @@ TEST(RemoveDisconnectedViewPairs, TwoConnectedComponents) {
   view_pairs[ViewIdPair(1, 2)] = info;
   view_pairs[ViewIdPair(2, 3)] = info;
   view_pairs[ViewIdPair(5, 6)] = info;
+  view_pairs[ViewIdPair(6, 7)] = info;
 
   RemoveDisconnectedViewPairs(&view_pairs);
   EXPECT_EQ(view_pairs.size(), 3);
