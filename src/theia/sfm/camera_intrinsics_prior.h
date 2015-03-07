@@ -41,7 +41,7 @@ namespace theia {
 // keep track of which data fields have been set.
 struct Prior {
   bool is_set = false;
-  double value;
+  double value = 0;
 };
 
 // Prior information about a View. This is typically gathered from EXIF or
