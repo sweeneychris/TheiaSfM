@@ -236,6 +236,8 @@ bool ReadBundlerFiles(const std::string& lists_file,
       p = p2;
     }
 
+
+    // TODO: Look at the ply file converter of bundler.
     rotation.row(1) *= -1.0;
     rotation.row(2) *= -1.0;
     translation(1) *= -1.0;

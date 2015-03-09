@@ -123,12 +123,13 @@ bool WriteTrack(const Reconstruction& reconstruction,
                 std::ofstream* output_writer) {
   const Track& track = *reconstruction.Track(track_id);
 
+  const int num_estimated_views =
+      NumEstimatedViewsInTrack(reconstruction, track);
+
   // Write track id.
   output_writer->write(reinterpret_cast<const char*>(&track_id),
                        sizeof(track_id));
 
-  const int num_estimated_views =
-      NumEstimatedViewsInTrack(reconstruction, track);
   output_writer->write(reinterpret_cast<const char*>(&num_estimated_views),
                        sizeof(num_estimated_views));
 

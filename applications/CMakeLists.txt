@@ -10,6 +10,9 @@ TARGET_LINK_LIBRARIES(convert_sift_key_file theia ${GFLAGS_LIBRARIES} ${GLOG_LIB
 ADD_EXECUTABLE(convert_bundle_file convert_bundle_file.cc)
 TARGET_LINK_LIBRARIES(convert_bundle_file theia ${GFLAGS_LIBRARIES} ${GLOG_LIBRARIES})
 
+ADD_EXECUTABLE(write_reconstruction_ply_file write_reconstruction_ply_file.cc)
+TARGET_LINK_LIBRARIES(write_reconstruction_ply_file theia ${GFLAGS_LIBRARIES} ${GLOG_LIBRARIES})
+
 ADD_EXECUTABLE(compute_reconstruction_statistics compute_reconstruction_statistics.cc)
 TARGET_LINK_LIBRARIES(compute_reconstruction_statistics
   theia

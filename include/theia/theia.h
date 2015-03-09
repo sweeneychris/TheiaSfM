@@ -59,6 +59,7 @@
 #include "theia/io/sift_binary_file.h"
 #include "theia/io/sift_text_file.h"
 #include "theia/io/write_matches.h"
+#include "theia/io/write_ply_file.h"
 #include "theia/matching/brute_force_feature_matcher.h"
 #include "theia/matching/cascade_hasher.h"
 #include "theia/matching/cascade_hashing_feature_matcher.h"

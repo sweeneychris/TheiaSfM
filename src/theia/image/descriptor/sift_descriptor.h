@@ -59,7 +59,7 @@ class SiftDescriptorExtractor : public FloatDescriptorExtractor {
         num_octaves_(num_octaves),
         num_levels_(num_levels),
         first_octave_(first_octave) {}
-  SiftDescriptorExtractor() : SiftDescriptorExtractor(6, 3, -1) {}
+  SiftDescriptorExtractor() : SiftDescriptorExtractor(-1, 3, -1) {}
   ~SiftDescriptorExtractor();
 
   // Computes a descriptor at a single keypoint.

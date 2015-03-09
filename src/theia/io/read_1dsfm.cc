@@ -157,7 +157,7 @@ bool Input1DSFM::ReadCoordsHeaderLine(const std::string& line, int* image_index,
          &principal_point_y,
          &focal_length);
 
-  LOG(INFO) << "Image: " << name << " calibration: " << focal_length
+  LOG(INFO) << "Image: " << name << " focal length: " << focal_length
             << " px, py = " << principal_point_x << ", " << principal_point_y;
 
   const ViewId view_id =
@@ -269,6 +269,9 @@ bool Input1DSFM::ReadEGs() {
     return false;
   }
 
+  const Eigen::Matrix3d coordinate_fix =
+      Eigen::Vector3d(1.0, -1.0, -1.0).asDiagonal();
+
   while (!ifs.eof()) {
     TwoViewInfo info;
     int image_index1, image_index2;
@@ -294,6 +297,10 @@ bool Input1DSFM::ReadEGs() {
     ifs >> info.position_2[0];
     ifs >> info.position_2[1];
     ifs >> info.position_2[2];
+
+    // This accounts for the change in coordinate system from Bundler to Theia.
+    rotation = coordinate_fix * rotation;
+    info.position_2 = coordinate_fix * info.position_2;
 
     // Add the focal lengths.
     info.focal_length_1 =
