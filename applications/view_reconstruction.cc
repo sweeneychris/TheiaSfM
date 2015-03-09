@@ -61,6 +61,7 @@ DEFINE_string(reconstruction, "", "Reconstruction file to be viewed.");
 // Containers for the data.
 std::vector<theia::Camera> cameras;
 std::vector<Eigen::Vector3d> world_points;
+std::vector<int> num_views_for_track;
 
 // Parameters for OpenGL.
 int mouse_down_x[3], mouse_down_y[3];
@@ -70,10 +71,11 @@ float distance = 100.0;
 Eigen::Vector3d origin = Eigen::Vector3d::Zero();
 bool mouse_rotates = false, mouse_moves = false;
 bool draw_cameras = true;
+bool draw_axes = false;
 
 float point_size = 1.0;
 float normalized_focal_length = 1.0;
-
+int min_num_views_for_track = 2;
 void GetPerspectiveParams(double* aspect_ratio, double* fovy) {
   int width = 800;
   int height = 600;
@@ -129,30 +131,15 @@ void DrawAxes(float length) {
 }
 
 void DrawCamera(const theia::Camera& camera) {
-  const Eigen::Matrix3d rotation =
-      camera.GetOrientationAsRotationMatrix().transpose();
-  const Eigen::Vector3d position = camera.GetPosition();
-
   glPushMatrix();
+  Eigen::Matrix4d transformation_matrix;
+  transformation_matrix.block<3, 3>(0, 0) =
+      camera.GetOrientationAsRotationMatrix().transpose();
+  transformation_matrix.col(3).head<3>() = camera.GetPosition();
+  transformation_matrix(3, 3) = 1.0;
+
   // Apply world pose transformation.
-  GLdouble glm[16];
-  glm[0] = rotation(0, 0);
-  glm[1] = rotation(1, 0);
-  glm[2] = rotation(2, 0);
-  glm[3] = 0.0;
-  glm[4] = rotation(0, 1);
-  glm[5] = rotation(1, 1);
-  glm[6] = rotation(2, 1);
-  glm[7] = 0.0;
-  glm[8] = rotation(0, 2);
-  glm[9] = rotation(1, 2);
-  glm[10] = rotation(2, 2);
-  glm[11] = 0.0;
-  glm[12] = position[0];
-  glm[13] = position[1];
-  glm[14] = position[2];
-  glm[15] = 1.0;
-  glMultMatrixd(glm);
+  glMultMatrixd(reinterpret_cast<GLdouble*>(transformation_matrix.data()));
 
   // Draw Cameras.
   glColor3f(1.0, 0.0, 0.0);
@@ -194,14 +181,19 @@ void DrawCamera(const theia::Camera& camera) {
 
 void RenderScene() {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+  glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
   glTranslatef(-origin[0], -origin[1], -distance);
   glRotatef(180.0f + rot_x, 1.0f, 0.0f, 0.0f);
   glRotatef(-rot_y, 0.0f, 1.0f, 0.0f);
   glClearColor(1.0f, 1.0f, 1.0f, 0.0f);
 
+  if (draw_axes) {
+    DrawAxes(1.0);
+  }
+
   // Plot the point cloud.
+  glDisable(GL_LIGHTING);
   glEnable(GL_MULTISAMPLE);
   glEnable(GL_BLEND);
   glEnable(GL_POINT_SMOOTH);
@@ -220,8 +212,12 @@ void RenderScene() {
   glColor3f(0.01, 0.01, 0.01);
   glBegin(GL_POINTS);
   for (int i = 0; i < world_points.size(); i++) {
+    if (num_views_for_track[i] < min_num_views_for_track) {
+      continue;
+    }
     glVertex3d(world_points[i].x(), world_points[i].y(), world_points[i].z());
   }
+  glEnd();
 
   // Draw the cameras.
   if (draw_cameras) {
@@ -229,7 +225,6 @@ void RenderScene() {
       DrawCamera(cameras[i]);
     }
   }
-  glFlush();
   glutSwapBuffers();
 }
 
@@ -316,6 +311,15 @@ void Keyboard(unsigned char key, int x, int y) {
     case 'c':
       draw_cameras = !draw_cameras;
       break;
+    case 'a':
+      draw_axes = !draw_axes;
+      break;
+    case 't':
+      ++min_num_views_for_track;
+      break;
+    case 'T':
+      --min_num_views_for_track;
+      break;
   }
 }
 
@@ -349,6 +353,7 @@ int main(int argc, char* argv[]) {
       continue;
     }
     world_points.emplace_back(track->Point().hnormalized());
+    num_views_for_track.emplace_back(track->NumViews());
   }
 
   // Set up camera drawing.
@@ -368,7 +373,7 @@ int main(int argc, char* argv[]) {
   glutInitWindowPosition(600, 600);
   glutInitWindowSize(1200, 800);
   glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH);
-  glutCreateWindow("Bundler Reconstruction Viewer");
+  glutCreateWindow("Theia Reconstruction Viewer");
 
   // Set the camera
   gluLookAt(0.0f, 0.0f, -6.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f);
