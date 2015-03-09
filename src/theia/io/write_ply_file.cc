@@ -46,28 +46,28 @@ namespace theia {
 // Gather points from tracks.
 void GatherTracks(const Reconstruction& reconstruction,
                   std::vector<Eigen::Vector3d>* points_to_write,
-                  std::vector<Eigen::Vector3f>* colors_to_write) {
+                  std::vector<Eigen::Vector3i>* colors_to_write) {
   for (const TrackId track_id : reconstruction.TrackIds()) {
     const Track& track = *reconstruction.Track(track_id);
     if (!track.IsEstimated()) {
       continue;
     }
     points_to_write->emplace_back(track.Point().hnormalized());
-    colors_to_write->emplace_back(1.0, 1.0, 1.0);
+    colors_to_write->emplace_back(255, 255, 255);
   }
 }
 
 // Gather camera positions.
 void GatherCameras(const Reconstruction& reconstruction,
                    std::vector<Eigen::Vector3d>* points_to_write,
-                   std::vector<Eigen::Vector3f>* colors_to_write) {
+                   std::vector<Eigen::Vector3i>* colors_to_write) {
   for (const ViewId view_id : reconstruction.ViewIds()) {
     const View& view = *reconstruction.View(view_id);
     if (!view.IsEstimated()) {
       continue;
     }
     points_to_write->emplace_back(view.Camera().GetPosition());
-    colors_to_write->emplace_back(0.0, 1.0, 0.0);
+    colors_to_write->emplace_back(0, 255, 0);
   }
 }
 
@@ -86,19 +86,19 @@ bool WritePlyFile(const std::string& ply_file,
 
   // Containers for points that we will write to the PLY file.
   std::vector<Eigen::Vector3d> points_to_write;
-  std::vector<Eigen::Vector3f> colors_to_write;
+  std::vector<Eigen::Vector3i> colors_to_write;
   GatherTracks(reconstruction, &points_to_write, &colors_to_write);
   GatherCameras(reconstruction, &points_to_write, &colors_to_write);
 
   ply_writer << "ply"
     << '\n' << "format ascii 1.0"
              << '\n' << "element vertex " << points_to_write.size()
-    << '\n' << "property double x"
-    << '\n' << "property double y"
-    << '\n' << "property double z"
-    << '\n' << "property float red"
-    << '\n' << "property float green"
-    << '\n' << "property float blue"
+    << '\n' << "property float x"
+    << '\n' << "property float y"
+    << '\n' << "property float z"
+    << '\n' << "property uchar red"
+    << '\n' << "property uchar green"
+    << '\n' << "property uchar blue"
     << '\n' << "end_header" << std::endl;
 
   for (int i = 0; i < points_to_write.size(); i++) {
