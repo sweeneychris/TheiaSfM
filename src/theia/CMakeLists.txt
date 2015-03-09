@@ -56,6 +56,7 @@ SET(THEIA_SRC
   io/sift_binary_file.cc
   io/sift_text_file.cc
   io/write_matches.cc
+  io/write_ply_file.cc
   matching/cascade_hasher.cc
   matching/cascade_hashing_feature_matcher.cc
   matching/feature_matcher_utils.cc
