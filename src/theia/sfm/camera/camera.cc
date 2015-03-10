@@ -158,9 +158,9 @@ Vector3d Camera::GetPosition() const {
 }
 
 void Camera::SetOrientationFromRotationMatrix(const Matrix3d& rotation) {
-  const AngleAxisd rotation_aa(rotation);
-  Map<Vector3d>(mutable_extrinsics() + ORIENTATION) =
-      rotation_aa.angle() * rotation_aa.axis();
+  ceres::RotationMatrixToAngleAxis(
+      ceres::ColumnMajorAdapter3x3(rotation.data()),
+      mutable_intrinsics() + ORIENTATION);
 }
 
 void Camera::SetOrientationFromAngleAxis(const Vector3d& angle_axis) {
