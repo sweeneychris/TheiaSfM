@@ -160,7 +160,7 @@ Vector3d Camera::GetPosition() const {
 void Camera::SetOrientationFromRotationMatrix(const Matrix3d& rotation) {
   ceres::RotationMatrixToAngleAxis(
       ceres::ColumnMajorAdapter3x3(rotation.data()),
-      mutable_intrinsics() + ORIENTATION);
+      mutable_extrinsics() + ORIENTATION);
 }
 
 void Camera::SetOrientationFromAngleAxis(const Vector3d& angle_axis) {
