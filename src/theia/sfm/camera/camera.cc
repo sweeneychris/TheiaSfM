@@ -63,8 +63,8 @@ Camera::Camera() {
   SetPrincipalPoint(0.0, 0.0);
   SetRadialDistortion(0.0, 0.0);
 
-  image_size_[0] = 1;
-  image_size_[1] = 1;
+  image_size_[0] = 0;
+  image_size_[1] = 0;
 }
 
 bool Camera::InitializeFromProjectionMatrix(

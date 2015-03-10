@@ -50,6 +50,7 @@
 #include "theia/sfm/track.h"
 #include "theia/sfm/types.h"
 #include "theia/sfm/view.h"
+#include "theia/util/map_util.h"
 
 namespace theia {
 
@@ -177,6 +178,9 @@ bool ReadBundlerFiles(const std::string& lists_file,
     return false;
   }
 
+  const Eigen::Matrix3d bundler_to_theia =
+      Eigen::Vector3d(1.0, -1.0, -1.0).asDiagonal();
+
   std::string header_string;
   // There is one line of filler, so skip that line!
   std::getline(ifs, header_string);
@@ -193,6 +197,7 @@ bool ReadBundlerFiles(const std::string& lists_file,
   const int num_points = strtol(p, &p2, 10);
 
   // Read in the camera params.
+  std::unordered_set<ViewId> views_to_remove;
   for (int i = 0; i < num_cameras; i++) {
     reconstruction->MutableView(i)->SetEstimated(true);
     Camera* camera = reconstruction->MutableView(i)->MutableCamera();
@@ -236,14 +241,16 @@ bool ReadBundlerFiles(const std::string& lists_file,
       p = p2;
     }
 
-    rotation.row(1) *= -1.0;
-    rotation.row(2) *= -1.0;
-    translation(1) *= -1.0;
-    translation(2) *= -1.0;
+    rotation = bundler_to_theia * rotation;
+    translation = bundler_to_theia * translation;
 
     const Eigen::Vector3d position = -rotation.transpose() * translation;
     camera->SetPosition(position);
     camera->SetOrientationFromRotationMatrix(rotation);
+
+    if (camera->FocalLength() == 0) {
+      views_to_remove.insert(i);
+    }
 
     if ((i + 1) % 100 == 0 || i == num_cameras - 1) {
       std::cout << "\r Loading parameters for camera " << i + 1 << " / "
@@ -299,8 +306,15 @@ bool ReadBundlerFiles(const std::string& lists_file,
       // coordinate system in images.
       const Feature feature(x_pos, -y_pos);
 
-      // Push the sift key correspondence to the view list.
-      track.emplace_back(camera_index, feature);
+      // Push the sift key correspondence to the view list if the view is valid.
+      if (!ContainsKey(views_to_remove, camera_index)) {
+        track.emplace_back(camera_index, feature);
+      }
+    }
+
+    // Do not add the track if it is underconstrained.
+    if (track.size() < 2) {
+      continue;
     }
 
     const TrackId track_id = reconstruction->AddTrack(track);
@@ -315,6 +329,12 @@ bool ReadBundlerFiles(const std::string& lists_file,
                 << std::flush;
     }
   }
+
+  // Remove any invalid views.
+  for (const ViewId view_to_remove : views_to_remove) {
+    reconstruction->RemoveView(view_to_remove);
+  }
+
   std::cout << std::endl;
   ifs.close();
 

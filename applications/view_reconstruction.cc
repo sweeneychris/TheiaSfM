@@ -144,11 +144,18 @@ void DrawCamera(const theia::Camera& camera) {
   // Draw Cameras.
   glColor3f(1.0, 0.0, 0.0);
 
-  const double image_width = (camera.ImageWidth() == 0)
-                                 ? 2 * camera.PrincipalPointX()
-                                 : camera.ImageWidth();
+  // Create the camera wireframe. If intrinsic parameters are not set then use
+  // the focal length as a guess.
+  const double principal_point_x = (camera.PrincipalPointX() == 0)
+                                       ? 0.6 * camera.FocalLength()
+                                       : camera.PrincipalPointX();
+  const double principal_point_y = (camera.PrincipalPointY() == 0)
+                                       ? 0.6 * camera.FocalLength()
+                                       : camera.PrincipalPointY();
+  const double image_width =
+      (camera.ImageWidth() == 0) ? 2 * principal_point_x : camera.ImageWidth();
   const double image_height = (camera.ImageHeight() == 0)
-                                  ? 2 * camera.PrincipalPointY()
+                                  ? 2 * principal_point_y
                                   : camera.ImageHeight();
 
   // Use the camera calibration to display the cameras.
@@ -335,6 +342,22 @@ void Init() {
   glMatrixMode(GL_MODELVIEW);
 }
 
+void CenterReconstruction() {
+  Eigen::Vector3d mean_camera = Eigen::Vector3d::Zero();
+  for (int i = 0; i < cameras.size(); i++) {
+    mean_camera += cameras[i].GetPosition();
+  }
+  mean_camera /= static_cast<double>(cameras.size());
+
+  for (int i = 0; i < cameras.size(); i++) {
+    const Eigen::Vector3d old_position = cameras[i].GetPosition();
+    cameras[i].SetPosition(old_position - mean_camera);
+  }
+  for (int i = 0; i < world_points.size(); i++) {
+    world_points[i] -= mean_camera;
+  }
+}
+
 int main(int argc, char* argv[]) {
   THEIA_GFLAGS_NAMESPACE::ParseCommandLineFlags(&argc, &argv, true);
   google::InitGoogleLogging(argv[0]);
@@ -344,6 +367,16 @@ int main(int argc, char* argv[]) {
       new theia::Reconstruction());
   CHECK(ReadReconstruction(FLAGS_reconstruction, reconstruction.get()))
       << "Could not read reconstruction file.";
+
+  // Set up camera drawing.
+  cameras.reserve(reconstruction->NumViews());
+  for (const theia::ViewId view_id : reconstruction->ViewIds()) {
+    const auto* view = reconstruction->View(view_id);
+    if (view == nullptr || !view->IsEstimated()) {
+      continue;
+    }
+    cameras.emplace_back(view->Camera());
+  }
 
   // Set up world points.
   world_points.reserve(reconstruction->NumTracks());
@@ -356,15 +389,7 @@ int main(int argc, char* argv[]) {
     num_views_for_track.emplace_back(track->NumViews());
   }
 
-  // Set up camera drawing.
-  cameras.reserve(reconstruction->NumViews());
-  for (const theia::ViewId view_id : reconstruction->ViewIds()) {
-    const auto* view = reconstruction->View(view_id);
-    if (view == nullptr || !view->IsEstimated()) {
-      continue;
-    }
-    cameras.emplace_back(view->Camera());
-  }
+  CenterReconstruction();
 
   reconstruction.release();
 
