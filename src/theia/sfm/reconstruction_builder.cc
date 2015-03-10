@@ -224,7 +224,7 @@ bool ReconstructionBuilder::ExtractAndMatchFeatures() {
         << "Could not extract features.";
 
     LOG(INFO) << "Matching features.";
-    success = MatchFeatures(&keypoints, float_descriptors);
+    success = MatchFeatures(keypoints, float_descriptors);
   } else {
     std::vector<std::vector<BinaryVectorX> > binary_descriptors;
 
