@@ -99,12 +99,12 @@ theia::FeatureMatcher<theia::Hamming>* CreateMatcher(
 template <class DistanceMetric, class DescriptorType>
 void ExtractAndMatchFeatures(
     std::vector<theia::FloatImage*>* images,
-    std::vector<std::vector<theia::Keypoint>*>* keypoints,
+    std::vector<std::vector<theia::Keypoint> >* keypoints,
     std::vector<theia::ImagePairMatch>* matches) {
   // Get image filenames and read in images.
   std::vector<std::string> img_filepaths;
   CHECK(theia::GetFilepathsFromWildcard(FLAGS_input_imgs, &img_filepaths));
-  std::vector<std::vector<DescriptorType>* > descriptors;
+  std::vector<std::vector<DescriptorType> > descriptors;
   for (int i = 0; i < img_filepaths.size(); i++) {
     images->emplace_back(new theia::FloatImage(img_filepaths[i]));
   }
@@ -116,9 +116,7 @@ void ExtractAndMatchFeatures(
   feature_extractor_options.num_threads = FLAGS_num_threads;
   theia::FeatureExtractor feature_extractor(feature_extractor_options);
   auto start = std::chrono::system_clock::now();
-  CHECK(feature_extractor.Extract(img_filepaths,
-                                  keypoints,
-                                  &descriptors))
+  CHECK(feature_extractor.Extract(img_filepaths, keypoints, &descriptors))
       << "Feature extraction failed!";
   auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::system_clock::now() - start);
@@ -134,7 +132,7 @@ void ExtractAndMatchFeatures(
   // Match features.
   start = std::chrono::system_clock::now();
   for (int i = 0; i < keypoints->size(); i++) {
-    matcher->AddImage(keypoints->at(i), descriptors[i]);
+    matcher->AddImage(&keypoints->at(i), &descriptors[i]);
   }
   theia::VerifyTwoViewMatchesOptions verification_options;
   matcher->MatchImagesWithGeometricVerification(options,
@@ -148,8 +146,6 @@ void ExtractAndMatchFeatures(
             << " seconds to extract features and "
             << (time_to_match_features / 1000.0) << " seconds to match "
             << matches->size() << " image pairs";
-
-  theia::STLDeleteElements(&descriptors);
 }
 
 int main(int argc, char *argv[]) {
@@ -157,7 +153,7 @@ int main(int argc, char *argv[]) {
   google::InitGoogleLogging(argv[0]);
 
   std::vector<theia::FloatImage*> images;
-  std::vector<std::vector<theia::Keypoint>*> keypoints;
+  std::vector<std::vector<theia::Keypoint>> keypoints;
   std::vector<theia::ImagePairMatch> image_pair_matches;
   if (FLAGS_descriptor == "SIFT") {
     ExtractAndMatchFeatures<theia::L2, Eigen::VectorXf>(&images,
@@ -187,5 +183,4 @@ int main(int argc, char *argv[]) {
   }
 
   theia::STLDeleteElements(&images);
-  theia::STLDeleteElements(&keypoints);
 }

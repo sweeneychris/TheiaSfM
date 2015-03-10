@@ -85,15 +85,15 @@ struct MatchAndVerifyFeaturesOptions {
 bool MatchAndVerifyFeatures(
     const MatchAndVerifyFeaturesOptions& options,
     const std::vector<CameraIntrinsics>& intrinsics,
-    const std::vector<std::vector<Keypoint>*>& keypoints,
-    const std::vector<std::vector<Eigen::VectorXf>*>& descriptor,
+    const std::vector<std::vector<Keypoint> >& keypoints,
+    const std::vector<std::vector<Eigen::VectorXf> >& descriptor,
     std::vector<ImagePairMatch>* matches);
 
 bool MatchAndVerifyFeatures(
     const MatchAndVerifyFeaturesOptions& options,
     const std::vector<CameraIntrinsics>& intrinsics,
-    const std::vector<std::vector<Keypoint>*>& keypoints,
-    const std::vector<std::vector<BinaryVectorX>*>& descriptor,
+    const std::vector<std::vector<Keypoint> >& keypoints,
+    const std::vector<std::vector<BinaryVectorX> >& descriptor,
     std::vector<ImagePairMatch>* matches);
 
 }  // namespace theia

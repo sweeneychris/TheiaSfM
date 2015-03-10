@@ -150,6 +150,13 @@ bool ReconstructionBuilder::AddImage(const std::string& image_filepath) {
 bool ReconstructionBuilder::AddImageWithCameraIntrinsicsPrior(
     const std::string& image_filepath,
     const CameraIntrinsicsPrior& camera_intrinsics_prior) {
+  // If we only want calibrated views, only proceed if the view has a known
+  // focal length.
+  if (options_.only_calibrated_views &&
+      !camera_intrinsics_prior.focal_length.is_set) {
+    return true;
+  }
+
   image_filepaths_.emplace_back(image_filepath);
   camera_intrinsics_priors_.emplace_back(camera_intrinsics_prior);
 
@@ -198,7 +205,7 @@ bool ReconstructionBuilder::ExtractAndMatchFeatures() {
                                           "after TwoViewMatches has been "
                                           "called.";
 
-  std::vector<std::vector<Keypoint>*> keypoints;
+  std::vector<std::vector<Keypoint> > keypoints;
   FeatureExtractorOptions feature_extractor_options;
   feature_extractor_options.num_threads = options_.num_threads;
   feature_extractor_options.descriptor_extractor_type =
@@ -207,7 +214,7 @@ bool ReconstructionBuilder::ExtractAndMatchFeatures() {
 
   bool success = false;
   if (IsFloatDescriptor(options_.descriptor_type)) {
-    std::vector<std::vector<Eigen::VectorXf>*> float_descriptors;
+    std::vector<std::vector<Eigen::VectorXf> > float_descriptors;
 
     // Extract and match floating point descriptors.
     LOG(INFO) << "Extracting features.";
@@ -217,10 +224,9 @@ bool ReconstructionBuilder::ExtractAndMatchFeatures() {
         << "Could not extract features.";
 
     LOG(INFO) << "Matching features.";
-    success = MatchFeatures(keypoints, float_descriptors);
-    STLDeleteElements(&float_descriptors);
+    success = MatchFeatures(&keypoints, float_descriptors);
   } else {
-    std::vector<std::vector<BinaryVectorX>*> binary_descriptors;
+    std::vector<std::vector<BinaryVectorX> > binary_descriptors;
 
     LOG(INFO) << "Extracting features.";
     // Extract and match binary descriptors.
@@ -231,11 +237,7 @@ bool ReconstructionBuilder::ExtractAndMatchFeatures() {
 
     LOG(INFO) << "Matching features.";
     success = MatchFeatures(keypoints, binary_descriptors);
-    STLDeleteElements(&binary_descriptors);
   }
-
-  // Clean up allocated data.
-  STLDeleteElements(&keypoints);
 
   return success;
 }

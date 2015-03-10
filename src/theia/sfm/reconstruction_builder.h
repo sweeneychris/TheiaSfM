@@ -65,6 +65,11 @@ struct ReconstructionBuilderOptions {
   // connected component is reconstructed.
   bool reconstruct_largest_connected_component = false;
 
+  // Set to true to only accept calibrated views (from EXIF or elsewhere) as
+  // valid inputs to the reconstruction process. When uncalibrated views are
+  // added to the reconstruction builder they are ignored with a LOG warning.
+  bool only_calibrated_views = false;
+
   // Maximum allowable track length. Tracks that are too long are exceedingly
   // likely to contain outliers.
   int max_track_length = 20;
@@ -147,8 +152,8 @@ class ReconstructionBuilder {
   // correspondences to the track builder.
   template <class DescriptorType>
   bool MatchFeatures(
-      const std::vector<std::vector<Keypoint>*>& keypoints,
-      const std::vector<std::vector<DescriptorType>*>& descriptors);
+      const std::vector<std::vector<Keypoint> >& keypoints,
+      const std::vector<std::vector<DescriptorType> >& descriptors);
 
   void CameraIntrinsicsFromCameraIntrinsicsPriors(
       std::vector<CameraIntrinsics>* intrinsics) const;
@@ -185,8 +190,8 @@ class ReconstructionBuilder {
 
 template <class DescriptorType>
 bool ReconstructionBuilder::MatchFeatures(
-    const std::vector<std::vector<Keypoint>* >& keypoints,
-    const std::vector<std::vector<DescriptorType>* >& descriptors) {
+    const std::vector<std::vector<Keypoint> >& keypoints,
+    const std::vector<std::vector<DescriptorType> >& descriptors) {
   CHECK_EQ(image_filepaths_.size(), keypoints.size());
   CHECK_EQ(descriptors.size(), keypoints.size());
 
