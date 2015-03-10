@@ -79,8 +79,8 @@ class FeatureExtractor {
   // Eigen::VectorXf (e.g., SIFT) or a BinaryVectorX.
   template <typename DescriptorType>
   bool Extract(const std::vector<std::string>& filenames,
-               std::vector<std::vector<Keypoint>*>* keypoints,
-               std::vector<std::vector<DescriptorType>*>* descriptors);
+               std::vector<std::vector<Keypoint> >* keypoints,
+               std::vector<std::vector<DescriptorType> >* descriptors);
 
  private:
   // Extracts the features and metadata for a single image. This function is
@@ -103,8 +103,8 @@ class FeatureExtractor {
 template <typename DescriptorType>
 bool FeatureExtractor::Extract(
     const std::vector<std::string>& filenames,
-    std::vector<std::vector<Keypoint>*>* keypoints,
-    std::vector<std::vector<DescriptorType>*>* descriptors) {
+    std::vector<std::vector<Keypoint> >* keypoints,
+    std::vector<std::vector<DescriptorType> >* descriptors) {
   CHECK_NOTNULL(keypoints)->resize(filenames.size());
   CHECK_NOTNULL(descriptors)->resize(filenames.size());
 
@@ -119,14 +119,12 @@ bool FeatureExtractor::Extract(
       continue;
     }
 
-    keypoints->at(i) = new std::vector<Keypoint>();
-    descriptors->at(i) = new std::vector<DescriptorType>();
     feature_extractor_pool.Add(
         &FeatureExtractor::ExtractFeatures<DescriptorType>,
         this,
         filenames[i],
-        keypoints->at(i),
-        descriptors->at(i));
+        &(*keypoints)[i],
+        &(*descriptors)[i]);
   }
   return true;
 }

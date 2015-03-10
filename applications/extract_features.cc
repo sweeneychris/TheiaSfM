@@ -85,9 +85,9 @@ int main(int argc, char *argv[]) {
   feature_extractor_options.num_threads = FLAGS_num_threads;
   theia::FeatureExtractor feature_extractor(feature_extractor_options);
 
-  std::vector<std::vector<theia::Keypoint>* > keypoints;
-  std::vector<std::vector<Eigen::VectorXf>* > descriptors;
-  std::vector<std::vector<theia::BinaryVectorX>* > binary_descriptors;
+  std::vector<std::vector<theia::Keypoint> > keypoints;
+  std::vector<std::vector<Eigen::VectorXf> > descriptors;
+  std::vector<std::vector<theia::BinaryVectorX> > binary_descriptors;
 
   // Extract features from all images.
   double time_to_extract_features;
@@ -118,15 +118,11 @@ int main(int argc, char *argv[]) {
     const std::string feature_output = theia::StringPrintf(
         "%s/detected_image_%i.png", FLAGS_img_output_dir.c_str(), i);
     const theia::RGBPixel color = {255.0, 0.0, 0.0};
-    image_canvas.DrawFeatures(*keypoints[i], color);
+    image_canvas.DrawFeatures(keypoints[i], color);
     image_canvas.Write(feature_output);
   }
 
   LOG(INFO) << "It took " << (time_to_extract_features / 1000.0)
             << " seconds to extract descriptors from " << img_filepaths.size()
             << " images.";
-
-  theia::STLDeleteElements(&keypoints);
-  theia::STLDeleteElements(&descriptors);
-  theia::STLDeleteElements(&binary_descriptors);
 }

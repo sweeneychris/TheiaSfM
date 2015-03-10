@@ -63,8 +63,8 @@ template <class DistanceMetric, class DescriptorType>
 bool MatchAndVerifyFeatures(
     const MatchAndVerifyFeaturesOptions& options,
     const std::vector<CameraIntrinsics>& intrinsics,
-    const std::vector<std::vector<Keypoint>*>& keypoints,
-    const std::vector<std::vector<DescriptorType>*>& descriptors,
+    const std::vector<std::vector<Keypoint> >& keypoints,
+    const std::vector<std::vector<DescriptorType> >& descriptors,
     FeatureMatcher<DistanceMetric>* matcher,
     std::vector<ImagePairMatch>* matches) {
   CHECK_GT(options.num_threads, 0);
@@ -76,7 +76,7 @@ bool MatchAndVerifyFeatures(
   // Match features.
   std::vector<ImagePairMatch> image_pair_matches;
   for (int i = 0; i < keypoints.size(); i++) {
-    matcher->AddImage(keypoints[i], descriptors[i], intrinsics[i]);
+    matcher->AddImage(&keypoints[i], &descriptors[i], intrinsics[i]);
   }
 
   // Set the options to ensure they are consistent with each other.
@@ -98,8 +98,8 @@ bool MatchAndVerifyFeatures(
 bool MatchAndVerifyFeatures(
     const MatchAndVerifyFeaturesOptions& options,
     const std::vector<CameraIntrinsics>& intrinsics,
-    const std::vector<std::vector<Keypoint>*>& keypoints,
-    const std::vector<std::vector<Eigen::VectorXf>*>& descriptor,
+    const std::vector<std::vector<Keypoint> >& keypoints,
+    const std::vector<std::vector<Eigen::VectorXf> >& descriptor,
     std::vector<ImagePairMatch>* matches) {
   std::unique_ptr<FeatureMatcher<L2>> matcher;
   if (options.matching_strategy == MatchingStrategy::CASCADE_HASHING) {
@@ -121,8 +121,8 @@ bool MatchAndVerifyFeatures(
 bool MatchAndVerifyFeatures(
     const MatchAndVerifyFeaturesOptions& options,
     const std::vector<CameraIntrinsics>& intrinsics,
-    const std::vector<std::vector<Keypoint>*>& keypoints,
-    const std::vector<std::vector<BinaryVectorX>*>& descriptor,
+    const std::vector<std::vector<Keypoint> >& keypoints,
+    const std::vector<std::vector<BinaryVectorX> >& descriptor,
     std::vector<ImagePairMatch>* matches) {
   std::unique_ptr<FeatureMatcher<Hamming>> matcher;
   if (options.matching_strategy == MatchingStrategy::CASCADE_HASHING) {
