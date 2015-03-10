@@ -50,6 +50,7 @@
 #include "theia/sfm/track.h"
 #include "theia/sfm/types.h"
 #include "theia/sfm/view.h"
+#include "theia/util/filesystem.h"
 #include "theia/util/map_util.h"
 
 namespace theia {
@@ -88,14 +89,14 @@ bool ReadListsFile(const std::string& list_filename,
   const char space = static_cast<char>(' ');
   while (!ifs.eof()) {
     // Read in the filename.
-    std::string filename;
+    std::string filename, truncated_filename;
     ifs >> filename;
     if (filename.length() == 0) {
       break;
     }
-
-    const ViewId view_id = reconstruction->AddView(filename);
-    CHECK_NE(view_id, kInvalidViewId) << "View " << filename
+    CHECK(theia::GetFilenameFromFilepath(filename, false, &truncated_filename));
+    const ViewId view_id = reconstruction->AddView(truncated_filename);
+    CHECK_NE(view_id, kInvalidViewId) << "View " << truncated_filename
                                       << " could not be added.";
 
     // Check to see if the exif focal length is given.

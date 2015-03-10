@@ -269,6 +269,8 @@ bool Input1DSFM::ReadEGs() {
     return false;
   }
 
+  const Eigen::Matrix3d bundler_to_theia =
+      Eigen::Vector3d(1.0, -1.0, -1.0).asDiagonal();
   while (!ifs.eof()) {
     TwoViewInfo info;
     int image_index1, image_index2;
@@ -287,6 +289,9 @@ bool Input1DSFM::ReadEGs() {
         ifs >> rotation(i, j);
       }
     }
+
+    rotation = bundler_to_theia * rotation.transpose() * bundler_to_theia;
+
     // Convert to angle axis.
     ceres::RotationMatrixToAngleAxis(rotation.data(), info.rotation_2.data());
 
