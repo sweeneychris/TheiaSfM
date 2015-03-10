@@ -81,8 +81,9 @@ class Histogram {
     // this range if the bin is not empty.
     if (histogram_count_.front() > 0) {
       msg += theia::StringPrintf("< %s = %d",
-                                 std::to_string(boundaries_.front()).c_str(),
+                                 std::to_string(boundaries_[1]).c_str(),
                                  histogram_count_.front());
+      msg += "\n";
     }
 
     for (int i = 1; i < boundaries_.size() - 2; i++) {
