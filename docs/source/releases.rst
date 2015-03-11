@@ -8,8 +8,8 @@ HEAD
 ====
 
 
-0.2.0
-=====
+`0.2.0 <https://github.com/sweeneychris/TheiaSfM/archive/v0.2.tar.gz>`_
+=======================================================================
 
 New Features
 ------------
