@@ -122,6 +122,13 @@ The controls are:
 
   ``c``: Toggle to choose whether to display or not display camera wireframes.
 
+  ``t``: Increase the minimum number of views that must observe a 3D point in
+  order for it to be displayed. By default, each 3D point must be observed by 2
+  views in order to be displayed. Increasing this value will often result in a
+  more clear reconstruction.
+
+  ``T``: Decrease the minimum number of views that must observe a 3D point in
+  order for it to be displayed.
 
 Create Calibration File From EXIF
 ---------------------------------
