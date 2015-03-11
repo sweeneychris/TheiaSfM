@@ -4,12 +4,14 @@
 
 # Building a reconstruction.
 --reconstruction_estimator=NONLINEAR
+--reconstruct_largest_connected_component=true
 --constant_camera_intrinsics=true
 --max_reprojection_error_pixels=4.0
 --num_retriangulation_iterations=1
 
 # View graph filtering.
 --refine_relative_translations_after_rotation_estimation=true
+--min_num_inliers_for_valid_match=30
 --post_rotation_filtering_degrees=5.0
 
 # Position estimation.

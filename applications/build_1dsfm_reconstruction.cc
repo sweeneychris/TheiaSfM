@@ -56,9 +56,17 @@ DEFINE_int32(num_threads, 1,
 // Reconstruction building options.
 DEFINE_string(reconstruction_estimator, "NONLINEAR",
               "Type of global SfM reconstruction estimation to use.");
+DEFINE_bool(reconstruct_largest_connected_component, false,
+            "If set to true, only the single largest connected component is "
+            "reconstructed. Otherwise, as many models as possible are "
+            "estimated.");
 DEFINE_bool(constant_camera_intrinsics, false,
             "Set to true to keep camera intrinsic parameters constant during "
             "bundle adjustment.");
+DEFINE_int32(min_num_inliers_for_valid_match, 30,
+             "Minimum number of geometrically verified inliers that a pair on "
+             "images must have in order to be considered a valid two-view "
+             "match.");
 DEFINE_double(max_reprojection_error_pixels, 4.0,
               "Maximum reprojection error for a correspondence to be "
               "considered an inlier. This is used for absolute pose estimation "
@@ -122,9 +130,13 @@ ReconstructionBuilderOptions SetReconstructionBuilderOptions() {
 
   options.reconstruction_estimator_options.constant_camera_intrinsics =
       FLAGS_constant_camera_intrinsics;
-
+  options.min_num_inlier_matches = FLAGS_min_num_inliers_for_valid_match;
+  options.reconstruction_estimator_options.min_num_two_view_inliers =
+      FLAGS_min_num_inliers_for_valid_match;
   options.reconstruction_estimator_options.reconstruction_estimator_type =
       GetReconstructionEstimatorType(FLAGS_reconstruction_estimator);
+  options.reconstruct_largest_connected_component =
+      FLAGS_reconstruct_largest_connected_component;
   options.reconstruction_estimator_options.max_reprojection_error_in_pixels =
       FLAGS_max_reprojection_error_pixels;
   options.reconstruction_estimator_options.num_retriangulation_iterations =
