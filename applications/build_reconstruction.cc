@@ -85,6 +85,9 @@ DEFINE_bool(reconstruct_largest_connected_component, false,
             "If set to true, only the single largest connected component is "
             "reconstructed. Otherwise, as many models as possible are "
             "estimated.");
+DEFINE_bool(only_calibrated_views, false,
+            "Set to true to only reconstruct the views where calibration is "
+            "provided or can be extracted from EXIF");
 DEFINE_int32(max_track_length, 20, "Maximum length of a track.");
 DEFINE_bool(initialize_focal_lengths_from_median_estimate, false,
             "If false, initialize focal lengths from a median viewing angle if "
@@ -202,6 +205,7 @@ ReconstructionBuilderOptions SetReconstructionBuilderOptions() {
       GetReconstructionEstimatorType(FLAGS_reconstruction_estimator);
   options.reconstruct_largest_connected_component =
       FLAGS_reconstruct_largest_connected_component;
+  options.only_calibrated_views = FLAGS_only_calibrated_views;
   options.reconstruction_estimator_options
       .initialize_focal_lengths_from_median_estimate =
       FLAGS_initialize_focal_lengths_from_median_estimate;
