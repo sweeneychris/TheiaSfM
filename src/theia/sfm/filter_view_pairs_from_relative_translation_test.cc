@@ -190,8 +190,7 @@ TEST(FilterViewPairsFromRelativeTranslation, LineTest) {
   const ViewIdPair invalid_view_pair(0, 3);
   TwoViewInfo invalid_info;
   // Force the bad translations to be really bad.
-  view_pairs[invalid_view_pair].position_2 =
-      (Vector3d::Random() - Vector3d::Ones()).normalized();
+  view_pairs[invalid_view_pair].position_2 = Vector3d(-1, -1, -1).normalized();
 
   FilterViewPairsFromRelativeTranslationOptions options;
   options.translation_projection_tolerance = 0.1;
