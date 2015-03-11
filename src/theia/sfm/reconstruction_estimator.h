@@ -75,8 +75,8 @@ class ReconstructionEstimator {
 
   // Estimates the camera poses for a reconstruction given the view graph
   // describing the multi-view correspondences.
-  virtual ReconstructionEstimatorSummary Estimate(const ViewGraph& view_graph,
-                                         Reconstruction* reconstruction) = 0;
+  virtual ReconstructionEstimatorSummary Estimate(
+      const ViewGraph& view_graph, Reconstruction* reconstruction) = 0;
 
   static ReconstructionEstimator* Create(
       const ReconstructionEstimatorOptions& options);
