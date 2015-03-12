@@ -109,6 +109,7 @@
 #include "theia/sfm/filter_view_graph_cycles_by_rotation.h"
 #include "theia/sfm/filter_view_pairs_from_orientation.h"
 #include "theia/sfm/filter_view_pairs_from_relative_translation.h"
+#include "theia/sfm/find_common_views_by_name.h"
 #include "theia/sfm/match_and_verify_features.h"
 #include "theia/sfm/nonlinear_reconstruction_estimator.h"
 #include "theia/sfm/pose/dls_impl.h"

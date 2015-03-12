@@ -85,6 +85,7 @@ SET(THEIA_SRC
   sfm/filter_view_graph_cycles_by_rotation.cc
   sfm/filter_view_pairs_from_orientation.cc
   sfm/filter_view_pairs_from_relative_translation.cc
+  sfm/find_common_views_by_name.cc
   sfm/match_and_verify_features.cc
   sfm/nonlinear_reconstruction_estimator.cc
   sfm/pose/dls_impl.cc
@@ -206,6 +207,7 @@ IF (BUILD_TESTING)
   GTEST(sfm/filter_view_graph_cycles_by_rotation)
   GTEST(sfm/filter_view_pairs_from_orientation)
   GTEST(sfm/filter_view_pairs_from_relative_translation)
+  GTEST(sfm/find_common_views_by_name)
   GTEST(sfm/pose/dls_pnp)
   GTEST(sfm/pose/eight_point_fundamental_matrix)
   GTEST(sfm/pose/essential_matrix_utils)
