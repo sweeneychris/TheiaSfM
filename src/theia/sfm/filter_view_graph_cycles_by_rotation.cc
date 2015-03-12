@@ -32,7 +32,7 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#include "theia/sfm/filter_view_pairs_from_cycles.h"
+#include "theia/sfm/filter_view_graph_cycles_by_rotation.h"
 
 #include <ceres/rotation.h>
 #include <Eigen/Core>
@@ -45,6 +45,7 @@
 #include "theia/sfm/twoview_info.h"
 #include "theia/sfm/types.h"
 #include "theia/sfm/view_graph/triplet_extractor.h"
+#include "theia/sfm/view_graph/view_graph.h"
 #include "theia/sfm/view_triplet.h"
 
 namespace theia {
@@ -90,21 +91,23 @@ void RemoveTripletEdgesFromInvalidViewPairs(
 
 }  // namespace
 
-void FilterViewPairsFromCycles(
-    const double max_loop_error_degrees,
-    std::unordered_map<ViewIdPair, TwoViewInfo>* view_pairs) {
+void FilterViewGraphCyclesByRotation(const double max_loop_error_degrees,
+                                     ViewGraph* view_graph) {
+  const std::unordered_map<ViewIdPair, TwoViewInfo>& view_pairs =
+      view_graph->GetAllEdges();
+
   // Find all triplets.
   TripletExtractor triplet_extractor;
   std::vector<std::vector<ViewTriplet> > connected_triplets;
-  CHECK(triplet_extractor.ExtractTripletsFromViewPairs(*view_pairs,
+  CHECK(triplet_extractor.ExtractTripletsFromViewPairs(view_pairs,
                                                        &connected_triplets))
       << "Could not extract triplets from view pairs.";
 
   // Create a list of invalid view pairs. View pairs deemed valid will be
   // removed from this list.
   std::unordered_set<ViewIdPair> invalid_view_pairs;
-  invalid_view_pairs.reserve(view_pairs->size());
-  for (const auto& view_pair : *view_pairs) {
+  invalid_view_pairs.reserve(view_pairs.size());
+  for (const auto& view_pair : view_pairs) {
     invalid_view_pairs.insert(view_pair.first);
   }
 
@@ -115,7 +118,7 @@ void FilterViewPairsFromCycles(
       // Compute loop rotation error.
       const double loop_rotation_error_degrees =
           ComputeLoopRotationError(triplet);
-
+      LOG(INFO) << "Loop rotation error = " << loop_rotation_error_degrees;
       // Add the view pairs to the list of valid view pairs if the loop error is
       // within the designated tolerance.
       if (loop_rotation_error_degrees < max_loop_error_degrees) {
@@ -125,11 +128,11 @@ void FilterViewPairsFromCycles(
   }
 
   VLOG(1) << "Removing " << invalid_view_pairs.size() << " of "
-          << view_pairs->size() << " view pairs from loop rotation filtering.";
+          << view_pairs.size() << " view pairs from loop rotation filtering.";
 
   // Remove any view pairs not in the list of valid edges.
   for (const ViewIdPair& view_pair_id : invalid_view_pairs) {
-    view_pairs->erase(view_pair_id);
+    view_graph->RemoveEdge(view_pair_id.first, view_pair_id.second);
   }
 }
 

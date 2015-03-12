@@ -65,6 +65,13 @@ bool ViewGraph::HasView(const ViewId view_id) const {
   return ContainsKey(vertices_, view_id);
 }
 
+bool ViewGraph::HasEdge(const ViewId view_id_1, const ViewId view_id_2) const {
+  const ViewIdPair view_id_pair = (view_id_1 < view_id_2)
+                                  ? ViewIdPair(view_id_1, view_id_2)
+                                  : ViewIdPair(view_id_2, view_id_1);
+  return ContainsKey(edges_, view_id_pair);
+}
+
 // Removes the view from the view graph and removes all edges connected to the
 // view. Returns true on success and false if the view did not exist in the
 // view graph.

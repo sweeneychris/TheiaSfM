@@ -32,17 +32,11 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#ifndef THEIA_SFM_FILTER_VIEW_PAIRS_FROM_CYCLES_H_
-#define THEIA_SFM_FILTER_VIEW_PAIRS_FROM_CYCLES_H_
-
-#include <Eigen/Core>
-#include <unordered_map>
-
-#include "theia/util/hash.h"
-#include "theia/sfm/twoview_info.h"
-#include "theia/sfm/types.h"
+#ifndef THEIA_SFM_FILTER_VIEW_GRAPH_CYCLES_BY_ROTATION_H_
+#define THEIA_SFM_FILTER_VIEW_GRAPH_CYCLES_BY_ROTATION_H_
 
 namespace theia {
+class ViewGraph;
 
 // Finds all cycles of size 3 (i.e., "triplets") and sets each triplet to
 // "valid" if the loop rotation error is less than 2 degree. The loop rotation
@@ -50,10 +44,9 @@ namespace theia {
 // identity). This is because the concatenated rotations of a perfect loop
 // should result in a zero angle loop rotation. Any view pairs that do not
 // participate in a valid triplet are removed.
-void FilterViewPairsFromCycles(
-    const double max_loop_error_degrees,
-    std::unordered_map<ViewIdPair, TwoViewInfo>* view_pairs);
+void FilterViewGraphCyclesByRotation(const double max_loop_error_degrees,
+                                     ViewGraph* view_pairs);
 
 }  // namespace theia
 
-#endif  // THEIA_SFM_FILTER_VIEW_PAIRS_FROM_CYCLES_H_
+#endif  // THEIA_SFM_FILTER_VIEW_GRAPH_CYCLES_BY_ROTATION_H_

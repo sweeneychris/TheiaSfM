@@ -62,6 +62,8 @@ class ViewGraph {
 
   bool HasView(const ViewId view_id) const;
 
+  bool HasEdge(const ViewId view_id_1, const ViewId view_id_2) const;
+
   // Returns a set of the ViewIds contained in the view graph.
   std::unordered_set<ViewId> ViewIds() const;
 

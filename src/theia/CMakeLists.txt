@@ -82,7 +82,7 @@ SET(THEIA_SRC
   sfm/estimators/uncalibrated_relative_pose_estimator.cc
   sfm/exif_reader.cc
   sfm/feature_extractor.cc
-  sfm/filter_view_pairs_from_cycles.cc
+  sfm/filter_view_graph_cycles_by_rotation.cc
   sfm/filter_view_pairs_from_orientation.cc
   sfm/filter_view_pairs_from_relative_translation.cc
   sfm/match_and_verify_features.cc
@@ -203,7 +203,7 @@ IF (BUILD_TESTING)
   GTEST(sfm/estimators/relative_pose_estimator)
   GTEST(sfm/estimators/uncalibrated_relative_pose_estimator)
   GTEST(sfm/exif_reader)
-  GTEST(sfm/filter_view_pairs_from_cycles)
+  GTEST(sfm/filter_view_graph_cycles_by_rotation)
   GTEST(sfm/filter_view_pairs_from_orientation)
   GTEST(sfm/filter_view_pairs_from_relative_translation)
   GTEST(sfm/pose/dls_pnp)
