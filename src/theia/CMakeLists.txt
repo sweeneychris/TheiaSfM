@@ -115,8 +115,10 @@ SET(THEIA_SRC
   sfm/track.cc
   sfm/track_builder.cc
   sfm/transformation/align_point_clouds.cc
+  sfm/transformation/align_reconstructions.cc
   sfm/transformation/align_rotations.cc
   sfm/transformation/gdls_similarity_transform.cc
+  sfm/transformation/transform_reconstruction.cc
   sfm/triangulation/triangulation.cc
   sfm/twoview_info.cc
   sfm/verify_two_view_matches.cc
@@ -227,6 +229,7 @@ IF (BUILD_TESTING)
   GTEST(sfm/track)
   GTEST(sfm/track_builder)
   GTEST(sfm/transformation/align_point_clouds)
+  GTEST(sfm/transformation/align_reconstructions)
   GTEST(sfm/transformation/align_rotations)
   GTEST(sfm/transformation/gdls_similarity_transform)
   GTEST(sfm/triangulation/triangulation)
