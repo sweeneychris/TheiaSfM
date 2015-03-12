@@ -40,7 +40,7 @@
 #include "theia/util/timer.h"
 #include "theia/sfm/bundle_adjustment/bundle_adjustment.h"
 #include "theia/sfm/estimate_track.h"
-#include "theia/sfm/filter_view_pairs_from_cycles.h"
+#include "theia/sfm/filter_view_graph_cycles_by_rotation.h"
 #include "theia/sfm/filter_view_pairs_from_orientation.h"
 #include "theia/sfm/filter_view_pairs_from_relative_translation.h"
 #include "theia/sfm/reconstruction.h"
