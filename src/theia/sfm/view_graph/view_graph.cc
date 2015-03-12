@@ -155,6 +155,15 @@ const TwoViewInfo* ViewGraph::GetEdge(const ViewId view_id_1,
   return FindOrNull(edges_, view_id_pair);
 }
 
+TwoViewInfo* ViewGraph::GetMutableEdge(const ViewId view_id_1,
+                                       const ViewId view_id_2) {
+  const ViewIdPair view_id_pair = (view_id_1 < view_id_2)
+                                      ? ViewIdPair(view_id_1, view_id_2)
+                                      : ViewIdPair(view_id_2, view_id_1);
+  return FindOrNull(edges_, view_id_pair);
+}
+
+
 // Returns a map of all edges. Each edge is found exactly once in the map and
 // is indexed by the ViewIdPair (view id 1, view id 2) such that view id 1 <
 // view id 2.

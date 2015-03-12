@@ -92,6 +92,8 @@ class ViewGraph {
   const TwoViewInfo* GetEdge(const ViewId view_id_1,
                              const ViewId view_id_2) const;
 
+  TwoViewInfo* GetMutableEdge(const ViewId view_id_1, const ViewId view_id_2);
+
   // Returns a map of all edges. Each edge is found exactly once in the map and
   // is indexed by the ViewIdPair (view id 1, view id 2) such that view id 1 <
   // view id 2.

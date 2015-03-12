@@ -99,7 +99,6 @@ class NonlinearReconstructionEstimator : public ReconstructionEstimator {
   BundleAdjustmentOptions bundle_adjustment_options_;
   RansacParameters ransac_params_;
 
-  std::unordered_map<ViewIdPair, TwoViewInfo> view_pairs_;
   std::unordered_map<ViewId, Eigen::Vector3d> orientations_;
   std::unordered_map<ViewId, Eigen::Vector3d> positions_;
 

@@ -88,8 +88,9 @@ NonlinearPositionEstimatorOptions SetNonlinearPositionEstimatorOptions(
   return npe_options;
 }
 
-ViewId RandomViewId(
-    const std::unordered_map<ViewIdPair, TwoViewInfo>& view_pairs) {
+ViewId RandomViewId(const ViewGraph& view_graph) {
+  const auto& view_pairs = view_graph.GetAllEdges();
+
   // Collect all view ids.
   std::unordered_set<ViewId> views;
   for (const auto& view_pair : view_pairs) {
@@ -149,17 +150,13 @@ ReconstructionEstimatorSummary NonlinearReconstructionEstimator::Estimate(
   CHECK_NOTNULL(reconstruction);
   reconstruction_ = reconstruction;
   view_graph_ = view_graph;
-  view_pairs_.clear();
   orientations_.clear();
   positions_.clear();
 
   ReconstructionEstimatorSummary summary;
   Timer timer;
 
-  // Get view pairs.
-  view_pairs_ = view_graph_->GetAllEdges();
-
-  LOG(INFO) << "Computing a reconstruction from " << view_pairs_.size()
+  LOG(INFO) << "Computing a reconstruction from " << view_graph_->NumEdges()
             << " initial view pairs.";
 
   // Step 1. Filter the initial view graph and remove any bad two view
@@ -257,20 +254,20 @@ ReconstructionEstimatorSummary NonlinearReconstructionEstimator::Estimate(
 bool NonlinearReconstructionEstimator::FilterInitialViewGraph() {
   // Remove any view pairs that do not have a sufficient number of inliers.
   std::unordered_set<ViewIdPair> view_pairs_to_remove;
-  for (const auto& view_pair : view_pairs_) {
+  const auto& view_pairs = view_graph_->GetAllEdges();
+  for (const auto& view_pair : view_pairs) {
     if (view_pair.second.num_verified_matches <
         options_.min_num_two_view_inliers) {
       view_pairs_to_remove.insert(view_pair.first);
     }
   }
   for (const ViewIdPair view_id_pair : view_pairs_to_remove) {
-    view_pairs_.erase(view_id_pair);
+    view_graph_->RemoveEdge(view_id_pair.first, view_id_pair.second);
   }
 
   // Only reconstruct the largest connected component.
   RemoveDisconnectedViewPairs(view_graph_);
-  view_pairs_ = view_graph_->GetAllEdges();
-  return view_pairs_.size() >= 2;
+  return view_graph_->NumEdges() >= 2;
 }
 
 void NonlinearReconstructionEstimator::CalibrateCameras() {
@@ -283,10 +280,9 @@ void NonlinearReconstructionEstimator::CalibrateCameras() {
 }
 
 void NonlinearReconstructionEstimator::EstimateGlobalRotations() {
-  const ViewId random_starting_view = RandomViewId(view_pairs_);
+  const ViewId random_starting_view = RandomViewId(*view_graph_);
   OrientationsFromViewGraph(*view_graph_, random_starting_view, &orientations_);
-  const auto& relative_rotations =
-      RelativeRotationsFromTwoViewInfos(view_pairs_);
+  const auto& relative_rotations = RelativeRotationsFromViewGraph(*view_graph_);
   RobustRotationEstimator::Options rotation_estimator_options;
   RobustRotationEstimator rotation_estimator(rotation_estimator_options,
                                              relative_rotations);
@@ -302,14 +298,13 @@ void NonlinearReconstructionEstimator::FilterRotations() {
       options_.rotation_filtering_max_difference_degrees,
       view_graph_);
   RemoveDisconnectedViewPairs(view_graph_);
-  view_pairs_ = view_graph_->GetAllEdges();
 }
 
 void NonlinearReconstructionEstimator::OptimizePairwiseTranslations() {
   if (options_.refine_relative_translations_after_rotation_estimation) {
     RefineRelativeTranslationsWithKnownRotations(*reconstruction_,
                                                  orientations_,
-                                                 &view_pairs_);
+                                                 view_graph_);
   }
 }
 
@@ -319,14 +314,14 @@ void NonlinearReconstructionEstimator::FilterRelativeTranslation() {
                                          orientations_,
                                          view_graph_);
   RemoveDisconnectedViewPairs(view_graph_);
-  view_pairs_ = view_graph_->GetAllEdges();
 }
 
 void NonlinearReconstructionEstimator::EstimatePosition() {
   // Estimate position.
+  const auto& view_pairs = view_graph_->GetAllEdges();
   NonlinearPositionEstimator position_estimator(position_estimator_options_,
                                                 *reconstruction_,
-                                                view_pairs_);
+                                                view_pairs);
   CHECK(position_estimator.EstimatePositions(orientations_, &positions_))
       << "Position estimation failed!";
   LOG(INFO) << positions_.size()

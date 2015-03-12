@@ -70,10 +70,8 @@ void InitializeFocalLengthsFromMedian(const ViewGraph& view_graph,
                                       Reconstruction* reconstruction);
 
 // Collects the relative rotations for each view pair into a simple map.
-std::unordered_map<ViewIdPair, Eigen::Vector3d>
-    RelativeRotationsFromTwoViewInfos(
-        const std::unordered_map<ViewIdPair, TwoViewInfo>& view_pairs);
-
+std::unordered_map<ViewIdPair, Eigen::Vector3d> RelativeRotationsFromViewGraph(
+    const ViewGraph& view_graph);
 
 // Each view that has a rotation and position estimated has the Camera pose set.
 void SetReconstructionFromEstimatedPoses(
@@ -94,7 +92,7 @@ void GetEstimatedTracksFromReconstruction(const Reconstruction& reconstruction,
 void RefineRelativeTranslationsWithKnownRotations(
     const Reconstruction& reconstruction,
     const std::unordered_map<ViewId, Eigen::Vector3d>& orientations,
-    std::unordered_map<ViewIdPair, TwoViewInfo>* view_pairs);
+    ViewGraph* view_graph);
 
 // Removes all features that have a reprojection error larger than the
 // reprojection error threshold. Returns the number of features removed.

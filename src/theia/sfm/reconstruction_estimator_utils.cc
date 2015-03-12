@@ -206,10 +206,11 @@ void InitializeFocalLengthsFromMedian(const ViewGraph& view_graph,
 }
 
 // Collects the relative rotations for each view pair into a simple map.
-std::unordered_map<ViewIdPair, Eigen::Vector3d>
-RelativeRotationsFromTwoViewInfos(
-    const std::unordered_map<ViewIdPair, TwoViewInfo>& view_pairs) {
+std::unordered_map<ViewIdPair, Eigen::Vector3d> RelativeRotationsFromViewGraph(
+    const ViewGraph& view_graph) {
   std::unordered_map<ViewIdPair, Eigen::Vector3d> relative_rotations;
+
+  const auto& view_pairs = view_graph.GetAllEdges();
   for (const auto& view_pair : view_pairs) {
     relative_rotations[view_pair.first] = view_pair.second.rotation_2;
   }
@@ -274,9 +275,10 @@ void GetEstimatedTracksFromReconstruction(const Reconstruction& reconstruction,
 void RefineRelativeTranslationsWithKnownRotations(
     const Reconstruction& reconstruction,
     const std::unordered_map<ViewId, Eigen::Vector3d>& orientations,
-    std::unordered_map<ViewIdPair, TwoViewInfo>* view_pairs) {
+    ViewGraph* view_graph) {
+  const auto& view_pairs = view_graph->GetAllEdges();
   // Refine the translation estimation for each view pair.
-  for (auto& view_pair : *view_pairs) {
+  for (const auto& view_pair : view_pairs) {
     // Get all feature correspondences common to both views.
     std::vector<FeatureCorrespondence> matches;
     const View* view1 = reconstruction.View(view_pair.first.first);
@@ -287,8 +289,11 @@ void RefineRelativeTranslationsWithKnownRotations(
         FindOrDie(orientations, view_pair.first.first),
         FindOrDie(orientations, view_pair.first.second));
 
-    CHECK(OptimizeRelativePositionWithKnownRotation(
-        matches, relative_rotation, &view_pair.second.position_2))
+    TwoViewInfo* info = view_graph->GetMutableEdge(view_pair.first.first,
+                                                   view_pair.first.second);
+    CHECK(OptimizeRelativePositionWithKnownRotation(matches,
+                                                    relative_rotation,
+                                                    &info->position_2))
         << "Could not optimize the relative translation from the epipolar "
            "constraint.";
   }
