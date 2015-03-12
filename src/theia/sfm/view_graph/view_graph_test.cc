@@ -60,35 +60,12 @@ TEST(ViewGraph, Constructor) {
   EXPECT_EQ(view_graph.NumEdges(), 0);
 }
 
-
-TEST(ViewGraph, AddView) {
-  ViewGraph graph;
-  const ViewId view_one = 0;
-  const ViewId view_two = 1;
-
-  graph.AddView(view_one);
-  EXPECT_TRUE(graph.HasView(view_one));
-  EXPECT_EQ(graph.NumViews(), 1);
-  EXPECT_EQ(graph.NumEdges(), 0);
-
-  graph.AddView(view_two);
-  EXPECT_TRUE(graph.HasView(view_two));
-  EXPECT_EQ(graph.NumViews(), 2);
-  EXPECT_EQ(graph.NumEdges(), 0);
-
-  graph.AddView(view_one);
-  EXPECT_EQ(graph.NumViews(), 2);
-  EXPECT_EQ(graph.NumEdges(), 0);
-}
-
 TEST(ViewGraph, RemoveView) {
   ViewGraph graph;
   const ViewId view_one = 0;
   const ViewId view_two = 1;
   const TwoViewInfo edge;
 
-  graph.AddView(view_one);
-  graph.AddView(view_two);
   graph.AddEdge(view_one, view_two, edge);
   EXPECT_TRUE(graph.HasView(view_one));
   EXPECT_TRUE(graph.HasView(view_two));
@@ -131,12 +108,10 @@ TEST(ViewGraph, AddEdge) {
   EXPECT_EQ(*edge_2_0, info2);
   EXPECT_TRUE(graph.GetEdge(2, 1) == nullptr);
 
-  const std::unordered_map<ViewId, TwoViewInfo> edges =
-      *graph.GetEdgesForView(0);
-  EXPECT_TRUE(ContainsKey(edges, 1));
-  EXPECT_EQ(FindOrDie(edges, 1), info1);
-  EXPECT_TRUE(ContainsKey(edges, 2));
-  EXPECT_EQ(FindOrDie(edges, 2), info2);
+  const std::unordered_set<ViewId> edge_ids =
+      *graph.GetNeighborIdsForView(0);
+  EXPECT_TRUE(ContainsKey(edge_ids, 1));
+  EXPECT_TRUE(ContainsKey(edge_ids, 2));
 
   TwoViewInfo info3;
   info3.num_verified_matches = 3;

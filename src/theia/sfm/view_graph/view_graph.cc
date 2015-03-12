@@ -48,12 +48,7 @@ namespace theia {
 int ViewGraph::NumViews() const { return vertices_.size(); }
 
 int ViewGraph::NumEdges() const {
-  int num_edges = 0;
-  for (const auto& vertex : vertices_) {
-    num_edges += vertex.second.size();
-  }
-  // Divide by 2 because each undirected edge will be counted twice.
-  return num_edges / 2;
+  return edges_.size();
 }
 
 // Returns a set of the ViewIds contained in the view graph.
@@ -70,27 +65,22 @@ bool ViewGraph::HasView(const ViewId view_id) const {
   return ContainsKey(vertices_, view_id);
 }
 
-// Adds the view to the view graph if it is not already present.
-void ViewGraph::AddView(const ViewId view_id) {
-  if (ContainsKey(vertices_, view_id)) {
-    DLOG(INFO) << "View " << view_id << " already exists in view graph!";
-    return;
-  }
-  vertices_[view_id] = std::unordered_map<ViewId, TwoViewInfo>();
-}
-
 // Removes the view from the view graph and removes all edges connected to the
 // view. Returns true on success and false if the view did not exist in the
 // view graph.
 bool ViewGraph::RemoveView(const ViewId view_id) {
-  const auto* edges = FindOrNull(vertices_, view_id);
-  if (edges == nullptr) {
+  const auto* neighbor_ids = FindOrNull(vertices_, view_id);
+  if (neighbor_ids == nullptr) {
     return false;
   }
 
   // Remove the edges to the view from adjacent vertices.
-  for (const auto& adjacent_view : *edges) {
-    vertices_[adjacent_view.first].erase(view_id);
+  for (const ViewId neighbor_id : *neighbor_ids) {
+    vertices_[neighbor_id].erase(view_id);
+    const ViewIdPair view_id_pair = (view_id < neighbor_id)
+                                        ? ViewIdPair(view_id, neighbor_id)
+                                        : ViewIdPair(neighbor_id, view_id);
+    edges_.erase(view_id_pair);
   }
 
   // Remove the view as a vertex.
@@ -110,25 +100,33 @@ void ViewGraph::AddEdge(const ViewId view_id_1, const ViewId view_id_2,
     return;
   }
 
-  DLOG_IF(WARNING, ContainsKey(vertices_[view_id_1], view_id_2))
+  const ViewIdPair view_id_pair = (view_id_1 < view_id_2)
+                                      ? ViewIdPair(view_id_1, view_id_2)
+                                      : ViewIdPair(view_id_2, view_id_1);
+
+  DLOG_IF(WARNING, ContainsKey(edges_, view_id_pair))
       << "An edge already exists between view " << view_id_1 << " and view "
       << view_id_2;
 
-  vertices_[view_id_1][view_id_2] = two_view_info;
-  vertices_[view_id_2][view_id_1] = two_view_info;
+  vertices_[view_id_1].insert(view_id_2);
+  vertices_[view_id_2].insert(view_id_1);
+  edges_[view_id_pair] = two_view_info;
 }
 
 // Removes the edge from the view graph. Returns true if the edge is removed
 // and false if the edge did not exist.
 bool ViewGraph::RemoveEdge(const ViewId view_id_1, const ViewId view_id_2) {
-  if (!ContainsKey(vertices_, view_id_1) ||
-      !ContainsKey(vertices_, view_id_2)) {
+  const ViewIdPair view_id_pair = (view_id_1 < view_id_2)
+                                      ? ViewIdPair(view_id_1, view_id_2)
+                                      : ViewIdPair(view_id_2, view_id_1);
+  if (!ContainsKey(edges_, view_id_pair)) {
     return false;
   }
 
   // Erase the edge from each vertex.
   if (vertices_[view_id_1].erase(view_id_2) == 0 ||
-      vertices_[view_id_2].erase(view_id_1) == 0) {
+      vertices_[view_id_2].erase(view_id_1) == 0 ||
+      edges_.erase(view_id_pair) == 0) {
     return false;
   }
 
@@ -136,7 +134,7 @@ bool ViewGraph::RemoveEdge(const ViewId view_id_1, const ViewId view_id_2) {
 }
 
 // Returns all the edges for a given
-const std::unordered_map<ViewId, TwoViewInfo>* ViewGraph::GetEdgesForView(
+const std::unordered_set<ViewId>* ViewGraph::GetNeighborIdsForView(
     const ViewId view_id) const {
   return FindOrNull(vertices_, view_id);
 }
@@ -144,29 +142,18 @@ const std::unordered_map<ViewId, TwoViewInfo>* ViewGraph::GetEdgesForView(
 // Returns the edge value or NULL if it does not exist.
 const TwoViewInfo* ViewGraph::GetEdge(const ViewId view_id_1,
                                       const ViewId view_id_2) const {
-  auto* edges = FindOrNull(vertices_, view_id_1);
-  return (edges != nullptr) ? FindOrNull(*edges, view_id_2) : nullptr;
+  const ViewIdPair view_id_pair = (view_id_1 < view_id_2)
+                                      ? ViewIdPair(view_id_1, view_id_2)
+                                      : ViewIdPair(view_id_2, view_id_1);
+  return FindOrNull(edges_, view_id_pair);
 }
 
 // Returns a map of all edges. Each edge is found exactly once in the map and
 // is indexed by the ViewIdPair (view id 1, view id 2) such that view id 1 <
 // view id 2.
-std::unordered_map<ViewIdPair, TwoViewInfo> ViewGraph::GetAllEdges() const {
-  std::unordered_map<ViewIdPair, TwoViewInfo> two_view_infos;
-  two_view_infos.reserve(NumEdges());
-  for (const auto& vertex : vertices_) {
-    for (const auto& adjacent_vertex : vertex.second) {
-      // Skip the edge if view 1 > view 2. This prevents us from visiting the
-      // same edge twice.
-      if (vertex.first > adjacent_vertex.first) {
-        continue;
-      }
-
-      two_view_infos[ViewIdPair(vertex.first, adjacent_vertex.first)] =
-          adjacent_vertex.second;
-    }
-  }
-  return two_view_infos;
+const std::unordered_map<ViewIdPair, TwoViewInfo>& ViewGraph::GetAllEdges()
+    const {
+  return edges_;
 }
 
 }  // namespace theia

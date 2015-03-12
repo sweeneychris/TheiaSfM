@@ -38,6 +38,8 @@
 #include <Eigen/Core>
 #include <algorithm>
 #include <unordered_map>
+#include <utility>
+#include <vector>
 
 #include "theia/util/map_util.h"
 #include "theia/sfm/twoview_info.h"
@@ -86,14 +88,16 @@ void AddEdgesToHeap(
     const std::unordered_map<ViewId, Eigen::Vector3d>& orientations,
     const ViewId view_id,
     std::vector<HeapElement >* heap) {
-  const auto* edges = view_graph.GetEdgesForView(view_id);
-  for (const auto& edge : *edges) {
+  const std::unordered_set<ViewId>* edge_ids =
+      view_graph.GetNeighborIdsForView(view_id);
+  for (const ViewId edge_id : *edge_ids) {
     // Only add edges to the heap that contain a vertex that has not been seen.
-    if (ContainsKey(orientations, edge.first)) {
+    if (ContainsKey(orientations, edge_id)) {
       continue;
     }
 
-    heap->emplace_back(edge.second, ViewIdPair(view_id, edge.first));
+    heap->emplace_back(*view_graph.GetEdge(view_id, edge_id),
+                       ViewIdPair(view_id, edge_id));
     std::push_heap(heap->begin(), heap->end(), SortHeapElement);
   }
 }
