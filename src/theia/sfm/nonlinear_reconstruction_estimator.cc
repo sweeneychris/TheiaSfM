@@ -317,7 +317,7 @@ void NonlinearReconstructionEstimator::FilterRelativeTranslation() {
   // Filter potentially bad relative translations.
   FilterViewPairsFromRelativeTranslation(translation_filter_options_,
                                          orientations_,
-                                         &view_pairs_);
+                                         view_graph_);
   RemoveDisconnectedViewPairs(view_graph_);
   view_pairs_ = view_graph_->GetAllEdges();
 }

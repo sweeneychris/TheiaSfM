@@ -48,6 +48,7 @@
 #include "theia/util/threadpool.h"
 #include "theia/sfm/twoview_info.h"
 #include "theia/sfm/types.h"
+#include "theia/sfm/view_graph/view_graph.h"
 
 namespace theia {
 using Eigen::Vector3d;
@@ -244,18 +245,20 @@ void TranslationFilteringIteration(
 void FilterViewPairsFromRelativeTranslation(
     const FilterViewPairsFromRelativeTranslationOptions& options,
     const std::unordered_map<ViewId, Vector3d>& orientations,
-    std::unordered_map<ViewIdPair, TwoViewInfo>* view_pairs) {
+    ViewGraph* view_graph) {
+  const auto& view_pairs = view_graph->GetAllEdges();
+
   // Weights of edges that have been accumulated throughout the iterations. A
   // higher weight means the edge is more likely to be bad.
   std::unordered_map<ViewIdPair, double> bad_edge_weight;
-  for (const auto& view_pair : *view_pairs) {
+  for (const auto& view_pair : view_pairs) {
     bad_edge_weight[view_pair.first] = 0.0;
   }
 
   // Compute the adjusted translations so that they are oriented in the global
   // frame.
   const std::unordered_map<ViewIdPair, Vector3d>& rotated_translations =
-      RotateRelativeTranslationsToGlobalFrame(orientations, *view_pairs);
+      RotateRelativeTranslationsToGlobalFrame(orientations, view_pairs);
 
   Vector3d translation_mean, translation_variance;
   ComputeMeanVariance(rotated_translations,
@@ -282,7 +285,7 @@ void FilterViewPairsFromRelativeTranslation(
     VLOG(3) << "View pair (" << view_pair.first.first << ", "
             << view_pair.first.second << ") projection = " << view_pair.second;
     if (view_pair.second > max_aggregated_projection_tolerance) {
-      view_pairs->erase(view_pair.first);
+      view_graph->RemoveEdge(view_pair.first.first, view_pair.first.second);
       ++num_view_pairs_removed;
     }
   }

@@ -45,6 +45,7 @@
 #include "theia/util/random.h"
 #include "theia/sfm/filter_view_pairs_from_relative_translation.h"
 #include "theia/sfm/types.h"
+#include "theia/sfm/view_graph/view_graph.h"
 
 namespace theia {
 
@@ -93,7 +94,7 @@ void CreateValidViewPairs(
     const int num_valid_view_pairs,
     const std::unordered_map<ViewId, Vector3d>& orientations,
     const std::unordered_map<ViewId, Vector3d>& positions,
-    std::unordered_map<ViewIdPair, TwoViewInfo>* view_pairs) {
+    ViewGraph* view_graph) {
   // Add a skeletal graph.
   std::vector<ViewId> view_ids;
   view_ids.push_back(0);
@@ -102,21 +103,21 @@ void CreateValidViewPairs(
     const TwoViewInfo info = CreateTwoViewInfo(orientations,
                                                positions,
                                                view_id_pair);
-    (*view_pairs)[view_id_pair] = info;
+    view_graph->AddEdge(i - 1, i, info);
     view_ids.push_back(i);
   }
 
   // Add extra edges.
-  while (view_pairs->size() < num_valid_view_pairs) {
+  while (view_graph->NumEdges() < num_valid_view_pairs) {
     std::random_shuffle(view_ids.begin(), view_ids.end());
     const ViewIdPair view_id_pair(view_ids[0], view_ids[1]);
     if (view_id_pair.first > view_id_pair.second ||
-        ContainsKey(*view_pairs, view_id_pair)) {
+        view_graph->HasEdge(view_id_pair.first, view_id_pair.second)) {
       continue;
     }
     const TwoViewInfo info =
         CreateTwoViewInfo(orientations, positions, view_id_pair);
-    (*view_pairs)[view_id_pair] = info;
+    view_graph->AddEdge(view_id_pair.first, view_id_pair.second, info);
   }
 }
 
@@ -124,25 +125,27 @@ void CreateInvalidViewPairs(
     const int num_invalid_view_pairs,
     const std::unordered_map<ViewId, Vector3d>& orientations,
     const std::unordered_map<ViewId, Vector3d>& positions,
-    std::unordered_map<ViewIdPair, TwoViewInfo>* view_pairs) {
+    ViewGraph* view_graph) {
   InitRandomGenerator();
 
-  const int final_num_view_pairs = view_pairs->size() + num_invalid_view_pairs;
-  while (view_pairs->size() < final_num_view_pairs) {
+  const int final_num_view_pairs =
+      view_graph->NumEdges() + num_invalid_view_pairs;
+  while (view_graph->NumEdges() < final_num_view_pairs) {
     // Choose a random view pair id.
     const ViewIdPair view_id_pair(RandInt(0, orientations.size() - 1),
-                            RandInt(0, orientations.size() - 1));
+                                  RandInt(0, orientations.size() - 1));
     if (view_id_pair.first >= view_id_pair.second ||
-        ContainsKey(*view_pairs, view_id_pair)) {
+        view_graph->HasEdge(view_id_pair.first, view_id_pair.second)) {
       continue;
     }
 
     // Create a valid view pair.
-    (*view_pairs)[view_id_pair] =
+    TwoViewInfo info =
         CreateTwoViewInfo(orientations, positions, view_id_pair);
     // Add a lot of noise to it.
-    (*view_pairs)[view_id_pair].rotation_2 += Vector3d::Ones();
-    (*view_pairs)[view_id_pair].position_2 = Vector3d::Random().normalized();
+    info.rotation_2 += Vector3d::Ones();
+    info.position_2 = Vector3d::Random().normalized();
+    view_graph->AddEdge(view_id_pair.first, view_id_pair.second, info);
   }
 }
 
@@ -154,18 +157,18 @@ void TestFilterViewPairsFromRelativeTranslation(
   std::unordered_map<ViewId, Vector3d> orientations;
   std::unordered_map<ViewId, Vector3d> positions;
   CreateViewsWithRandomPoses(num_views, &orientations, &positions);
-  std::unordered_map<ViewIdPair, TwoViewInfo> view_pairs;
+  ViewGraph view_graph;
   CreateValidViewPairs(num_valid_view_pairs,
                        orientations,
                        positions,
-                       &view_pairs);
+                       &view_graph);
   CreateInvalidViewPairs(num_invalid_view_pairs,
                          orientations,
                          positions,
-                         &view_pairs);
+                         &view_graph);
   FilterViewPairsFromRelativeTranslationOptions options;
-  FilterViewPairsFromRelativeTranslation(options, orientations, &view_pairs);
-  EXPECT_GE(view_pairs.size(), num_valid_view_pairs);
+  FilterViewPairsFromRelativeTranslation(options, orientations, &view_graph);
+  EXPECT_GE(view_graph.NumEdges(), num_valid_view_pairs);
 }
 
 }  // namespace
@@ -180,22 +183,23 @@ TEST(FilterViewPairsFromRelativeTranslation, LineTest) {
     positions[i] = Vector3d(i, 0, 0);
   }
 
-  std::unordered_map<ViewIdPair, TwoViewInfo> view_pairs;
+  ViewGraph view_graph;
   CreateValidViewPairs(kValidViewPairs,
                        orientations,
                        positions,
-                       &view_pairs);
+                       &view_graph);
 
   // Add two invalid view pairs.
   const ViewIdPair invalid_view_pair(0, 3);
   TwoViewInfo invalid_info;
   // Force the bad translations to be really bad.
-  view_pairs[invalid_view_pair].position_2 = Vector3d(-1, -1, -1).normalized();
+  invalid_info.position_2 = Vector3d(-1, -1, -1).normalized();
+  view_graph.AddEdge(0, 3, invalid_info);
 
   FilterViewPairsFromRelativeTranslationOptions options;
   options.translation_projection_tolerance = 0.1;
-  FilterViewPairsFromRelativeTranslation(options, orientations, &view_pairs);
-  EXPECT_EQ(view_pairs.size(), kValidViewPairs);
+  FilterViewPairsFromRelativeTranslation(options, orientations, &view_graph);
+  EXPECT_EQ(view_graph.NumEdges(), kValidViewPairs);
 }
 
 TEST(FilterViewPairsFromRelativeTranslation, NoBadRotations) {

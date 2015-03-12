@@ -38,11 +38,11 @@
 #include <Eigen/Core>
 #include <unordered_map>
 
-#include "theia/util/hash.h"
-#include "theia/sfm/twoview_info.h"
 #include "theia/sfm/types.h"
 
 namespace theia {
+
+class ViewGraph;
 
 struct FilterViewPairsFromRelativeTranslationOptions {
   // Filtering the translations is embarassingly parallel (each iteration can
@@ -72,7 +72,7 @@ struct FilterViewPairsFromRelativeTranslationOptions {
 void FilterViewPairsFromRelativeTranslation(
     const FilterViewPairsFromRelativeTranslationOptions& options,
     const std::unordered_map<ViewId, Eigen::Vector3d>& orientations,
-    std::unordered_map<ViewIdPair, TwoViewInfo>* view_pairs);
+    ViewGraph* view_graph);
 
 }  // namespace theia
 
