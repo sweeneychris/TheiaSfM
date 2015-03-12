@@ -42,17 +42,18 @@
 #include <unordered_map>
 #include <vector>
 
-#include "theia/solvers/sample_consensus_estimator.h"
-#include "theia/util/map_util.h"
+#include "theia/matching/feature_correspondence.h"
 #include "theia/sfm/bundle_adjustment/bundle_adjustment.h"
 #include "theia/sfm/bundle_adjustment/optimize_relative_position_with_known_rotation.h"
 #include "theia/sfm/camera/reprojection_error.h"
-#include "theia/matching/feature_correspondence.h"
+#include "theia/sfm/pose/estimate_positions_nonlinear.h"
 #include "theia/sfm/reconstruction.h"
 #include "theia/sfm/reconstruction_estimator.h"
-#include "theia/sfm/pose/estimate_positions_nonlinear.h"
 #include "theia/sfm/twoview_info.h"
 #include "theia/sfm/view_graph/view_graph.h"
+#include "theia/solvers/sample_consensus_estimator.h"
+#include "theia/util/map_util.h"
+#include "theia/util/threadpool.h"
 
 namespace theia {
 namespace {
@@ -275,8 +276,12 @@ void GetEstimatedTracksFromReconstruction(const Reconstruction& reconstruction,
 void RefineRelativeTranslationsWithKnownRotations(
     const Reconstruction& reconstruction,
     const std::unordered_map<ViewId, Eigen::Vector3d>& orientations,
+    const int num_threads,
     ViewGraph* view_graph) {
+  CHECK_GE(num_threads, 1);
   const auto& view_pairs = view_graph->GetAllEdges();
+
+  ThreadPool pool(num_threads);
   // Refine the translation estimation for each view pair.
   for (const auto& view_pair : view_pairs) {
     // Get all feature correspondences common to both views.
@@ -291,11 +296,10 @@ void RefineRelativeTranslationsWithKnownRotations(
 
     TwoViewInfo* info = view_graph->GetMutableEdge(view_pair.first.first,
                                                    view_pair.first.second);
-    CHECK(OptimizeRelativePositionWithKnownRotation(matches,
-                                                    relative_rotation,
-                                                    &info->position_2))
-        << "Could not optimize the relative translation from the epipolar "
-           "constraint.";
+    pool.Add(OptimizeRelativePositionWithKnownRotation,
+             matches,
+             relative_rotation,
+             &info->position_2);
   }
 }
 

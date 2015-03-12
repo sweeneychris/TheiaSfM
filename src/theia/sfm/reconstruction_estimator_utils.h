@@ -92,6 +92,7 @@ void GetEstimatedTracksFromReconstruction(const Reconstruction& reconstruction,
 void RefineRelativeTranslationsWithKnownRotations(
     const Reconstruction& reconstruction,
     const std::unordered_map<ViewId, Eigen::Vector3d>& orientations,
+    const int num_threads,
     ViewGraph* view_graph);
 
 // Removes all features that have a reprojection error larger than the

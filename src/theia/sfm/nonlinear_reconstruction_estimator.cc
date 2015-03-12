@@ -271,7 +271,6 @@ bool NonlinearReconstructionEstimator::FilterInitialViewGraph() {
 }
 
 void NonlinearReconstructionEstimator::CalibrateCameras() {
-  // Initialize focal length.
   if (options_.initialize_focal_lengths_from_median_estimate) {
     InitializeFocalLengthsFromMedian(*view_graph_, reconstruction_);
   } else {
@@ -304,6 +303,7 @@ void NonlinearReconstructionEstimator::OptimizePairwiseTranslations() {
   if (options_.refine_relative_translations_after_rotation_estimation) {
     RefineRelativeTranslationsWithKnownRotations(*reconstruction_,
                                                  orientations_,
+                                                 options_.num_threads,
                                                  view_graph_);
   }
 }
