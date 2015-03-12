@@ -33,53 +33,52 @@
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
 #include <glog/logging.h>
-#include <unordered_map>
 
 #include "gtest/gtest.h"
 
 #include "theia/math/graph/connected_components.h"
-#include "theia/util/hash.h"
 #include "theia/sfm/twoview_info.h"
 #include "theia/sfm/types.h"
 #include "theia/sfm/view_graph/remove_disconnected_view_pairs.h"
+#include "theia/sfm/view_graph/view_graph.h"
 
 namespace theia {
 
 TEST(RemoveDisconnectedViewPairs, SingleConnectedComponent) {
-  std::unordered_map<ViewIdPair, TwoViewInfo> view_pairs;
+  ViewGraph view_graph;
   TwoViewInfo info;
-  view_pairs[ViewIdPair(0, 1)] = info;
-  view_pairs[ViewIdPair(1, 2)] = info;
-  view_pairs[ViewIdPair(2, 3)] = info;
+  view_graph.AddEdge(0, 1, info);
+  view_graph.AddEdge(1, 2, info);
+  view_graph.AddEdge(2, 3, info);
 
-  RemoveDisconnectedViewPairs(&view_pairs);
-  EXPECT_EQ(view_pairs.size(), 3);
+  RemoveDisconnectedViewPairs(&view_graph);
+  EXPECT_EQ(view_graph.NumEdges(), 3);
 }
 
 TEST(RemoveDisconnectedViewPairs, TwoConnectedComponents) {
-  std::unordered_map<ViewIdPair, TwoViewInfo> view_pairs;
+  ViewGraph view_graph;
   TwoViewInfo info;
-  view_pairs[ViewIdPair(0, 1)] = info;
-  view_pairs[ViewIdPair(1, 2)] = info;
-  view_pairs[ViewIdPair(2, 3)] = info;
-  view_pairs[ViewIdPair(5, 6)] = info;
-  view_pairs[ViewIdPair(6, 7)] = info;
+  view_graph.AddEdge(0, 1, info);
+  view_graph.AddEdge(1, 2, info);
+  view_graph.AddEdge(2, 3, info);
+  view_graph.AddEdge(5, 6, info);
+  view_graph.AddEdge(6, 7, info);
 
-  RemoveDisconnectedViewPairs(&view_pairs);
-  EXPECT_EQ(view_pairs.size(), 3);
+  RemoveDisconnectedViewPairs(&view_graph);
+  EXPECT_EQ(view_graph.NumEdges(), 3);
 }
 
 TEST(RemoveDisconnectedViewPairs, ThreeConnectedComponents) {
-  std::unordered_map<ViewIdPair, TwoViewInfo> view_pairs;
+  ViewGraph view_graph;
   TwoViewInfo info;
-  view_pairs[ViewIdPair(0, 1)] = info;
-  view_pairs[ViewIdPair(1, 2)] = info;
-  view_pairs[ViewIdPair(2, 3)] = info;
-  view_pairs[ViewIdPair(5, 6)] = info;
-  view_pairs[ViewIdPair(7, 8)] = info;
+  view_graph.AddEdge(0, 1, info);
+  view_graph.AddEdge(1, 2, info);
+  view_graph.AddEdge(2, 3, info);
+  view_graph.AddEdge(5, 6, info);
+  view_graph.AddEdge(7, 8, info);
 
-  RemoveDisconnectedViewPairs(&view_pairs);
-  EXPECT_EQ(view_pairs.size(), 3);
+  RemoveDisconnectedViewPairs(&view_graph);
+  EXPECT_EQ(view_graph.NumEdges(), 3);
 }
 
 }  // namespace theia

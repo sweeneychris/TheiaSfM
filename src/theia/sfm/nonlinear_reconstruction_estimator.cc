@@ -268,7 +268,8 @@ bool NonlinearReconstructionEstimator::FilterInitialViewGraph() {
   }
 
   // Only reconstruct the largest connected component.
-  RemoveDisconnectedViewPairs(&view_pairs_);
+  RemoveDisconnectedViewPairs(view_graph_);
+  view_pairs_ = view_graph_->GetAllEdges();
   return view_pairs_.size() >= 2;
 }
 
@@ -300,7 +301,8 @@ void NonlinearReconstructionEstimator::FilterRotations() {
       orientations_,
       options_.rotation_filtering_max_difference_degrees,
       &view_pairs_);
-  RemoveDisconnectedViewPairs(&view_pairs_);
+  RemoveDisconnectedViewPairs(view_graph_);
+  view_pairs_ = view_graph_->GetAllEdges();
 }
 
 void NonlinearReconstructionEstimator::OptimizePairwiseTranslations() {
@@ -316,7 +318,8 @@ void NonlinearReconstructionEstimator::FilterRelativeTranslation() {
   FilterViewPairsFromRelativeTranslation(translation_filter_options_,
                                          orientations_,
                                          &view_pairs_);
-  RemoveDisconnectedViewPairs(&view_pairs_);
+  RemoveDisconnectedViewPairs(view_graph_);
+  view_pairs_ = view_graph_->GetAllEdges();
 }
 
 void NonlinearReconstructionEstimator::EstimatePosition() {
