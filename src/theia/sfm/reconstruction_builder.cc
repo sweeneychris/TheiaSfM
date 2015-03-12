@@ -297,8 +297,8 @@ bool ReconstructionBuilder::BuildReconstruction(
         ReconstructionEstimator::Create(
             options_.reconstruction_estimator_options));
 
-    const auto& summary =
-        reconstruction_estimator->Estimate(*view_graph_, reconstruction_.get());
+    const auto& summary = reconstruction_estimator->Estimate(
+        view_graph_.get(), reconstruction_.get());
 
     // If a reconstruction can no longer be estimated, return.
     if (!summary.success) {

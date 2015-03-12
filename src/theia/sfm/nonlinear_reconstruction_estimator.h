@@ -76,7 +76,7 @@ class NonlinearReconstructionEstimator : public ReconstructionEstimator {
   NonlinearReconstructionEstimator(
       const ReconstructionEstimatorOptions& options);
 
-  ReconstructionEstimatorSummary Estimate(const ViewGraph& view_graph,
+  ReconstructionEstimatorSummary Estimate(ViewGraph* view_graph,
                                           Reconstruction* reconstruction);
 
  private:
@@ -90,7 +90,7 @@ class NonlinearReconstructionEstimator : public ReconstructionEstimator {
   void EstimateStructure();
   void BundleAdjustment();
 
-  const ViewGraph* view_graph_;
+  ViewGraph* view_graph_;
   Reconstruction* reconstruction_;
 
   ReconstructionEstimatorOptions options_;

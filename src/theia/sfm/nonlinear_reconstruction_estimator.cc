@@ -145,10 +145,10 @@ NonlinearReconstructionEstimator::NonlinearReconstructionEstimator(
 // After each filtering step we remove any views which are no longer connected
 // to the largest connected component in the view graph.
 ReconstructionEstimatorSummary NonlinearReconstructionEstimator::Estimate(
-    const ViewGraph& view_graph, Reconstruction* reconstruction) {
+    ViewGraph* view_graph, Reconstruction* reconstruction) {
   CHECK_NOTNULL(reconstruction);
   reconstruction_ = reconstruction;
-  view_graph_ = &view_graph;
+  view_graph_ = view_graph;
   view_pairs_.clear();
   orientations_.clear();
   positions_.clear();
@@ -157,7 +157,7 @@ ReconstructionEstimatorSummary NonlinearReconstructionEstimator::Estimate(
   Timer timer;
 
   // Get view pairs.
-  view_pairs_ = view_graph.GetAllEdges();
+  view_pairs_ = view_graph_->GetAllEdges();
 
   LOG(INFO) << "Computing a reconstruction from " << view_pairs_.size()
             << " initial view pairs.";
