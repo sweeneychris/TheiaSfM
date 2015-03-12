@@ -150,8 +150,20 @@ ELSE (GLOG_FOUND)
 ENDIF (GLOG_FOUND)
 LIST(APPEND THEIA_INCLUDE_DIRS ${GLOG_INCLUDE_DIRS})
 
+# GFlags. The namespace patch is borrow from Ceres Solver (see license in
+# FindGflags.cmake)
+FIND_PACKAGE(Gflags QUIET)
+IF (GFLAGS_FOUND)
+  MESSAGE(STATUS "Found required Theia dependency: Google Flags in "
+    "${GFLAGS_INCLUDE_DIRS} in namespace: ${GFLAGS_NAMESPACE}")
+  ADD_DEFINITIONS(-DTHEIA_GFLAGS_NAMESPACE=${GFLAGS_NAMESPACE})
+ELSE (GFLAGS_FOUND)
+  THEIA_REPORT_NOT_FOUND("Missing required Theia dependency: Google Flags, please set "
+    "GFLAGS_INCLUDE_DIR.")
+ENDIF (GFLAGS_FOUND)
+LIST(APPEND THEIA_INCLUDE_DIRS ${GFLAGS_INCLUDE_DIRS})
+
 # Import exported Theia targets.
-MESSAGE("current config install dir = ${THEIA_CURRENT_CONFIG_INSTALL_DIR}")
 IF (NOT TARGET theia AND NOT Theia_BINARY_DIR)
   INCLUDE(${THEIA_CURRENT_CONFIG_INSTALL_DIR}/TheiaTargets.cmake)
 ENDIF (NOT TARGET theia AND NOT Theia_BINARY_DIR)
