@@ -43,6 +43,7 @@
 #include "theia/util/random.h"
 #include "theia/sfm/filter_view_pairs_from_orientation.h"
 #include "theia/sfm/types.h"
+#include "theia/sfm/view_graph/view_graph.h"
 
 namespace theia {
 
@@ -85,51 +86,53 @@ TwoViewInfo CreateTwoViewInfo(
 void CreateValidViewPairs(
     const int num_valid_view_pairs,
     const std::unordered_map<ViewId, Vector3d>& orientations,
-    std::unordered_map<ViewIdPair, TwoViewInfo>* view_pairs) {
+    ViewGraph* view_graph) {
   // Add a skeletal graph.
   std::vector<ViewId> view_ids;
   view_ids.push_back(0);
   for (int i = 1; i < orientations.size(); i++) {
     const ViewIdPair view_id_pair(i - 1, i);
     const TwoViewInfo info = CreateTwoViewInfo(orientations, view_id_pair);
-    (*view_pairs)[view_id_pair] = info;
+    view_graph->AddEdge(i - 1, i, info);
     view_ids.push_back(i);
   }
 
   // Add extra edges.
-  while (view_pairs->size() < num_valid_view_pairs) {
+  while (view_graph->NumEdges() < num_valid_view_pairs) {
     std::random_shuffle(view_ids.begin(), view_ids.end());
     const ViewIdPair view_id_pair(view_ids[0], view_ids[1]);
     if (view_id_pair.first > view_id_pair.second ||
-        ContainsKey(*view_pairs, view_id_pair)) {
+        view_graph->HasEdge(view_ids[0], view_ids[1])) {
       continue;
     }
     const TwoViewInfo info =
         CreateTwoViewInfo(orientations, view_id_pair);
-    (*view_pairs)[view_id_pair] = info;
+    view_graph->AddEdge(view_id_pair.first, view_id_pair.second, info);
   }
 }
 
 void CreateInvalidViewPairs(
     const int num_invalid_view_pairs,
     const std::unordered_map<ViewId, Vector3d>& orientations,
-    std::unordered_map<ViewIdPair, TwoViewInfo>* view_pairs) {
+    ViewGraph* view_graph) {
   InitRandomGenerator();
 
-  const int final_num_view_pairs = view_pairs->size() + num_invalid_view_pairs;
-  while (view_pairs->size() < final_num_view_pairs) {
+  const int final_num_view_pairs =
+      view_graph->NumEdges() + num_invalid_view_pairs;
+  while (view_graph->NumEdges() < final_num_view_pairs) {
     // Choose a random view pair id.
     const ViewIdPair view_id_pair(RandInt(0, orientations.size() - 1),
                                   RandInt(0, orientations.size() - 1));
     if (view_id_pair.first == view_id_pair.second ||
-        ContainsKey(*view_pairs, view_id_pair)) {
+        view_graph->HasEdge(view_id_pair.first, view_id_pair.second)) {
       continue;
     }
 
     // Create a valid view pair.
-    (*view_pairs)[view_id_pair] = CreateTwoViewInfo(orientations, view_id_pair);
+    TwoViewInfo info = CreateTwoViewInfo(orientations, view_id_pair);
     // Add a lot of noise to it.
-    (*view_pairs)[view_id_pair].rotation_2 += Vector3d::Ones();
+    info.rotation_2 += Vector3d::Ones();
+    view_graph->AddEdge(view_id_pair.first, view_id_pair.second, info);
   }
 }
 
@@ -139,12 +142,12 @@ void TestFilterViewPairsFromOrientation(const int num_views,
   static const double kMaxRelativeRotationDifferenceDegrees = 2.0;
   std::unordered_map<ViewId, Vector3d> orientations;
   CreateViewsWithRandomOrientations(num_views, &orientations);
-  std::unordered_map<ViewIdPair, TwoViewInfo> view_pairs;
-  CreateValidViewPairs(num_valid_view_pairs, orientations, &view_pairs);
-  CreateInvalidViewPairs(num_invalid_view_pairs, orientations, &view_pairs);
+  ViewGraph view_graph;
+  CreateValidViewPairs(num_valid_view_pairs, orientations, &view_graph);
+  CreateInvalidViewPairs(num_invalid_view_pairs, orientations, &view_graph);
   FilterViewPairsFromOrientation(
-      orientations, kMaxRelativeRotationDifferenceDegrees, &view_pairs);
-  EXPECT_EQ(view_pairs.size(), num_valid_view_pairs);
+      orientations, kMaxRelativeRotationDifferenceDegrees, &view_graph);
+  EXPECT_EQ(view_graph.NumEdges(), num_valid_view_pairs);
 }
 
 }  // namespace
@@ -158,7 +161,7 @@ TEST(FilterViewPairsFromOrientation, FewBadRotations) {
 }
 
 TEST(FilterViewPairsFromOrientation, ManyBadRotations) {
-  TestFilterViewPairsFromOrientation(10, 30, 30);
+  TestFilterViewPairsFromOrientation(10, 30, 15);
 }
 
 }  // namespace theia

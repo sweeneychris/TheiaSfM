@@ -46,6 +46,7 @@
 #include "theia/util/map_util.h"
 #include "theia/sfm/twoview_info.h"
 #include "theia/sfm/types.h"
+#include "theia/sfm/view_graph/view_graph.h"
 
 namespace theia {
 
@@ -84,12 +85,13 @@ bool AngularDifferenceIsAcceptable(
 void FilterViewPairsFromOrientation(
     const std::unordered_map<ViewId, Eigen::Vector3d>& orientations,
     const double max_relative_rotation_difference_degrees,
-    std::unordered_map<ViewIdPair, TwoViewInfo>* view_pairs) {
-  CHECK_NOTNULL(view_pairs);
+    ViewGraph* view_graph) {
+  CHECK_NOTNULL(view_graph);
   CHECK_GE(max_relative_rotation_difference_degrees, 0.0);
 
   std::unordered_set<ViewIdPair> view_pairs_to_remove;
-  for (const auto& view_pair : *view_pairs) {
+  const auto& view_pairs = view_graph->GetAllEdges();
+  for (const auto& view_pair : view_pairs) {
     const Eigen::Vector3d* orientation1 =
         FindOrNull(orientations, view_pair.first.first);
     const Eigen::Vector3d* orientation2 =
@@ -119,7 +121,7 @@ void FilterViewPairsFromOrientation(
 
   // Remove all the "bad" relative poses.
   for (const ViewIdPair view_id_pair : view_pairs_to_remove) {
-    view_pairs->erase(view_id_pair);
+    view_graph->RemoveEdge(view_id_pair.first, view_id_pair.second);
   }
   VLOG(1) << "Removed " << view_pairs_to_remove.size()
           << " view pairs by rotation filtering.";

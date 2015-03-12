@@ -38,11 +38,11 @@
 #include <Eigen/Core>
 #include <unordered_map>
 
-#include "theia/util/hash.h"
-#include "theia/sfm/twoview_info.h"
 #include "theia/sfm/types.h"
 
 namespace theia {
+
+class ViewGraph;
 
 // Filters view pairs based on the orientation estimates. If the relative
 // rotation obtained from the two view match (i.e. TwoViewInfo.rotation_2)
@@ -59,7 +59,7 @@ namespace theia {
 void FilterViewPairsFromOrientation(
     const std::unordered_map<ViewId, Eigen::Vector3d>& orientations,
     const double max_relative_rotation_difference_degrees,
-    std::unordered_map<ViewIdPair, TwoViewInfo>* view_pairs);
+    ViewGraph* view_pairs);
 
 }  // namespace theia
 

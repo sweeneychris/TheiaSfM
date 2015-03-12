@@ -300,7 +300,7 @@ void NonlinearReconstructionEstimator::FilterRotations() {
   FilterViewPairsFromOrientation(
       orientations_,
       options_.rotation_filtering_max_difference_degrees,
-      &view_pairs_);
+      view_graph_);
   RemoveDisconnectedViewPairs(view_graph_);
   view_pairs_ = view_graph_->GetAllEdges();
 }
