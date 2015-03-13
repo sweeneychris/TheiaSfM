@@ -61,6 +61,7 @@ SET(THEIA_SRC
   matching/cascade_hashing_feature_matcher.cc
   matching/feature_matcher_utils.cc
   math/closed_form_polynomial_solver.cc
+  math/matrix/dominant_eigensolver.cc
   math/polynomial.cc
   math/probability/sequential_probability_ratio.cc
   math/sturm_chain.cc
@@ -191,6 +192,7 @@ IF (BUILD_TESTING)
   GTEST(math/closed_form_polynomial_solver)
   GTEST(math/graph/connected_components)
   GTEST(math/l1_solver)
+  GTEST(math/matrix/dominant_eigensolver)
   GTEST(math/matrix/gauss_jordan)
   GTEST(math/matrix/rq_decomposition)
   GTEST(math/polynomial)
