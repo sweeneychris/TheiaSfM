@@ -47,6 +47,7 @@
 #include <unordered_set>
 #include <vector>
 
+#include "theia/sfm/find_common_tracks_in_views.h"
 #include "theia/sfm/reconstruction.h"
 #include "theia/sfm/view_graph/view_graph.h"
 #include "theia/sfm/view.h"
@@ -76,7 +77,6 @@ class Input1DSFM {
   bool ReadCoordsHeaderLine(const std::string& line,
                             ViewId* image_index,
                             int* num_keys);
-  int NumberOfCommonTracks(const ViewId view_id1, const ViewId view_id2);
 
   const std::string& dataset_directory_;
   Reconstruction* reconstruction_;
@@ -331,7 +331,10 @@ bool Input1DSFM::ReadEGs() {
     }
 
     // Add the number of inliers.
-    info.num_verified_matches = NumberOfCommonTracks(view_id1, view_id2);
+    const std::vector<ViewId> views = {view_id1, view_id2};
+    const std::vector<TrackId> common_tracks =
+        FindCommonTracksInViews(*reconstruction_, views);
+    info.num_verified_matches = common_tracks.size();
 
     // Add the match to the output.
     if (reconstruction_->View(view_id1) != nullptr &&
@@ -340,20 +343,6 @@ bool Input1DSFM::ReadEGs() {
     }
   }
   return true;
-}
-
-int Input1DSFM::NumberOfCommonTracks(const ViewId view_id1,
-                                     const ViewId view_id2) {
-  auto view1_tracks = reconstruction_->View(view_id1)->TrackIds();
-  auto view2_tracks = reconstruction_->View(view_id2)->TrackIds();
-  std::sort(view1_tracks.begin(), view1_tracks.end());
-  std::sort(view2_tracks.begin(), view2_tracks.end());
-
-  std::vector<TrackId> common_tracks;
-  std::set_intersection(view1_tracks.begin(), view1_tracks.end(),
-                        view1_tracks.begin(), view1_tracks.end(),
-                        std::back_inserter(common_tracks));
-  return common_tracks.size();
 }
 
 bool Read1DSFM(const std::string& dataset_directory,
