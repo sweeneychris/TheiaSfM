@@ -150,13 +150,6 @@ bool ReconstructionBuilder::AddImage(const std::string& image_filepath) {
 bool ReconstructionBuilder::AddImageWithCameraIntrinsicsPrior(
     const std::string& image_filepath,
     const CameraIntrinsicsPrior& camera_intrinsics_prior) {
-  // If we only want calibrated views, only proceed if the view has a known
-  // focal length.
-  if (options_.only_calibrated_views &&
-      !camera_intrinsics_prior.focal_length.is_set) {
-    return true;
-  }
-
   image_filepaths_.emplace_back(image_filepath);
   camera_intrinsics_priors_.emplace_back(camera_intrinsics_prior);
 
@@ -200,10 +193,33 @@ bool ReconstructionBuilder::AddImageWithCameraIntrinsicsPrior(
   return true;
 }
 
+void ReconstructionBuilder::RemoveUncalibratedViews() {
+  const auto& view_ids = reconstruction_->ViewIds();
+  for (const ViewId view_id : view_ids) {
+    const View* view = reconstruction_->View(view_id);
+    if (!view->CameraIntrinsicsPrior().focal_length.is_set) {
+      reconstruction_->RemoveView(view_id);
+      view_graph_->RemoveView(view_id);
+    }
+  }
+}
+
 bool ReconstructionBuilder::ExtractAndMatchFeatures() {
   CHECK_EQ(view_graph_->NumViews(), 0) << "Cannot call ExtractAndMatchFeatures "
                                           "after TwoViewMatches has been "
                                           "called.";
+  // If we only want calibrated views remove them from the reconstruction so
+  // that they no features are detected and matched between them.
+  if (options_.only_calibrated_views) {
+    // We iterate in the reverse order so that the erase() function does not
+    // disturb the iterating.
+    for (int i = image_filepaths_.size() - 1; i >= 0; --i) {
+      if (!camera_intrinsics_priors_[i].focal_length.is_set) {
+        image_filepaths_.erase(image_filepaths_.begin() + i);
+        camera_intrinsics_priors_.erase(camera_intrinsics_priors_.begin() + i);
+      }
+    }
+  }
 
   std::vector<std::vector<Keypoint> > keypoints;
   FeatureExtractorOptions feature_extractor_options;
@@ -242,14 +258,35 @@ bool ReconstructionBuilder::ExtractAndMatchFeatures() {
   return success;
 }
 
-bool ReconstructionBuilder::AddTwoViewMatch(
-    const std::string& image1, const std::string& image2,
-    const ImagePairMatch& matches) {
+bool ReconstructionBuilder::AddTwoViewMatch(const std::string& image1,
+                                            const std::string& image2,
+                                            const ImagePairMatch& matches) {
+// Get view ids from names and check that the views are valid (i.e. that
+  // they have been added to the reconstruction).
+  const ViewId view_id1 = reconstruction_->ViewIdFromName(image1);
+  const ViewId view_id2 = reconstruction_->ViewIdFromName(image2);
+  CHECK_NE(view_id1, kInvalidViewId)
+      << "Tried to add a view with the name " << image1
+      << " to the view graph but does not exist in the reconstruction.";
+  CHECK_NE(view_id2, kInvalidViewId)
+      << "Tried to add a view with the name " << image2
+      << " to the view graph but does not exist in the reconstruction.";
+
+  // If we only want calibrated views, do not add the match if it contains an
+  // uncalibrated view since it will add uncalibrated views to the tracks.
+  const View* view1 = reconstruction_->View(view_id1);
+  const View* view2 = reconstruction_->View(view_id2);
+  if (options_.only_calibrated_views &&
+      (!view1->CameraIntrinsicsPrior().focal_length.is_set ||
+       !view2->CameraIntrinsicsPrior().focal_length.is_set)) {
+    return true;
+  }
+
   // Add valid matches to view graph.
-  AddMatchToViewGraph(image1, image2, matches);
+  AddMatchToViewGraph(view_id1, view_id2, matches);
 
   // Add tracks to the track builder.
-  AddTracksForMatch(image1, image2, matches);
+  AddTracksForMatch(view_id1, view_id2, matches);
 
   return true;
 }
@@ -292,7 +329,17 @@ bool ReconstructionBuilder::BuildReconstruction(
     track_builder_->BuildTracks(reconstruction_.get());
   }
 
+  // Remove uncalibrated views from the reconstruction and view graph.
+  if (options_.only_calibrated_views) {
+    LOG(INFO) << "Removing uncalibrated views.";
+    RemoveUncalibratedViews();
+  }
+
   while (reconstruction_->NumViews() > 2) {
+    LOG(INFO) << "Attempting to reconstruct " << reconstruction_->NumViews()
+              << " images from " << view_graph_->NumEdges()
+              << " two view matches.";
+
     std::unique_ptr<ReconstructionEstimator> reconstruction_estimator(
         ReconstructionEstimator::Create(
             options_.reconstruction_estimator_options));
@@ -346,39 +393,24 @@ bool ReconstructionBuilder::BuildReconstruction(
 }
 
 void ReconstructionBuilder::AddMatchToViewGraph(
-    const std::string& image1,
-    const std::string& image2,
+    const ViewId view_id1,
+    const ViewId view_id2,
     const ImagePairMatch& image_matches) {
-  // Get view ids from names and check that the views are valid (i.e. that
-  // they have been added to the reconstruction).
-  const ViewId view_id_1 = reconstruction_->ViewIdFromName(image1);
-  const ViewId view_id_2 = reconstruction_->ViewIdFromName(image2);
-  CHECK_NE(view_id_1, kInvalidViewId)
-      << "Tried to add a view with the name " << image1
-      << " to the view graph but does not exist in the reconstruction.";
-  CHECK_NE(view_id_2, kInvalidViewId)
-      << "Tried to add a view with the name " << image2
-      << " to the view graph but does not exist in the reconstruction.";
-
   // Add the view pair to the reconstruction. The view graph requires the two
   // view info
   // to specify the transformation from the smaller view id to the larger view
   // id. We swap the cameras here if that is not already the case.
   TwoViewInfo twoview_info = image_matches.twoview_info;
-  if (view_id_1 > view_id_2) {
+  if (view_id1 > view_id2) {
     SwapCameras(&twoview_info);
   }
 
-  view_graph_->AddEdge(view_id_1, view_id_2, twoview_info);
+  view_graph_->AddEdge(view_id1, view_id2, twoview_info);
 }
 
-void ReconstructionBuilder::AddTracksForMatch(
-    const std::string& image1,
-    const std::string& image2,
-    const ImagePairMatch& matches) {
-  const ViewId view_id1 = reconstruction_->ViewIdFromName(image1);
-  const ViewId view_id2 = reconstruction_->ViewIdFromName(image2);
-
+void ReconstructionBuilder::AddTracksForMatch(const ViewId view_id1,
+                                              const ViewId view_id2,
+                                              const ImagePairMatch& matches) {
   for (const auto& match : matches.correspondences) {
     track_builder_->AddFeatureCorrespondence(view_id1, match.feature1,
                                              view_id2, match.feature2);

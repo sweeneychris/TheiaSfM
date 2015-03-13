@@ -159,17 +159,18 @@ class ReconstructionBuilder {
       std::vector<CameraIntrinsics>* intrinsics) const;
 
   // Adds the given matches as edges in the view graph.
-  void AddMatchToViewGraph(
-      const std::string& image1,
-      const std::string& image2,
-      const ImagePairMatch& image_matches);
+  void AddMatchToViewGraph(const ViewId view_id1,
+                           const ViewId view_id2,
+                           const ImagePairMatch& image_matches);
 
   // Builds tracks from the two view inlier correspondences after geometric
   // verification.
-  void AddTracksForMatch(
-      const std::string& image1,
-      const std::string& image2,
-      const ImagePairMatch& image_matches);
+  void AddTracksForMatch(const ViewId view_id1,
+                         const ViewId view_id2,
+                         const ImagePairMatch& image_matches);
+
+  // Removes all uncalibrated views from the reconstruction and view graph.
+  void RemoveUncalibratedViews();
 
   const ReconstructionBuilderOptions options_;
 

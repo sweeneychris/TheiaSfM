@@ -6,6 +6,7 @@
 --reconstruction_estimator=NONLINEAR
 --reconstruct_largest_connected_component=true
 --constant_camera_intrinsics=true
+--only_calibrated_views=true
 --max_reprojection_error_pixels=4.0
 --num_retriangulation_iterations=1
 

@@ -272,6 +272,8 @@ void AddImagesToReconstructionBuilder(
       << "Could not find images that matched the filepath: " << FLAGS_images
       << ". NOTE that the ~ filepath is not supported.";
 
+  CHECK_GT(image_files.size(), 0) << "No images found in: " << FLAGS_images;
+
   // Load calibration file if it is provided.
   std::unordered_map<std::string, theia::CameraIntrinsicsPrior>
       camera_intrinsics_prior;

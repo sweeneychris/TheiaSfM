@@ -63,6 +63,9 @@ DEFINE_bool(reconstruct_largest_connected_component, false,
 DEFINE_bool(constant_camera_intrinsics, false,
             "Set to true to keep camera intrinsic parameters constant during "
             "bundle adjustment.");
+DEFINE_bool(only_calibrated_views, true,
+            "Set to true to only reconstruct the views where calibration is "
+            "provided or can be extracted from EXIF");
 DEFINE_int32(min_num_inliers_for_valid_match, 30,
              "Minimum number of geometrically verified inliers that a pair on "
              "images must have in order to be considered a valid two-view "
@@ -137,6 +140,7 @@ ReconstructionBuilderOptions SetReconstructionBuilderOptions() {
       GetReconstructionEstimatorType(FLAGS_reconstruction_estimator);
   options.reconstruct_largest_connected_component =
       FLAGS_reconstruct_largest_connected_component;
+  options.only_calibrated_views = FLAGS_only_calibrated_views;
   options.reconstruction_estimator_options.max_reprojection_error_in_pixels =
       FLAGS_max_reprojection_error_pixels;
   options.reconstruction_estimator_options.num_retriangulation_iterations =

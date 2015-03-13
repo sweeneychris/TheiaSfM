@@ -156,9 +156,6 @@ ReconstructionEstimatorSummary NonlinearReconstructionEstimator::Estimate(
   ReconstructionEstimatorSummary summary;
   Timer timer;
 
-  LOG(INFO) << "Computing a reconstruction from " << view_graph_->NumEdges()
-            << " initial view pairs.";
-
   // Step 1. Filter the initial view graph and remove any bad two view
   // geometries.
   LOG(INFO) << "Filtering the intial view graph.";
