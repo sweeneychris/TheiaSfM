@@ -39,11 +39,13 @@
 #include <glog/logging.h>
 #include <gflags/gflags.h>
 
+#include <algorithm>
 #include <fstream>  // NOLINT
 #include <string>
 #include <utility>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 #include "theia/sfm/reconstruction.h"
 #include "theia/sfm/view_graph/view_graph.h"
@@ -72,7 +74,7 @@ class Input1DSFM {
 
  private:
   bool ReadCoordsHeaderLine(const std::string& line,
-                            int* image_index,
+                            ViewId* image_index,
                             int* num_keys);
   int NumberOfCommonTracks(const ViewId view_id1, const ViewId view_id2);
 
@@ -80,12 +82,8 @@ class Input1DSFM {
   Reconstruction* reconstruction_;
   ViewGraph* view_graph_;
 
-  // Maps the index of an image in lists.txt to the ViewId in the
-  // Reconstruction.
-  std::unordered_map<int, ViewId> index_to_view_id_;
-
   // Maps image id -> [ feature id -> feature coordinate].
-  std::unordered_map<int, std::vector<Feature> > feature_coordinates_;
+  std::unordered_map<ViewId, std::vector<Feature> > feature_coordinates_;
 };
 
 // Reads the connected components file.
@@ -118,57 +116,74 @@ bool Input1DSFM::ReadListsFile(
     return false;
   }
 
-  int i = 0;
+  const char space = static_cast<char>(' ');
   while (!ifs.eof()) {
     // Read in the filename.
     std::string filename, truncated_filename;
-    CameraIntrinsicsPrior intrinsics;
 
     ifs >> filename;
     if (filename.length() == 0) {
       break;
     }
     CHECK(theia::GetFilenameFromFilepath(filename, false, &truncated_filename));
+    const ViewId view_id = reconstruction_->AddView(truncated_filename);
+    CHECK_NE(view_id, kInvalidViewId);
 
-    if (ContainsKey(valid_image_index, i)) {
-      const ViewId view_id = reconstruction_->AddView(truncated_filename);
-      CHECK_NE(view_id, kInvalidViewId);
-      index_to_view_id_[i] = view_id;
+    // Check to see if the exif focal length is given.
+    double focal_length = 0;
+    if (ifs.peek() == space) {
+      int temp;
+      ifs >> temp;
+      ifs >> focal_length;
     }
 
-    // Ignore the rest of the line.
-    ifs.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    // If the view is not in the connected component remove it. Adding it first
+    // then removing it allows for our ViewIds to stay in sync with the index of
+    // the image in hte lists file. This will simplify the indexing throughout
+    // the entire program.
+    if (!ContainsKey(valid_image_index, view_id)) {
+      reconstruction_->RemoveView(view_id);
+      continue;
+    }
 
-    ++i;
+    if (focal_length != 0) {
+      reconstruction_->MutableView(view_id)
+          ->MutableCameraIntrinsicsPrior()
+          ->focal_length.value = focal_length;
+      reconstruction_->MutableView(view_id)
+          ->MutableCameraIntrinsicsPrior()
+          ->focal_length.is_set = true;
+      LOG(INFO) << "Adding image " << truncated_filename
+                << " with focal length: " << focal_length;
+    } else {
+      LOG(INFO) << "Adding image " << truncated_filename
+                << " with focal length: UNKNOWN";
+    }
   }
   return true;
 }
 
-bool Input1DSFM::ReadCoordsHeaderLine(const std::string& line, int* image_index,
+bool Input1DSFM::ReadCoordsHeaderLine(const std::string& line,
+                                      ViewId* view_id,
                                       int* num_keys) {
   float principal_point_x, principal_point_y, focal_length;
   char name[256];
   sscanf(line.c_str(),
          "#index = %d, name = %s keys = %d, px = %f, py = %f, focal = %f",
-         image_index,
+         view_id,
          name,
          num_keys,
          &principal_point_x,
          &principal_point_y,
          &focal_length);
 
-  LOG(INFO) << "Image: " << name << " calibration: " << focal_length
-            << " px, py = " << principal_point_x << ", " << principal_point_y;
-
-  const ViewId view_id =
-      FindWithDefault(index_to_view_id_, *image_index, kInvalidViewId);
-  if (view_id == kInvalidViewId) {
+  View* view = reconstruction_->MutableView(*view_id);
+  if (view == nullptr) {
     return false;
   }
 
-  // Set the camera intrinsics.
-  View* view = reconstruction_->MutableView(view_id);
-  view->MutableCamera()->SetFocalLength(focal_length);
+  // Set the camera intrinsics. We do not set the focal length since it is set
+  // with EXIF data in the lists.txt file.
   view->MutableCamera()->SetPrincipalPoint(principal_point_x,
                                            principal_point_y);
 
@@ -176,8 +191,6 @@ bool Input1DSFM::ReadCoordsHeaderLine(const std::string& line, int* image_index,
   CameraIntrinsicsPrior* prior = view->MutableCameraIntrinsicsPrior();
   prior->image_width = principal_point_x * 2.0;
   prior->image_width = principal_point_y * 2.0;
-  prior->focal_length.value = focal_length;
-  prior->focal_length.is_set = true;
   prior->principal_point[0].value = principal_point_x;
   prior->principal_point[0].is_set = true;
   prior->principal_point[1].value = principal_point_y;
@@ -203,16 +216,17 @@ bool Input1DSFM::ReadCoords() {
       break;
     }
 
-    int image_index, num_keys;
+    int num_keys;
+    ViewId view_id;
     // If the image is not in the connected component then do not read it.
-    if (!ReadCoordsHeaderLine(line, &image_index, &num_keys)) {
+    if (!ReadCoordsHeaderLine(line, &view_id, &num_keys)) {
       for (int i = 0; i < num_keys; i++) {
         std::getline(ifs, line);
       }
       continue;
     }
 
-    auto& features = feature_coordinates_[image_index];
+    auto& features = feature_coordinates_[view_id];
     features.reserve(num_keys);
 
     Eigen::Vector2d keypoint;
@@ -244,13 +258,13 @@ bool Input1DSFM::ReadTracks() {
 
     std::vector<std::pair<ViewId, Feature> > track;
     track.reserve(num_features);
+    int feature_id;
+    ViewId view_id;
     for (int j = 0; j < num_features; j++) {
-      int image_id, feature_id;
-      ifs >> image_id;
+      ifs >> view_id;
       ifs >> feature_id;
 
-      const ViewId view_id = FindOrDie(index_to_view_id_, image_id);
-      const auto& features = FindOrDie(feature_coordinates_, image_id);
+      const auto& features = FindOrDie(feature_coordinates_, view_id);
       const Feature& feature = features[feature_id];
       track.emplace_back(view_id, feature);
     }
@@ -273,12 +287,9 @@ bool Input1DSFM::ReadEGs() {
       Eigen::Vector3d(1.0, -1.0, -1.0).asDiagonal();
   while (!ifs.eof()) {
     TwoViewInfo info;
-    int image_index1, image_index2;
-    ifs >> image_index1;
-    ifs >> image_index2;
-
-    const ViewId view_id1 = FindOrDie(index_to_view_id_, image_index1);
-    const ViewId view_id2 = FindOrDie(index_to_view_id_, image_index2);
+    ViewId view_id1, view_id2;
+    ifs >> view_id1;
+    ifs >> view_id2;
 
     // The rotation defines the camera 2 to camera 1 transformation in row-major
     // order). We want a camera 1 to camera 2 transformation so we read in the
@@ -300,22 +311,39 @@ bool Input1DSFM::ReadEGs() {
     ifs >> info.position_2[1];
     ifs >> info.position_2[2];
 
-    // Add the focal lengths.
-    info.focal_length_1 =
-        reconstruction_->View(view_id1)->Camera().FocalLength();
-    info.focal_length_2 =
-        reconstruction_->View(view_id2)->Camera().FocalLength();
+    // Add the focal lengths. If they are known from EXIF, add that value
+    // otherwise add a focal length guess correspdonding to a median viewing
+    // angle.
+    const CameraIntrinsicsPrior prior1 =
+        reconstruction_->View(view_id1)->CameraIntrinsicsPrior();
+    const CameraIntrinsicsPrior prior2 =
+        reconstruction_->View(view_id2)->CameraIntrinsicsPrior();
+    if (prior1.focal_length.is_set) {
+      info.focal_length_1 = prior1.focal_length.value;
+    } else {
+      info.focal_length_1 = 1.2 * prior1.principal_point[0].value;
+    }
+
+    if (prior2.focal_length.is_set) {
+      info.focal_length_2 = prior2.focal_length.value;
+    } else {
+      info.focal_length_2 = 1.2 * prior2.principal_point[0].value;
+    }
 
     // Add the number of inliers.
     info.num_verified_matches = NumberOfCommonTracks(view_id1, view_id2);
 
     // Add the match to the output.
-    view_graph_->AddEdge(view_id1, view_id2, info);
+    if (reconstruction_->View(view_id1) != nullptr &&
+        reconstruction_->View(view_id2) != nullptr) {
+      view_graph_->AddEdge(view_id1, view_id2, info);
+    }
   }
   return true;
 }
 
-int Input1DSFM::NumberOfCommonTracks(const ViewId view_id1, const ViewId view_id2) {
+int Input1DSFM::NumberOfCommonTracks(const ViewId view_id1,
+                                     const ViewId view_id2) {
   auto view1_tracks = reconstruction_->View(view_id1)->TrackIds();
   auto view2_tracks = reconstruction_->View(view_id2)->TrackIds();
   std::sort(view1_tracks.begin(), view1_tracks.end());
