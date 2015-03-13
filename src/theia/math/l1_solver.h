@@ -144,7 +144,8 @@ class L1Solver {
       // Solve for the direction of the newton step. For L1 minimization this is
       // a special-case which is more simple than the general LP.
       if (!ComputeNewtonStep(tau)) {
-        LOG(WARNING) << "Could not compute Newton step.";
+        LOG(WARNING) << "Could not compute Newton step. Exiting at iteration "
+                     << i + 1;
         return;
       }
 
