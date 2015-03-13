@@ -1,6 +1,3 @@
-ADD_EXECUTABLE(check_1dsfm check_1dsfm.cc)
-TARGET_LINK_LIBRARIES(check_1dsfm theia ${GFLAGS_LIBRARIES} ${GLOG_LIBRARIES})
-
 ADD_EXECUTABLE(match_descriptors match_descriptors.cc)
 TARGET_LINK_LIBRARIES(match_descriptors theia ${GFLAGS_LIBRARIES})
 
