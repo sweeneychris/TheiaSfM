@@ -141,7 +141,8 @@ TEST(DominantEigensolver, LargestEigenvalue) {
   const double gt_eigenvalue = gt_eigensolver.eigenvalues().reverse()(0);
 
   EXPECT_NEAR(eigenvalue, gt_eigenvalue, kEigenvalueTolerance);
-  EXPECT_LT(eigenvector.dot(gt_eigenvector), kEigenvectorTolerance);
+  EXPECT_LT(1.0 - std::abs(eigenvector.dot(gt_eigenvector)),
+            kEigenvectorTolerance);
 }
 
 TEST(DominantEigensolver, SmallestEigenvalue) {
@@ -172,7 +173,8 @@ TEST(DominantEigensolver, SmallestEigenvalue) {
   const double gt_eigenvalue = gt_eigensolver.eigenvalues()(0);
 
   EXPECT_NEAR(eigenvalue, gt_eigenvalue, kEigenvalueTolerance);
-  EXPECT_LT(eigenvector.dot(gt_eigenvector), kEigenvectorTolerance);
+  EXPECT_LT(1.0 - std::abs(eigenvector.dot(gt_eigenvector)),
+            kEigenvectorTolerance);
 }
 
 TEST(DominantEigensolver, SparseMatrixLargestEigenvalue) {
@@ -201,7 +203,8 @@ TEST(DominantEigensolver, SparseMatrixLargestEigenvalue) {
   const double gt_eigenvalue = gt_eigensolver.eigenvalues().reverse()(0);
 
   EXPECT_NEAR(eigenvalue, gt_eigenvalue, kEigenvalueTolerance);
-  EXPECT_LT(eigenvector.dot(gt_eigenvector), kEigenvectorTolerance);
+  EXPECT_LT(1.0 - std::abs(eigenvector.dot(gt_eigenvector)),
+            kEigenvectorTolerance);
 }
 
 TEST(DominantEigensolver, SparseMatrixSmallestEigenvalue) {
@@ -233,7 +236,8 @@ TEST(DominantEigensolver, SparseMatrixSmallestEigenvalue) {
       gt_eigensolver.eigenvectors().col(0);
   const double gt_eigenvalue = gt_eigensolver.eigenvalues()(0);
   EXPECT_NEAR(eigenvalue, gt_eigenvalue, kEigenvalueTolerance);
-  EXPECT_LT(eigenvector.dot(gt_eigenvector), kEigenvectorTolerance);
+  EXPECT_LT(1.0 - std::abs(eigenvector.dot(gt_eigenvector)),
+            kEigenvectorTolerance);
 }
 
 TEST(DominantEigensolver, RankDeficiency) {
@@ -272,7 +276,8 @@ TEST(DominantEigensolver, RankDeficiency) {
 
   EXPECT_NEAR(eigenvalue, 0.0, kEigenvalueTolerance);
   EXPECT_NEAR(gt_eigenvalue, 0.0, kEigenvalueTolerance);
-  EXPECT_LT(eigenvector.dot(gt_eigenvector), kEigenvectorTolerance);
+  EXPECT_LT(1.0 - std::abs(eigenvector.dot(gt_eigenvector)),
+            kEigenvectorTolerance);
 }
 
 }  // namespace theia
