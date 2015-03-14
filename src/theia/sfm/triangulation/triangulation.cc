@@ -35,9 +35,10 @@
 #include "theia/sfm/triangulation/triangulation.h"
 
 #include <Eigen/Core>
-#include <Eigen/Geometry>
-#include <Eigen/SVD>
 #include <Eigen/Eigenvalues>
+#include <Eigen/Geometry>
+#include <Eigen/QR>
+#include <Eigen/SVD>
 #include <glog/logging.h>
 #include <vector>
 
@@ -129,33 +130,27 @@ bool Triangulate(const Matrix3x4d& pose1,
 // Triangulates a 3D point by determining the closest point between the two
 // rays. This method is known to be suboptimal in terms of reprojection error
 // but it is extremely fast.
-bool TriangulateMidpoint(const Vector3d& ray_origin1,
-                         const Vector3d& ray_direction1,
-                         const Vector3d& ray_origin2,
-                         const Vector3d& ray_direction2,
+bool TriangulateMidpoint(const std::vector<Vector3d>& ray_origin,
+                         const std::vector<Vector3d>& ray_direction,
                          Eigen::Vector4d* triangulated_point) {
-  const double dir1_dot_dir2 = ray_direction1.dot(ray_direction2);
-  const double dir1_dot_pos = ray_direction1.dot(ray_origin2 - ray_origin1);
-  const double dir2_dot_pos = ray_direction2.dot(ray_origin2 - ray_origin1);
-  const double scale_part =  1.0 - dir1_dot_dir2 * dir1_dot_dir2;
+  CHECK_NOTNULL(triangulated_point);
+  CHECK_GE(ray_origin.size(), 2);
+  CHECK_EQ(ray_origin.size(), ray_direction.size());
 
-  const Vector3d scaled_dir1 =
-      (dir1_dot_pos - dir1_dot_dir2 * dir2_dot_pos) * ray_direction1;
-  const Vector3d scaled_dir2 =
-      (dir1_dot_pos * dir1_dot_dir2 - dir2_dot_pos) * ray_direction2;
-
-  // The point is at infinity if the scale division == 0.
-  if (scale_part == 0) {
-    triangulated_point->head<3>() =
-        (ray_origin1 + scaled_dir1 + ray_origin2 + scaled_dir2) / 2.0;
-    (*triangulated_point)[3] = 0;
-    return true;
+  Eigen::Matrix3d A;
+  A.setZero();
+  Eigen::Vector3d b;
+  b.setZero();
+  for (int i = 0; i < ray_origin.size(); i++) {
+    const Eigen::Matrix3d A_term =
+        Eigen::Matrix3d::Identity() -
+        ray_direction[i] * ray_direction[i].transpose();
+    A += A_term;
+    b += A_term * ray_origin[i];
   }
 
-  triangulated_point->head<3>() =
-      (ray_origin1 + scaled_dir1 / scale_part +
-       ray_origin2 + scaled_dir2 / scale_part) / 2.0;
-  (*triangulated_point)[3] = 1;
+  triangulated_point->head<3>() = A.colPivHouseholderQr().solve(b);
+  (*triangulated_point)(3) = 1.0;
   return true;
 }
 

@@ -109,16 +109,19 @@ void TestTriangulationBasic(const TriangulationType type,
                        image_point1, image_point2,
                        &triangulated_point));
   } else if (type == MIDPOINT) {
+    std::vector<Eigen::Vector3d> origins;
+    std::vector<Eigen::Vector3d> directions;
+
     const Matrix3d rotation1 = pose1.block<3, 3>(0, 0);
-    const Vector3d origin1 = -rotation1.transpose() * pose1.col(3);
-    const Vector3d ray1 =
-        (rotation1.transpose() * image_point1.homogeneous()).normalized();
+    origins.emplace_back(-rotation1.transpose() * pose1.col(3));
+    directions.emplace_back(
+        (rotation1.transpose() * image_point1.homogeneous()).normalized());
     const Matrix3d rotation2 = pose2.block<3, 3>(0, 0);
-    const Vector3d origin2 = -rotation2.transpose() * pose2.col(3);
-    const Vector3d ray2 =
-        (rotation2.transpose() * image_point2.homogeneous()).normalized();
+    origins.emplace_back(-rotation2.transpose() * pose2.col(3));
+    directions.emplace_back(
+        (rotation2.transpose() * image_point2.homogeneous()).normalized());
     EXPECT_TRUE(
-        TriangulateMidpoint(origin1, ray1, origin2, ray2, &triangulated_point));
+        TriangulateMidpoint(origins, directions, &triangulated_point));
   } else {
     LOG(ERROR) << "Incompatible Triangulation type!";
   }
@@ -180,6 +183,12 @@ void TestTriangulationManyPoints(const double projection_noise,
     { -0.63, -1.05, 7.11 }, { -1.76, -0.55, 5.18 }, { -3.19, 3.27, 8.18 },
     { 0.31, -2.77, 7.54 }, { 0.54, -3.77, 9.77 },
   };
+
+  Eigen::Matrix3d calibration;
+  calibration <<
+      800.0, 0.0, 600.0,
+      0.0, 800.0, 400.0,
+      0.0, 0.0, 1.0;
 
   // Set up pose matrices.
   std::vector<Matrix3x4d> poses(num_views);
