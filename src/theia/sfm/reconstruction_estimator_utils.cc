@@ -287,9 +287,9 @@ int RemoveOutlierFeatures(const double max_inlier_reprojection_error,
       // the camera.
       if (depth < 0 ||
           (projection - *feature).squaredNorm() > max_sq_reprojection_error) {
-        view->RemoveFeature(track_id);
-        track->RemoveView(view_id);
         ++num_features_removed;
+        track->SetEstimated(false);
+        continue;
       }
     }
   }
