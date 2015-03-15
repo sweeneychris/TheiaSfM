@@ -137,20 +137,23 @@ bool TriangulateMidpoint(const std::vector<Vector3d>& ray_origin,
   CHECK_GE(ray_origin.size(), 2);
   CHECK_EQ(ray_origin.size(), ray_direction.size());
 
-  Eigen::Matrix3d A;
+  Eigen::Matrix4d A;
   A.setZero();
-  Eigen::Vector3d b;
+  Eigen::Vector4d b;
   b.setZero();
   for (int i = 0; i < ray_origin.size(); i++) {
-    const Eigen::Matrix3d A_term =
-        Eigen::Matrix3d::Identity() -
-        ray_direction[i] * ray_direction[i].transpose();
+    const Eigen::Vector4d ray_direction_homog(ray_direction[i].x(),
+                                              ray_direction[i].y(),
+                                              ray_direction[i].z(),
+                                              0);
+    const Eigen::Matrix4d A_term =
+        Eigen::Matrix4d::Identity() -
+        ray_direction_homog * ray_direction_homog.transpose();
     A += A_term;
-    b += A_term * ray_origin[i];
+    b += A_term * ray_origin[i].homogeneous();
   }
 
-  triangulated_point->head<3>() = A.colPivHouseholderQr().solve(b);
-  (*triangulated_point)(3) = 1.0;
+  *triangulated_point = A.colPivHouseholderQr().solve(b);
   return true;
 }
 
