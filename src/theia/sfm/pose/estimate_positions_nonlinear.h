@@ -51,7 +51,6 @@ namespace theia {
 struct NonlinearPositionEstimatorOptions {
   // Options for Ceres nonlinear solver.
   int num_threads = 1;
-  bool verbose = false;
   int max_num_iterations = 400;
   double robust_loss_width = 1.0;
 
@@ -63,26 +62,13 @@ struct NonlinearPositionEstimatorOptions {
   // The total weight of all point to camera correspondences compared to camera
   // to camera correspondences.
   double point_to_camera_weight = 0.5;
-
-  // Maximum number of reweighted iterations possible. Set to zero if no
-  // reweighted iterations should be performed.
-  int max_num_reweighted_iterations = 100;
-  // A tolerance parameter to determine convergence of the iteratively
-  // reweighted least squares.
-  double reweighted_convergence_tolerance = 5e-3;
 };
 
 // Estimates the camera position of views given pairwise relative poses and the
 // absolute orientations of cameras. Positions are estimated using a nonlinear
-// solver with a robust cost function. If max_num_reweighted_iterations = 0 then
-// a Huber loss function will be used to solve the problem.
-//
-// If max_num_reweighted_iterations > 0 then the class will perform an
-// iteratively reweighted least squares solution. The first iteration will use a
-// robust Huber loss function and consecutive iterations will use a standard L2
-// loss with residuals weighted according to their current cost. This allows for
-// a solution that is robust to outliers. The IRLS will stop upon convergence
-// (based on total cost) or if the max number of iterations is reached.
+// solver with a robust cost function. This solution strategy closely follows
+// the method outlined in "Robust Global Translations with 1DSfM" by Wilson and
+// Snavely (ECCV 2014)
 class NonlinearPositionEstimator {
  public:
   NonlinearPositionEstimator(
@@ -132,9 +118,6 @@ class NonlinearPositionEstimator {
       const double point_to_camera_weight,
       std::unordered_map<ViewId, Eigen::Vector3d>* positions);
 
-  // Reweight the loss functions based on the current residuals of the problem.
-  void ReweightLossFunctions();
-
   const NonlinearPositionEstimatorOptions options_;
   const Reconstruction& reconstruction_;
   const std::unordered_map<ViewIdPair, TwoViewInfo>& view_pairs_;
@@ -142,15 +125,6 @@ class NonlinearPositionEstimator {
   std::unordered_map<TrackId, Eigen::Vector3d> triangulated_points_;
   std::unique_ptr<ceres::Problem> problem_;
   ceres::Solver::Options solver_options_;
-
-  // A container for the slack variables used to increase robustness in the
-  // optimization.
-  std::vector<double*> slack_variables_;
-
-  // We keep track of the loss functions so that they may be used in the
-  // iteratively reweighted least squares approach. The loss functions are
-  // reweighted using a ScaledLoss.
-  std::vector<ceres::LossFunctionWrapper*> loss_functions_;
 
   friend class EstimatePositionsNonlinearTest;
 

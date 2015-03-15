@@ -47,7 +47,7 @@ PairwiseTranslationError::PairwiseTranslationError(
 
 ceres::CostFunction* PairwiseTranslationError::Create(
     const Eigen::Vector3d& translation_direction, const double weight) {
-  return (new ceres::AutoDiffCostFunction<PairwiseTranslationError, 3, 3, 3, 1>(
+  return (new ceres::AutoDiffCostFunction<PairwiseTranslationError, 3, 3, 3>(
         new PairwiseTranslationError(translation_direction, weight)));
 }
 

@@ -91,10 +91,6 @@ DEFINE_double(post_rotation_filtering_degrees, 5.0,
 DEFINE_int32(
     position_estimation_min_num_tracks_per_view, 6,
     "Minimum number of point to camera constraints for position estimation.");
-DEFINE_int32(position_estimation_max_num_reweighted_iterations, 100,
-             "Maximum number of reweighted iterations to perform for position "
-             "estimation. Set to zero if only a single robust optimization is "
-             "desired.");
 
 // Triangulation options.
 DEFINE_double(min_triangulation_angle_degrees, 3.0,
@@ -155,9 +151,6 @@ ReconstructionBuilderOptions SetReconstructionBuilderOptions() {
   options.reconstruction_estimator_options
       .position_estimation_min_num_tracks_per_view =
       FLAGS_position_estimation_min_num_tracks_per_view;
-  options.reconstruction_estimator_options
-      .position_estimation_max_reweighted_iterations =
-      FLAGS_position_estimation_max_num_reweighted_iterations;
 
   options.reconstruction_estimator_options.min_triangulation_angle_degrees =
       FLAGS_min_triangulation_angle_degrees;

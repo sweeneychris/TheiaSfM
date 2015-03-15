@@ -38,7 +38,6 @@
 
 # Position estimation.
 --position_estimation_min_num_tracks_per_view=0
---position_estimation_max_num_reweighted_iterations=20
 
 # Triangulation options.
 --min_triangulation_angle_degrees=4.0
