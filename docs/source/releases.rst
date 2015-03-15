@@ -7,6 +7,22 @@ Releases
 HEAD
 ====
 
+New Features
+------------
+* All cameras are calibrated from EXIF or a median focal length.
+* Triangulation is set to use the midpoint method by default.
+* All operations on two-view geometry directly operate on the view graph.
+* Power method for computing the dominant eigenvector of densor or sparse matrices.
+* New program to verify the 1dsfm input against the ground truth model.
+* New program to compare two SfM models.
+* Nonlinear position estimation uses the nonlinear solver of [WilsonECCV2014]_.
+
+Bug Fixes
+---------
+* 1dSfM dataset input was previously mal-formed.
+* GFlags now links pthreads properly.
+* Two-view bundle adjustment will no longer use poorly triangulated points for optimization.
+* Installation to user-specified folder is done properly.
 
 `0.2.0 <https://github.com/sweeneychris/TheiaSfM/archive/v0.2.tar.gz>`_
 =======================================================================
