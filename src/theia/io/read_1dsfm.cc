@@ -185,7 +185,7 @@ bool Input1DSFM::ReadCoordsHeaderLine(const std::string& line,
   // Set the metadata.
   CameraIntrinsicsPrior* prior = view->MutableCameraIntrinsicsPrior();
   prior->image_width = principal_point_x * 2.0;
-  prior->image_width = principal_point_y * 2.0;
+  prior->image_height = principal_point_y * 2.0;
   prior->principal_point[0].value = principal_point_x;
   prior->principal_point[0].is_set = true;
   prior->principal_point[1].value = principal_point_y;
