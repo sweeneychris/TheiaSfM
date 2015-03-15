@@ -306,6 +306,8 @@ bool Input1DSFM::ReadEGs() {
     ifs >> info.position_2[1];
     ifs >> info.position_2[2];
 
+    info.position_2 = bundler_to_theia * info.position_2;
+
     // Add the focal lengths. If they are known from EXIF, add that value
     // otherwise add a focal length guess correspdonding to a median viewing
     // angle.
