@@ -146,33 +146,21 @@ void DrawCamera(const theia::Camera& camera) {
 
   // Create the camera wireframe. If intrinsic parameters are not set then use
   // the focal length as a guess.
-  const double principal_point_x = (camera.PrincipalPointX() == 0)
-                                       ? 0.6 * camera.FocalLength()
-                                       : camera.PrincipalPointX();
-  const double principal_point_y = (camera.PrincipalPointY() == 0)
-                                       ? 0.6 * camera.FocalLength()
-                                       : camera.PrincipalPointY();
-  const double image_width =
-      (camera.ImageWidth() == 0) ? 2 * principal_point_x : camera.ImageWidth();
-  const double image_height = (camera.ImageHeight() == 0)
-                                  ? 2 * principal_point_y
-                                  : camera.ImageHeight();
 
   // Use the camera calibration to display the cameras.
-  Eigen::Matrix3d calibration_matrix;
-  camera.GetCalibrationMatrix(&calibration_matrix);
-  const Eigen::Matrix3d inv_calibration = calibration_matrix.inverse();
+  Eigen::Matrix3d calibration;
+  camera.GetCalibrationMatrix(&calibration);
+  calibration /= camera.FocalLength();
+  calibration(2, 2) = 1.0;
+
   const Eigen::Vector3d top_left =
-      normalized_focal_length * (inv_calibration * Eigen::Vector3d(0, 0, 1));
+      normalized_focal_length * (calibration * Eigen::Vector3d(-1, -1, 1));
   const Eigen::Vector3d top_right =
-      normalized_focal_length *
-      (inv_calibration * Eigen::Vector3d(image_width, 0, 1));
+      normalized_focal_length * (calibration * Eigen::Vector3d(1, -1, 1));
   const Eigen::Vector3d bottom_right =
-      normalized_focal_length *
-      (inv_calibration * Eigen::Vector3d(image_width, image_height, 1));
+      normalized_focal_length * (calibration * Eigen::Vector3d(1, 1, 1));
   const Eigen::Vector3d bottom_left =
-      normalized_focal_length *
-      (inv_calibration * Eigen::Vector3d(0, image_height, 1));
+      normalized_focal_length * (calibration * Eigen::Vector3d(-1, 1, 1));
 
   glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
   glBegin(GL_TRIANGLE_FAN);
