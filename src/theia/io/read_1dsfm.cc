@@ -195,6 +195,11 @@ bool Input1DSFM::ReadCoordsHeaderLine(const std::string& line,
   prior->principal_point[0].is_set = true;
   prior->principal_point[1].value = principal_point_y;
   prior->principal_point[1].is_set = true;
+
+  // Set the camera principal point.
+  Camera* camera = view->MutableCamera();
+  camera->SetPrincipalPoint(principal_point_x, principal_point_y);
+
   return true;
 }
 
