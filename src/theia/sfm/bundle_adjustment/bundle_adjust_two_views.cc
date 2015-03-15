@@ -104,18 +104,25 @@ void TriangulatePoints(
     const Camera& camera1,
     const Camera& camera2,
     const std::vector<FeatureCorrespondence>& correspondences,
+    std::vector<FeatureCorrespondence>* triangulated_matches,
     std::vector<Eigen::Vector4d>* tracks) {
   Matrix3x4d projection_matrix1, projection_matrix2;
   camera1.GetProjectionMatrix(&projection_matrix1);
   camera2.GetProjectionMatrix(&projection_matrix2);
 
-  tracks->resize(correspondences.size());
+  triangulated_matches->reserve(correspondences.size());
+  tracks->reserve(correspondences.size());
   for (int i = 0; i < correspondences.size(); i++) {
-    Triangulate(projection_matrix1,
-                projection_matrix2,
-                correspondences[i].feature1,
-                correspondences[i].feature2,
-                &(*tracks)[i]);
+    Eigen::Vector4d point;
+
+    if (Triangulate(projection_matrix1,
+                    projection_matrix2,
+                    correspondences[i].feature1,
+                    correspondences[i].feature2,
+                    &point)) {
+      tracks->emplace_back(point);
+      triangulated_matches->emplace_back(correspondences[i]);
+    }
   }
 }
 
@@ -166,12 +173,17 @@ BundleAdjustmentSummary BundleAdjustTwoViews(
   parameter_ordering->AddElementToGroup(camera2.mutable_parameters(), 1);
 
   // Triangulate all features.
+  std::vector<FeatureCorrespondence> triangulated_matches;
   std::vector<Eigen::Vector4d> tracks;
-  TriangulatePoints(camera1, camera2, correspondences, &tracks);
+  TriangulatePoints(camera1,
+                    camera2,
+                    correspondences,
+                    &triangulated_matches,
+                    &tracks);
 
   // Add triangulated points to the problem.
-  for (int i = 0; i < correspondences.size(); i++) {
-    const FeatureCorrespondence& match = correspondences[i];
+  for (int i = 0; i < triangulated_matches.size(); i++) {
+    const FeatureCorrespondence& match = triangulated_matches[i];
     problem.AddResidualBlock(
         ReprojectionError::Create(match.feature1),
         NULL,
