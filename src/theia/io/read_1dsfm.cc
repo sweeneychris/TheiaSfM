@@ -182,11 +182,6 @@ bool Input1DSFM::ReadCoordsHeaderLine(const std::string& line,
     return false;
   }
 
-  // Set the camera intrinsics. We do not set the focal length since it is set
-  // with EXIF data in the lists.txt file.
-  view->MutableCamera()->SetPrincipalPoint(principal_point_x,
-                                           principal_point_y);
-
   // Set the metadata.
   CameraIntrinsicsPrior* prior = view->MutableCameraIntrinsicsPrior();
   prior->image_width = principal_point_x * 2.0;
@@ -195,11 +190,6 @@ bool Input1DSFM::ReadCoordsHeaderLine(const std::string& line,
   prior->principal_point[0].is_set = true;
   prior->principal_point[1].value = principal_point_y;
   prior->principal_point[1].is_set = true;
-
-  // Set the camera principal point.
-  Camera* camera = view->MutableCamera();
-  camera->SetPrincipalPoint(principal_point_x, principal_point_y);
-
   return true;
 }
 

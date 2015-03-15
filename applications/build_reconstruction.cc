@@ -89,10 +89,6 @@ DEFINE_bool(only_calibrated_views, false,
             "Set to true to only reconstruct the views where calibration is "
             "provided or can be extracted from EXIF");
 DEFINE_int32(max_track_length, 20, "Maximum length of a track.");
-DEFINE_bool(initialize_focal_lengths_from_median_estimate, false,
-            "If false, initialize focal lengths from a median viewing angle if "
-            "EXIF is not available. If true, then use the median focal length "
-            "from fundamental matrix decompositions.");
 DEFINE_bool(constant_camera_intrinsics, false,
             "Set to true to keep camera intrinsic parameters constant during "
             "bundle adjustment.");
@@ -202,9 +198,6 @@ ReconstructionBuilderOptions SetReconstructionBuilderOptions() {
   options.reconstruct_largest_connected_component =
       FLAGS_reconstruct_largest_connected_component;
   options.only_calibrated_views = FLAGS_only_calibrated_views;
-  options.reconstruction_estimator_options
-      .initialize_focal_lengths_from_median_estimate =
-      FLAGS_initialize_focal_lengths_from_median_estimate;
   options.reconstruction_estimator_options.max_reprojection_error_in_pixels =
       FLAGS_max_reprojection_error_pixels;
   options.reconstruction_estimator_options.num_retriangulation_iterations =

@@ -68,13 +68,6 @@ struct ReconstructionEstimatorOptions {
   //   3. Perform full bundle adjustment.
   int num_retriangulation_iterations = 1;
 
-  // By default, focal lengths for uncalibrated cameras are initialized by
-  // setting the focal length to a value that corresponds to a reasonable field
-  // of view. If this is true, then we initialize the focal length of all
-  // uncalibrated cameras to the median value obtained from decomposing the
-  // fundamental matrix of all view pairs connected to that camera.
-  bool initialize_focal_lengths_from_median_estimate = false;
-
   // --------------- RANSAC Options --------------- //
   double ransac_confidence = 0.9999;
   int ransac_min_iterations = 50;

@@ -36,23 +36,24 @@
 
 #include <Eigen/Core>
 
-#include "theia/util/random.h"
-#include "theia/util/timer.h"
 #include "theia/sfm/bundle_adjustment/bundle_adjustment.h"
 #include "theia/sfm/estimate_track.h"
 #include "theia/sfm/filter_view_graph_cycles_by_rotation.h"
 #include "theia/sfm/filter_view_pairs_from_orientation.h"
 #include "theia/sfm/filter_view_pairs_from_relative_translation.h"
+#include "theia/sfm/pose/estimate_positions_nonlinear.h"
+#include "theia/sfm/pose/estimate_rotations_robust.h"
 #include "theia/sfm/reconstruction.h"
 #include "theia/sfm/reconstruction_estimator_options.h"
 #include "theia/sfm/reconstruction_estimator_utils.h"
-#include "theia/sfm/pose/estimate_positions_nonlinear.h"
-#include "theia/sfm/pose/estimate_rotations_robust.h"
-#include "theia/sfm/view_graph/orientations_from_view_graph.h"
+#include "theia/sfm/set_camera_intrinsics_from_priors.h"
 #include "theia/sfm/twoview_info.h"
+#include "theia/sfm/view_graph/orientations_from_view_graph.h"
 #include "theia/sfm/view_graph/remove_disconnected_view_pairs.h"
 #include "theia/sfm/view_graph/view_graph.h"
 #include "theia/solvers/sample_consensus_estimator.h"
+#include "theia/util/random.h"
+#include "theia/util/timer.h"
 
 namespace theia {
 
@@ -268,11 +269,7 @@ bool NonlinearReconstructionEstimator::FilterInitialViewGraph() {
 }
 
 void NonlinearReconstructionEstimator::CalibrateCameras() {
-  if (options_.initialize_focal_lengths_from_median_estimate) {
-    InitializeFocalLengthsFromMedian(*view_graph_, reconstruction_);
-  } else {
-    InitializeFocalLengthsFromImageSize(reconstruction_);
-  }
+  SetCameraIntrinsicsFromPriors(reconstruction_);
 }
 
 void NonlinearReconstructionEstimator::EstimateGlobalRotations() {

@@ -1,4 +1,4 @@
-// Copyright (C) 2014 The Regents of the University of California (Regents).
+// Copyright (C) 2015 The Regents of the University of California (Regents).
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -32,33 +32,19 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#ifndef THEIA_SFM_CAMERA_INTRINSICS_PRIOR_H_
-#define THEIA_SFM_CAMERA_INTRINSICS_PRIOR_H_
+#ifndef THEIA_SFM_SET_CAMERA_INTRINSICS_FROM_PRIORS_H_
+#define THEIA_SFM_SET_CAMERA_INTRINSICS_FROM_PRIORS_H_
 
 namespace theia {
 
-// Weak calibration is not always available, so we need this helper struct to
-// keep track of which data fields have been set.
-struct Prior {
-  bool is_set = false;
-  double value = 0;
-};
+class Reconstruction;
 
-// Prior information about a View. This is typically gathered from EXIF or
-// sensor data that provides weak calibration.
-struct CameraIntrinsicsPrior {
-  // The image size *should* always be set, so we don't have to worry about
-  // making it an Prior type.
-  int image_width;
-  int image_height;
-
-  Prior focal_length;
-  Prior principal_point[2];
-  Prior aspect_ratio;
-  Prior skew;
-  Prior radial_distortion[2];
-};
+// Sets the camera intrinsics from the CameraIntrinsicsPrior of each view. Views
+// that do not have a focal length prior will set a value corresponding to a
+// median viewing angle. Principal points that are not provided by the priors
+// are simply initialized as half of the corresponding image size dimension.
+void SetCameraIntrinsicsFromPriors(Reconstruction* reconstruction);
 
 }  // namespace theia
 
-#endif  // THEIA_SFM_CAMERA_INTRINSICS_PRIOR_H_
+#endif  // THEIA_SFM_SET_CAMERA_INTRINSICS_FROM_PRIORS_H_

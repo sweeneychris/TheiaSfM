@@ -159,53 +159,6 @@ RansacParameters SetRansacParameters(
   return ransac_params;
 }
 
-// Initializes the focal length of each view. If EXIF data is available then the
-// focal length is set using the EXIF value, otherwise it is set to
-// 1.2 * max(image_width, image_height). This value is shown to be a decent
-// initialization in the VisualSfM software.
-void InitializeFocalLengthsFromImageSize(Reconstruction* reconstruction) {
-  for (const ViewId view_id : reconstruction->ViewIds()) {
-    View* view = reconstruction->MutableView(view_id);
-
-    // Set it to the EXIF value if the focal length is known, otherwise set it
-    // to the estimate based on the image size.
-    if (view->CameraIntrinsicsPrior().focal_length.is_set) {
-      view->MutableCamera()->SetFocalLength(
-          view->CameraIntrinsicsPrior().focal_length.value);
-    } else {
-      view->MutableCamera()->SetFocalLength(
-          1.2 * static_cast<double>(std::max(view->Camera().ImageWidth(),
-                                             view->Camera().ImageHeight())));
-    }
-  }
-}
-
-void InitializeFocalLengthsFromMedian(const ViewGraph& view_graph,
-                                      Reconstruction* reconstruction) {
-  CHECK_GT(view_graph.NumEdges(), 0);
-  std::unordered_map<ViewId, std::vector<double> > focal_lengths;
-  focal_lengths.reserve(view_graph.NumViews());
-
-  // Collect all focal lengths.
-  const auto& edges = view_graph.GetAllEdges();
-  for (const auto& edge : edges) {
-    focal_lengths[edge.first.first].push_back(edge.second.focal_length_1);
-    focal_lengths[edge.first.second].push_back(edge.second.focal_length_2);
-  }
-
-  // For each view, find the median focal length.
-  for (auto& focal_length_vals : focal_lengths) {
-    const int median_index = focal_length_vals.second.size() / 2;
-    std::nth_element(focal_length_vals.second.begin(),
-                     focal_length_vals.second.begin() + median_index,
-                     focal_length_vals.second.end());
-    View* view =
-        CHECK_NOTNULL(reconstruction->MutableView(focal_length_vals.first));
-    view->MutableCamera()->SetFocalLength(
-        focal_length_vals.second[median_index]);
-  }
-}
-
 // Collects the relative rotations for each view pair into a simple map.
 std::unordered_map<ViewIdPair, Eigen::Vector3d> RelativeRotationsFromViewGraph(
     const ViewGraph& view_graph) {

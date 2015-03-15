@@ -58,17 +58,6 @@ BundleAdjustmentOptions SetBundleAdjustmentOptions(
 RansacParameters SetRansacParameters(
     const ReconstructionEstimatorOptions& options);
 
-// Initializes the focal length of each view. If EXIF data is available then the
-// focal length is set using the EXIF value, otherwise it is set to
-// 1.2 * max(image_width, image_height). This value is shown to be a decent
-// initialization in the VisualSfM software.
-void InitializeFocalLengthsFromImageSize(Reconstruction* reconstruction);
-
-// Initializes focal length from the median focal length among all edges in the
-// view graph.
-void InitializeFocalLengthsFromMedian(const ViewGraph& view_graph,
-                                      Reconstruction* reconstruction);
-
 // Collects the relative rotations for each view pair into a simple map.
 std::unordered_map<ViewIdPair, Eigen::Vector3d> RelativeRotationsFromViewGraph(
     const ViewGraph& view_graph);

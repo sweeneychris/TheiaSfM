@@ -163,26 +163,11 @@ bool ReconstructionBuilder::AddImageWithCameraIntrinsicsPrior(
     return false;
   }
 
+  // Set the view priors.
   View* view = reconstruction_->MutableView(view_id);
   *view->MutableCameraIntrinsicsPrior() = camera_intrinsics_prior;
-  view->MutableCamera()->SetImageSize(
-      view->CameraIntrinsicsPrior().image_width,
-      view->CameraIntrinsicsPrior().image_height);
 
-  // Set the principal point from the camera priors if it exists otherwise
-  // assume it is at the center of the image.
-  if (view->CameraIntrinsicsPrior().principal_point[0].is_set &&
-      view->CameraIntrinsicsPrior().principal_point[1].is_set) {
-    view->MutableCamera()->SetPrincipalPoint(
-        view->CameraIntrinsicsPrior().principal_point[0].value,
-        view->CameraIntrinsicsPrior().principal_point[1].value);
-  } else {
-    view->MutableCamera()->SetPrincipalPoint(
-        view->CameraIntrinsicsPrior().image_width / 2.0,
-        view->CameraIntrinsicsPrior().image_height / 2.0);
-  }
-
-  if (view->CameraIntrinsicsPrior().focal_length.is_set) {
+  if (camera_intrinsics_prior.focal_length.is_set) {
     LOG(INFO) << "Adding image " << image_file
               << " to reconstruction with focal length: "
               << camera_intrinsics_prior.focal_length.value;

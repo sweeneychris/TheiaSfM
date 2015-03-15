@@ -25,7 +25,6 @@
 # Building a reconstruction.
 --reconstruction_estimator=NONLINEAR
 --max_track_length=50
---initialize_focal_lengths_from_median_estimate=true
 --reconstruct_largest_connected_component=false
 --only_calibrated_views=false
 --constant_camera_intrinsics=true
