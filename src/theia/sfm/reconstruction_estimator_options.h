@@ -118,11 +118,6 @@ struct ReconstructionEstimatorOptions {
   // constraints.
   double position_estimation_point_to_camera_weight = 0.5;
 
-  // Maximum number of reweighted iterations to perform for iteratively
-  // reweighted least squares. Set to 0 if only a single robust optimization is
-  // desired.
-  int position_estimation_max_reweighted_iterations = 100;
-
   // --------------- Triangulation Options --------------- //
 
   // Minimum angle required between a 3D point and 2 viewing rays in order to

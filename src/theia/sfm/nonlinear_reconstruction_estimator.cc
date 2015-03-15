@@ -83,8 +83,6 @@ NonlinearPositionEstimatorOptions SetNonlinearPositionEstimatorOptions(
       options.position_estimation_min_num_tracks_per_view;
   npe_options.point_to_camera_weight =
       options.position_estimation_point_to_camera_weight;
-  npe_options.max_num_reweighted_iterations =
-      options.position_estimation_max_reweighted_iterations;
   return npe_options;
 }
 
@@ -213,6 +211,8 @@ ReconstructionEstimatorSummary NonlinearReconstructionEstimator::Estimate(
   EstimateStructure();
   summary.triangulation_time = timer.ElapsedTimeInSeconds();
 
+  SetUnderconstrainedAsUnestimated(reconstruction_);
+
   // Step 9. Bundle Adjustment.
   LOG(INFO) << "Performing bundle adjustment.";
   timer.Reset();
@@ -224,13 +224,13 @@ ReconstructionEstimatorSummary NonlinearReconstructionEstimator::Estimate(
         options_.max_reprojection_error_in_pixels, reconstruction_);
     LOG(INFO) << num_features_removed << " outlier features were removed.";
 
-    SetUnderconstrainedAsUnestimated(reconstruction_);
-
     // Step 8. Triangulate features.
     LOG(INFO) << "Triangulating all features again.";
     timer.Reset();
     EstimateStructure();
     summary.triangulation_time += timer.ElapsedTimeInSeconds();
+
+    SetUnderconstrainedAsUnestimated(reconstruction_);
 
     // Step 9. Bundle Adjustment.
     LOG(INFO) << "Performing bundle adjustment again.";

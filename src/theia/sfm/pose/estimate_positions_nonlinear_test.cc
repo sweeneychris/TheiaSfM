@@ -138,7 +138,6 @@ class EstimatePositionsNonlinearTest : public ::testing::Test {
     GetTwoViewInfos(num_view_pairs, pose_noise);
 
     // Estimate the positions.
-    options_.max_num_reweighted_iterations = 0;
     NonlinearPositionEstimator position_estimator(options_,
                                                   reconstruction_,
                                                   view_pairs_);

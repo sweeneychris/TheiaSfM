@@ -62,11 +62,9 @@ void PairwiseTranslationErrorTest(const Vector3d& known_translation,
 
   // Initialize error function and compute rotation error.
   const PairwiseTranslationError translation_error(known_translation, weight);
-  Vector3d error;
-  const double scalar = 1.0;
+  Vector3d error = Vector3d::Zero();
   translation_error(position_1.data(),
                     position_2.data(),
-                    &scalar,
                     error.data());
 
   EXPECT_DOUBLE_EQ(error(0), expected_error(0));
@@ -81,10 +79,12 @@ TEST(PairwiseTranslationError, NoTranslation) {
   const Vector3d position_2(1.0, 0.0, 0.0);
   const Vector3d relative_translation(0.0, 0.0, 0.0);
 
-  PairwiseTranslationErrorTest(relative_translation,
-                               kRelativeTranslationWeight,
-                               position_1,
-                               position_2);
+  // Initialize error function and compute rotation error.
+  const PairwiseTranslationError translation_error(relative_translation, 1.0);
+  Vector3d error = Vector3d::Zero();
+  EXPECT_FALSE(translation_error(position_1.data(),
+                                 position_2.data(),
+                                 error.data()));
 }
 
 TEST(PairwiseTranslationError, TranslationNoNoise) {

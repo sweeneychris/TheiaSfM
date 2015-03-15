@@ -480,13 +480,6 @@ follows:
   Weight of point to camera constraints with respect to camera to camera
   constraints.
 
-.. member:: int ReconstructorEstimatorOptions::position_estimation_max_reweighted_iterations
-
-  DEFAULT: ``100``
-
-  Maximum number of reweighted iterations to perform for iteratively reweighted
-  least squares. Set to 0 if only a single robust optimization is desired.
-
 .. member:: double ReconstructorEstimatorOptions::min_triangulation_angle_degrees
 
   DEFAULT: ``3.0``
@@ -598,19 +591,7 @@ rotation, the constraint
 
 Where :math:`\alpha_{i,j} = ||c_j - c_i||^2`. This ensures that we optimize for
 positions that agree with the relative positions computed in two-view
-estimation. In reality, we drop the constraint on :math:`alpha` and treat it as
-a slack variable. This helps convergence and makes the problem a bit easier to
-solve.
-
-We (optionally) will perform an iteratively reweighted least squares (IRLS)
-approach to solve the problem. For reach iteration, we perform a minimization
-and reweight each error term by a metric related to the current error
-residual. This way, terms with gross errors (which are likely to be outliers)
-are not weighed as heavily. The IRLS approach usually converges in less than 10
-iterations, but a limit on the maximum number of reweighted iterations may be
-set at runtime. The first iteration (regardless of whether IRLS iterations are
-used) is always performed with a Huber loss function to maintain robustness to
-outliers.
+estimation.
 
 .. class:: NonlinearPositionEstimatorOptions
 
@@ -656,22 +637,6 @@ outliers.
 
    Each point-to-camera constraint (if any) is weighted by
    ``point_to_camera_weight`` compared to the camera-to-camera weights.
-
-.. member:: int NonlinearPositionEstimatorOptions::max_num_reweighted_iterations
-
-   DEFAULT: ``100``
-
-   The maximum number of reweighted iterations to perform for IRLS. Usually IRLS
-   converges within 10-15 iterations. Set to 0 if no reweighted iterations
-   should be performed -- this will result in a single minimization with the
-   Huber loss function.
-
-.. member:: double NonlinearPositionEstimatorOptions::reweighted_convergence_tolerance
-
-   DEFAULT: ``5e-3``
-
-   A tolerance term to measure the convergence of the IRLS. Lower this value to
-   perform more IRLS iterations and increase it to perform fewer.
 
 .. class:: NonlinearPositionEstimator
 

@@ -93,8 +93,6 @@ NonlinearPositionEstimator::NonlinearPositionEstimator(
   CHECK_GE(options_.min_num_points_per_view, 0);
   CHECK_GT(options_.point_to_camera_weight, 0);
   CHECK_GT(options_.robust_loss_width, 0);
-  CHECK_GE(options_.max_num_reweighted_iterations, 0);
-  CHECK_GT(options_.reweighted_convergence_tolerance, 0);
 }
 
 bool NonlinearPositionEstimator::EstimatePositions(
@@ -111,11 +109,6 @@ bool NonlinearPositionEstimator::EstimatePositions(
   // Initialize positions to be random.
   InitializeRandomPositions(orientations, positions);
 
-  // Allocate memory for slack variables.
-  slack_variables_.reserve(options_.min_num_points_per_view *
-                               orientations.size() +
-                           view_pairs_.size());
-
   // Add the constraints to the problem.
   AddCameraToCameraConstraints(orientations, positions);
   if (options_.min_num_points_per_view > 0) {
@@ -128,8 +121,6 @@ bool NonlinearPositionEstimator::EstimatePositions(
 
   // Set the solver options.
   ceres::Solver::Summary summary;
-  solver_options_.logging_type =
-      options_.verbose ? ceres::PER_MINIMIZER_ITERATION : ceres::SILENT;
   solver_options_.num_threads = options_.num_threads;
   solver_options_.num_linear_solver_threads = options_.num_threads;
   solver_options_.max_num_iterations = options_.max_num_iterations;
@@ -141,35 +132,8 @@ bool NonlinearPositionEstimator::EstimatePositions(
     solver_options_.linear_solver_type = ceres::SPARSE_SCHUR;
   }
 
-  solver_options_.function_tolerance = 1e-10;
-  solver_options_.parameter_tolerance = 1e-10;
-
   ceres::Solve(solver_options_, problem_.get(), &summary);
-  LOG_IF(INFO, options_.verbose) << summary.FullReport();
-  if (!summary.IsSolutionUsable()) {
-    return false;
-  }
-
-  // Reweight the problem and solve again.
-  for (int i = 0; i < options_.max_num_reweighted_iterations; i++) {
-    ReweightLossFunctions();
-    const double cost_change =
-        (summary.initial_cost - summary.final_cost) / summary.final_cost;
-    if (cost_change < options_.reweighted_convergence_tolerance) {
-      VLOG(1) << "IRLS positions solver converged in " << i << " iterations.";
-      break;
-    }
-
-    // Solve the reweighted problem.
-    ceres::Solve(solver_options_, problem_.get(), &summary);
-    LOG_IF(INFO, options_.verbose) << summary.FullReport();
-    if (!summary.IsSolutionUsable()) {
-      return false;
-    }
-  }
-
-  STLDeleteElements(&slack_variables_);
-
+  LOG(INFO) << summary.FullReport();
   return summary.IsSolutionUsable();
 }
 
@@ -210,27 +174,13 @@ void NonlinearPositionEstimator::AddCameraToCameraConstraints(
     const Vector3d translation_direction = GetRotatedTranslation(
         FindOrDie(orientations, view_id1), view_pair.second.position_2);
 
-    double* slack_variable = new double((*position2 - *position1).norm());
-
     ceres::CostFunction* cost_function =
         PairwiseTranslationError::Create(translation_direction, 1.0);
 
-    // Create loss function wrapper and move it to the back of the loss function
-    // container.
-    ceres::LossFunctionWrapper* loss_function = new ceres::LossFunctionWrapper(
-        new ceres::HuberLoss(options_.robust_loss_width),
-        ceres::TAKE_OWNERSHIP);
-    loss_functions_.push_back(loss_function);
-
     problem_->AddResidualBlock(cost_function,
-                               loss_functions_.back(),
+                               new ceres::HuberLoss(options_.robust_loss_width),
                                position1->data(),
-                               position2->data(),
-                               slack_variable);
-
-    // Set lower bound for the slack variables.
-    slack_variables_.emplace_back(slack_variable);
-    problem_->SetParameterLowerBound(slack_variable, 0, 1.0);
+                               position2->data());
   }
 
   VLOG(2) << problem_->NumResidualBlocks() << " camera to camera constraints "
@@ -372,58 +322,16 @@ void NonlinearPositionEstimator::AddTrackToProblem(
         FindOrDie(orientations, view_id),
         *reconstruction_.View(view_id)->GetFeature(track_id));
 
-    // Create the slack variable.
-    double* slack_variable = new double((camera_position - point).norm());
-
     // Rotate the relative translation so that it is aligned to the global
     // orientation frame.
     ceres::CostFunction* cost_function =
         PairwiseTranslationError::Create(feature_ray, point_to_camera_weight);
 
-    ceres::LossFunctionWrapper* loss_function = new ceres::LossFunctionWrapper(
-        new ceres::HuberLoss(options_.robust_loss_width),
-        ceres::TAKE_OWNERSHIP);
-    loss_functions_.push_back(loss_function);
-
     // Add the residual block
     problem_->AddResidualBlock(cost_function,
-                               loss_functions_.back(),
+                               new ceres::HuberLoss(options_.robust_loss_width),
                                camera_position.data(),
-                               point.data(),
-                               slack_variable);
-
-    // Set the lower bound for the slack variable.
-    slack_variables_.emplace_back(slack_variable);
-    problem_->SetParameterLowerBound(slack_variable, 0, 1.0);
-  }
-}
-
-void NonlinearPositionEstimator::ReweightLossFunctions() {
-  // The regularizer prevents any element in the minimization from having an
-  // unbounded influence on the problem.
-  static const double kRegularizer = 1e-4;
-
-  // Set evaluation options.
-  ceres::Problem::EvaluateOptions evaluate_options;
-  evaluate_options.apply_loss_function = false;
-  evaluate_options.num_threads = options_.num_threads;
-
-  // Evaluate residual block.
-  std::vector<double> residuals;
-  CHECK(problem_->Evaluate(evaluate_options, NULL, &residuals, NULL, NULL))
-      << "Could not evaluate the residuals for IRLS.";
-
-  // Reweight loss function for the residual block.
-  const int num_residual_blocks = residuals.size() / 3;
-  DCHECK_EQ(num_residual_blocks, loss_functions_.size());
-  for (int i = 0; i < num_residual_blocks; i++) {
-    const double sq_residual = residuals[3 * i] * residuals[3 * i] +
-                            residuals[3 * i + 1] * residuals[3 * i + 1] +
-                            residuals[3 * i + 2] * residuals[3 * i + 2];
-    const double reweight_scale = 1.0  / std::sqrt(sq_residual + kRegularizer);
-    loss_functions_[i]->Reset(
-        new ceres::ScaledLoss(NULL, reweight_scale, ceres::TAKE_OWNERSHIP),
-        ceres::TAKE_OWNERSHIP);
+                               point.data());
   }
 }
 

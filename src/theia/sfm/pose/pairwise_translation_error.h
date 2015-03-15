@@ -48,8 +48,7 @@ struct PairwiseTranslationError {
 
   // The error is given by the position error described above.
   template <typename T>
-  bool operator()(const T* position1, const T* position2, const T* scalar,
-                  T* residuals) const;
+  bool operator()(const T* position1, const T* position2, T* residuals) const;
 
   static ceres::CostFunction* Create(
       const Eigen::Vector3d& translation_direction, const double weight);
@@ -61,14 +60,27 @@ struct PairwiseTranslationError {
 template <typename T>
 bool PairwiseTranslationError::operator() (const T* position1,
                                            const T* position2,
-                                           const T* scalar,
                                            T* residuals) const {
-  residuals[0] = T(weight_) * (position2[0] - position1[0] -
-                               scalar[0] * T(translation_direction_[0]));
-  residuals[1] = T(weight_) * (position2[1] - position1[1] -
-                               scalar[0] * T(translation_direction_[1]));
-  residuals[2] = T(weight_) * (position2[2] - position1[2] -
-                               scalar[0] * T(translation_direction_[2]));
+  const T kNormTolerance = T(1e-8);
+
+  T translation[3];
+  translation[0] = position2[0] - position1[0];
+  translation[1] = position2[1] - position1[1];
+  translation[2] = position2[2] - position1[2];
+  const T norm =
+      sqrt(translation[0] * translation[0] + translation[1] * translation[1] +
+           translation[2] * translation[2]);
+
+  if (T(norm) < kNormTolerance) {
+    return false;
+  }
+
+  residuals[0] =
+      T(weight_) * (translation[0] / norm - T(translation_direction_[0]));
+  residuals[1] =
+      T(weight_) * (translation[1] / norm - T(translation_direction_[1]));
+  residuals[2] =
+      T(weight_) * (translation[2] / norm - T(translation_direction_[2]));
   return true;
 }
 
