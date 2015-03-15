@@ -52,7 +52,8 @@ class Histogram {
   explicit Histogram(const std::vector<T>& boundaries)
       : boundaries_(boundaries) {
     // Insert the data type's min and max to the front and back respectively.
-    boundaries_.insert(boundaries_.begin(), std::numeric_limits<T>::min());
+    boundaries_.insert(boundaries_.begin(),
+                       -std::numeric_limits<T>::infinity());
     boundaries_.push_back(std::numeric_limits<T>::max());
     histogram_count_.resize(boundaries_.size());
   }

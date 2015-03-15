@@ -122,6 +122,7 @@ void EvaluateAlignedPoseError(
 
   std::vector<double> rotation_errors_degrees(common_view_names.size());
   std::vector<double> position_errors(common_view_names.size());
+  std::vector<double> focal_length_errors(common_view_names.size());
   for (int i = 0; i < common_view_names.size(); i++) {
     const ViewId view_id1 =
         reconstruction1.ViewIdFromName(common_view_names[i]);
@@ -137,11 +138,16 @@ void EvaluateAlignedPoseError(
 
     // Position error.
     position_errors[i] = (camera1.GetPosition() - camera2.GetPosition()).norm();
+
+    // Focal length error.
+    focal_length_errors[i] =
+        std::abs(camera1.FocalLength() - camera2.FocalLength()) /
+        camera1.FocalLength();
   }
 
   std::sort(rotation_errors_degrees.begin(), rotation_errors_degrees.end());
   std::sort(position_errors.begin(), position_errors.end());
-
+  std::sort(focal_length_errors.begin(), focal_length_errors.end());
 
   std::vector<double> histogram_bins = {1, 2, 5, 10, 15, 20, 45};
   const std::string rotation_error_msg =
@@ -153,6 +159,11 @@ void EvaluateAlignedPoseError(
   const std::string position_error_msg =
       PrintMeanMedianHistogram(position_errors, histogram_bins2);
   LOG(INFO) << "Position difference:\n" << position_error_msg;
+
+  std::vector<double> histogram_bins3 = {0.01, 0.05, 0.2, 0.5, 1, 10, 100};
+  const std::string focal_length_error_msg =
+      PrintMeanMedianHistogram(focal_length_errors, histogram_bins3);
+  LOG(INFO) << "Focal length errors: \n" << focal_length_error_msg;
 }
 
 void ComputeTrackLengthHistogram(const Reconstruction& reconstruction) {
