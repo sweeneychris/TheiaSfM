@@ -147,6 +147,9 @@ void CascadeHasher::BuildBuckets(HashedImage* hashed_image) const {
 HashedImage CascadeHasher::CreateHashedSiftDescriptors(
     const std::vector<Eigen::VectorXf>& sift_desc) const {
   HashedImage hashed_image(sift_desc);
+  if (sift_desc.size() == 0) {
+    return hashed_image;
+  }
 
   GetZeroMeanDescriptor(sift_desc, &hashed_image.mean_descriptor);
 

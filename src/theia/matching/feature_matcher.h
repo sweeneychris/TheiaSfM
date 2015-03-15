@@ -205,7 +205,13 @@ void FeatureMatcher<DistanceMetric>::MatchImagesWithGeometricVerification(
 
   // Create a list of all possible image pairs.
   for (int i = 0; i < keypoints_.size(); i++) {
+    if (keypoints_[i]->size() == 0) {
+      continue;
+    }
     for (int j = i + 1; j < keypoints_.size(); j++) {
+      if (keypoints_[j]->size() == 0) {
+        continue;
+      }
       pairs_to_match_.emplace_back(i, j);
     }
   }
