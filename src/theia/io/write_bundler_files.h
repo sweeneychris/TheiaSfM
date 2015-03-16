@@ -1,4 +1,4 @@
-// Copyright (C) 2014 The Regents of the University of California (Regents).
+// Copyright (C) 2015 The Regents of the University of California (Regents).
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -32,36 +32,33 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#ifndef THEIA_UTIL_FILESYSTEM_H_
-#define THEIA_UTIL_FILESYSTEM_H_
+#ifndef THEIA_IO_WRITE_BUNDLER_FILES_H_
+#define THEIA_IO_WRITE_BUNDLER_FILES_H_
 
 #include <string>
-#include <vector>
 
 namespace theia {
 
-// Gets the filepath of all files matching the input wildcard. Returns true if
-// the wildcard could be successfully evaluated and false otherwise (e.g. if the
-// folder does not exist).
-bool GetFilepathsFromWildcard(const std::string& filepath_with_wildcard,
-                              std::vector<std::string>* filepaths);
+class Reconstruction;
 
-// Extracts the filename from the filepath (i.e., removes all directory
-// information). If with_extension is set to true then the extension is kept and
-// output with the filename, otherwise the extension is removed.
-bool GetFilenameFromFilepath(const std::string& filepath,
-                             const bool with_extension,
-                             std::string* filename);
-
-// Returns true if the file exists, false otherwise.
-bool FileExists(const std::string& filename);
-
-// Returns true if the directory exists, false otherwise.
-bool DirectoryExists(const std::string& directory);
-
-// Creates the given directory.
-bool CreateDirectory(const std::string& directory);
+// Writes all information from a Reconstruction into a Bundler file. This
+// includes 3D points, camera poses, camera intrinsics, descriptors, and 2D-3D
+// matches.
+//
+// Input params are as follows:
+//   reconstruction: A Theia Reconstruction containing the camera, track, and
+//       point cloud information. See theia/sfm/reconstruction.h for more
+//       information.
+//   lists_file: the list of image names from the bundler list file. The focal
+//       length is provided from EXIF data or set to 0 if no EXIF focal length
+//       is available.
+//   bundler_file: the file output by bundler containing the 3D reconstruction,
+//       camera poses, feature locations, and correspondences. Usually the file
+//       is named bundle.out
+bool WriteBundlerFiles(const Reconstruction& reconstruction,
+                       const std::string& lists_file,
+                       const std::string& bundle_file);
 
 }  // namespace theia
 
-#endif  // THEIA_UTIL_FILESYSTEM_H_
+#endif  // THEIA_IO_WRITE_BUNDLER_FILES_H_

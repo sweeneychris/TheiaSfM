@@ -90,4 +90,14 @@ bool FileExists(const std::string& filename) {
   return stlplus::file_exists(filename);
 }
 
+// Returns true if the directory exists, false otherwise.
+bool DirectoryExists(const std::string& directory) {
+    return stlplus::folder_exists(directory);
+}
+
+// Creates the given directory.
+bool CreateDirectory(const std::string& directory) {
+  return stlplus::folder_create(directory);
+}
+
 }  // namespace theia
