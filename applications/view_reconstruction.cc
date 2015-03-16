@@ -64,22 +64,23 @@ std::vector<Eigen::Vector3d> world_points;
 std::vector<int> num_views_for_track;
 
 // Parameters for OpenGL.
+int width = 1200;
+int height = 800;
 int mouse_down_x[3], mouse_down_y[3];
 float rot_x = 0.0f, rot_y = 0.0f;
 float prev_x, prev_y;
-float distance = 100.0;
+float distance = 1.0;
 Eigen::Vector3d origin = Eigen::Vector3d::Zero();
 bool mouse_rotates = false, mouse_moves = false;
+
 bool draw_cameras = true;
 bool draw_axes = false;
-
 float point_size = 1.0;
 float normalized_focal_length = 1.0;
-int min_num_views_for_track = 2;
+int min_num_views_for_track = 3;
+
 void GetPerspectiveParams(double* aspect_ratio, double* fovy) {
-  int width = 800;
-  int height = 600;
-  double focal_length = 600.0;
+  double focal_length = 800.0;
   *aspect_ratio = static_cast<double>(width) / static_cast<double>(height);
   *fovy = 2 * atan(height / (2.0 * focal_length)) * 180.0 / M_PI;
 }
@@ -101,7 +102,7 @@ void ChangeSize(int w, int h) {
   glViewport(0, 0, w, h);
 
   // Set the correct perspective.
-  gluPerspective(fovy, aspect_ratio, 0.01f, 100000.0f);
+  gluPerspective(fovy, aspect_ratio, 0.001f, 100000.0f);
 
   // Get Back to the Reconstructionview
   glMatrixMode(GL_MODELVIEW);
@@ -112,7 +113,7 @@ void DrawAxes(float length) {
 
   glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
   glDisable(GL_LIGHTING);
-
+  glLineWidth(5.0);
   glBegin(GL_LINES);
   glColor3f(1.0, 0.0, 0.0);
   glVertex3f(0, 0, 0);
@@ -128,6 +129,7 @@ void DrawAxes(float length) {
   glEnd();
 
   glPopAttrib();
+  glLineWidth(1.0);
 }
 
 void DrawCamera(const theia::Camera& camera) {
@@ -178,14 +180,19 @@ void RenderScene() {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
-  glTranslatef(-origin[0], -origin[1], -distance);
+
+  glTranslatef(0.0, 0.0, -10);
+
   glRotatef(180.0f + rot_x, 1.0f, 0.0f, 0.0f);
   glRotatef(-rot_y, 0.0f, 1.0f, 0.0f);
-  glClearColor(1.0f, 1.0f, 1.0f, 0.0f);
-
   if (draw_axes) {
     DrawAxes(1.0);
   }
+
+  glScalef(distance, distance, distance);
+
+  glTranslatef(-origin[0], -origin[1], -origin[2]);
+  glClearColor(1.0f, 1.0f, 1.0f, 0.0f);
 
   // Plot the point cloud.
   glDisable(GL_LIGHTING);
@@ -220,6 +227,7 @@ void RenderScene() {
       DrawCamera(cameras[i]);
     }
   }
+
   glutSwapBuffers();
 }
 
@@ -268,9 +276,12 @@ void MouseMove(int x, int y) {
     prev_x = x;
     prev_y = y;
   } else if (mouse_moves) {
-    const double mouse_factor = 0.03f;
-    origin.x() -= mouse_factor * (x - prev_x);
-    origin.y() += mouse_factor * (y - prev_y);
+    const Eigen::Quaterniond inv_rot =
+        Eigen::Quaterniond(Eigen::AngleAxisd(theia::DegToRad(180.f + rot_x),
+                                             Eigen::Vector3d::UnitX()) *
+                           Eigen::AngleAxisd(theia::DegToRad(-rot_y),
+                                             Eigen::Vector3d::UnitY()));
+    origin += inv_rot * Eigen::Vector3d(prev_x - x, y - prev_y, 0);
     prev_x = x;
     prev_y = y;
   }
@@ -316,18 +327,6 @@ void Keyboard(unsigned char key, int x, int y) {
       --min_num_views_for_track;
       break;
   }
-}
-
-// initialize viewport etc.
-void Init() {
-  glMatrixMode(GL_PROJECTION);
-  glLoadIdentity();
-
-  double aspect_ratio, fovy;  // set the correct perspective.
-  GetPerspectiveParams(&aspect_ratio, &fovy);
-  gluPerspective(fovy, 1.0, .01, 100000.0);
-
-  glMatrixMode(GL_MODELVIEW);
 }
 
 void CenterReconstruction() {
