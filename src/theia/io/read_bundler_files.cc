@@ -94,7 +94,7 @@ bool ReadListsFile(const std::string& list_filename,
     if (filename.length() == 0) {
       break;
     }
-    CHECK(theia::GetFilenameFromFilepath(filename, false, &truncated_filename));
+    CHECK(theia::GetFilenameFromFilepath(filename, true, &truncated_filename));
     const ViewId view_id = reconstruction->AddView(truncated_filename);
     CHECK_NE(view_id, kInvalidViewId) << "View " << truncated_filename
                                       << " could not be added.";

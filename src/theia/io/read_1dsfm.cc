@@ -125,7 +125,7 @@ bool Input1DSFM::ReadListsFile(
     if (filename.length() == 0) {
       break;
     }
-    CHECK(theia::GetFilenameFromFilepath(filename, false, &truncated_filename));
+    CHECK(theia::GetFilenameFromFilepath(filename, true, &truncated_filename));
     const ViewId view_id = reconstruction_->AddView(truncated_filename);
     CHECK_NE(view_id, kInvalidViewId);
 
