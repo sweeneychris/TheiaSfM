@@ -206,27 +206,11 @@ ReconstructionEstimatorSummary NonlinearReconstructionEstimator::Estimate(
                                       positions_,
                                       reconstruction_);
 
-  // Step 8. Triangulate features.
-  LOG(INFO) << "Triangulating all features.";
-  timer.Reset();
-  EstimateStructure();
-  summary.triangulation_time = timer.ElapsedTimeInSeconds();
-
-  SetUnderconstrainedAsUnestimated(reconstruction_);
-
-  // Step 9. Bundle Adjustment.
-  LOG(INFO) << "Performing bundle adjustment.";
-  timer.Reset();
-  BundleAdjustment();
-  summary.bundle_adjustment_time = timer.ElapsedTimeInSeconds();
-
-  for (int i = 0; i < options_.num_retriangulation_iterations; i++) {
-    const int num_features_removed = RemoveOutlierFeatures(
-        options_.max_reprojection_error_in_pixels, reconstruction_);
-    LOG(INFO) << num_features_removed << " outlier features were removed.";
-
+  // Always triangulate once, then retriangulate and remove outliers depending
+  // on the reconstruciton estimator options.
+  for (int i = 0; i < options_.num_retriangulation_iterations + 1; i++) {
     // Step 8. Triangulate features.
-    LOG(INFO) << "Triangulating all features again.";
+    LOG(INFO) << "Triangulating all features.";
     timer.Reset();
     EstimateStructure();
     summary.triangulation_time += timer.ElapsedTimeInSeconds();
@@ -238,6 +222,12 @@ ReconstructionEstimatorSummary NonlinearReconstructionEstimator::Estimate(
     timer.Reset();
     BundleAdjustment();
     summary.bundle_adjustment_time += timer.ElapsedTimeInSeconds();
+
+    int num_points_removed = RemoveOutlierFeatures(
+        options_.max_reprojection_error_in_pixels,
+        options_.min_triangulation_angle_degrees,
+        reconstruction_);
+    LOG(INFO) << num_points_removed << " outlier points were removed.";
   }
 
   // Set the output parameters.

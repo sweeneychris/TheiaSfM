@@ -80,24 +80,6 @@ void GetObservationsFromTrackViews(
   }
 }
 
-// Returns true if the triangulation angle between any two observations is
-// sufficient.
-bool SufficientTriangulationAngle(
-    const std::vector<Eigen::Vector3d>& ray_directions,
-    const double min_triangulation_angle_degrees) {
-  // Test that the angle between the rays is sufficient.
-  const double cos_of_min_angle =
-      cos(DegToRad(min_triangulation_angle_degrees));
-  for (int i = 0; i < ray_directions.size(); i++) {
-    for (int j = i + 1; j < ray_directions.size(); j++) {
-      if (ray_directions[i].dot(ray_directions[j]) > cos_of_min_angle) {
-        return true;
-      }
-    }
-  }
-  return true;
-}
-
 // Returns false if the reprojection error of the triangulated point is greater
 // than the max allowable reprojection error (for any observation) and true
 // otherwise.

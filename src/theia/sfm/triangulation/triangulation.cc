@@ -43,6 +43,7 @@
 #include <vector>
 
 #include "theia/matching/feature_correspondence.h"
+#include "theia/math/util.h"
 #include "theia/sfm/pose/fundamental_matrix_util.h"
 #include "theia/sfm/pose/util.h"
 
@@ -230,6 +231,25 @@ bool IsTriangulatedPointInFrontOfCameras(
 
   return (dir2_sq * dir1_pos - dir1_dir2 * dir2_pos > 0 &&
           dir1_dir2 * dir1_pos - dir1_sq * dir2_pos > 0);
+}
+
+
+// Returns true if the triangulation angle between any two observations is
+// sufficient.
+bool SufficientTriangulationAngle(
+    const std::vector<Eigen::Vector3d>& ray_directions,
+    const double min_triangulation_angle_degrees) {
+  // Test that the angle between the rays is sufficient.
+  const double cos_of_min_angle =
+      cos(DegToRad(min_triangulation_angle_degrees));
+  for (int i = 0; i < ray_directions.size(); i++) {
+    for (int j = i + 1; j < ray_directions.size(); j++) {
+      if (ray_directions[i].dot(ray_directions[j]) > cos_of_min_angle) {
+        return true;
+      }
+    }
+  }
+  return true;
 }
 
 }  // namespace theia

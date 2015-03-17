@@ -96,6 +96,13 @@ bool IsTriangulatedPointInFrontOfCameras(
     const Eigen::Matrix3d& rotation,
     const Eigen::Vector3d& position);
 
+
+// Returns true if the triangulation angle between any two observations is
+// sufficient.
+bool SufficientTriangulationAngle(
+    const std::vector<Eigen::Vector3d>& ray_directions,
+    const double min_triangulation_angle_degrees);
+
 }  // namespace theia
 
 #endif  // THEIA_SFM_TRIANGULATION_TRIANGULATION_H_
