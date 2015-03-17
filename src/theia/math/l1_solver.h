@@ -49,25 +49,25 @@ namespace l1_solver_internal {
 
 inline void AnalyzePattern(
     const Eigen::SparseMatrix<double>& spd_mat,
-    Eigen::SimplicialLDLT<Eigen::SparseMatrix<double> >* linear_solver) {
+    Eigen::SimplicialLLT<Eigen::SparseMatrix<double> >* linear_solver) {
   linear_solver->analyzePattern(spd_mat);
 }
 
 inline void AnalyzePattern(
     const Eigen::MatrixXd& spd_mat,
-    Eigen::SimplicialLDLT<Eigen::SparseMatrix<double> >* linear_solver) {
+    Eigen::SimplicialLLT<Eigen::SparseMatrix<double> >* linear_solver) {
   linear_solver->analyzePattern(spd_mat.sparseView());
 }
 
 inline void Factorize(
     const Eigen::SparseMatrix<double>& spd_mat,
-    Eigen::SimplicialLDLT<Eigen::SparseMatrix<double> >* linear_solver) {
+    Eigen::SimplicialLLT<Eigen::SparseMatrix<double> >* linear_solver) {
   linear_solver->factorize(spd_mat);
 }
 
 inline void Factorize(
     const Eigen::MatrixXd& spd_mat,
-    Eigen::SimplicialLDLT<Eigen::SparseMatrix<double> >* linear_solver) {
+    Eigen::SimplicialLLT<Eigen::SparseMatrix<double> >* linear_solver) {
   linear_solver->factorize(spd_mat.sparseView());
 }
 
@@ -180,7 +180,7 @@ class L1Solver {
     l1_solver_internal::Factorize(lhs, &linear_solver_);
     if (linear_solver_.info() != Eigen::Success) {
       LOG(WARNING) << "Failed to compute a Sparse Cholesky factorization for "
-                      "Simplicial LDLT.";
+                      "Simplicial LLT.";
       return false;
     }
 
@@ -322,7 +322,7 @@ class L1Solver {
 
   // Cholesky linear solver. Since our linear system will be a SPD matrix we can
   // utilize the Cholesky factorization.
-  Eigen::SimplicialLDLT<Eigen::SparseMatrix<double> > linear_solver_;
+  Eigen::SimplicialLLT<Eigen::SparseMatrix<double> > linear_solver_;
 };
 
 }  // namespace theia
