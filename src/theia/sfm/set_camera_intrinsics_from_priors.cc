@@ -62,7 +62,6 @@ void SetCameraIntrinsicsFromPriors(Reconstruction* reconstruction) {
     if (prior.focal_length.is_set) {
       camera->SetFocalLength(prior.focal_length.value);
     } else {
-      CHECK(false);
       camera->SetFocalLength(1.2 * static_cast<double>(std::max(
                                        prior.image_width, prior.image_height)));
     }
@@ -72,7 +71,6 @@ void SetCameraIntrinsicsFromPriors(Reconstruction* reconstruction) {
       camera->SetPrincipalPoint(prior.principal_point[0].value,
                                 prior.principal_point[1].value);
     } else {
-      CHECK(false);
       camera->SetPrincipalPoint(prior.image_width / 2.0,
                                 prior.image_height / 2.0);
     }
