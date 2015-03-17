@@ -149,20 +149,17 @@ void DrawCamera(const theia::Camera& camera) {
   // Create the camera wireframe. If intrinsic parameters are not set then use
   // the focal length as a guess.
 
-  // Use the camera calibration to display the cameras.
-  Eigen::Matrix3d calibration;
-  camera.GetCalibrationMatrix(&calibration);
-  calibration /= camera.FocalLength();
-  calibration(2, 2) = 1.0;
+  double w2f = camera.ImageWidth()/camera.FocalLength()/2.0;
+  double h2f = camera.ImageHeight()/camera.FocalLength()/2.0;
 
   const Eigen::Vector3d top_left =
-      normalized_focal_length * (calibration * Eigen::Vector3d(-1, -1, 1));
+      normalized_focal_length * Eigen::Vector3d(-w2f, -h2f, 1);
   const Eigen::Vector3d top_right =
-      normalized_focal_length * (calibration * Eigen::Vector3d(1, -1, 1));
+      normalized_focal_length * Eigen::Vector3d(w2f, -h2f, 1);
   const Eigen::Vector3d bottom_right =
-      normalized_focal_length * (calibration * Eigen::Vector3d(1, 1, 1));
+      normalized_focal_length * Eigen::Vector3d(w2f, h2f, 1);
   const Eigen::Vector3d bottom_left =
-      normalized_focal_length * (calibration * Eigen::Vector3d(-1, 1, 1));
+      normalized_focal_length * Eigen::Vector3d(-w2f, h2f, 1);
 
   glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
   glBegin(GL_TRIANGLE_FAN);
@@ -186,7 +183,7 @@ void RenderScene() {
   glRotatef(180.0f + rot_x, 1.0f, 0.0f, 0.0f);
   glRotatef(-rot_y, 0.0f, 1.0f, 0.0f);
   if (draw_axes) {
-    DrawAxes(1.0);
+    DrawAxes(1000.0);
   }
 
   glScalef(distance, distance, distance);
