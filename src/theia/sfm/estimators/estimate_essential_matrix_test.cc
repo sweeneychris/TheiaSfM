@@ -1,4 +1,4 @@
-// Copyright (C) 2014 The Regents of the University of California (Regents).
+// Copyright (C) 2013 The Regents of the University of California (Regents).
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -35,23 +35,20 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <glog/logging.h>
-
 #include <algorithm>
 #include <vector>
-
 #include "gtest/gtest.h"
 
 #include "theia/math/util.h"
-#include "theia/solvers/sample_consensus_estimator.h"
-#include "theia/test/test_utils.h"
-#include "theia/sfm/create_and_initialize_ransac_variant.h"
-#include "theia/sfm/estimators/estimate_relative_pose.h"
+#include "theia/util/random.h"
+#include "theia/sfm/estimators/estimate_essential_matrix.h"
 #include "theia/matching/feature_correspondence.h"
 #include "theia/sfm/pose/test_util.h"
 #include "theia/sfm/pose/util.h"
+#include "theia/test/test_utils.h"
 
 namespace theia {
-
+namespace {
 using Eigen::AngleAxisd;
 using Eigen::Matrix3d;
 using Eigen::Vector2d;
@@ -111,29 +108,28 @@ void ExecuteRandomTest(const RansacParameters& options,
   }
 
   // Estimate the relative pose.
-  RelativePose relative_pose;
+  Matrix3d essential_matrix;
   RansacSummary ransac_summary;
-  EXPECT_TRUE(EstimateRelativePose(options,
-                                   RansacType::RANSAC,
-                                   correspondences,
-                                   &relative_pose,
-                                   &ransac_summary));
+  EXPECT_TRUE(EstimateEssentialMatrix(options,
+                                      RansacType::RANSAC,
+                                      correspondences,
+                                      &essential_matrix,
+                                      &ransac_summary));
+
+  // Compare the solution to the ground truth.
+  const Matrix3d gt_ematrix = CrossProductMatrix(translation) * rotation;
 
   // Expect that the inlier ratio is close to the ground truth.
   EXPECT_GT(static_cast<double>(ransac_summary.inliers.size()), 5);
 
   // Expect poses are near.
   EXPECT_TRUE(test::ArraysEqualUpToScale(9,
-                                         rotation.data(),
-                                         relative_pose.rotation.data(),
-                                         tolerance));
-  EXPECT_TRUE(test::ArraysEqualUpToScale(3,
-                                         position.data(),
-                                         relative_pose.position.data(),
+                                         essential_matrix.data(),
+                                         gt_ematrix.data(),
                                          tolerance));
 }
 
-TEST(EstimateRelativePose, AllInliersNoNoise) {
+TEST(EstimateEssentialMatrix, AllInliersNoNoise) {
   RansacParameters options;
   options.use_mle = true;
   options.error_thresh = kErrorThreshold;
@@ -162,7 +158,7 @@ TEST(EstimateRelativePose, AllInliersNoNoise) {
   }
 }
 
-TEST(EstimateRelativePose, AllInliersWithNoise) {
+TEST(EstimateEssentialMatrix, AllInliersWithNoise) {
   RansacParameters options;
   options.use_mle = true;
   options.error_thresh = kErrorThreshold;
@@ -192,7 +188,7 @@ TEST(EstimateRelativePose, AllInliersWithNoise) {
   }
 }
 
-TEST(EstimateRelativePose, OutliersNoNoise) {
+TEST(EstimateEssentialMatrix, OutliersNoNoise) {
   RansacParameters options;
   options.use_mle = true;
   options.error_thresh = kErrorThreshold;
@@ -220,7 +216,7 @@ TEST(EstimateRelativePose, OutliersNoNoise) {
   }
 }
 
-TEST(EstimateRelativePose, OutliersWithNoise) {
+TEST(EstimateEssentialMatrix, OutliersWithNoise) {
   RansacParameters options;
   options.use_mle = true;
   options.error_thresh = kErrorThreshold;
@@ -248,4 +244,5 @@ TEST(EstimateRelativePose, OutliersWithNoise) {
   }
 }
 
+}  // namespace
 }  // namespace theia

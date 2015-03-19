@@ -35,6 +35,7 @@
 #ifndef THEIA_SFM_ESTIMATORS_ESTIMATE_UNCALIBRATED_RELATIVE_POSE_H_
 #define THEIA_SFM_ESTIMATORS_ESTIMATE_UNCALIBRATED_RELATIVE_POSE_H_
 
+#include <Eigen/Core>
 #include <vector>
 
 #include "theia/sfm/create_and_initialize_ransac_variant.h"
@@ -44,7 +45,16 @@ namespace theia {
 struct FeatureCorrespondence;
 struct RansacParameters;
 struct RansacSummary;
-struct UncalibratedRelativePose;
+
+// Relative pose information computed from two uncalibrated views. It is assumed
+// that the first view has identity rotation and a position at the origin.
+struct UncalibratedRelativePose {
+  Eigen::Matrix3d fundamental_matrix;
+  double focal_length1;
+  double focal_length2;
+  Eigen::Matrix3d rotation;
+  Eigen::Vector3d position;
+};
 
 // Estimates the relative pose and focal lengths using the ransac variant of
 // choice (e.g. Ransac, Prosac, etc.). Correspondences must be centered such

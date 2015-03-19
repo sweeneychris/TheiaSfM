@@ -1,4 +1,4 @@
-// Copyright (C) 2014 The Regents of the University of California (Regents).
+// Copyright (C) 2013 The Regents of the University of California (Regents).
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -35,17 +35,15 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <glog/logging.h>
-
 #include <algorithm>
 #include <vector>
-
 #include "gtest/gtest.h"
 
 #include "theia/math/util.h"
 #include "theia/solvers/sample_consensus_estimator.h"
 #include "theia/test/test_utils.h"
 #include "theia/sfm/create_and_initialize_ransac_variant.h"
-#include "theia/sfm/estimators/estimate_uncalibrated_relative_pose.h"
+#include "theia/sfm/estimators/estimate_fundamental_matrix.h"
 #include "theia/matching/feature_correspondence.h"
 #include "theia/sfm/pose/test_util.h"
 #include "theia/sfm/pose/util.h"
@@ -77,7 +75,7 @@ void ExecuteRandomTest(const RansacParameters& options,
     // Add an inlier or outlier.
     if (i < inlier_ratio * kNumCorrespondences) {
       // Make sure the point is in front of the camera.
-      const Vector3d point_3d = Vector3d::Random() + Vector3d(0, 0, 4);
+      const Vector3d point_3d = Vector3d::Random() + Vector3d(0, 0, 8);
       correspondence.feature1 = focal_length1 * point_3d.hnormalized();
       correspondence.feature2 =
           focal_length2 * (rotation * point_3d + translation).hnormalized();
@@ -91,23 +89,23 @@ void ExecuteRandomTest(const RansacParameters& options,
     correspondences.emplace_back(correspondence);
   }
 
-  // Estimate the relative pose.
-  UncalibratedRelativePose relative_pose;
+  // Estimate the fundamental matrix.
+  Eigen::Matrix3d fundamental_matrix;
   RansacSummary ransac_summary;
-  EXPECT_TRUE(EstimateUncalibratedRelativePose(options,
-                                               RansacType::RANSAC,
-                                               correspondences,
-                                               &relative_pose,
-                                               &ransac_summary));
+  EXPECT_TRUE(EstimateFundamentalMatrix(options,
+                                        RansacType::RANSAC,
+                                        correspondences,
+                                        &fundamental_matrix,
+                                        &ransac_summary));
 
-  // Expect that the inlier ratio is close to the ground truth.
+  // Expect that the inlier ratio is reasonable.
   const double observed_inlier_ratio =
       ransac_summary.inliers.size() /
       static_cast<double>(correspondences.size());
   EXPECT_GT(observed_inlier_ratio, 0.7 * inlier_ratio);
 }
 
-TEST(EstimateUncalibratedRelativePose, AllInliersNoNoise) {
+TEST(EstimateFundamentalMatrix, AllInliersNoNoise) {
   RansacParameters options;
   options.use_mle = true;
   options.error_thresh = 2;
@@ -131,7 +129,7 @@ TEST(EstimateUncalibratedRelativePose, AllInliersNoNoise) {
   }
 }
 
-TEST(EstimateUncalibratedRelativePose, AllInliersWithNoise) {
+TEST(EstimateFundamentalMatrix, AllInliersWithNoise) {
   RansacParameters options;
   options.use_mle = true;
   options.error_thresh = 2;
@@ -155,7 +153,7 @@ TEST(EstimateUncalibratedRelativePose, AllInliersWithNoise) {
   }
 }
 
-TEST(EstimateUncalibratedRelativePose, OutliersNoNoise) {
+TEST(EstimateFundamentalMatrix, OutliersNoNoise) {
   RansacParameters options;
   options.use_mle = true;
   options.error_thresh = 2;
@@ -179,12 +177,11 @@ TEST(EstimateUncalibratedRelativePose, OutliersNoNoise) {
   }
 }
 
-TEST(EstimateUncalibratedRelativePose, OutliersWithNoise) {
+TEST(EstimateFundamentalMatrix, OutliersWithNoise) {
   RansacParameters options;
   options.use_mle = true;
-  options.failure_probability = 0.001;
   options.error_thresh = 4.0 * 4.0;
-  options.max_iterations = 1000;
+  options.failure_probability = 0.001;
   const double kInlierRatio = 0.7;
   const double kNoise = 1.0;
 
@@ -194,7 +191,6 @@ TEST(EstimateUncalibratedRelativePose, OutliersWithNoise) {
     const Vector3d position = Vector3d::Random();
     const double focal_length1 = RandDouble(800, 1600);
     const double focal_length2 = RandDouble(800, 1600);
-
     ExecuteRandomTest(options,
                       rotation,
                       position,

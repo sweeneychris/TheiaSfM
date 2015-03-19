@@ -32,49 +32,29 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#ifndef THEIA_SFM_ESTIMATORS_RELATIVE_POSE_ESTIMATOR_H_
-#define THEIA_SFM_ESTIMATORS_RELATIVE_POSE_ESTIMATOR_H_
+#ifndef THEIA_SFM_ESTIMATORS_ESTIMATE_ESSENTIAL_MATRIX_H_
+#define THEIA_SFM_ESTIMATORS_ESTIMATE_ESSENTIAL_MATRIX_H_
 
 #include <Eigen/Core>
 #include <vector>
 
-#include "theia/solvers/estimator.h"
-#include "theia/util/util.h"
 #include "theia/matching/feature_correspondence.h"
+#include "theia/sfm/create_and_initialize_ransac_variant.h"
+#include "theia/solvers/estimator.h"
 
 namespace theia {
 
-struct RelativePose {
-  Eigen::Matrix3d essential_matrix;
-  Eigen::Matrix3d rotation;
-  Eigen::Vector3d position;
-};
-
-// An estimator for computing the relative pose from 5 feature
-// correspondences. The feature correspondences should be normalized
-// by the focal length with the principal point at (0, 0).
-class RelativePoseEstimator
-    : public Estimator<FeatureCorrespondence, RelativePose> {
- public:
-  RelativePoseEstimator() {}
-
-  // 5 correspondences are needed to determine an essential matrix and thus a
-  // relative pose..
-  double SampleSize() const { return 5; }
-
-  // Estimates candidate relative poses from correspondences.
-  bool EstimateModel(const std::vector<FeatureCorrespondence>& correspondences,
-                     std::vector<RelativePose>* essential_matrices) const;
-
-  // The error for a correspondences given a model. This is the squared sampson
-  // error.
-  double Error(const FeatureCorrespondence& correspondence,
-               const RelativePose& essential_matrix) const;
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(RelativePoseEstimator);
-};
+// Estimates the essential matrix from feature correspondences using the 5-pt
+// algorithm. The feature correspondences must be normalized such that the
+// principal point and focal length has been removed. Returns true if a pose
+// could be successfully estimated and false otherwise.
+bool EstimateEssentialMatrix(
+    const RansacParameters& ransac_params,
+    const RansacType& ransac_type,
+    const std::vector<FeatureCorrespondence>& normalized_correspondences,
+    Eigen::Matrix3d* essential_matrix,
+    RansacSummary* ransac_summary);
 
 }  // namespace theia
 
-#endif  // THEIA_SFM_ESTIMATORS_RELATIVE_POSE_ESTIMATOR_H_
+#endif  // THEIA_SFM_ESTIMATORS_ESTIMATE_ESSENTIAL_MATRIX_H_

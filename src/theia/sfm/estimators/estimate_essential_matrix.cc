@@ -32,17 +32,19 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#ifndef THEIA_SFM_ESTIMATORS_ESSENTIAL_MATRIX_ESTIMATOR_H_
-#define THEIA_SFM_ESTIMATORS_ESSENTIAL_MATRIX_ESTIMATOR_H_
+#include "theia/sfm/estimators/estimate_essential_matrix.h"
 
 #include <Eigen/Core>
 #include <vector>
 
 #include "theia/solvers/estimator.h"
-#include "theia/util/util.h"
 #include "theia/matching/feature_correspondence.h"
+#include "theia/sfm/pose/five_point_relative_pose.h"
+#include "theia/sfm/pose/util.h"
+#include "theia/util/util.h"
 
 namespace theia {
+namespace {
 
 // An estimator for computing the essential matrix from 5 feature
 // correspondences. The feature correspondences should be normalized
@@ -57,17 +59,49 @@ class EssentialMatrixEstimator
 
   // Estimates candidate essential matrices from correspondences.
   bool EstimateModel(const std::vector<FeatureCorrespondence>& correspondences,
-                     std::vector<Eigen::Matrix3d>* essential_matrices) const;
+                     std::vector<Eigen::Matrix3d>* essential_matrices) const {
+    Eigen::Vector2d image1_points[5], image2_points[5];
+    for (int i = 0; i < 5; i++) {
+      image1_points[i] = correspondences[i].feature1;
+      image2_points[i] = correspondences[i].feature2;
+    }
+
+    return FivePointRelativePose(image1_points,
+                                 image2_points,
+                                 essential_matrices);
+  }
 
   // The error for a correspondences given a model. This is the squared sampson
   // error.
   double Error(const FeatureCorrespondence& correspondence,
-               const Eigen::Matrix3d& essential_matrix) const;
+               const Eigen::Matrix3d& essential_matrix) const {
+    return SquaredSampsonDistance(essential_matrix,
+                                  correspondence.feature1,
+                                  correspondence.feature2);
+  }
 
  private:
   DISALLOW_COPY_AND_ASSIGN(EssentialMatrixEstimator);
 };
 
-}  // namespace theia
+}  // namespace
 
-#endif  // THEIA_SFM_ESTIMATORS_ESSENTIAL_MATRIX_ESTIMATOR_H_
+bool EstimateEssentialMatrix(
+    const RansacParameters& ransac_params,
+    const RansacType& ransac_type,
+    const std::vector<FeatureCorrespondence>& normalized_correspondences,
+    Eigen::Matrix3d* essential_matrix,
+    RansacSummary* ransac_summary) {
+  EssentialMatrixEstimator essential_matrix_estimator;
+  std::unique_ptr<SampleConsensusEstimator<EssentialMatrixEstimator> >
+      ransac = CreateAndInitializeRansacVariant(ransac_type,
+                                                ransac_params,
+                                                essential_matrix_estimator);
+
+  // Estimate essential matrix.
+  return ransac->Estimate(normalized_correspondences,
+                          essential_matrix,
+                          ransac_summary);
+}
+
+}  // namespace theia

@@ -44,8 +44,6 @@
 #include "theia/sfm/camera/camera_intrinsics.h"
 #include "theia/sfm/estimators/estimate_relative_pose.h"
 #include "theia/sfm/estimators/estimate_uncalibrated_relative_pose.h"
-#include "theia/sfm/estimators/relative_pose_estimator.h"
-#include "theia/sfm/estimators/uncalibrated_relative_pose_estimator.h"
 #include "theia/matching/feature_correspondence.h"
 #include "theia/sfm/pose/util.h"
 #include "theia/sfm/triangulation/triangulation.h"

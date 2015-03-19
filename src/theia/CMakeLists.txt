@@ -75,13 +75,11 @@ SET(THEIA_SRC
   sfm/camera/radial_distortion.cc
   sfm/estimate_track.cc
   sfm/estimate_twoview_info.cc
-  sfm/estimators/essential_matrix_estimator.cc
+  sfm/estimators/estimate_essential_matrix.cc
+  sfm/estimators/estimate_fundamental_matrix.cc
   sfm/estimators/estimate_relative_pose.cc
   sfm/estimators/estimate_triangulation.cc
   sfm/estimators/estimate_uncalibrated_relative_pose.cc
-  sfm/estimators/fundamental_matrix_estimator.cc
-  sfm/estimators/relative_pose_estimator.cc
-  sfm/estimators/uncalibrated_relative_pose_estimator.cc
   sfm/exif_reader.cc
   sfm/feature_extractor.cc
   sfm/filter_view_graph_cycles_by_rotation.cc
@@ -203,13 +201,11 @@ IF (BUILD_TESTING)
   GTEST(sfm/camera/camera)
   GTEST(sfm/camera/projection_matrix_utils)
   GTEST(sfm/camera/radial_distortion)
-  GTEST(sfm/estimators/essential_matrix_estimator)
+  GTEST(sfm/estimators/estimate_essential_matrix)
+  GTEST(sfm/estimators/estimate_fundamental_matrix)
   GTEST(sfm/estimators/estimate_relative_pose)
   GTEST(sfm/estimators/estimate_triangulation)
   GTEST(sfm/estimators/estimate_uncalibrated_relative_pose)
-  GTEST(sfm/estimators/fundamental_matrix_estimator)
-  GTEST(sfm/estimators/relative_pose_estimator)
-  GTEST(sfm/estimators/uncalibrated_relative_pose_estimator)
   GTEST(sfm/exif_reader)
   GTEST(sfm/filter_view_graph_cycles_by_rotation)
   GTEST(sfm/filter_view_pairs_from_orientation)

@@ -35,6 +35,7 @@
 #ifndef THEIA_SFM_ESTIMATORS_ESTIMATE_RELATIVE_POSE_H_
 #define THEIA_SFM_ESTIMATORS_ESTIMATE_RELATIVE_POSE_H_
 
+#include <Eigen/Core>
 #include <vector>
 
 #include "theia/sfm/create_and_initialize_ransac_variant.h"
@@ -44,7 +45,12 @@ namespace theia {
 struct FeatureCorrespondence;
 struct RansacParameters;
 struct RansacSummary;
-struct RelativePose;
+
+struct RelativePose {
+  Eigen::Matrix3d essential_matrix;
+  Eigen::Matrix3d rotation;
+  Eigen::Vector3d position;
+};
 
 // Estimates the relative pose using the ransac variant of choice (e.g. Ransac,
 // Prosac, etc.). Correspondences must be normalized by the camera

@@ -34,15 +34,95 @@
 
 #include "theia/sfm/estimators/estimate_relative_pose.h"
 
+#include <Eigen/Core>
+#include <Eigen/Geometry>
+#include <limits>
 #include <memory>
 #include <vector>
 
-#include "theia/solvers/sample_consensus_estimator.h"
-#include "theia/sfm/create_and_initialize_ransac_variant.h"
-#include "theia/sfm/estimators/relative_pose_estimator.h"
 #include "theia/matching/feature_correspondence.h"
+#include "theia/sfm/create_and_initialize_ransac_variant.h"
+#include "theia/sfm/pose/essential_matrix_utils.h"
+#include "theia/sfm/pose/five_point_relative_pose.h"
+#include "theia/sfm/pose/util.h"
+#include "theia/sfm/triangulation/triangulation.h"
+#include "theia/solvers/estimator.h"
+#include "theia/solvers/sample_consensus_estimator.h"
+#include "theia/util/util.h"
 
 namespace theia {
+namespace {
+
+using Eigen::Matrix3d;
+using Eigen::Vector3d;
+
+// An estimator for computing the relative pose from 5 feature
+// correspondences. The feature correspondences should be normalized
+// by the focal length with the principal point at (0, 0).
+class RelativePoseEstimator
+    : public Estimator<FeatureCorrespondence, RelativePose> {
+ public:
+  RelativePoseEstimator() {}
+
+  // 5 correspondences are needed to determine an essential matrix and thus a
+  // relative pose..
+  double SampleSize() const { return 5; }
+
+  // Estimates candidate relative poses from correspondences.
+  bool EstimateModel(const std::vector<FeatureCorrespondence>& correspondences,
+                     std::vector<RelativePose>* relative_poses) const {
+    Eigen::Vector2d image1_points[5], image2_points[5];
+    for (int i = 0; i < 5; i++) {
+      image1_points[i] = correspondences[i].feature1;
+      image2_points[i] = correspondences[i].feature2;
+    }
+
+    std::vector<Matrix3d> essential_matrices;
+    if (!FivePointRelativePose(image1_points,
+                               image2_points,
+                               &essential_matrices)) {
+      return false;
+    }
+
+    relative_poses->reserve(essential_matrices.size() * 4);
+    for (const Eigen::Matrix3d& essential_matrix : essential_matrices) {
+      RelativePose relative_pose;
+      relative_pose.essential_matrix = essential_matrix;
+
+      // The best relative pose decomposition should have at least 4
+      // triangulated points in front of the camera. This is because one point
+      // may be at infinity.
+      const int num_points_in_front_of_cameras = GetBestPoseFromEssentialMatrix(
+          essential_matrix,
+          correspondences,
+          &relative_pose.rotation,
+          &relative_pose.position);
+      if (num_points_in_front_of_cameras >= 4) {
+        relative_poses->push_back(relative_pose);
+      }
+    }
+    return relative_poses->size() > 0;
+  }
+
+  // The error for a correspondences given a model. This is the squared sampson
+  // error.
+  double Error(const FeatureCorrespondence& correspondence,
+               const RelativePose& relative_pose) const {
+    if (IsTriangulatedPointInFrontOfCameras(correspondence,
+                                            relative_pose.rotation,
+                                            relative_pose.position)) {
+      return SquaredSampsonDistance(relative_pose.essential_matrix,
+                                    correspondence.feature1,
+                                    correspondence.feature2);
+    }
+    return std::numeric_limits<double>::max();
+  }
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(RelativePoseEstimator);
+};
+
+}  // namespace
 
 bool EstimateRelativePose(
     const RansacParameters& ransac_params,
@@ -55,14 +135,10 @@ bool EstimateRelativePose(
       CreateAndInitializeRansacVariant(ransac_type,
                                        ransac_params,
                                        relative_pose_estimator);
-  // Estimate essential matrix.
-  if (!ransac->Estimate(normalized_correspondences,
-                        relative_pose,
-                        ransac_summary)) {
-    return false;
-  }
-
-  return true;
+  // Estimate the relative pose.
+  return ransac->Estimate(normalized_correspondences,
+                          relative_pose,
+                          ransac_summary);
 }
 
 }  // namespace theia

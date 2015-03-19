@@ -32,42 +32,29 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#include "theia/sfm/estimators/fundamental_matrix_estimator.h"
+#ifndef THEIA_SFM_ESTIMATORS_ESTIMATE_FUNDAMENTAL_MATRIX_H_
+#define THEIA_SFM_ESTIMATORS_ESTIMATE_FUNDAMENTAL_MATRIX_H_
 
 #include <Eigen/Core>
 #include <vector>
 
+#include "theia/matching/feature_correspondence.h"
+#include "theia/sfm/create_and_initialize_ransac_variant.h"
 #include "theia/solvers/estimator.h"
-#include "theia/sfm/pose/eight_point_fundamental_matrix.h"
-#include "theia/sfm/pose/util.h"
 
 namespace theia {
 
-bool FundamentalMatrixEstimator::EstimateModel(
-    const std::vector<FeatureCorrespondence>& correspondences,
-    std::vector<Eigen::Matrix3d>* fundamental_matrices) const {
-  std::vector<Eigen::Vector2d> image1_points, image2_points;
-  for (int i = 0; i < 8; i++) {
-    image1_points.emplace_back(correspondences[i].feature1);
-    image2_points.emplace_back(correspondences[i].feature2);
-  }
-
-  Eigen::Matrix3d fmatrix;
-  if (!NormalizedEightPointFundamentalMatrix(
-          image1_points, image2_points, &fmatrix)) {
-    return false;
-  }
-
-  fundamental_matrices->emplace_back(fmatrix);
-  return true;
-}
-
-double FundamentalMatrixEstimator::Error(
-    const FeatureCorrespondence& correspondence,
-    const Eigen::Matrix3d& fundamental_matrix) const {
-  return SquaredSampsonDistance(fundamental_matrix,
-                                correspondence.feature1,
-                                correspondence.feature2);
-}
+// Estimates the essential matrix from feature correspondences using the 5-pt
+// algorithm. The feature correspondences must be normalized such that the
+// principal point and focal length has been removed. Returns true if a pose
+// could be successfully estimated and false otherwise.
+bool EstimateFundamentalMatrix(
+    const RansacParameters& ransac_params,
+    const RansacType& ransac_type,
+    const std::vector<FeatureCorrespondence>& normalized_correspondences,
+    Eigen::Matrix3d* essential_matrix,
+    RansacSummary* ransac_summary);
 
 }  // namespace theia
+
+#endif  // THEIA_SFM_ESTIMATORS_ESTIMATE_FUNDAMENTAL_MATRIX_H_

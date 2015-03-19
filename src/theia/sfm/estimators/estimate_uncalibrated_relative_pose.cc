@@ -34,15 +34,115 @@
 
 #include "theia/sfm/estimators/estimate_uncalibrated_relative_pose.h"
 
+#include <Eigen/Core>
+#include <Eigen/Geometry>
+#include <limits>
 #include <memory>
 #include <vector>
 
-#include "theia/solvers/sample_consensus_estimator.h"
-#include "theia/sfm/create_and_initialize_ransac_variant.h"
-#include "theia/sfm/estimators/uncalibrated_relative_pose_estimator.h"
 #include "theia/matching/feature_correspondence.h"
+#include "theia/sfm/create_and_initialize_ransac_variant.h"
+#include "theia/sfm/pose/eight_point_fundamental_matrix.h"
+#include "theia/sfm/pose/essential_matrix_utils.h"
+#include "theia/sfm/pose/fundamental_matrix_util.h"
+#include "theia/sfm/pose/util.h"
+#include "theia/sfm/triangulation/triangulation.h"
+#include "theia/solvers/estimator.h"
+#include "theia/solvers/sample_consensus_estimator.h"
+#include "theia/util/util.h"
 
 namespace theia {
+
+using Eigen::Matrix3d;
+using Eigen::Vector3d;
+
+namespace {
+
+// An estimator for computing the relative pose from 8 feature correspondences
+// (via decomposition of the fundamental matrix).
+//
+// NOTE: Feature correspondences must be in pixel coordinates with the principal
+// point removed i.e. principal point at (0, 0). This also assumes negligible
+// skew (which is reasonable for most cameras).
+class UncalibratedRelativePoseEstimator
+    : public Estimator<FeatureCorrespondence, UncalibratedRelativePose> {
+ public:
+  UncalibratedRelativePoseEstimator() {}
+
+  // 8 correspondences are needed to determine a fundamental matrix and thus a
+  // relative pose.
+  double SampleSize() const { return 8; }
+
+  // Estimates candidate relative poses from correspondences.
+  bool EstimateModel(
+      const std::vector<FeatureCorrespondence>& centered_correspondences,
+      std::vector<UncalibratedRelativePose>* relative_poses) const {
+    std::vector<Eigen::Vector2d> image1_points, image2_points;
+    for (int i = 0; i < 8; i++) {
+      image1_points.emplace_back(centered_correspondences[i].feature1);
+      image2_points.emplace_back(centered_correspondences[i].feature2);
+    }
+
+    UncalibratedRelativePose relative_pose;
+    if (!NormalizedEightPointFundamentalMatrix(
+            image1_points, image2_points, &relative_pose.fundamental_matrix)) {
+      return false;
+    }
+
+    // Only consider fundamental matrices that we can decompose focal lengths
+    // from.
+    if (!FocalLengthsFromFundamentalMatrix(
+            relative_pose.fundamental_matrix.data(),
+            &relative_pose.focal_length1,
+            &relative_pose.focal_length2)) {
+      return false;
+    }
+
+    // TODO(cmsweeney): Should we check if the focal lengths are reasonable?
+
+    // Compose the essential matrix from the fundamental matrix and focal
+    // lengths.
+    const Matrix3d essential_matrix =
+        Eigen::DiagonalMatrix<double, 3>(relative_pose.focal_length2,
+                                         relative_pose.focal_length2,
+                                         1.0) *
+        relative_pose.fundamental_matrix *
+        Eigen::DiagonalMatrix<double, 3>(relative_pose.focal_length1,
+                                         relative_pose.focal_length1,
+                                         1.0);
+
+    // Normalize the centered_correspondences.
+    std::vector<FeatureCorrespondence> normalized_correspondences(
+        centered_correspondences.size());
+    for (int i = 0; i < centered_correspondences.size(); i++) {
+      normalized_correspondences[i].feature1 =
+          centered_correspondences[i].feature1 / relative_pose.focal_length1;
+      normalized_correspondences[i].feature2 =
+          centered_correspondences[i].feature2 / relative_pose.focal_length2;
+    }
+
+    GetBestPoseFromEssentialMatrix(essential_matrix,
+                                   normalized_correspondences,
+                                   &relative_pose.rotation,
+                                   &relative_pose.position);
+    relative_poses->emplace_back(relative_pose);
+    return true;
+  }
+
+  // The error for a correspondences given a model. This is the squared sampson
+  // error.
+  double Error(const FeatureCorrespondence& centered_correspondence,
+               const UncalibratedRelativePose& relative_pose) const {
+    return SquaredSampsonDistance(relative_pose.fundamental_matrix,
+                                  centered_correspondence.feature1,
+                                  centered_correspondence.feature2);
+  }
+
+ private:
+  DISALLOW_COPY_AND_ASSIGN(UncalibratedRelativePoseEstimator);
+};
+
+}  // namespace
 
 bool EstimateUncalibratedRelativePose(
     const RansacParameters& ransac_params,
@@ -57,13 +157,9 @@ bool EstimateUncalibratedRelativePose(
                                                 relative_pose_estimator);
 
   // Estimate essential matrix.
-  if (!ransac->Estimate(centered_correspondences,
-                        relative_pose,
-                        ransac_summary)) {
-    return false;
-  }
-
-  return true;
+  return ransac->Estimate(centered_correspondences,
+                          relative_pose,
+                          ransac_summary);
 }
 
 }  // namespace theia
