@@ -48,7 +48,7 @@
 #include "theia/matching/feature_matcher.h"
 #include "theia/matching/feature_matcher_options.h"
 #include "theia/matching/image_pair_match.h"
-#include "theia/sfm/camera/camera_intrinsics.h"
+#include "theia/sfm/camera_intrinsics_prior.h"
 #include "theia/sfm/estimate_twoview_info.h"
 #include "theia/sfm/twoview_info.h"
 #include "theia/sfm/verify_two_view_matches.h"
@@ -62,7 +62,7 @@ namespace {
 template <class DistanceMetric, class DescriptorType>
 bool MatchAndVerifyFeatures(
     const MatchAndVerifyFeaturesOptions& options,
-    const std::vector<CameraIntrinsics>& intrinsics,
+    const std::vector<CameraIntrinsicsPrior>& intrinsics,
     const std::vector<std::vector<Keypoint> >& keypoints,
     const std::vector<std::vector<DescriptorType> >& descriptors,
     FeatureMatcher<DistanceMetric>* matcher,
@@ -97,7 +97,7 @@ bool MatchAndVerifyFeatures(
 
 bool MatchAndVerifyFeatures(
     const MatchAndVerifyFeaturesOptions& options,
-    const std::vector<CameraIntrinsics>& intrinsics,
+    const std::vector<CameraIntrinsicsPrior>& intrinsics,
     const std::vector<std::vector<Keypoint> >& keypoints,
     const std::vector<std::vector<Eigen::VectorXf> >& descriptor,
     std::vector<ImagePairMatch>* matches) {
@@ -120,7 +120,7 @@ bool MatchAndVerifyFeatures(
 
 bool MatchAndVerifyFeatures(
     const MatchAndVerifyFeaturesOptions& options,
-    const std::vector<CameraIntrinsics>& intrinsics,
+    const std::vector<CameraIntrinsicsPrior>& intrinsics,
     const std::vector<std::vector<Keypoint> >& keypoints,
     const std::vector<std::vector<BinaryVectorX> >& descriptor,
     std::vector<ImagePairMatch>* matches) {

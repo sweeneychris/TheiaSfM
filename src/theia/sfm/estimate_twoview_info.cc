@@ -41,7 +41,7 @@
 #include <vector>
 
 #include "theia/solvers/sample_consensus_estimator.h"
-#include "theia/sfm/camera/camera_intrinsics.h"
+#include "theia/sfm/camera_intrinsics_prior.h"
 #include "theia/sfm/estimators/estimate_relative_pose.h"
 #include "theia/sfm/estimators/estimate_uncalibrated_relative_pose.h"
 #include "theia/matching/feature_correspondence.h"
@@ -59,10 +59,64 @@ using Eigen::Vector3d;
 
 namespace {
 
+struct CameraIntrinsics {
+  double focal_length = 1.0;
+  double principal_point[2] = {0.0, 0.0};
+  double aspect_ratio = 1.0;
+  double skew = 0.0;
+};
+
+void SetCameraIntrinsics(const CameraIntrinsicsPrior& prior,
+                         CameraIntrinsics* intrinsics) {
+  if (prior.focal_length.is_set) {
+    intrinsics->focal_length = prior.focal_length.value;
+  }
+
+  if (prior.principal_point[0].is_set && prior.principal_point[1].is_set) {
+    intrinsics->principal_point[0] = prior.principal_point[0].value;
+    intrinsics->principal_point[1] = prior.principal_point[1].value;
+  } else {
+    intrinsics->principal_point[0] = prior.image_width / 2.0;
+    intrinsics->principal_point[1] = prior.image_height / 2.0;
+  }
+
+  if (prior.aspect_ratio.is_set) {
+    intrinsics->aspect_ratio = prior.aspect_ratio.value;
+  }
+
+  if (prior.skew.is_set) {
+    intrinsics->skew = prior.skew.value;
+  }
+}
+
+void NormalizeFeature(const CameraIntrinsics& intrinsics, Vector2d* feature) {
+  feature->y() = (feature->y() - intrinsics.principal_point[1]) /
+                 (intrinsics.focal_length * intrinsics.aspect_ratio);
+  feature->x() = (feature->x() - intrinsics.skew * feature->y() -
+                  intrinsics.principal_point[0]) / intrinsics.focal_length;
+}
+
+// Normalizes the image features by the camera intrinsics.
+void NormalizeFeatures(
+    const CameraIntrinsicsPrior& prior1,
+    const CameraIntrinsicsPrior& prior2,
+    const std::vector<FeatureCorrespondence>& correspondences,
+    std::vector<FeatureCorrespondence>* normalized_correspondences) {
+  *CHECK_NOTNULL(normalized_correspondences) = correspondences;
+
+  CameraIntrinsics intrinsics1, intrinsics2;
+  SetCameraIntrinsics(prior1, &intrinsics1);
+  SetCameraIntrinsics(prior2, &intrinsics2);
+  for (int i = 0; i < correspondences.size(); i++) {
+    NormalizeFeature(intrinsics1, &normalized_correspondences->at(i).feature1);
+    NormalizeFeature(intrinsics2, &normalized_correspondences->at(i).feature2);
+  }
+}
+
 bool EstimateTwoViewInfoCalibrated(
     const EstimateTwoViewInfoOptions& options,
-    const CameraIntrinsics& intrinsics1,
-    const CameraIntrinsics& intrinsics2,
+    const CameraIntrinsicsPrior& intrinsics1,
+    const CameraIntrinsicsPrior& intrinsics2,
     const std::vector<FeatureCorrespondence>& correspondences,
     TwoViewInfo* twoview_info,
     std::vector<int>* inlier_indices) {
@@ -80,7 +134,7 @@ bool EstimateTwoViewInfoCalibrated(
   ransac_options.max_iterations = options.max_ransac_iterations;
   ransac_options.error_thresh =
       options.max_sampson_error_pixels * options.max_sampson_error_pixels /
-      (intrinsics1.focal_length * intrinsics2.focal_length);
+      (intrinsics1.focal_length.value * intrinsics2.focal_length.value);
   ransac_options.use_mle = options.use_mle;
 
   RelativePose relative_pose;
@@ -98,8 +152,8 @@ bool EstimateTwoViewInfoCalibrated(
   // Set the twoview info.
   twoview_info->rotation_2 = rotation.angle() * rotation.axis();
   twoview_info->position_2 = relative_pose.position;
-  twoview_info->focal_length_1 = intrinsics1.focal_length;
-  twoview_info->focal_length_2 = intrinsics2.focal_length;
+  twoview_info->focal_length_1 = intrinsics1.focal_length.value;
+  twoview_info->focal_length_2 = intrinsics2.focal_length.value;
   twoview_info->num_verified_matches = summary.inliers.size();
 
   *inlier_indices = summary.inliers;
@@ -109,24 +163,17 @@ bool EstimateTwoViewInfoCalibrated(
 
 bool EstimateTwoViewInfoUncalibrated(
     const EstimateTwoViewInfoOptions& options,
-    const CameraIntrinsics& intrinsics1,
-    const CameraIntrinsics& intrinsics2,
+    const CameraIntrinsicsPrior& intrinsics1,
+    const CameraIntrinsicsPrior& intrinsics2,
     const std::vector<FeatureCorrespondence>& correspondences,
     TwoViewInfo* twoview_info,
     std::vector<int>* inlier_indices) {
   // Normalize features w.r.t principal point.
-  std::vector<FeatureCorrespondence> centered_correspondences(
-      correspondences.size());
-  const Vector2d principal_point1(intrinsics1.principal_point[0],
-                                  intrinsics1.principal_point[1]);
-  const Vector2d principal_point2(intrinsics1.principal_point[0],
-                                  intrinsics1.principal_point[1]);
-  for (int i = 0; i < correspondences.size(); i++) {
-    centered_correspondences[i].feature1 =
-        correspondences[i].feature1 - principal_point1;
-    centered_correspondences[i].feature2 =
-        correspondences[i].feature2 - principal_point2;
-  }
+  std::vector<FeatureCorrespondence> centered_correspondences;
+  NormalizeFeatures(intrinsics1,
+                    intrinsics2,
+                    correspondences,
+                    &centered_correspondences);
 
   // Set the ransac parameters.
   RansacParameters ransac_options;
@@ -165,19 +212,16 @@ bool EstimateTwoViewInfoUncalibrated(
 
 bool EstimateTwoViewInfo(
     const EstimateTwoViewInfoOptions& options,
-    const CameraIntrinsics& intrinsics1,
-    const CameraIntrinsics& intrinsics2,
+    const CameraIntrinsicsPrior& intrinsics1,
+    const CameraIntrinsicsPrior& intrinsics2,
     const std::vector<FeatureCorrespondence>& correspondences,
     TwoViewInfo* twoview_info,
     std::vector<int>* inlier_indices) {
   CHECK_NOTNULL(twoview_info);
   CHECK_NOTNULL(inlier_indices)->clear();
 
-  const bool view1_focal_length_set = intrinsics1.focal_length != 1.0;
-  const bool view2_focal_length_set = intrinsics2.focal_length != 1.0;
-
   // Case where both views are calibrated.
-  if (view1_focal_length_set && view2_focal_length_set) {
+  if (intrinsics1.focal_length.is_set && intrinsics2.focal_length.is_set) {
     return EstimateTwoViewInfoCalibrated(options,
                                          intrinsics1,
                                          intrinsics2,
@@ -187,7 +231,7 @@ bool EstimateTwoViewInfo(
   }
 
   // Only one of the focal lengths is set.
-  if (view1_focal_length_set || view2_focal_length_set) {
+  if (intrinsics1.focal_length.is_set || intrinsics2.focal_length.is_set) {
     LOG(WARNING) << "Solving for two view infos when exactly one view is "
                     "calibrated has not been implemented yet. Treating both "
                     "views as uncalibrated instead.";

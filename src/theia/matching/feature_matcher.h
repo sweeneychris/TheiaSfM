@@ -45,7 +45,7 @@
 #include "theia/matching/feature_correspondence.h"
 #include "theia/matching/feature_matcher_options.h"
 #include "theia/matching/image_pair_match.h"
-#include "theia/sfm/camera/camera_intrinsics.h"
+#include "theia/sfm/camera_intrinsics_prior.h"
 #include "theia/sfm/verify_two_view_matches.h"
 #include "theia/util/map_util.h"
 #include "theia/util/threadpool.h"
@@ -95,7 +95,7 @@ template <class DistanceMetric> class FeatureMatcher {
   // throughout the matching.
   virtual void AddImage(const std::vector<Keypoint>* keypoints,
                         const std::vector<DescriptorType>* descriptors,
-                        const CameraIntrinsics& intrinsics);
+                        const CameraIntrinsicsPrior& intrinsics);
 
   // Matches features between all images. No geometric verification is
   // performed. Only the matches which pass the have greater than
@@ -139,10 +139,11 @@ template <class DistanceMetric> class FeatureMatcher {
 
   std::vector<const std::vector<Keypoint>*> keypoints_;
   std::vector<const std::vector<DescriptorType>*> descriptors_;
-  std::unordered_map<int, CameraIntrinsics> intrinsics_;
+  std::unordered_map<int, CameraIntrinsicsPrior> intrinsics_;
   std::vector<std::pair<int, int> > pairs_to_match_;
   std::mutex mutex_;
 
+ private:
   DISALLOW_COPY_AND_ASSIGN(FeatureMatcher);
 };
 
@@ -163,7 +164,7 @@ template <class DistanceMetric>
 void FeatureMatcher<DistanceMetric>::AddImage(
     const std::vector<Keypoint>* keypoints,
     const std::vector<DescriptorType>* descriptors,
-    const CameraIntrinsics& intrinsics) {
+    const CameraIntrinsicsPrior& intrinsics) {
   CHECK_NOTNULL(keypoints);
   CHECK_NOTNULL(descriptors);
 
@@ -275,10 +276,10 @@ void FeatureMatcher<DistanceMetric>::MatchAndVerifyImagePairs(
     }
 
 
-    const CameraIntrinsics intrinsics1 = FindWithDefault(
-        intrinsics_, image1_index, CameraIntrinsics());
-    const CameraIntrinsics intrinsics2 = FindWithDefault(
-        intrinsics_, image2_index, CameraIntrinsics());
+    const CameraIntrinsicsPrior intrinsics1 = FindWithDefault(
+        intrinsics_, image1_index, CameraIntrinsicsPrior());
+    const CameraIntrinsicsPrior intrinsics2 = FindWithDefault(
+        intrinsics_, image2_index, CameraIntrinsicsPrior());
     // If the image pair passes two view verification then
     std::vector<int> inliers;
     // Do not add this image pair as a verified match if the verification does

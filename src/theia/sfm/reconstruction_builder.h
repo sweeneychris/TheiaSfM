@@ -42,7 +42,7 @@
 #include "theia/io/write_matches.h"
 #include "theia/util/util.h"
 #include "theia/matching/feature_matcher_options.h"
-#include "theia/sfm/camera/camera_intrinsics.h"
+#include "theia/sfm/camera_intrinsics_prior.h"
 #include "theia/sfm/estimate_twoview_info.h"
 #include "theia/sfm/exif_reader.h"
 #include "theia/sfm/feature_extractor.h"
@@ -155,9 +155,6 @@ class ReconstructionBuilder {
       const std::vector<std::vector<Keypoint> >& keypoints,
       const std::vector<std::vector<DescriptorType> >& descriptors);
 
-  void CameraIntrinsicsFromCameraIntrinsicsPriors(
-      std::vector<CameraIntrinsics>* intrinsics) const;
-
   // Adds the given matches as edges in the view graph.
   void AddMatchToViewGraph(const ViewId view_id1,
                            const ViewId view_id2,
@@ -196,9 +193,6 @@ bool ReconstructionBuilder::MatchFeatures(
   CHECK_EQ(image_filepaths_.size(), keypoints.size());
   CHECK_EQ(descriptors.size(), keypoints.size());
 
-  std::vector<CameraIntrinsics> intrinsics;
-  CameraIntrinsicsFromCameraIntrinsicsPriors(&intrinsics);
-
   // Set up options.
   MatchAndVerifyFeaturesOptions match_and_verify_features_options;
   match_and_verify_features_options.num_threads = options_.num_threads;
@@ -216,7 +210,7 @@ bool ReconstructionBuilder::MatchFeatures(
   // Match images and perform geometric verification.
   std::vector<ImagePairMatch> matches;
   CHECK(MatchAndVerifyFeatures(match_and_verify_features_options,
-                               intrinsics,
+                               camera_intrinsics_priors_,
                                keypoints,
                                descriptors,
                                &matches)) << "Could not match features.";

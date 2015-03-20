@@ -38,17 +38,17 @@
 #include <Eigen/Core>
 #include <vector>
 
-#include "theia/util/timer.h"
+#include "theia/matching/feature_correspondence.h"
 #include "theia/sfm/bundle_adjustment/angular_epipolar_error.h"
 #include "theia/sfm/bundle_adjustment/bundle_adjustment.h"
 #include "theia/sfm/bundle_adjustment/unit_norm_three_vector_parameterization.h"
 #include "theia/sfm/camera/camera.h"
-#include "theia/sfm/camera/camera_intrinsics.h"
 #include "theia/sfm/camera/reprojection_error.h"
-#include "theia/matching/feature_correspondence.h"
+#include "theia/sfm/camera_intrinsics_prior.h"
 #include "theia/sfm/triangulation/triangulation.h"
 #include "theia/sfm/twoview_info.h"
 #include "theia/sfm/types.h"
+#include "theia/util/timer.h"
 
 namespace theia {
 
@@ -67,18 +67,6 @@ void SetSolverOptions(const BundleAdjustmentOptions& options,
   // problem by points and cameras.
   solver_options->linear_solver_ordering.reset(
       new ceres::ParameterBlockOrdering);
-}
-
-void SetCamera(const double focal_length,
-               const double principal_point[2],
-               const Eigen::Vector3d& position,
-               const Eigen::Vector3d& rotation,
-               Camera* camera) {
-  camera->SetFocalLength(focal_length);
-  camera->SetPrincipalPoint(principal_point[0],
-                             principal_point[1]);
-  camera->SetPosition(position);
-  camera->SetOrientationFromAngleAxis(rotation);
 }
 
 void AddCameraParametersToProblem(const bool constant_camera_parameters,
@@ -106,6 +94,8 @@ void TriangulatePoints(
     const std::vector<FeatureCorrespondence>& correspondences,
     std::vector<FeatureCorrespondence>* triangulated_matches,
     std::vector<Eigen::Vector4d>* tracks) {
+  static const double kNormTolerance = 1e-6;
+
   Matrix3x4d projection_matrix1, projection_matrix2;
   camera1.GetProjectionMatrix(&projection_matrix1);
   camera2.GetProjectionMatrix(&projection_matrix2);
@@ -113,15 +103,24 @@ void TriangulatePoints(
   triangulated_matches->reserve(correspondences.size());
   tracks->reserve(correspondences.size());
   for (int i = 0; i < correspondences.size(); i++) {
-    Eigen::Vector4d point;
+    if (!IsTriangulatedPointInFrontOfCameras(
+            correspondences[i],
+            camera2.GetOrientationAsRotationMatrix(),
+            camera2.GetPosition())) {
+      continue;
+    }
 
+    Eigen::Vector4d point;
     if (Triangulate(projection_matrix1,
                     projection_matrix2,
                     correspondences[i].feature1,
                     correspondences[i].feature2,
                     &point)) {
-      tracks->emplace_back(point);
-      triangulated_matches->emplace_back(correspondences[i]);
+      // Sometimes we get points very close to the image.
+      if (point.hnormalized().squaredNorm() > kNormTolerance) {
+        tracks->emplace_back(point);
+        triangulated_matches->emplace_back(correspondences[i]);
+      }
     }
   }
 }
@@ -133,10 +132,10 @@ void TriangulatePoints(
 BundleAdjustmentSummary BundleAdjustTwoViews(
     const BundleAdjustmentOptions& options,
     const std::vector<FeatureCorrespondence>& correspondences,
-    const CameraIntrinsics& intrinsics1,
-    const CameraIntrinsics& intrinsics2,
-    TwoViewInfo* info) {
-  CHECK_NOTNULL(info);
+    Camera* camera1,
+    Camera* camera2) {
+  CHECK_NOTNULL(camera1);
+  CHECK_NOTNULL(camera2);
 
   BundleAdjustmentSummary summary;
 
@@ -153,30 +152,17 @@ BundleAdjustmentSummary BundleAdjustTwoViews(
   ceres::ParameterBlockOrdering* parameter_ordering =
       solver_options.linear_solver_ordering.get();
 
-  // Set cameras from two view info.
-  Camera camera1, camera2;
-  SetCamera(info->focal_length_1,
-            intrinsics1.principal_point,
-            Eigen::Vector3d::Zero(),
-            Eigen::Vector3d::Zero(),
-            &camera1);
-  SetCamera(info->focal_length_2,
-            intrinsics2.principal_point,
-            info->position_2,
-            info->rotation_2,
-            &camera2);
-
   // Add the two cameras as parameter blocks.
-  AddCameraParametersToProblem(true, camera1.mutable_parameters(), &problem);
-  AddCameraParametersToProblem(false, camera2.mutable_parameters(), &problem);
-  parameter_ordering->AddElementToGroup(camera1.mutable_parameters(), 1);
-  parameter_ordering->AddElementToGroup(camera2.mutable_parameters(), 1);
+  AddCameraParametersToProblem(true, camera1->mutable_parameters(), &problem);
+  AddCameraParametersToProblem(false, camera2->mutable_parameters(), &problem);
+  parameter_ordering->AddElementToGroup(camera1->mutable_parameters(), 1);
+  parameter_ordering->AddElementToGroup(camera2->mutable_parameters(), 1);
 
   // Triangulate all features.
   std::vector<FeatureCorrespondence> triangulated_matches;
   std::vector<Eigen::Vector4d> tracks;
-  TriangulatePoints(camera1,
-                    camera2,
+  TriangulatePoints(*camera1,
+                    *camera2,
                     correspondences,
                     &triangulated_matches,
                     &tracks);
@@ -187,12 +173,12 @@ BundleAdjustmentSummary BundleAdjustTwoViews(
     problem.AddResidualBlock(
         ReprojectionError::Create(match.feature1),
         NULL,
-        camera1.mutable_parameters(),
+        camera1->mutable_parameters(),
         tracks[i].data());
     problem.AddResidualBlock(
         ReprojectionError::Create(match.feature2),
         NULL,
-        camera2.mutable_parameters(),
+        camera2->mutable_parameters(),
         tracks[i].data());
 
     parameter_ordering->AddElementToGroup(tracks[i].data(), 0);
@@ -214,11 +200,6 @@ BundleAdjustmentSummary BundleAdjustTwoViews(
   // This only indicates whether the optimization was successfully run and makes
   // no guarantees on the quality or convergence.
   summary.success = solver_summary.termination_type != ceres::FAILURE;
-
-  // Update the relative pose.
-  info->rotation_2 = camera2.GetOrientationAsAngleAxis();
-  info->position_2 = camera2.GetPosition();
-  info->position_2.normalize();
 
   return summary;
 }
