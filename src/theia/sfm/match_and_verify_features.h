@@ -43,12 +43,11 @@
 #include "theia/matching/feature_correspondence.h"
 #include "theia/matching/image_pair_match.h"
 #include "theia/matching/feature_matcher_options.h"
+#include "theia/sfm/camera_intrinsics_prior.h"
 #include "theia/sfm/estimate_twoview_info.h"
 #include "theia/sfm/verify_two_view_matches.h"
 
 namespace theia {
-
-struct CameraIntrinsics;
 
 // The type of matching to perform.
 enum class MatchingStrategy {
@@ -78,20 +77,17 @@ struct MatchAndVerifyFeaturesOptions {
 // The two methods below perform image matching using the feature descriptors
 // then perform geometric verification to determine the inlier
 // correspondences. Geometric verification is done using the essential matrix or
-// fundamental matrix depending on whether the image is calibrated. The
-// CameraIntrinsics should be set to the default parameters
-// (focal_length == 1.0)
-// if the camera has not been explicitly calibrated.
+// fundamental matrix depending on whether the image is calibrated.
 bool MatchAndVerifyFeatures(
     const MatchAndVerifyFeaturesOptions& options,
-    const std::vector<CameraIntrinsics>& intrinsics,
+    const std::vector<CameraIntrinsicsPrior>& intrinsics,
     const std::vector<std::vector<Keypoint> >& keypoints,
     const std::vector<std::vector<Eigen::VectorXf> >& descriptor,
     std::vector<ImagePairMatch>* matches);
 
 bool MatchAndVerifyFeatures(
     const MatchAndVerifyFeaturesOptions& options,
-    const std::vector<CameraIntrinsics>& intrinsics,
+    const std::vector<CameraIntrinsicsPrior>& intrinsics,
     const std::vector<std::vector<Keypoint> >& keypoints,
     const std::vector<std::vector<BinaryVectorX> >& descriptor,
     std::vector<ImagePairMatch>* matches);

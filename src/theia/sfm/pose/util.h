@@ -41,7 +41,6 @@
 namespace theia {
 
 class Camera;
-struct CameraIntrinsics;
 struct FeatureCorrespondence;
 
 // Calculates Sampson distance for two correspondances and an essential or
@@ -70,14 +69,6 @@ bool NormalizeImagePoints(
 // Frobenius norm. For a matrix with an SVD decomposition M = USV, the nearest
 // rotation matrix is R = UV'.
 Eigen::Matrix3d ProjectToRotationMatrix(const Eigen::Matrix3d& matrix);
-
-// Normalizes pixel coordinate features in correspondences with the camera
-// intrinsics.
-void NormalizeFeatures(
-    const CameraIntrinsics& intrinsics1,
-    const CameraIntrinsics& intrinsics2,
-    const std::vector<FeatureCorrespondence>& correspondences,
-    std::vector<FeatureCorrespondence>* normalized_correspondences);
 
 }  // namespace theia
 

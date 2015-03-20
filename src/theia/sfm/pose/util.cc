@@ -41,7 +41,6 @@
 #include <vector>
 
 #include "theia/util/random.h"
-#include "theia/sfm/camera/camera_intrinsics.h"
 #include "theia/matching/feature_correspondence.h"
 
 namespace theia {
@@ -52,17 +51,6 @@ using Eigen::Matrix3d;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
-
-namespace {
-
-void NormalizeFeature(const CameraIntrinsics& intrinsics, Vector2d* feature) {
-  feature->y() = (feature->y() - intrinsics.principal_point[1]) /
-                 (intrinsics.focal_length * intrinsics.aspect_ratio);
-  feature->x() = (feature->x() - intrinsics.skew * feature->y() -
-                  intrinsics.principal_point[0]) / intrinsics.focal_length;
-}
-
-}  // namespace
 
 // For an E or F that is defined such that y^t * E * x = 0
 double SquaredSampsonDistance(const Matrix3d& F,
@@ -144,17 +132,5 @@ Matrix3d ProjectToRotationMatrix(const Matrix3d& matrix) {
   return rotation_mat;
 }
 
-void NormalizeFeatures(
-    const CameraIntrinsics& intrinsics1,
-    const CameraIntrinsics& intrinsics2,
-    const std::vector<FeatureCorrespondence>& correspondences,
-    std::vector<FeatureCorrespondence>* normalized_correspondences) {
-  *CHECK_NOTNULL(normalized_correspondences) = correspondences;
-
-  for (int i = 0; i < correspondences.size(); i++) {
-    NormalizeFeature(intrinsics1, &normalized_correspondences->at(i).feature1);
-    NormalizeFeature(intrinsics2, &normalized_correspondences->at(i).feature2);
-  }
-}
 
 }  // namespace theia

@@ -37,22 +37,24 @@
 
 #include <vector>
 
-#include "theia/sfm/bundle_adjustment/bundle_adjustment.h"
-#include "theia/sfm/camera/camera_intrinsics.h"
 #include "theia/matching/feature_correspondence.h"
+#include "theia/sfm/bundle_adjustment/bundle_adjustment.h"
+#include "theia/sfm/camera/camera.h"
 
 namespace theia {
 
 struct TwoViewInfo;
 
 // Triangulates all 3d points and performs standard bundle adjustment on the
-// points and cameras.
+// points and cameras. The first camera is held constant so only the second
+// camera and points are optimized. The cameras must be initialized with camera
+// intrinsics. The camera pose should be initialized based on epipolar geometry
+// estimation.
 BundleAdjustmentSummary BundleAdjustTwoViews(
     const BundleAdjustmentOptions& options,
     const std::vector<FeatureCorrespondence>& correspondence,
-    const CameraIntrinsics& intrinsics1,
-    const CameraIntrinsics& intrinsics2,
-    TwoViewInfo* info);
+    Camera* camera1,
+    Camera* camera2);
 
 // Performs bundle adjustment to find the optimal rotation and translation
 // describing the two views. This is done without the need for 3D points, as

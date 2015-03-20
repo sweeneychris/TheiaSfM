@@ -276,27 +276,6 @@ bool ReconstructionBuilder::AddTwoViewMatch(const std::string& image1,
   return true;
 }
 
-void ReconstructionBuilder::CameraIntrinsicsFromCameraIntrinsicsPriors(
-    std::vector<CameraIntrinsics>* intrinsics) const {
-  CHECK_NOTNULL(intrinsics)->resize(camera_intrinsics_priors_.size());
-  for (int i = 0; i < intrinsics->size(); i++) {
-    // Set focal length.
-    if (camera_intrinsics_priors_[i].focal_length.is_set) {
-      (*intrinsics)[i].focal_length =
-          camera_intrinsics_priors_[i].focal_length.value;
-    }
-
-    // Set principal point.
-    if (camera_intrinsics_priors_[i].principal_point[0].is_set &&
-        camera_intrinsics_priors_[i].principal_point[1].is_set) {
-      (*intrinsics)[i].principal_point[0] =
-          camera_intrinsics_priors_[i].principal_point[0].value;
-      (*intrinsics)[i].principal_point[1] =
-          camera_intrinsics_priors_[i].principal_point[1].value;
-    }
-  }
-}
-
 void ReconstructionBuilder::InitializeReconstructionAndViewGraph(
     Reconstruction* reconstruction, ViewGraph* view_graph) {
   reconstruction_.reset(std::move(reconstruction));
