@@ -38,7 +38,7 @@
 #include <vector>
 
 #include "theia/matching/feature_correspondence.h"
-#include "theia/sfm/camera/camera_intrinsics.h"
+#include "theia/sfm/camera_intrinsics_prior.h"
 #include "theia/sfm/estimate_twoview_info.h"
 #include "theia/sfm/twoview_info.h"
 
@@ -57,8 +57,8 @@ struct VerifyTwoViewMatchesOptions {
 
 bool VerifyTwoViewMatches(
     const VerifyTwoViewMatchesOptions& options,
-    const CameraIntrinsics& intrinsics1,
-    const CameraIntrinsics& intrinsics2,
+    const CameraIntrinsicsPrior& intrinsics1,
+    const CameraIntrinsicsPrior& intrinsics2,
     const std::vector<FeatureCorrespondence>& correspondences,
     TwoViewInfo* twoview_info,
     std::vector<int>* inlier_indices);

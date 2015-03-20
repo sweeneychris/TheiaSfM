@@ -57,7 +57,7 @@ class CascadeHashingFeatureMatcher : public FeatureMatcher<L2> {
                 const std::vector<Eigen::VectorXf>* descriptors) override;
   void AddImage(const std::vector<Keypoint>* keypoints,
                 const std::vector<Eigen::VectorXf>* descriptors,
-                const CameraIntrinsics& intrinsics) override;
+                const CameraIntrinsicsPrior& intrinsics) override;
 
  private:
   bool MatchImagePair(

@@ -67,7 +67,7 @@ void CascadeHashingFeatureMatcher::AddImage(
 void CascadeHashingFeatureMatcher::AddImage(
     const std::vector<Keypoint>* keypoints,
     const std::vector<Eigen::VectorXf>* descriptors,
-    const CameraIntrinsics& intrinsics) {
+    const CameraIntrinsicsPrior& intrinsics) {
   CHECK_NOTNULL(keypoints);
   CHECK_NOTNULL(descriptors);
   if (cascade_hasher_.get() == nullptr) {
