@@ -81,6 +81,14 @@ void WriteView(const std::string& view_name,
                              matches_writer);
   WriteCameraIntrinsicsPrior(camera_intrinsics_prior.principal_point[1],
                              matches_writer);
+  WriteCameraIntrinsicsPrior(camera_intrinsics_prior.aspect_ratio,
+                             matches_writer);
+  WriteCameraIntrinsicsPrior(camera_intrinsics_prior.skew,
+                             matches_writer);
+  WriteCameraIntrinsicsPrior(camera_intrinsics_prior.radial_distortion[0],
+                             matches_writer);
+  WriteCameraIntrinsicsPrior(camera_intrinsics_prior.radial_distortion[1],
+                             matches_writer);
 }
 
 // Writes the two image indices.

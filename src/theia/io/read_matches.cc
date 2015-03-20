@@ -85,6 +85,14 @@ void ReadView(std::ifstream* matches_reader,
                             &camera_intrinsics_prior->principal_point[0]);
   ReadCameraIntrinsicsPrior(matches_reader,
                             &camera_intrinsics_prior->principal_point[1]);
+  ReadCameraIntrinsicsPrior(matches_reader,
+                            &camera_intrinsics_prior->aspect_ratio);
+  ReadCameraIntrinsicsPrior(matches_reader,
+                            &camera_intrinsics_prior->skew);
+  ReadCameraIntrinsicsPrior(matches_reader,
+                            &camera_intrinsics_prior->radial_distortion[0]);
+  ReadCameraIntrinsicsPrior(matches_reader,
+                            &camera_intrinsics_prior->radial_distortion[1]);
 }
 
 // Reads the two image indices.
