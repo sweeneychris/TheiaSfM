@@ -63,14 +63,31 @@ bool ReadCalibration(const std::string& calibration_file,
 
     // Read camera_intrinsics_prior.
     CameraIntrinsicsPrior temp_camera_intrinsics_prior;
-    ifs >> temp_camera_intrinsics_prior.image_width;
-    ifs >> temp_camera_intrinsics_prior.image_height;
     temp_camera_intrinsics_prior.focal_length.is_set = true;
     ifs >> temp_camera_intrinsics_prior.focal_length.value;
+
     temp_camera_intrinsics_prior.principal_point[0].is_set = true;
     ifs >> temp_camera_intrinsics_prior.principal_point[0].value;
+    temp_camera_intrinsics_prior.image_width =
+        2.0 * temp_camera_intrinsics_prior.principal_point[0].value;
+
     temp_camera_intrinsics_prior.principal_point[1].is_set = true;
     ifs >> temp_camera_intrinsics_prior.principal_point[1].value;
+    temp_camera_intrinsics_prior.image_height =
+        2.0 * temp_camera_intrinsics_prior.principal_point[1].value;
+
+    temp_camera_intrinsics_prior.aspect_ratio.is_set = true;
+    ifs >> temp_camera_intrinsics_prior.aspect_ratio.value;
+
+    temp_camera_intrinsics_prior.skew.is_set = true;
+    ifs >> temp_camera_intrinsics_prior.skew.value;
+
+    temp_camera_intrinsics_prior.radial_distortion[0].is_set = true;
+    ifs >> temp_camera_intrinsics_prior.radial_distortion[0].value;
+
+    temp_camera_intrinsics_prior.radial_distortion[1].is_set = true;
+    ifs >> temp_camera_intrinsics_prior.radial_distortion[1].value;
+
     (*camera_intrinsics_prior)[filename] = temp_camera_intrinsics_prior;
   }
   return true;

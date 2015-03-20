@@ -45,9 +45,13 @@ namespace theia {
 // Reads calibration data for images that are to be reconstructed. The
 // calibration file should be a text file where each line is in the form of:
 //
-//   image_name image_width image_height focal_length
+//   image_name focal_length ppx ppy aspect_ratio skew k1 k2
 //
-// It is assumed that the principal point lies at the center of the image.
+// where ppx, ppy are the principal points of the image and k1, k2 are the two
+// radial distortion parameters.
+//
+// It is assumed that the principal point lies at the center of the image, so
+// the width and height are set to be twice those values.
 //
 // A calibration file is optional and it is not required that all images have
 // calibration.
