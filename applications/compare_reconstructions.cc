@@ -44,6 +44,10 @@
 
 DEFINE_string(reconstruction1, "", "Reconstruction file to compare.");
 DEFINE_string(reconstruction2, "", "Reconstruction file to compare.");
+DEFINE_double(robust_alignment_threshold, 0.0,
+              "If greater than 0.0, this threshold sets determines inliers for "
+              "RANSAC alignment of reconstructions. The inliers are then used "
+              "for a least squares alignment.");
 
 using theia::Reconstruction;
 using theia::TrackId;
@@ -118,7 +122,12 @@ void EvaluateAlignedPoseError(
     const std::vector<std::string>& common_view_names,
     const Reconstruction& reconstruction1,
     Reconstruction* reconstruction2) {
-  AlignReconstructions(reconstruction1, reconstruction2);
+  if (FLAGS_robust_alignment_threshold > 0.0) {
+    AlignReconstructionsRobust(FLAGS_robust_alignment_threshold,
+                               reconstruction1, reconstruction2);
+  } else {
+    AlignReconstructions(reconstruction1, reconstruction2);
+  }
 
   std::vector<double> rotation_errors_degrees(common_view_names.size());
   std::vector<double> position_errors(common_view_names.size());
