@@ -44,6 +44,16 @@ namespace theia {
 void AlignReconstructions(const Reconstruction& reconstruction1,
                           Reconstruction* reconstruction2);
 
+// Aligns the reconstructions so that their commons cameras have the closest
+// positions. This method is robust by using RANSAC to compute similarity
+// transformations with inliers having a position distance less than
+// robust_error_threshold. A final alignment is run on the inliers of the best
+// RANSAC estimation.
+void AlignReconstructionsRobust(
+    const double robust_error_threshold,
+    const Reconstruction& reconstruction1,
+    Reconstruction* reconstruction2);
+
 }  // namespace theia
 
 #endif  // THEIA_SFM_TRANSFORMATION_ALIGN_RECONSTRUCTIONS_H_
