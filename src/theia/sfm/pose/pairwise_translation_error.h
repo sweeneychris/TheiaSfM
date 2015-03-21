@@ -67,12 +67,15 @@ bool PairwiseTranslationError::operator() (const T* position1,
   translation[0] = position2[0] - position1[0];
   translation[1] = position2[1] - position1[1];
   translation[2] = position2[2] - position1[2];
-  const T norm =
+  T norm =
       sqrt(translation[0] * translation[0] + translation[1] * translation[1] +
            translation[2] * translation[2]);
 
-  if (T(norm) < kNormTolerance) {
-    return false;
+  // If the norm is very small then the positions are very close together. In
+  // this case, avoid dividing by a tiny number which will cause the weight of
+  // the residual term to potentially skyrocket.
+  if (T(norm) == kNormTolerance) {
+    norm = T(1.0);
   }
 
   residuals[0] =
