@@ -82,9 +82,9 @@ TEST(PairwiseTranslationError, NoTranslation) {
   // Initialize error function and compute rotation error.
   const PairwiseTranslationError translation_error(relative_translation, 1.0);
   Vector3d error = Vector3d::Zero();
-  EXPECT_FALSE(translation_error(position_1.data(),
-                                 position_2.data(),
-                                 error.data()));
+  EXPECT_TRUE(translation_error(position_1.data(),
+                                position_2.data(),
+                                error.data()));
 }
 
 TEST(PairwiseTranslationError, TranslationNoNoise) {
