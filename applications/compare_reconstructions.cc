@@ -129,8 +129,9 @@ void EvaluateAlignedPoseError(
     AlignReconstructions(reconstruction1, reconstruction2);
   }
 
-  std::vector<double> rotation_errors_degrees(common_view_names.size());
-  std::vector<double> position_errors(common_view_names.size());
+  std::vector<double> rotation_bins = {1, 2, 5, 10, 15, 20, 45};
+  std::vector<double> position_bins = {1, 5, 10, 50, 100, 1000 };
+  theia::PoseError pose_error(rotation_bins, position_bins);
   std::vector<double> focal_length_errors(common_view_names.size());
   for (int i = 0; i < common_view_names.size(); i++) {
     const ViewId view_id1 =
@@ -141,37 +142,26 @@ void EvaluateAlignedPoseError(
     const theia::Camera& camera2 = reconstruction2->View(view_id2)->Camera();
 
     // Rotation error.
-    rotation_errors_degrees[i] =
+    const double rotation_error =
         AngularDifference(camera1.GetOrientationAsAngleAxis(),
                           camera2.GetOrientationAsAngleAxis());
 
     // Position error.
-    position_errors[i] = (camera1.GetPosition() - camera2.GetPosition()).norm();
+    const double position_error =
+        (camera1.GetPosition() - camera2.GetPosition()).norm();
+    pose_error.AddError(rotation_error, position_error);
 
     // Focal length error.
     focal_length_errors[i] =
         std::abs(camera1.FocalLength() - camera2.FocalLength()) /
         camera1.FocalLength();
   }
+  LOG(INFO) << "Pose error:\n" << pose_error.PrintMeanMedianHistogram();
 
-  std::sort(rotation_errors_degrees.begin(), rotation_errors_degrees.end());
-  std::sort(position_errors.begin(), position_errors.end());
   std::sort(focal_length_errors.begin(), focal_length_errors.end());
-
-  std::vector<double> histogram_bins = {1, 2, 5, 10, 15, 20, 45};
-  const std::string rotation_error_msg =
-      PrintMeanMedianHistogram(rotation_errors_degrees, histogram_bins);
-  LOG(INFO) << "Rotation difference when aligning positions:\n"
-            << rotation_error_msg;
-
-  std::vector<double> histogram_bins2 = {1, 5, 10, 50, 100, 1000 };
-  const std::string position_error_msg =
-      PrintMeanMedianHistogram(position_errors, histogram_bins2);
-  LOG(INFO) << "Position difference:\n" << position_error_msg;
-
-  std::vector<double> histogram_bins3 = {0.01, 0.05, 0.2, 0.5, 1, 10, 100};
+  std::vector<double> histogram_bins = {0.01, 0.05, 0.2, 0.5, 1, 10, 100};
   const std::string focal_length_error_msg =
-      PrintMeanMedianHistogram(focal_length_errors, histogram_bins3);
+      PrintMeanMedianHistogram(focal_length_errors, histogram_bins);
   LOG(INFO) << "Focal length errors: \n" << focal_length_error_msg;
 }
 

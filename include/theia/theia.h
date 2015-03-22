@@ -133,6 +133,7 @@
 #include "theia/sfm/pose/test_util.h"
 #include "theia/sfm/pose/three_point_relative_pose_partial_rotation.h"
 #include "theia/sfm/pose/util.h"
+#include "theia/sfm/pose_error.h"
 #include "theia/sfm/reconstruction.h"
 #include "theia/sfm/reconstruction_builder.h"
 #include "theia/sfm/reconstruction_estimator.h"

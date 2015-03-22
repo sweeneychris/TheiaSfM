@@ -74,7 +74,8 @@ double ComputeRelativeTranslationError(
     const Eigen::Vector3d& relative_translation) {
   const Eigen::Vector3d world_translation =
       rotation1 * (position2 - position1).normalized();
-  return theia::RadToDeg(acos(relative_translation.dot(world_translation)));
+  return theia::RadToDeg(acos(
+      theia::Clamp(relative_translation.dot(world_translation), -1.0, 1.0)));
 }
 
 void EvaluateRelativeError(
@@ -82,10 +83,9 @@ void EvaluateRelativeError(
     const Reconstruction& reconstruction_1dsfm,
     const Reconstruction& gt_reconstruction) {
   // For each edge, get the rotate translation and check the error.
-  std::vector<int> histogram_bins = {2,  5,   10,  15,  25,  50,
-                                     90, 135, 180, 225, 270, 316};
-  theia::Histogram<int> translation_histogram(histogram_bins);
-  theia::Histogram<int> rotation_histogram(histogram_bins);
+  std::vector<double> histogram_bins = {2,  5,   10,  15,  25,  50,
+                                        90, 135, 180, 225, 270, 315};
+  theia::PoseError pose_error(histogram_bins, histogram_bins);
 
   const auto& edges = view_graph.GetAllEdges();
   for (const auto& edge : edges) {
@@ -117,19 +117,17 @@ void EvaluateRelativeError(
         ComputeRelativeRotationError(camera1.GetOrientationAsRotationMatrix(),
                                      camera2.GetOrientationAsRotationMatrix(),
                                      edge.second.rotation_2);
-    rotation_histogram.Add(rotation_angular_error);
 
     const double translation_angular_error = ComputeRelativeTranslationError(
         camera1.GetPosition(),
         camera2.GetPosition(),
         camera1.GetOrientationAsRotationMatrix(),
         edge.second.position_2);
-    translation_histogram.Add(translation_angular_error);
+    pose_error.AddError(rotation_angular_error, translation_angular_error);
   }
-  LOG(INFO) << "Rotation angular error = \n"
-            << rotation_histogram.PrintString();
-  LOG(INFO) << "Translation angular error = \n"
-            << translation_histogram.PrintString();
+
+  LOG(INFO) << "Relative pose errors for 1dsfm = \n"
+            << pose_error.PrintMeanMedianHistogram();
 }
 
 int main(int argc, char* argv[]) {
