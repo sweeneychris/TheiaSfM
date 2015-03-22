@@ -99,6 +99,15 @@ class Reconstruction {
   // Return all TrackIds in the reconstruction.
   std::vector<TrackId> TrackIds() const;
 
+  // Normalizes the reconstruction such that the "center" of the reconstruction
+  // is moved to the origin and the reconstruction is scaled such that the
+  // median distance of 3D points from the origin is 100.0. This does not affect
+  // the reprojection error. A rotation is applied such that the x-z plane is
+  // set to the dominating plane of the cameras.
+  //
+  // NOTE: This implementation is inspired by the BAL problem normalization in
+  // Ceres Solver.
+  void Normalize();
 
  private:
   TrackId next_track_id_;

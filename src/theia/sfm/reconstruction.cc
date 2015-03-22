@@ -34,6 +34,8 @@
 
 #include "theia/sfm/reconstruction.h"
 
+#include <Eigen/Core>
+#include <Eigen/SVD>
 #include <glog/logging.h>
 
 #include <algorithm>
@@ -44,7 +46,9 @@
 
 #include "theia/util/map_util.h"
 #include "theia/sfm/feature.h"
+#include "theia/sfm/pose/util.h"
 #include "theia/sfm/track.h"
+#include "theia/sfm/transformation/transform_reconstruction.h"
 #include "theia/sfm/types.h"
 #include "theia/sfm/view.h"
 
@@ -62,6 +66,26 @@ bool DuplicateViewsExistInTrack(
   }
   std::sort(view_ids.begin(), view_ids.end());
   return (std::unique(view_ids.begin(), view_ids.end()) != view_ids.end());
+}
+
+double Median(std::vector<double>* data) {
+  int n = data->size();
+  std::vector<double>::iterator mid_point = data->begin() + n / 2;
+  std::nth_element(data->begin(), mid_point, data->end());
+  return *mid_point;
+}
+
+Eigen::Matrix3d RotationForDominantPlane(
+    const std::vector<Eigen::Vector3d>& cameras) {
+  Eigen::MatrixXd cameras_mat(cameras.size(), 3);
+  for (int i = 0; i < cameras.size(); i++) {
+    cameras_mat.row(i) = cameras[i].transpose();
+  }
+
+  const Eigen::JacobiSVD<Eigen::MatrixXd> svd(cameras_mat, Eigen::ComputeFullV);
+  Eigen::Matrix3d rotation;
+  rotation << svd.matrixV().col(1), svd.matrixV().col(2), svd.matrixV().col(0);
+  return ProjectToRotationMatrix(rotation);
 }
 
 }  // namespace
@@ -237,6 +261,70 @@ std::vector<TrackId> Reconstruction::TrackIds() const {
     track_ids.push_back(track.first);
   }
   return track_ids;
+}
+
+void Reconstruction::Normalize() {
+  // Get the estimated track ids.
+  const auto& temp_track_ids = TrackIds();
+  std::vector<TrackId> track_ids;
+  track_ids.reserve(temp_track_ids.size());
+  for (const TrackId track_id : temp_track_ids) {
+    const class Track* track = Track(track_id);
+    if (track == nullptr || !track->IsEstimated()) {
+      continue;
+    }
+    track_ids.emplace_back(track_id);
+  }
+
+  if (track_ids.size() == 0) {
+    return;
+  }
+
+  // Compute the marginal median of the 3D points.
+  std::vector<std::vector<double> > points(3);
+  Eigen::Vector3d median;
+  for (const TrackId track_id : track_ids) {
+    const class Track* track = Track(track_id);
+    const Eigen::Vector3d point = track->Point().hnormalized();
+    points[0].push_back(point[0]);
+    points[1].push_back(point[1]);
+    points[2].push_back(point[2]);
+  }
+  median(0) = Median(&points[0]);
+  median(1) = Median(&points[1]);
+  median(2) = Median(&points[2]);
+
+  // Find the median absolute deviation of the points from the median.
+  std::vector<double> distance_to_median;
+  distance_to_median.reserve(track_ids.size());
+  for (const TrackId track_id : track_ids) {
+    const class Track* track = Track(track_id);
+    const Eigen::Vector3d point = track->Point().hnormalized();
+    distance_to_median.emplace_back((point - median).lpNorm<1>());
+  }
+  // This will scale the reconstruction so that the median absolute deviation of
+  // the points is 100.
+  const double scale = 100.0 / Median(&distance_to_median);
+
+  // Compute a rotation such that the x-z plane is aligned to the dominating
+  // plane of the cameras.
+  std::vector<Eigen::Vector3d> cameras;
+  const auto& view_ids = this->ViewIds();
+  for (const ViewId view_id : view_ids) {
+    const class View* view = View(view_id);
+    if (view == nullptr || !view->IsEstimated()) {
+      continue;
+    }
+    cameras.emplace_back(view->Camera().GetPosition());
+  }
+
+  const Eigen::Matrix3d rotation_for_dominant_plane =
+      RotationForDominantPlane(cameras);
+
+  TransformReconstruction(rotation_for_dominant_plane.transpose(),
+                          -rotation_for_dominant_plane.transpose() * median,
+                          scale,
+                          this);
 }
 
 }  // namespace theia

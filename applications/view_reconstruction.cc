@@ -149,17 +149,23 @@ void DrawCamera(const theia::Camera& camera) {
   // Create the camera wireframe. If intrinsic parameters are not set then use
   // the focal length as a guess.
 
-  const double normalized_width = camera.ImageWidth()/camera.FocalLength()/2.0;
-  const double normalized_height = camera.ImageHeight()/camera.FocalLength()/2.0;
+  const double normalized_width =
+      (camera.ImageWidth() / 2.0) / camera.FocalLength();
+  const double normalized_height =
+      (camera.ImageHeight() / 2.0) / camera.FocalLength();
 
   const Eigen::Vector3d top_left =
-      normalized_focal_length * Eigen::Vector3d(-normalized_width, -normalized_height, 1);
+      normalized_focal_length *
+      Eigen::Vector3d(-normalized_width, -normalized_height, 1);
   const Eigen::Vector3d top_right =
-      normalized_focal_length * Eigen::Vector3d( normalized_width, -normalized_height, 1);
+      normalized_focal_length *
+      Eigen::Vector3d(normalized_width, -normalized_height, 1);
   const Eigen::Vector3d bottom_right =
-      normalized_focal_length * Eigen::Vector3d( normalized_width,  normalized_height, 1);
+      normalized_focal_length *
+      Eigen::Vector3d(normalized_width, normalized_height, 1);
   const Eigen::Vector3d bottom_left =
-      normalized_focal_length * Eigen::Vector3d(-normalized_width,  normalized_height, 1);
+      normalized_focal_length *
+      Eigen::Vector3d(-normalized_width, normalized_height, 1);
 
   glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
   glBegin(GL_TRIANGLE_FAN);
@@ -183,7 +189,7 @@ void RenderScene() {
   glRotatef(180.0f + rot_x, 1.0f, 0.0f, 0.0f);
   glRotatef(-rot_y, 0.0f, 1.0f, 0.0f);
   if (draw_axes) {
-    DrawAxes(1000.0);
+    DrawAxes(1.0);
   }
 
   glScalef(distance, distance, distance);
@@ -326,22 +332,6 @@ void Keyboard(unsigned char key, int x, int y) {
   }
 }
 
-void CenterReconstruction() {
-  Eigen::Vector3d mean_camera = Eigen::Vector3d::Zero();
-  for (int i = 0; i < cameras.size(); i++) {
-    mean_camera += cameras[i].GetPosition();
-  }
-  mean_camera /= static_cast<double>(cameras.size());
-
-  for (int i = 0; i < cameras.size(); i++) {
-    const Eigen::Vector3d old_position = cameras[i].GetPosition();
-    cameras[i].SetPosition(old_position - mean_camera);
-  }
-  for (int i = 0; i < world_points.size(); i++) {
-    world_points[i] -= mean_camera;
-  }
-}
-
 int main(int argc, char* argv[]) {
   THEIA_GFLAGS_NAMESPACE::ParseCommandLineFlags(&argc, &argv, true);
   google::InitGoogleLogging(argv[0]);
@@ -351,6 +341,9 @@ int main(int argc, char* argv[]) {
       new theia::Reconstruction());
   CHECK(ReadReconstruction(FLAGS_reconstruction, reconstruction.get()))
       << "Could not read reconstruction file.";
+
+  // Centers the reconstruction based on the absolute deviation of 3D points.
+  reconstruction->Normalize();
 
   // Set up camera drawing.
   cameras.reserve(reconstruction->NumViews());
@@ -372,8 +365,6 @@ int main(int argc, char* argv[]) {
     world_points.emplace_back(track->Point().hnormalized());
     num_views_for_track.emplace_back(track->NumViews());
   }
-
-  CenterReconstruction();
 
   reconstruction.release();
 
