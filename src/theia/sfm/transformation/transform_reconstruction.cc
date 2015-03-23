@@ -58,8 +58,8 @@ void TransformCamera(const Eigen::Matrix3d rotation,
                      Camera* camera) {
   const Eigen::Matrix3d camera_rotation =
       camera->GetOrientationAsRotationMatrix();
-  camera->SetOrientationFromRotationMatrix(rotation.transpose() *
-                                           camera_rotation);
+  camera->SetOrientationFromRotationMatrix(camera_rotation *
+                                           rotation.transpose());
 
   Eigen::Vector3d camera_position = camera->GetPosition();
   TransformPoint(rotation, translation, scale, &camera_position);
