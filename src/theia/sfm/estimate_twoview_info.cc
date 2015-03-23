@@ -235,12 +235,12 @@ bool EstimateTwoViewInfo(
     LOG(WARNING) << "Solving for two view infos when exactly one view is "
                     "calibrated has not been implemented yet. Treating both "
                     "views as uncalibrated instead.";
-    return EstimateTwoViewInfoCalibrated(options,
-                                         intrinsics1,
-                                         intrinsics2,
-                                         correspondences,
-                                         twoview_info,
-                                         inlier_indices);
+    return EstimateTwoViewInfoUncalibrated(options,
+                                           intrinsics1,
+                                           intrinsics2,
+                                           correspondences,
+                                           twoview_info,
+                                           inlier_indices);
   }
 
   // Assume both views are uncalibrated.
