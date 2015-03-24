@@ -1,35 +1,21 @@
 Copyright 2015 Chris Sweeney (cmsweeney@cs.ucsb.edu)
 UC Santa Barbara
 
-------------------------
+---------------------
 What is this library?
-------------------------
+---------------------
 
-Theia is the goddess of sight and as such, this library aims to provide a swiss
-army knife for multi-view geometry tasks in computer vision. Many algorithms and
-methods are implemented in-house, and outside dependencies are limited and only
-used when neccessary for performance or simplicity. Additionally, we attempt to
-make the interface for common algorithms (e.g., pose algorithms) as simple as
-possible so that they can be easily used by any application.
+Theia is a structure-from-motion library that was created by UC Santa Barbara PhD
+candidate Chris Sweeney. It is designed to be very efficient, scalable, and
+extendible.
 
-----------------
-More Information
-----------------
-
-Please see the Theia website for more information, including instructions for
+Please see the Theia website for detailed information, including instructions for
 building Theia and full documentation of the library. The website is currently
 located at http://cs.ucsb.edu/~cmsweeney/theia
-
-----------------
-Acknowledgements
-----------------
-
-Advisors Tobias Hollerer (holl@cs.ucsb.edu) and Matthew Turk
-(mturk@cs.ucsb.edu).
 
 -------------------
 Contact Information
 -------------------
 
-Questions, comments, and bug reports can be sent to Chris Sweeney at
-cmsweeney@cs.ucsb.edu.
+Questions, comments, and bug reports can be sent to the Theia mailing list:
+theia-vision-library@googlegroups.com
