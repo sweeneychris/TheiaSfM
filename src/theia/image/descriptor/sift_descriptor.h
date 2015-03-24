@@ -42,6 +42,7 @@ extern "C" {
 
 #include "theia/image/descriptor/descriptor_extractor.h"
 #include "theia/image/keypoint_detector/keypoint.h"
+#include "theia/image/keypoint_detector/sift_parameters.h"
 #include "theia/util/util.h"
 
 namespace theia {
@@ -54,11 +55,12 @@ class SiftDescriptorExtractor : public FloatDescriptorExtractor {
   //  We only implement the standard 128-dimension descriptor. Specify the
   //  number of image octaves, number of scale levels per octave, and where the
   //  first octave should start.
+  explicit SiftDescriptorExtractor(const SiftParameters& detector_params) :
+      sift_params_(detector_params), sift_filter_(nullptr) {}
   SiftDescriptorExtractor(int num_octaves, int num_levels, int first_octave)
-      : sift_filter_(nullptr),
-        num_octaves_(num_octaves),
-        num_levels_(num_levels),
-        first_octave_(first_octave) {}
+      : sift_params_(num_octaves, num_levels, first_octave, 10.0f,
+                     255.0 * 0.02 / num_levels),
+        sift_filter_(nullptr) {}
   SiftDescriptorExtractor() : SiftDescriptorExtractor(-1, 3, -1) {}
   ~SiftDescriptorExtractor();
 
@@ -80,10 +82,8 @@ class SiftDescriptorExtractor : public FloatDescriptorExtractor {
       std::vector<Eigen::VectorXf>* descriptors);
 
  private:
+  SiftParameters sift_params_;
   VlSiftFilt* sift_filter_;
-  int num_octaves_;
-  int num_levels_;
-  int first_octave_;
 
   DISALLOW_COPY_AND_ASSIGN(SiftDescriptorExtractor);
 };

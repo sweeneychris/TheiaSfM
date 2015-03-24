@@ -34,16 +34,17 @@
 
 #include "theia/image/descriptor/sift_descriptor.h"
 
-#include <glog/logging.h>
-extern "C" {
-#include <vl/sift.h>
-}
-#include <Eigen/Core>
+#include <algorithm>
 #include <vector>
 
+#include "Eigen/Core"
+#include "glog/logging.h"
 #include "theia/image/image.h"
 #include "theia/image/descriptor/descriptor_extractor.h"
 #include "theia/image/keypoint_detector/keypoint.h"
+extern "C" {
+#include "vl/sift.h"
+}
 
 namespace theia {
 namespace {
@@ -95,9 +96,11 @@ bool SiftDescriptorExtractor::ComputeDescriptor(
                                   sift_filter_->height != image.Rows())) {
     vl_sift_delete(sift_filter_);
     const int first_octave =
-        GetValidFirstOctave(first_octave_, image.Rows(), image.Cols());
-    sift_filter_ = vl_sift_new(image.Cols(), image.Rows(), num_octaves_,
-                               num_levels_, first_octave);
+        GetValidFirstOctave(sift_params_.first_octave,
+                            image.Rows(), image.Cols());
+    sift_filter_ = vl_sift_new(image.Cols(), image.Rows(),
+                               sift_params_.num_octaves,
+                               sift_params_.num_levels, first_octave);
   }
 
   // Create the vl sift keypoint from the one passed in.
@@ -122,10 +125,10 @@ bool SiftDescriptorExtractor::ComputeDescriptor(
 
   // Calculate the sift feature. Note that we are passing in a direct pointer to
   // the descriptor's underlying data.
-  *descriptor = Eigen::VectorXf(128);
+  CHECK_NOTNULL(descriptor)->resize(128);
   vl_sift_calc_keypoint_descriptor(sift_filter_, descriptor->data(),
                                    &sift_keypoint, keypoint.orientation());
-  ConvertToRootSift(descriptor);
+  if (sift_params_.root_sift) ConvertToRootSift(descriptor);
   return true;
 }
 
@@ -141,9 +144,11 @@ bool SiftDescriptorExtractor::ComputeDescriptors(
                                   sift_filter_->height != image.Rows())) {
     vl_sift_delete(sift_filter_);
     const int first_octave =
-        GetValidFirstOctave(first_octave_, image.Rows(), image.Cols());
-    sift_filter_ = vl_sift_new(image.Cols(), image.Rows(), num_octaves_,
-                               num_levels_, first_octave);
+        GetValidFirstOctave(sift_params_.first_octave,
+                            image.Rows(), image.Cols());
+    sift_filter_ = vl_sift_new(image.Cols(), image.Rows(),
+                               sift_params_.num_octaves,
+                               sift_params_.num_levels, first_octave);
   }
 
   // Create the vl sift keypoint from the one passed in.
@@ -179,7 +184,7 @@ bool SiftDescriptorExtractor::ComputeDescriptors(
       vl_sift_calc_keypoint_descriptor(
           sift_filter_, (*descriptors)[i].data(), &sift_keypoints[i],
           (*keypoints)[i].orientation());
-      ConvertToRootSift(&descriptors->at(i));
+      if (sift_params_.root_sift) ConvertToRootSift(&descriptors->at(i));
     }
     vl_status = vl_sift_process_next_octave(sift_filter_);
   }
@@ -198,11 +203,13 @@ bool SiftDescriptorExtractor::DetectAndExtractDescriptors(
                                   sift_filter_->height != image.Rows())) {
     vl_sift_delete(sift_filter_);
     const int first_octave =
-        GetValidFirstOctave(first_octave_, image.Rows(), image.Cols());
-    sift_filter_ = vl_sift_new(image.Cols(), image.Rows(), num_octaves_,
-                               num_levels_, first_octave);
-    vl_sift_set_edge_thresh(sift_filter_, 10.0);
-    vl_sift_set_peak_thresh(sift_filter_, 255.0 * 0.02 / num_levels_);
+        GetValidFirstOctave(sift_params_.first_octave,
+                            image.Rows(), image.Cols());
+    sift_filter_ = vl_sift_new(image.Cols(), image.Rows(),
+                               sift_params_.num_octaves,
+                               sift_params_.num_levels, first_octave);
+    vl_sift_set_edge_thresh(sift_filter_, sift_params_.edge_threshold);
+    vl_sift_set_peak_thresh(sift_filter_, sift_params_.peak_threshold);
   }
 
   // The VLFeat functions take in a non-const image pointer so that it can
@@ -220,25 +227,24 @@ bool SiftDescriptorExtractor::DetectAndExtractDescriptors(
 
     // Get the keypoints.
     const VlSiftKeypoint* vl_keypoints = vl_sift_get_keypoints(sift_filter_);
-    int num_keypoints = vl_sift_get_nkeypoints(sift_filter_);
+    const int num_keypoints = vl_sift_get_nkeypoints(sift_filter_);
 
-    for (int i = 0; i < num_keypoints; i++) {
+    for (int i = 0; i < num_keypoints; ++i) {
       // Calculate (up to 4) orientations of the keypoint.
       double angles[4];
       int num_angles = vl_sift_calc_keypoint_orientations(sift_filter_, angles,
                                                           &vl_keypoints[i]);
-      for (int j = 0; j < num_angles; j++) {
-        Eigen::VectorXf sift_descriptor(128);
+      for (int j = 0; j < num_angles; ++j) {
+        descriptors->emplace_back(128);
         vl_sift_calc_keypoint_descriptor(
-            sift_filter_, sift_descriptor.data(), &vl_keypoints[i],
+            sift_filter_, descriptors->back().data(), &vl_keypoints[i],
             angles[j]);
+        if (sift_params_.root_sift) ConvertToRootSift(&descriptors->back());
 
         Keypoint keypoint(vl_keypoints[i].x, vl_keypoints[i].y, Keypoint::SIFT);
         keypoint.set_scale(vl_keypoints[i].sigma);
         keypoint.set_orientation(angles[j]);
         keypoints->push_back(keypoint);
-        ConvertToRootSift(&sift_descriptor);
-        descriptors->emplace_back(sift_descriptor);
       }
     }
     // Attempt to process the next octave.

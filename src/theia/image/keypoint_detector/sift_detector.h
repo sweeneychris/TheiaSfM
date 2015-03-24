@@ -43,6 +43,7 @@ extern "C" {
 
 #include "theia/image/keypoint_detector/keypoint_detector.h"
 #include "theia/image/keypoint_detector/keypoint.h"
+#include "theia/image/keypoint_detector/sift_parameters.h"
 #include "theia/util/util.h"
 
 namespace theia {
@@ -56,10 +57,10 @@ class SiftDetector : public KeypointDetector {
   //  We only implement the standard 128-dimension descriptor. Specify the
   //  number of image octaves, number of scale levels per octave, and where the
   //  first octave should start.
+  explicit SiftDetector(const SiftParameters& sift_params) :
+      sift_params_(sift_params), sift_filter_(nullptr) {}
   SiftDetector(int num_octaves, int num_levels, int first_octave)
-      : num_octaves_(num_octaves),
-        num_levels_(num_levels),
-        first_octave_(first_octave),
+      : sift_params_(num_octaves, num_levels, first_octave),
         sift_filter_(nullptr) {}
   SiftDetector() : SiftDetector(-1, 3, 0) {}
   ~SiftDetector();
@@ -68,9 +69,7 @@ class SiftDetector : public KeypointDetector {
   bool DetectKeypoints(const FloatImage& image,
                        std::vector<Keypoint>* keypoints);
  private:
-  int num_octaves_;
-  int num_levels_;
-  int first_octave_;
+  SiftParameters sift_params_;
   VlSiftFilt* sift_filter_;
 
   DISALLOW_COPY_AND_ASSIGN(SiftDetector);
