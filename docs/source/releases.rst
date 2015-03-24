@@ -16,6 +16,11 @@ New Features
 * New program to verify the 1dsfm input against the ground truth model.
 * New program to compare two SfM models.
 * Nonlinear position estimation uses the nonlinear solver of [WilsonECCV2014]_.
+* Removed confusing CameraIntrinsics struct and now all methods use CameraIntrinsicsPrior.
+* Calibration files now accept radial distortion and all other camera intrinsics.
+* Several new applications to evluate model and matching quality.
+* Robust reconstruction alignment (using RANSAC) to align reconstruction with potential outliers.
+* Ability to normalize reconstructions to approximately center and scale nicely for viewing.
 
 Bug Fixes
 ---------
@@ -23,6 +28,8 @@ Bug Fixes
 * GFlags now links pthreads properly.
 * Two-view bundle adjustment will no longer use poorly triangulated points for optimization.
 * Installation to user-specified folder is done properly.
+* Viewing angle test for triangulation.
+* Properly estimating relative pose of partially calibrated image matches.
 
 `0.2.0 <https://github.com/sweeneychris/TheiaSfM/archive/v0.2.tar.gz>`_
 =======================================================================
