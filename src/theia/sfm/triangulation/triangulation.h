@@ -96,7 +96,6 @@ bool IsTriangulatedPointInFrontOfCameras(
     const Eigen::Matrix3d& rotation,
     const Eigen::Vector3d& position);
 
-
 // Returns true if the triangulation angle between any two observations is
 // sufficient.
 bool SufficientTriangulationAngle(

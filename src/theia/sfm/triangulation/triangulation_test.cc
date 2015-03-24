@@ -429,5 +429,72 @@ TEST(IsTriangulatedPointInFrontOfCameras, OneInFrontOneBehind) {
   TestIsTriangulatedPointInFrontOfCameras(point, rotation, position, false);
 }
 
+TEST(SufficientTriangulationAngle, AllSufficient) {
+  static const double kMinSufficientAngle = 4.0;
+  static const double kAngleBetweenCameras = 5.0;
+
+  // Try varying numbers of cameras observing a 3d point from 2 to 50 cameras.
+  for (int i = 2; i < 50; i++) {
+    // Set up cameras on a unit circle so that the angles are known. Assume that
+    // the triangulated point is at (0, 0, 0).
+    std::vector<Vector3d> rays;
+    for (int j = 0; j < i; j++) {
+      rays.emplace_back(cos(DegToRad(j * kAngleBetweenCameras)),
+                        sin(DegToRad(j * kAngleBetweenCameras)),
+                        0.0);
+    }
+
+    EXPECT_TRUE(SufficientTriangulationAngle(rays, kMinSufficientAngle));
+  }
+}
+
+TEST(SufficientTriangulationAngle, AllInsufficient) {
+  static const double kMinSufficientAngle = 4.0;
+
+  // Try varying numbers of cameras observing a 3d point from 2 to 50 cameras.
+  for (int i = 2; i < 50; i++) {
+    // Set up cameras on a unit circle so that the angles are known. Assume that
+    // the triangulated point is at (0, 0, 0).
+    std::vector<Vector3d> rays;
+    const double angle = kMinSufficientAngle / static_cast<double>(i + 1e-4);
+    for (int j = 0; j < i; j++) {
+      rays.emplace_back(cos(DegToRad(j * angle)),
+                        sin(DegToRad(j * angle)),
+                        0.0);
+    }
+
+    EXPECT_FALSE(SufficientTriangulationAngle(rays, kMinSufficientAngle));
+  }
+}
+
+TEST(SufficientTriangulationAngle, SomeInsufficient) {
+  static const double kMinSufficientAngle = 4.0;
+
+  // Set up cameras on a unit circle so that the angles are known. Assume that
+  // the triangulated point is at (0, 0, 0).
+  std::vector<Vector3d> rays;
+  rays.emplace_back(cos(DegToRad(0)), sin(DegToRad(0)), 0.0);
+  rays.emplace_back(cos(DegToRad(5.0)), sin(DegToRad(5.0)), 0.0);
+  rays.emplace_back(cos(DegToRad(1.0)), sin(DegToRad(1.0)), 0.0);
+
+  // We only need one pair of rays to have a sufficient viewing angle, so this
+  // should return true since views 0 and 2 have a viewing angle of 5 degree.
+  EXPECT_TRUE(SufficientTriangulationAngle(rays, kMinSufficientAngle));
+}
+
+TEST(SufficientTriangulationAngle, TwoInsufficient) {
+  static const double kMinSufficientAngle = 4.0;
+
+  // Set up cameras on a unit circle so that the angles are known. Assume that
+  // the triangulated point is at (0, 0, 0).
+  std::vector<Vector3d> rays;
+  rays.emplace_back(cos(DegToRad(0)), sin(DegToRad(0)), 0.0);
+  rays.emplace_back(cos(DegToRad(1.0)), sin(DegToRad(1.0)), 0.0);
+
+  // We only need one pair of rays to have a sufficient viewing angle, so this
+  // should return true since views 0 and 2 have a viewing angle of 5 degree.
+  EXPECT_FALSE(SufficientTriangulationAngle(rays, kMinSufficientAngle));
+}
+
 }  // namespace
 }  // namespace theia

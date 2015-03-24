@@ -244,12 +244,12 @@ bool SufficientTriangulationAngle(
       cos(DegToRad(min_triangulation_angle_degrees));
   for (int i = 0; i < ray_directions.size(); i++) {
     for (int j = i + 1; j < ray_directions.size(); j++) {
-      if (ray_directions[i].dot(ray_directions[j]) > cos_of_min_angle) {
+      if (ray_directions[i].dot(ray_directions[j]) < cos_of_min_angle) {
         return true;
       }
     }
   }
-  return true;
+  return false;
 }
 
 }  // namespace theia
