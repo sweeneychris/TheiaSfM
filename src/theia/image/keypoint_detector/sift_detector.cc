@@ -58,10 +58,12 @@ bool SiftDetector::DetectKeypoints(const FloatImage& image,
   if (sift_filter_ == nullptr || (sift_filter_->width != image.Cols() ||
                                   sift_filter_->height != image.Rows())) {
     vl_sift_delete(sift_filter_);
-    sift_filter_ = vl_sift_new(image.Cols(), image.Rows(), num_octaves_,
-                               num_levels_, first_octave_);
-    vl_sift_set_edge_thresh(sift_filter_, 5.0);
-    vl_sift_set_peak_thresh(sift_filter_, 0.5);
+    sift_filter_ = vl_sift_new(image.Cols(), image.Rows(),
+                               sift_params_.num_octaves,
+                               sift_params_.num_levels,
+                               sift_params_.first_octave);
+    vl_sift_set_edge_thresh(sift_filter_, sift_params_.edge_threshold);
+    vl_sift_set_peak_thresh(sift_filter_, sift_params_.peak_threshold);
   }
 
   // The VLFeat functions take in a non-const image pointer so that it can
