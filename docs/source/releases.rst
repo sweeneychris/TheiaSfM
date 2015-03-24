@@ -18,7 +18,7 @@ New Features
 * Nonlinear position estimation uses the nonlinear solver of [WilsonECCV2014]_.
 * Removed confusing CameraIntrinsics struct and now all methods use CameraIntrinsicsPrior.
 * Calibration files now accept radial distortion and all other camera intrinsics.
-* Several new applications to evluate model and matching quality.
+* Several new applications to evaluate model and matching quality.
 * Robust reconstruction alignment (using RANSAC) to align reconstruction with potential outliers.
 * Ability to normalize reconstructions to approximately center and scale nicely for viewing.
 
