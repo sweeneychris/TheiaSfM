@@ -32,49 +32,35 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#ifndef THEIA_IMAGE_KEYPOINT_DETECTOR_SIFT_DETECTOR_H_
-#define THEIA_IMAGE_KEYPOINT_DETECTOR_SIFT_DETECTOR_H_
+#ifndef THEIA_IMAGE_KEYPOINT_DETECTOR_SIFT_PARAMETERS_H_
+#define THEIA_IMAGE_KEYPOINT_DETECTOR_SIFT_PARAMETERS_H_
 
-extern "C" {
-#include <vl/sift.h>
-}
+// Sift blob feature detector parameters. Since the Sift implementation is based
+// on the VLFeat one, please visit (http://www.vlfeat.org/api/sift.html) for
+// getting more info about the parameters. 
+struct SiftParameters {
+  SiftParameters(int _num_octaves,
+                 int _num_levels,
+                 int _first_octave,
+                 float _edge_threshold,
+                 float _peak_threshold) :
+      num_octaves(_num_octaves), num_levels(_num_levels),
+      first_octave(_first_octave), edge_threshold(_edge_threshold),
+      peak_threshold(_peak_threshold) {}
+  SiftParameters(int _num_octaves, int _num_levels, int _first_octave) :
+      SiftParameters(_num_octaves, _num_levels, _first_octave,
+                     10.0f, 0.0f) {}
+  ~SiftParameters() {}
 
-#include <vector>
-
-#include "theia/image/keypoint_detector/keypoint_detector.h"
-#include "theia/image/keypoint_detector/keypoint.h"
-#include "theia/image/keypoint_detector/sift_parameters.h"
-#include "theia/util/util.h"
-
-namespace theia {
-template<class T> class Image;
-typedef Image<float> FloatImage;
-
-// SIFT detector as originally proposed by David Lowe. This relies on the open
-// source software VLFeat (www.vlfeat.org) to detect keypoints.
-class SiftDetector : public KeypointDetector {
- public:
-  //  We only implement the standard 128-dimension descriptor. Specify the
-  //  number of image octaves, number of scale levels per octave, and where the
-  //  first octave should start.
-  explicit SiftDetector(const SiftParameters& sift_params) :
-      sift_params_(sift_params), sift_filter_(nullptr) {}
-  SiftDetector(int num_octaves, int num_levels, int first_octave)
-      : sift_params_(num_octaves, num_levels, first_octave),
-        sift_filter_(nullptr) {}
-  SiftDetector() : SiftDetector(-1, 3, 0) {}
-  ~SiftDetector();
-
-  // Given an image, detect keypoints using the sift descriptor.
-  bool DetectKeypoints(const FloatImage& image,
-                       std::vector<Keypoint>* keypoints);
- private:
-  const SiftParameters sift_params_;
-  VlSiftFilt* sift_filter_;
-
-  DISALLOW_COPY_AND_ASSIGN(SiftDetector);
+  // Parameters.
+  // Blob feature detector params.
+  int num_octaves = -1;
+  int num_levels = 3;
+  int first_octave = 0;
+  float edge_threshold = 5.0f;
+  float peak_threshold = 0.5f;
+  // Descriptor parameters.
+  bool root_sift = true;
 };
 
-}  // namespace theia
-
-#endif  // THEIA_IMAGE_KEYPOINT_DETECTOR_SIFT_DETECTOR_H_
+#endif  // THEIA_IMAGE_KEYPOINT_DETECTOR_SIFT_PARAMETERS_H_
