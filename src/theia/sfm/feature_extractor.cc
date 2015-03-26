@@ -49,11 +49,12 @@ namespace theia {
 
 std::unique_ptr<DescriptorExtractor>
 FeatureExtractor::CreateDescriptorExtractor(
-    const DescriptorExtractorType& descriptor_extractor_type) {
+    const DescriptorExtractorType& descriptor_extractor_type,
+    const SiftParameters& sift_parameters) {
   std::unique_ptr<DescriptorExtractor> descriptor_extractor;
   switch (descriptor_extractor_type) {
     case DescriptorExtractorType::SIFT:
-      descriptor_extractor.reset(new SiftDescriptorExtractor);
+      descriptor_extractor.reset(new SiftDescriptorExtractor(sift_parameters));
       break;
     case DescriptorExtractorType::BRIEF:
       descriptor_extractor.reset(new BriefDescriptorExtractor);

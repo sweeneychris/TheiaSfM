@@ -16,6 +16,14 @@
 
 # Feature extraction and two view matching.
 --descriptor=SIFT
+# Sift blob detector parameters.
+--sift_num_octaves=3
+--sift_num_levels=3
+--sift_first_octave=0
+--sift_edge_threshold=5.0
+--sift_peak_threshold=0.5
+# Disable if regular sift descriptor is desired.
+--root_sift=true
 --matching_strategy=CASCADE_HASHING
 --lowes_ratio=0.65
 --min_num_inliers_for_valid_match=30

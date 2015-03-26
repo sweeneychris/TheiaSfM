@@ -36,12 +36,14 @@
 #define THEIA_SFM_FEATURE_EXTRACTOR_H_
 
 #include <Eigen/Core>
+#include <algorithm>
 #include <string>
 #include <vector>
 
 #include "theia/alignment/alignment.h"
 #include "theia/image/descriptor/descriptor_extractor.h"
 #include "theia/image/image.h"
+#include "theia/image/keypoint_detector/sift_parameters.h"
 #include "theia/util/filesystem.h"
 #include "theia/util/threadpool.h"
 #include "theia/sfm/camera_intrinsics_prior.h"
@@ -63,6 +65,8 @@ struct FeatureExtractorOptions {
   int num_threads = 1;
   DescriptorExtractorType descriptor_extractor_type =
       DescriptorExtractorType::SIFT;
+  // Sift parameters.
+  SiftParameters sift_parameters;
   // The features returned will be no larger than this size.
   int max_num_features = 16384;
 };
@@ -92,7 +96,8 @@ class FeatureExtractor {
 
   // Factory method to create the keypoint detector and descriptor extractor.
   std::unique_ptr<DescriptorExtractor> CreateDescriptorExtractor(
-      const DescriptorExtractorType& descriptor_extractor_type);
+      const DescriptorExtractorType& descriptor_extractor_type,
+      const SiftParameters& sift_parameters);
 
   const FeatureExtractorOptions options_;
 
@@ -144,7 +149,8 @@ bool FeatureExtractor::ExtractFeatures(
   // TODO(cmsweeney): Change this so that each thread in the threadpool receives
   // exactly one object.
   std::unique_ptr<DescriptorExtractor> descriptor_extractor =
-      CreateDescriptorExtractor(options_.descriptor_extractor_type);
+      CreateDescriptorExtractor(options_.descriptor_extractor_type,
+                                options_.sift_parameters);
 
   // Exit if the descriptor extraction fails.
   if (!descriptor_extractor->DetectAndExtractDescriptors(*image,
