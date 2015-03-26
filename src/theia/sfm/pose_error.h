@@ -66,7 +66,7 @@ class PoseError {
   std::string PrintMeanMedianHistogram() {
     std::string message = "";
     if (rotation_error_.size() == 0) {
-      message += "There were no  poses that were common to the model.";
+      message += "There were no poses that were common to the model.";
       return message;
     }
 
