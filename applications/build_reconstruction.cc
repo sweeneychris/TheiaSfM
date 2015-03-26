@@ -123,6 +123,22 @@ DEFINE_double(
 DEFINE_bool(bundle_adjust_tracks, true,
             "Set to true to optimize tracks immediately upon estimation.");
 
+// Sift parameters.
+DEFINE_int32(sift_num_octaves, -1, "Number of octaves in the scale space. "
+             "Set to a value less than 0 to use the maximum  ");
+DEFINE_int32(sift_num_levels, 3, "Number of levels per octave.");
+DEFINE_int32(sift_first_octave, -1, "The index of the first octave");
+DEFINE_double(sift_edge_threshold, 10.0f,
+              "The edge threshold value is used to remove spurious features."
+              " Reduce threshold to reduce the number of keypoints.");
+// The default value is calculated using the following formula:
+// 255.0 * 0.02 / num_levels.
+DEFINE_double(sift_peak_threshold, 1.7f,
+              "The peak threshold value is used to remove features with weak "
+              "responses. Increase threshold value to reduce the number of "
+              "keypoints");
+DEFINE_bool(root_sift, true, "Enables the usage of Root SIFT.");
+
 using theia::DescriptorExtractorType;
 using theia::MatchingStrategy;
 using theia::Reconstruction;
@@ -179,6 +195,17 @@ ReconstructionBuilderOptions SetReconstructionBuilderOptions() {
   options.reconstruction_estimator_options.num_threads = FLAGS_num_threads;
 
   options.descriptor_type = GetDescriptorExtractorType(FLAGS_descriptor);
+  // Setting sift parameters.
+  if (options.descriptor_type == DescriptorExtractorType::SIFT) {
+    options.sift_parameters.num_octaves = FLAGS_sift_num_octaves;
+    options.sift_parameters.num_levels = FLAGS_sift_num_levels;
+    CHECK_GT(options.sift_parameters.num_levels, 0)
+        << "The number of levels must be positive";
+    options.sift_parameters.first_octave = FLAGS_sift_first_octave;
+    options.sift_parameters.edge_threshold = FLAGS_sift_edge_threshold;
+    options.sift_parameters.peak_threshold = FLAGS_sift_peak_threshold;
+    options.sift_parameters.root_sift = FLAGS_root_sift;
+  }
   options.matching_strategy = GetMatchingStrategyType(FLAGS_matching_strategy);
   options.matching_options.lowes_ratio = FLAGS_lowes_ratio;
   options.min_num_inlier_matches = FLAGS_min_num_inliers_for_valid_match;
