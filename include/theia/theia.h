@@ -130,6 +130,7 @@
 #include "theia/sfm/pose/pairwise_rotation_error.h"
 #include "theia/sfm/pose/pairwise_translation_error.h"
 #include "theia/sfm/pose/perspective_three_point.h"
+#include "theia/sfm/pose/seven_point_fundamental_matrix.h"
 #include "theia/sfm/pose/test_util.h"
 #include "theia/sfm/pose/three_point_relative_pose_partial_rotation.h"
 #include "theia/sfm/pose/util.h"

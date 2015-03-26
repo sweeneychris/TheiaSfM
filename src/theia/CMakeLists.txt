@@ -106,6 +106,7 @@ SET(THEIA_SRC
   sfm/pose/pairwise_rotation_error.cc
   sfm/pose/pairwise_translation_error.cc
   sfm/pose/perspective_three_point.cc
+  sfm/pose/seven_point_fundamental_matrix.cc
   sfm/pose/test_util.cc
   sfm/pose/three_point_relative_pose_partial_rotation.cc
   sfm/pose/util.cc
@@ -226,6 +227,7 @@ IF (BUILD_TESTING)
   GTEST(sfm/pose/pairwise_rotation_error)
   GTEST(sfm/pose/pairwise_translation_error)
   GTEST(sfm/pose/perspective_three_point)
+  GTEST(sfm/pose/seven_point_fundamental_matrix)
   GTEST(sfm/pose/three_point_relative_pose_partial_rotation)
   GTEST(sfm/reconstruction)
   GTEST(sfm/track)
