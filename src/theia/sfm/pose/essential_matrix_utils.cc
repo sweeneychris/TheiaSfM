@@ -61,40 +61,22 @@ void DecomposeEssentialMatrix(const Matrix3d& essential_matrix,
       -1, 0, 0,
       0, 0, 1;
 
-  const Vector3d& ea = essential_matrix.row(0);
-  const Vector3d& eb = essential_matrix.row(1);
-  const Vector3d& ec = essential_matrix.row(2);
+  const Eigen::JacobiSVD<Matrix3d> svd(
+      essential_matrix, Eigen::ComputeFullU | Eigen::ComputeFullV);
+  Eigen::Matrix3d U = svd.matrixU();
+  Eigen::Matrix3d V = svd.matrixV();
+  if (U.determinant() < 0) {
+    U.col(2) *= -1.0;
+  }
 
-  // Generate cross products.
-  Matrix3d cross_products;
-  cross_products << ea.cross(eb), ea.cross(ec), eb.cross(ec);
-
-  // Choose the cross product with the largest norm (for numerical accuracy).
-  const Vector3d cf_scales(cross_products.col(0).squaredNorm(),
-                           cross_products.col(1).squaredNorm(),
-                           cross_products.col(2).squaredNorm());
-  int max_index;
-  cf_scales.maxCoeff(&max_index);
-
-  // For index 0, 1, we want ea and for index 2 we want eb.
-  const int max_e_index = max_index / 2;
-
-  // Construct v of the SVD.
-  Matrix3d v = Matrix3d::Zero();
-  v.col(2) = cross_products.col(max_index).normalized();
-  v.col(0) = essential_matrix.row(max_e_index).normalized();
-  v.col(1) = v.col(2).cross(v.col(0));
-
-  // Construct U of the SVD.
-  Matrix3d u = Matrix3d::Zero();
-  u.col(0) = (essential_matrix * v.col(0)).normalized();
-  u.col(1) = (essential_matrix * v.col(1)).normalized();
-  u.col(2) = u.col(0).cross(u.col(1));
+  if (V.determinant() < 0) {
+    V.col(2) *= -1.0;
+  }
 
   // Possible configurations.
-  *rotation1 = u * d * v.transpose();
-  *rotation2 = u * d.transpose() * v.transpose();
-  *translation = u.col(2).normalized();
+  *rotation1 = U * d * V.transpose();
+  *rotation2 = U * d.transpose() * V.transpose();
+  *translation = U.col(2).normalized();
 }
 
 int GetBestPoseFromEssentialMatrix(
