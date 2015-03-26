@@ -51,6 +51,9 @@ struct SiftParameters {
   SiftParameters(int num_octaves, int num_levels, int first_octave) :
       SiftParameters(num_octaves, num_levels, first_octave,
                      5.0f, 0.5f) {}
+
+  SiftParameters() {}
+
   ~SiftParameters() {}
 
   // Parameters.

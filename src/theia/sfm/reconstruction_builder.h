@@ -39,6 +39,7 @@
 #include <string>
 #include <vector>
 
+#include "theia/image/keypoint_detector/sift_parameters.h"
 #include "theia/io/write_matches.h"
 #include "theia/util/util.h"
 #include "theia/matching/feature_matcher_options.h"
@@ -81,6 +82,10 @@ struct ReconstructionBuilderOptions {
   // Descriptor type for extracting features.
   // See //theia/sfm/feature_extractor.h
   DescriptorExtractorType descriptor_type = DescriptorExtractorType::SIFT;
+
+  // Sift parameters controlling keypoint detection and description options.
+  // See //theia/image/keypoint_detector/sift_parameters.h
+  SiftParameters sift_parameters;
 
   // Matching strategy type.
   // See //theia/sfm/match_and_verify_features.h

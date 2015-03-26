@@ -211,6 +211,7 @@ bool ReconstructionBuilder::ExtractAndMatchFeatures() {
   feature_extractor_options.num_threads = options_.num_threads;
   feature_extractor_options.descriptor_extractor_type =
       options_.descriptor_type;
+  feature_extractor_options.sift_parameters = options_.sift_parameters;
   FeatureExtractor feature_extractor(feature_extractor_options);
 
   bool success = false;

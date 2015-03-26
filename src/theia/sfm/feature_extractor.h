@@ -36,12 +36,14 @@
 #define THEIA_SFM_FEATURE_EXTRACTOR_H_
 
 #include <Eigen/Core>
+#include <algorithm>
 #include <string>
 #include <vector>
 
 #include "theia/alignment/alignment.h"
 #include "theia/image/descriptor/descriptor_extractor.h"
 #include "theia/image/image.h"
+#include "theia/image/keypoint_detector/sift_parameters.h"
 #include "theia/util/filesystem.h"
 #include "theia/util/threadpool.h"
 #include "theia/sfm/camera_intrinsics_prior.h"
@@ -63,6 +65,8 @@ struct FeatureExtractorOptions {
   int num_threads = 1;
   DescriptorExtractorType descriptor_extractor_type =
       DescriptorExtractorType::SIFT;
+  // Sift parameters.
+  SiftParameters sift_parameters;
   // The features returned will be no larger than this size.
   int max_num_features = 16384;
 };
