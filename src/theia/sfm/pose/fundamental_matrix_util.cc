@@ -170,4 +170,16 @@ void FundamentalMatrixFromProjectionMatrices(const double pmatrix1[3 * 4],
   }
 }
 
+void EssentialMatrixFromFundamentalMatrix(const double fmatrix[3 * 3],
+                                          const double focal_length1,
+                                          const double focal_length2,
+                                          double ematrix[3 * 3]) {
+  const Eigen::Map<const Matrix3d> fundamental_matrix(fmatrix);
+  Eigen::Map<Matrix3d> essential_matrix(ematrix);
+  essential_matrix =
+      Eigen::DiagonalMatrix<double, 3>(focal_length2, focal_length2, 1.0) *
+      fundamental_matrix *
+      Eigen::DiagonalMatrix<double, 3>(focal_length1, focal_length1, 1.0);
+}
+
 }  // namespace theia
