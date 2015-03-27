@@ -133,6 +133,17 @@ class UncalibratedRelativePoseEstimator
   // error.
   double Error(const FeatureCorrespondence& centered_correspondence,
                const UncalibratedRelativePose& relative_pose) const {
+    FeatureCorrespondence normalized_correspondence;
+    normalized_correspondence.feature1 =
+        centered_correspondence.feature1 / relative_pose.focal_length1;
+    normalized_correspondence.feature2 =
+        centered_correspondence.feature2 / relative_pose.focal_length2;
+    if (!IsTriangulatedPointInFrontOfCameras(normalized_correspondence,
+                                             relative_pose.rotation,
+                                             relative_pose.position)) {
+      return std::numeric_limits<double>::max();
+    }
+
     return SquaredSampsonDistance(relative_pose.fundamental_matrix,
                                   centered_correspondence.feature1,
                                   centered_correspondence.feature2);
