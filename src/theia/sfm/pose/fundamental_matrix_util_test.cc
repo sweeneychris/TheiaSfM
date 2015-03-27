@@ -61,14 +61,10 @@ TEST(FundamentalMatrixUtil, FocalLengths) {
     const Vector3d translation = Vector3d::Random().normalized();
 
     // Create calibration matrices.
-    const Matrix3d calibration_inv1 = Eigen::DiagonalMatrix<double, 3>(
-        gt_focal_length1, gt_focal_length1, 1.0).inverse();
-    const Matrix3d calibration_inv2 = Eigen::DiagonalMatrix<double, 3>(
-        gt_focal_length2, gt_focal_length2, 1.0).inverse();
-
-    const Matrix3d fundamental_matrix = calibration_inv2 *
-                                        CrossProductMatrix(translation) *
-                                        rotation * calibration_inv1;
+    Matrix3d fundamental_matrix;
+    ComposeFundamentalMatrix(gt_focal_length1, gt_focal_length2,
+                             rotation.data(), translation.data(),
+                             fundamental_matrix.data());
 
     double focal_length1, focal_length2;
     EXPECT_TRUE(FocalLengthsFromFundamentalMatrix(

@@ -102,14 +102,11 @@ class UncalibratedRelativePoseEstimator
 
     // Compose the essential matrix from the fundamental matrix and focal
     // lengths.
-    const Matrix3d essential_matrix =
-        Eigen::DiagonalMatrix<double, 3>(relative_pose.focal_length2,
-                                         relative_pose.focal_length2,
-                                         1.0) *
-        relative_pose.fundamental_matrix *
-        Eigen::DiagonalMatrix<double, 3>(relative_pose.focal_length1,
+    Matrix3d essential_matrix;
+    EssentialMatrixFromFundamentalMatrix(relative_pose.fundamental_matrix.data(),
                                          relative_pose.focal_length1,
-                                         1.0);
+                                         relative_pose.focal_length2,
+                                         essential_matrix.data());
 
     // Normalize the centered_correspondences.
     std::vector<FeatureCorrespondence> normalized_correspondences(

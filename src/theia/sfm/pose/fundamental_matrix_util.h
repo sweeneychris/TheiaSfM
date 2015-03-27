@@ -67,6 +67,16 @@ void EssentialMatrixFromFundamentalMatrix(const double fmatrix[3 * 3],
                                           const double focal_length2,
                                           double ematrix[3 * 3]);
 
+// Composes a fundamental matrix such that:
+//    F = K_2^-1 * [t]_x * R * K_2^-1
+// where K_i is the calibration matrix for image i. The fundamental matrix F is
+// thus the matrix that transfers points from image 1 to lines in image 2.
+void ComposeFundamentalMatrix(const double focal_length1,
+                              const double focal_length2,
+                              const double rotation[3 * 3],
+                              const double translation[3],
+                              double fmatrix[3 * 3]);
+
 }  // namespace theia
 
 #endif  // THEIA_SFM_POSE_FUNDAMENTAL_MATRIX_UTIL_H_
