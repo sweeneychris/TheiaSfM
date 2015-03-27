@@ -40,6 +40,7 @@
 #include <vector>
 
 #include "theia/math/closed_form_polynomial_solver.h"
+#include "theia/sfm/pose/util.h"
 
 namespace theia {
 
@@ -49,7 +50,7 @@ namespace {
 
 // Sets up the constraint y^t * F * x = 0 such that M * F_v = 0 where M is a 7x9
 // matrix and F_v is the vector containing the entries of F.
-const Matrix<double, 7, 9> SetupEpipolarConstraint(
+Matrix<double, 7, 9> SetupEpipolarConstraint(
     const std::vector<Eigen::Vector2d>& image1_points,
     const std::vector<Eigen::Vector2d>& image2_points) {
   Matrix<double, 7, 9> epipolar_constraint;
@@ -71,31 +72,6 @@ const Matrix<double, 7, 9> SetupEpipolarConstraint(
   return epipolar_constraint;
 }
 
-// Multiplys two degree 1 polynomials:
-//   (alpha * x1 + x2) * (alpha * y1 + y2)
-//     = alpha^2 * x1 * y1 + alpha * (x1 * y2 + x2 * y1) + x2 * y2.
-Eigen::Vector3d MultiplyDegOnePoly(const double x1,
-                                   const double x2,
-                                   const double y1,
-                                   const double y2) {
-  return Eigen::Vector3d(x1 * y1, x1 * y2 + x2 * y1, y2 * y2);
-}
-
-// Multiply a degree 1 and degree 2 polynomial:
-//   (alpha * x1 + x2) * (alpha^2 * y1 + alpha * y2 + y3)
-//     =   alpha^3 * x1 * y1
-//       + alpha^2 (x1 * y2 + x2 * y1)
-//       + alpha * (x1 * y3 + x2 * y2)
-//       + x2 * y3
-Eigen::Vector4d MultiplyDegTwoDegOnePoly(const double x1,
-                                         const double x2,
-                                         const Eigen::Vector3d& deg1_poly) {
-  return Eigen::Vector4d(x1 * deg1_poly(0),
-                         x1 * deg1_poly(1) + x2 * deg1_poly(0),
-                         x1 * deg1_poly(2) + x2 * deg1_poly(1),
-                         x2 * deg1_poly(2));
-}
-
 }  // namespace
 
 bool SevenPointFundamentalMatrix(
@@ -106,8 +82,16 @@ bool SevenPointFundamentalMatrix(
   CHECK_EQ(image2_points.size(), 7);
   CHECK_NOTNULL(fundamental_matrices)->clear();
 
+  std::vector<Eigen::Vector2d> norm_img1_points(image1_points.size());
+  std::vector<Eigen::Vector2d> norm_img2_points(image2_points.size());
+
+  // Normalize the image points.
+  Eigen::Matrix3d img1_norm_mat, img2_norm_mat;
+  NormalizeImagePoints(image1_points, &norm_img1_points, &img1_norm_mat);
+  NormalizeImagePoints(image2_points, &norm_img2_points, &img2_norm_mat);
+
   const Matrix<double, 7, 9>& epipolar_constraint =
-      SetupEpipolarConstraint(image1_points, image2_points);
+      SetupEpipolarConstraint(norm_img1_points, norm_img2_points);
 
   const Eigen::FullPivLU<Matrix<double, 7, 9> > lu(epipolar_constraint);
   if (lu.dimensionOfKernel() != 2) {
@@ -119,35 +103,56 @@ bool SevenPointFundamentalMatrix(
   // be parameterized such that:
   //   F = x * F1' + (1 - x) * F2 = x * (F1' - F2) + F2 = x * F1 + F2.
   const Matrix<double, 9, 2>& null_space = lu.kernel();
-  const Eigen::Matrix<double, 9, 1> F1 =
-      null_space.col(0) - null_space.col(1);
-  const Eigen::Matrix<double, 9, 1>& F2 = null_space.col(1);
+  const Matrix<double, 9, 1> F1_vec = null_space.col(0) - null_space.col(1);
+  const Eigen::Map<const Eigen::Matrix3d> F1(F1_vec.data());
+  const Eigen::Map<const Eigen::Matrix3d> F2(null_space.col(1).data());
 
-  // Enforce that det(F) = 0. This results in a cubic equation in the unknown x.
-  const Eigen::Vector4d determinant_constraint =
-      MultiplyDegTwoDegOnePoly(F1(0), F2(0),
-                               MultiplyDegOnePoly(F1(4), F2(4), F1(8), F2(8)) -
-                               MultiplyDegOnePoly(F1(5), F2(5), F1(7), F2(7))) -
-      MultiplyDegTwoDegOnePoly(F1(1), F2(1),
-                               MultiplyDegOnePoly(F1(3), F2(3), F1(8), F2(8)) -
-                               MultiplyDegOnePoly(F1(5), F2(5), F1(6), F2(6))) +
-      MultiplyDegTwoDegOnePoly(F1(2), F2(2),
-                               MultiplyDegOnePoly(F1(3), F2(3), F1(7), F2(7)) -
-                               MultiplyDegOnePoly(F1(4), F2(4), F1(6), F2(6)));
+  // This is the cubic equation resulting from det(x * F1 + F2) = 0.
+  const Eigen::Vector4d determinant_constraint(
+      -(F2(1, 2) * F2(2, 1) - F2(1, 1) * F2(2, 2)) * F2(0, 0) +
+          (F2(0, 2) * F2(2, 1) - F2(0, 1) * F2(2, 2)) * F2(1, 0) -
+          (F2(0, 2) * F2(1, 1) - F2(0, 1) * F2(1, 2)) * F2(2, 0),
+      -(F2(1, 2) * F2(2, 1) - F2(1, 1) * F2(2, 2)) * F1(0, 0) +
+          (F2(0, 2) * F2(2, 1) - F2(0, 1) * F2(2, 2)) * F1(1, 0) -
+          (F2(0, 2) * F2(1, 1) - F2(0, 1) * F2(1, 2)) * F1(2, 0) +
+          (F1(2, 2) * F2(1, 1) - F1(2, 1) * F2(1, 2) - F1(1, 2) * F2(2, 1) +
+           F1(1, 1) * F2(2, 2)) *
+              F2(0, 0) -
+          (F1(2, 2) * F2(0, 1) - F1(2, 1) * F2(0, 2) - F1(0, 2) * F2(2, 1) +
+           F1(0, 1) * F2(2, 2)) *
+              F2(1, 0) +
+          (F1(1, 2) * F2(0, 1) - F1(1, 1) * F2(0, 2) - F1(0, 2) * F2(1, 1) +
+           F1(0, 1) * F2(1, 2)) *
+              F2(2, 0),
+      (F1(2, 2) * F2(1, 1) - F1(2, 1) * F2(1, 2) - F1(1, 2) * F2(2, 1) +
+       F1(1, 1) * F2(2, 2)) *
+              F1(0, 0) -
+          (F1(2, 2) * F2(0, 1) - F1(2, 1) * F2(0, 2) - F1(0, 2) * F2(2, 1) +
+           F1(0, 1) * F2(2, 2)) *
+              F1(1, 0) +
+          (F1(1, 2) * F2(0, 1) - F1(1, 1) * F2(0, 2) - F1(0, 2) * F2(1, 1) +
+           F1(0, 1) * F2(1, 2)) *
+              F1(2, 0) -
+          (F1(1, 2) * F1(2, 1) - F1(1, 1) * F1(2, 2)) * F2(0, 0) +
+          (F1(0, 2) * F1(2, 1) - F1(0, 1) * F1(2, 2)) * F2(1, 0) -
+          (F1(0, 2) * F1(1, 1) - F1(0, 1) * F1(1, 2)) * F2(2, 0),
+      -(F1(1, 2) * F1(2, 1) - F1(1, 1) * F1(2, 2)) * F1(0, 0) +
+          (F1(0, 2) * F1(2, 1) - F1(0, 1) * F1(2, 2)) * F1(1, 0) -
+          (F1(0, 2) * F1(1, 1) - F1(0, 1) * F1(1, 2)) * F1(2, 0));
 
   // Solve the cubic equation for x.
   double roots[3];
-  const int num_solutions = SolveCubicReals(determinant_constraint(0),
-                                            determinant_constraint(1),
+  const int num_solutions = SolveCubicReals(determinant_constraint(3),
                                             determinant_constraint(2),
-                                            determinant_constraint(3),
+                                            determinant_constraint(1),
+                                            determinant_constraint(0),
                                             roots);
-  const Eigen::Map<const Eigen::Matrix3d> F1_map(F1.data());
-  const Eigen::Map<const Eigen::Matrix3d> F2_map(F2.data());
+
   for (int i = 0; i < num_solutions; i++) {
     // Compose the fundamental matrix solution from the null space and
     // determinant constraint: F = x * F1 + F2;
-    fundamental_matrices->emplace_back(roots[i] * F1_map + F2_map);
+    fundamental_matrices->emplace_back(img2_norm_mat.transpose() *
+                                       (roots[i] * F1 + F2) * img1_norm_mat);
   }
   return fundamental_matrices->size() > 0;
 }
