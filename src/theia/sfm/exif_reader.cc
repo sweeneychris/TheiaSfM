@@ -148,7 +148,8 @@ bool ExifReader::ExtractEXIFMetadata(
   const FloatImage image(image_file);
   camera_intrinsics_prior->image_width = image.Width();
   camera_intrinsics_prior->image_height = image.Height();
-
+  LOG(INFO) << "Image width, height = " << image.Width() << ", "
+            << image.Height();
   // Set principal point.
   camera_intrinsics_prior->principal_point[0].is_set = true;
   camera_intrinsics_prior->principal_point[0].value =
@@ -169,8 +170,11 @@ bool ExifReader::ExtractEXIFMetadata(
       exif_parser.FocalPlaneXResolution > 0 &&
       exif_parser.FocalPlaneResolutionUnit > 1 &&
       exif_parser.FocalPlaneResolutionUnit <= 5) {
+    const double image_diagonal =
+        std::sqrt(std::pow(camera_intrinsics_prior->image_width, 2) +
+                  std::pow(camera_intrinsics_prior->image_height, 2));
     SetFocalLengthFromExif(exif_parser,
-                           camera_intrinsics_prior->image_width,
+                           image_diagonal,
                            camera_intrinsics_prior);
   } else {
     SetFocalLengthFromSensorDatabase(
@@ -189,26 +193,26 @@ bool ExifReader::ExtractEXIFMetadata(
 
 void ExifReader::SetFocalLengthFromExif(
     const EXIFInfo& exif_parser,
-    const double image_width,
+    const double image_diagonal,
     CameraIntrinsicsPrior* camera_intrinsics_prior) const {
-  // Convert to mm.
-  double focal_length_x = exif_parser.FocalPlaneXResolution;
+  // CCD resolution is the pixels per unit resolution of the CCD.
+  double ccd_resolution = exif_parser.FocalPlaneXResolution;
 
   switch (exif_parser.FocalPlaneResolutionUnit) {
     case 2:
       // Convert inches to mm.
-      focal_length_x /= 25.4;
+      ccd_resolution /= 25.4;
       break;
     case 3:
       // Convert centimeters to mm.
-      focal_length_x /= 10.0;
+      ccd_resolution /= 10.0;
       break;
     case 4:
       // Already in mm.
       break;
     case 5:
       // Convert micrometers to mm.
-      focal_length_x *= 1000.0;
+      ccd_resolution *= 1000.0;
       break;
     default:
       break;
@@ -216,9 +220,19 @@ void ExifReader::SetFocalLengthFromExif(
 
   // Normalize for the image size in case the original size is different than
   // the current size.
+  LOG(INFO) << "Exif focal length = " << exif_parser.FocalLength;
+  LOG(INFO) << "Focal length x resolution = " << ccd_resolution;
+  const double exif_diagonal =
+      std::sqrt(exif_parser.ImageWidth * exif_parser.ImageWidth +
+                exif_parser.ImageHeight * exif_parser.ImageHeight);
+  LOG(INFO) << "Exif diagonal = " << exif_diagonal;
+  LOG(INFO) << "Exif width, heigh = " << exif_parser.ImageWidth << ", "
+            << exif_parser.ImageHeight;
+  LOG(INFO) << "Image diagonal = " << image_diagonal;
+
+  const double ccd_width_mm = exif_diagonal / ccd_resolution;
   camera_intrinsics_prior->focal_length.value =
-      (exif_parser.FocalLength * focal_length_x) *
-      (image_width / static_cast<double>(exif_parser.ImageWidth));
+      exif_parser.FocalLength * image_diagonal / ccd_width_mm;
   camera_intrinsics_prior->focal_length.is_set = true;
 }
 
