@@ -64,9 +64,9 @@ class ExifReader {
   // false. If no EXIF data is found in the image, then it will be a valid
   // CameraIntrinsicsPrior object with the is_set field set to false for all
   // metadata field. The function will return true in this case.
-  bool ExtractEXIFMetadata(const std::string& image_file,
-                           CameraIntrinsicsPrior* camera_intrinsics_prior)
-      const;
+  bool ExtractEXIFMetadata(
+      const std::string& image_file,
+      CameraIntrinsicsPrior* camera_intrinsics_prior) const;
 
  private:
   void LoadSensorWidthDatabase();
@@ -74,7 +74,7 @@ class ExifReader {
   // Sets the focal length from the focal plane resolution.
   void SetFocalLengthFromExif(
       const EXIFInfo& exif_parser,
-      const double image_width,
+      const double image_diagonal,
       CameraIntrinsicsPrior* camera_intrinsics_prior) const;
 
   // Sets the focal length from a look up in the sensor width database.
