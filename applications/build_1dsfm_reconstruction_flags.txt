@@ -11,9 +11,10 @@
 --num_retriangulation_iterations=1
 
 # View graph filtering.
---refine_relative_translations_after_rotation_estimation=true
 --min_num_inliers_for_valid_match=30
 --post_rotation_filtering_degrees=5.0
+# NOTE: this refinement is very unstable for rotation-only motions.
+--refine_relative_translations_after_rotation_estimation=false
 
 # Position estimation.
 --position_estimation_min_num_tracks_per_view=0
@@ -28,5 +29,5 @@
 
 # Logging verbosity.
 --logtostderr
-# Uncomment this if you want lots of logging.
+# Increase this number to get more verbose logging.
 --v=1
