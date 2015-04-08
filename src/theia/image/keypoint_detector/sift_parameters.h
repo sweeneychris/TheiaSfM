@@ -53,8 +53,6 @@ struct SiftParameters {
       SiftParameters(num_octaves, num_levels, first_octave,
                      5.0f, 0.5f) {}
 
-  SiftParameters() {}
-
   ~SiftParameters() {}
 
   // Parameters.
