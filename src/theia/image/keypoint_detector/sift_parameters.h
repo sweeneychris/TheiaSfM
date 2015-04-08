@@ -39,6 +39,7 @@
 // on the VLFeat one, please visit (http://www.vlfeat.org/api/sift.html) for
 // getting more info about the parameters.
 struct SiftParameters {
+  SiftParameters() {}
   SiftParameters(int num_octaves,
                  int num_levels,
                  int first_octave,
