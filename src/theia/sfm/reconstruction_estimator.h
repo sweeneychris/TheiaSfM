@@ -61,6 +61,7 @@ struct ReconstructionEstimatorSummary {
   double position_estimation_time = 0.0;
   double triangulation_time = 0.0;
   double bundle_adjustment_time = 0.0;
+  double total_time = 0.0;
 };
 
 // A reconstruction estimator should build a reconstruction from a view graph

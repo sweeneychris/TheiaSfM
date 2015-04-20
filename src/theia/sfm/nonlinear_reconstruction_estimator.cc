@@ -153,6 +153,7 @@ ReconstructionEstimatorSummary NonlinearReconstructionEstimator::Estimate(
   positions_.clear();
 
   ReconstructionEstimatorSummary summary;
+  Timer total_timer;
   Timer timer;
 
   // Step 1. Filter the initial view graph and remove any bad two view
@@ -236,6 +237,8 @@ ReconstructionEstimatorSummary NonlinearReconstructionEstimator::Estimate(
   GetEstimatedTracksFromReconstruction(*reconstruction_,
                                        &summary.estimated_tracks);
   summary.success = true;
+
+  summary.total_time = total_timer.ElapsedTimeInSeconds();
   return summary;
 }
 

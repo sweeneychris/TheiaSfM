@@ -335,7 +335,8 @@ bool ReconstructionBuilder::BuildReconstruction(
         << summary.relative_translation_filtering_time
         << "\n\tPosition estimation time = " << summary.position_estimation_time
         << "\n\tTriangulation time = " << summary.triangulation_time
-        << "\n\tBundle Adjustment time = " << summary.bundle_adjustment_time;
+        << "\n\tBundle Adjustment time = " << summary.bundle_adjustment_time
+        << "\n\tTotal time = " << summary.total_time;
 
     // Remove estimated views and tracks and attempt to create a reconstruction
     // from the remaining unestimated parts.
