@@ -29,6 +29,7 @@
 --min_num_inliers_for_valid_match=30
 --max_sampson_error_for_verified_match=4.0
 --bundle_adjust_two_view_geometry=true
+--keep_symmetric_matches=true
 
 # Building a reconstruction.
 --reconstruction_estimator=NONLINEAR
