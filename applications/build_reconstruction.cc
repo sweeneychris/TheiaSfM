@@ -77,6 +77,8 @@ DEFINE_int32(min_num_inliers_for_valid_match, 30,
              "match.");
 DEFINE_bool(bundle_adjust_two_view_geometry, true,
             "Set to false to turn off 2-view BA.");
+DEFINE_bool(keep_only_symmetric_matches, true,
+            "Performs two-way matching and keeps symmetric matches.");
 
 // Reconstruction building options.
 DEFINE_string(reconstruction_estimator, "NONLINEAR",
@@ -208,6 +210,8 @@ ReconstructionBuilderOptions SetReconstructionBuilderOptions() {
   }
   options.matching_strategy = GetMatchingStrategyType(FLAGS_matching_strategy);
   options.matching_options.lowes_ratio = FLAGS_lowes_ratio;
+  options.matching_options.keep_only_symmetric_matches =
+      FLAGS_keep_only_symmetric_matches;
   options.min_num_inlier_matches = FLAGS_min_num_inliers_for_valid_match;
   options.reconstruction_estimator_options.min_num_two_view_inliers =
       FLAGS_min_num_inliers_for_valid_match;
