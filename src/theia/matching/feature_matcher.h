@@ -35,6 +35,7 @@
 #ifndef THEIA_MATCHING_FEATURE_MATCHER_H_
 #define THEIA_MATCHING_FEATURE_MATCHER_H_
 
+#include <algorithm>
 #include <glog/logging.h>
 #include <mutex>
 #include <unordered_map>
@@ -269,9 +270,8 @@ void FeatureMatcher<DistanceMetric>::MatchAndVerifyImagePairs(
       VLOG(1) << image_pair_match.correspondences.size()
               << " putative matches between images " << image1_index << " and "
               << image2_index;
-      mutex_.lock();
+      std::lock_guard<std::mutex> lock(mutex_);
       matches->push_back(image_pair_match);
-      mutex_.unlock();
       continue;
     }
 
@@ -308,9 +308,10 @@ void FeatureMatcher<DistanceMetric>::MatchAndVerifyImagePairs(
             << " were matched with " << inliers.size()
             << " verified matches out of " << old_correspondences.size()
             << " putative matches.";
-    mutex_.lock();
-    matches->push_back(image_pair_match);
-    mutex_.unlock();
+    {
+      std::lock_guard<std::mutex> lock(mutex_);
+      matches->push_back(image_pair_match);
+    }
   }
 }
 
