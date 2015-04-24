@@ -285,9 +285,9 @@ void ReconstructionBuilder::InitializeReconstructionAndViewGraph(
 
 bool ReconstructionBuilder::BuildReconstruction(
     std::vector<Reconstruction*>* reconstructions) {
-  CHECK_GT(view_graph_->NumViews(), 0)
-      << "You must add images with the reconstruction "
-         "builder before calling BuildReconstruction.";
+  CHECK_GE(view_graph_->NumViews(), 3) << "At least 3 images must be provided "
+                                          "in order to create a "
+                                          "reconstruction.";
 
   // Build tracks if they were not explicitly specified.
   if (reconstruction_->NumTracks() == 0) {
