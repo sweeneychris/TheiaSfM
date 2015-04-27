@@ -4,8 +4,9 @@
 Releases
 ========
 
-HEAD
-====
+
+`0.3.0 <https://github.com/sweeneychris/TheiaSfM/archive/v0.3.tar.gz>`_
+=======================================================================
 
 New Features
 ------------
