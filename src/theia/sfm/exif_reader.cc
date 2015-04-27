@@ -34,6 +34,7 @@
 
 #include "theia/sfm/exif_reader.h"
 
+#include <algorithm>
 #include <easyexif/exif.h>
 #include <glog/logging.h>
 #include <fstream>  // NOLINT
@@ -169,11 +170,9 @@ bool ExifReader::ExtractEXIFMetadata(
       exif_parser.FocalPlaneXResolution > 0 &&
       exif_parser.FocalPlaneResolutionUnit > 1 &&
       exif_parser.FocalPlaneResolutionUnit <= 5) {
-    const double image_diagonal =
-        std::sqrt(std::pow(camera_intrinsics_prior->image_width, 2) +
-                  std::pow(camera_intrinsics_prior->image_height, 2));
     SetFocalLengthFromExif(exif_parser,
-                           image_diagonal,
+                           image.Width(),
+                           image.Height(),
                            camera_intrinsics_prior);
   } else {
     SetFocalLengthFromSensorDatabase(
@@ -192,40 +191,47 @@ bool ExifReader::ExtractEXIFMetadata(
 
 void ExifReader::SetFocalLengthFromExif(
     const EXIFInfo& exif_parser,
-    const double image_diagonal,
+    const double image_width,
+    const double image_height,
     CameraIntrinsicsPrior* camera_intrinsics_prior) const {
   // CCD resolution is the pixels per unit resolution of the CCD.
-  double ccd_resolution = exif_parser.FocalPlaneXResolution;
-
+  double ccd_resolution_units = 1.0;
   switch (exif_parser.FocalPlaneResolutionUnit) {
     case 2:
       // Convert inches to mm.
-      ccd_resolution /= 25.4;
+      ccd_resolution_units = 25.4;
       break;
     case 3:
       // Convert centimeters to mm.
-      ccd_resolution /= 10.0;
+      ccd_resolution_units = 10.0;
       break;
     case 4:
       // Already in mm.
       break;
     case 5:
       // Convert micrometers to mm.
-      ccd_resolution *= 1000.0;
+      ccd_resolution_units = 1.0 / 1000.0;
       break;
     default:
       break;
   }
 
-  // Normalize for the image size in case the original size is different than
-  // the current size.
-  const double exif_diagonal =
-      std::sqrt(exif_parser.ImageWidth * exif_parser.ImageWidth +
-                exif_parser.ImageHeight * exif_parser.ImageHeight);
+  const double ccd_width =
+      exif_parser.ImageWidth /
+      (exif_parser.FocalPlaneXResolution / ccd_resolution_units);
+  const double ccd_height =
+      exif_parser.ImageHeight /
+      (exif_parser.FocalPlaneYResolution / ccd_resolution_units);
 
-  const double ccd_width_mm = exif_diagonal / ccd_resolution;
+  const double focal_length_x =
+      exif_parser.FocalLength * image_width / ccd_width;
+  const double focal_length_y =
+      exif_parser.FocalLength * image_height / ccd_height;
+
+  // Normalize for the image size in case the original size is different
+  // than the current size.
   camera_intrinsics_prior->focal_length.value =
-      exif_parser.FocalLength * image_diagonal / ccd_width_mm;
+      (focal_length_x + focal_length_y) / 2.0;
   camera_intrinsics_prior->focal_length.is_set = true;
 }
 

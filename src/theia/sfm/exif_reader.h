@@ -74,7 +74,8 @@ class ExifReader {
   // Sets the focal length from the focal plane resolution.
   void SetFocalLengthFromExif(
       const EXIFInfo& exif_parser,
-      const double image_diagonal,
+      const double image_width,
+      const double image_height,
       CameraIntrinsicsPrior* camera_intrinsics_prior) const;
 
   // Sets the focal length from a look up in the sensor width database.
