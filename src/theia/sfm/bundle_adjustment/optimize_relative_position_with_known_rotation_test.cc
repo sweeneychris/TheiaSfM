@@ -78,31 +78,9 @@ void GetInverseCalibrationMatrix(const Camera& camera,
   }
 }
 
-// Computes the relative rotation from two absolute rotations.
-Eigen::Vector3d RelativeRotationFromTwoRotations(
-    const Eigen::Vector3d& rotation1, const Eigen::Vector3d& rotation2) {
-  Eigen::Matrix3d rotation1_mat, rotation2_mat;
-  ceres::AngleAxisToRotationMatrix(
-      rotation1.data(), ceres::ColumnMajorAdapter3x3(rotation1_mat.data()));
-  ceres::AngleAxisToRotationMatrix(
-      rotation2.data(), ceres::ColumnMajorAdapter3x3(rotation2_mat.data()));
-
-  const Eigen::Matrix3d relative_rotation_mat =
-      rotation2_mat * rotation1_mat.transpose();
-  Eigen::Vector3d relative_rotation;
-  ceres::RotationMatrixToAngleAxis(ceres::ColumnMajorAdapter3x3(
-      relative_rotation_mat.data()), relative_rotation.data());
-
-  return relative_rotation;
-}
-
-void GetRelativePoseFromCameras(const Camera& camera1,
-                                const Camera& camera2,
-                                Eigen::Vector3d* relative_rotation,
-                                Eigen::Vector3d* relative_position) {
-  *relative_rotation = RelativeRotationFromTwoRotations(
-      camera1.GetOrientationAsAngleAxis(), camera2.GetOrientationAsAngleAxis());
-
+void GetRelativeTranslationFromCameras(const Camera& camera1,
+                                       const Camera& camera2,
+                                       Eigen::Vector3d* relative_position) {
   const Eigen::Vector3d rotated_relative_position =
       camera2.GetPosition() - camera1.GetPosition();
   ceres::AngleAxisRotatePoint(camera1.GetOrientationAsAngleAxis().data(),
@@ -114,7 +92,8 @@ void GetRelativePoseFromCameras(const Camera& camera1,
 void TestOptimization(const Camera& camera1,
                       const Camera& camera2,
                       const std::vector<Eigen::Vector3d>& world_points,
-                      const double kNoise,
+                      const double kPixelNoise,
+                      const double kTranslationNoise,
                       const double kTolerance) {
   Eigen::Matrix3d inv_calibration1, inv_calibration2;
   GetInverseCalibrationMatrix(camera1, &inv_calibration1);
@@ -127,8 +106,8 @@ void TestOptimization(const Camera& camera1,
     FeatureCorrespondence match;
     camera1.ProjectPoint(point, &match.feature1);
     camera2.ProjectPoint(point, &match.feature2);
-    AddNoiseToProjection(kNoise, &match.feature1);
-    AddNoiseToProjection(kNoise, &match.feature2);
+    AddNoiseToProjection(kPixelNoise, &match.feature1);
+    AddNoiseToProjection(kPixelNoise, &match.feature2);
 
     // Undo the calibration.
     match.feature1 =
@@ -138,25 +117,36 @@ void TestOptimization(const Camera& camera1,
     matches.emplace_back(match);
   }
 
-  Eigen::Vector3d relative_rotation, relative_position;
-  GetRelativePoseFromCameras(camera1,
-                             camera2,
-                             &relative_rotation,
-                             &relative_position);
+  Eigen::Vector3d relative_position;
+  GetRelativeTranslationFromCameras(camera1, camera2, &relative_position);
 
-  const Eigen::Vector3d position_before = relative_position;
-  CHECK(OptimizeRelativePositionWithKnownRotation(matches,
-                                                  relative_rotation,
-                                                  &relative_position));
-  EXPECT_LT((position_before - relative_position).norm(), kTolerance);
+  const Eigen::Vector3d gt_relative_position = relative_position;
+
+  // Add noise to relative translation.
+  const Eigen::AngleAxisd translation_noise(DegToRad(
+      RandGaussian(0.0, kTranslationNoise)), Eigen::Vector3d::Random());
+  relative_position = translation_noise * relative_position;
+
+  CHECK(OptimizeRelativePositionWithKnownRotation(
+      matches,
+      camera1.GetOrientationAsAngleAxis(),
+      camera2.GetOrientationAsAngleAxis(),
+      &relative_position));
+
+  const double translation_error = RadToDeg(
+      acos(Clamp(gt_relative_position.dot(relative_position), -1.0, 1.0)));
+  EXPECT_LT(translation_error, kTolerance)
+      << "GT Position = " << gt_relative_position.transpose()
+      << "\nEstimated position = " << relative_position.transpose();
 }
 
 }  // namespace
 
-TEST(OptimizeRelativePositionWithKnownRotationTest, PerfectInput) {
+TEST(OptimizeRelativePositionWithKnownRotationTest, NoNoise) {
   static const double kTolerance = 1e-12;
-  static const double kNoise = 0.0;
-  static const int kNumPoints = 25;
+  static const double kPixelNoise = 0.0;
+  static const double kTranslationNoise = 0.0;
+  static const int kNumPoints = 100;
   std::vector<Eigen::Vector3d> points(kNumPoints);
 
   // Set up random points.
@@ -172,13 +162,15 @@ TEST(OptimizeRelativePositionWithKnownRotationTest, PerfectInput) {
   Camera camera1 = RandomCamera();
   Camera camera2 = RandomCamera();
   camera2.SetPosition(camera2.GetPosition().normalized());
-  TestOptimization(camera1, camera2, points, kNoise, kTolerance);
+  TestOptimization(camera1, camera2, points, kPixelNoise, kTranslationNoise,
+                   kTolerance);
 }
 
-TEST(OptimizeRelativePositionWithKnownRotationTest, NoisyInput) {
-  static const double kTolerance = 0.1;
-  static const double kNoise = 1.0;
-  static const int kNumPoints = 25;
+TEST(OptimizeRelativePositionWithKnownRotationTest, PixelNoise) {
+  static const double kTolerance = 2.0;
+  static const double kPixelNoise = 1.0;
+  static const double kTranslationNoise = 0.0;
+  static const int kNumPoints = 100;
   std::vector<Eigen::Vector3d> points(kNumPoints);
 
   // Set up random points.
@@ -194,7 +186,58 @@ TEST(OptimizeRelativePositionWithKnownRotationTest, NoisyInput) {
   Camera camera1 = RandomCamera();
   Camera camera2 = RandomCamera();
   camera2.SetPosition(camera2.GetPosition().normalized());
-  TestOptimization(camera1, camera2, points, kNoise, kTolerance);
+  TestOptimization(camera1, camera2, points, kPixelNoise, kTranslationNoise,
+                   kTolerance);
+}
+
+
+TEST(OptimizeRelativePositionWithKnownRotationTest, TranslationNoise) {
+  static const double kTolerance = 2.0;
+  static const double kPixelNoise = 0.0;
+  static const double kTranslationNoise = 5.0;
+  static const int kNumPoints = 100;
+  std::vector<Eigen::Vector3d> points(kNumPoints);
+
+  // Set up random points.
+  InitRandomGenerator();
+  for (int i = 0; i < kNumPoints; i++) {
+    Eigen::Vector3d point(RandDouble(-2.0, 2.0),
+                          RandDouble(-2.0, -2.0),
+                          RandDouble(8.0, 10.0));
+    points[i] = point;
+  }
+
+  // Set up random cameras.
+  Camera camera1 = RandomCamera();
+  Camera camera2 = RandomCamera();
+  camera2.SetPosition(camera2.GetPosition().normalized());
+  TestOptimization(camera1, camera2, points, kPixelNoise, kTranslationNoise,
+                   kTolerance);
+}
+
+
+TEST(OptimizeRelativePositionWithKnownRotationTest, PixelAndTranslationNoise) {
+  static const double kTolerance = 2.0;
+  static const double kPixelNoise = 1.0;
+  static const double kTranslationNoise = 5.0;
+  static const int kNumPoints = 100;
+  std::vector<Eigen::Vector3d> points(kNumPoints);
+
+  // Set up random points.
+  InitRandomGenerator();
+  for (int i = 0; i < kNumPoints; i++) {
+    Eigen::Vector3d point(RandDouble(-2.0, 2.0),
+                          RandDouble(-2.0, -2.0),
+                          RandDouble(8.0, 10.0));
+    points[i] = point;
+  }
+
+  // Set up random cameras.
+  Camera camera1 = RandomCamera();
+  Camera camera2 = RandomCamera();
+  camera2.SetPosition(camera2.GetPosition().normalized());
+  TestOptimization(camera1, camera2, points, kPixelNoise, kTranslationNoise,
+                   kTolerance);
 }
 
 }  // namespace theia

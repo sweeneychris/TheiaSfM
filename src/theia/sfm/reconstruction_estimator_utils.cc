@@ -102,25 +102,6 @@ void GetFeatureCorrespondences(const View& view1, const View& view2,
   }
 }
 
-// Computes the relative rotation from two absolute rotations.
-Eigen::Vector3d RelativeRotationFromTwoRotations(
-    const Eigen::Vector3d& rotation1, const Eigen::Vector3d& rotation2) {
-  Eigen::Matrix3d rotation1_mat, rotation2_mat;
-  ceres::AngleAxisToRotationMatrix(
-      rotation1.data(), ceres::ColumnMajorAdapter3x3(rotation1_mat.data()));
-  ceres::AngleAxisToRotationMatrix(
-      rotation2.data(), ceres::ColumnMajorAdapter3x3(rotation2_mat.data()));
-
-  const Eigen::Matrix3d relative_rotation_mat =
-      rotation2_mat * rotation1_mat.transpose();
-  Eigen::Vector3d relative_rotation;
-  ceres::RotationMatrixToAngleAxis(
-      ceres::ColumnMajorAdapter3x3(relative_rotation_mat.data()),
-      relative_rotation.data());
-
-  return relative_rotation;
-}
-
 }  // namespace
 
 using Eigen::Vector3d;
@@ -244,15 +225,12 @@ void RefineRelativeTranslationsWithKnownRotations(
     const View* view2 = reconstruction.View(view_pair.first.second);
     GetFeatureCorrespondences(*view1, *view2, &matches);
 
-    const Eigen::Vector3d relative_rotation = RelativeRotationFromTwoRotations(
-        FindOrDie(orientations, view_pair.first.first),
-        FindOrDie(orientations, view_pair.first.second));
-
     TwoViewInfo* info = view_graph->GetMutableEdge(view_pair.first.first,
                                                    view_pair.first.second);
     pool.Add(OptimizeRelativePositionWithKnownRotation,
              matches,
-             relative_rotation,
+             FindOrDie(orientations, view_pair.first.first),
+             FindOrDie(orientations, view_pair.first.second),
              &info->position_2);
   }
 }

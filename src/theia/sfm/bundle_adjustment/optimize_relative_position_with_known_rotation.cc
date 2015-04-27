@@ -52,7 +52,8 @@ namespace theia {
 // relative position based on feature correspondences.
 bool OptimizeRelativePositionWithKnownRotation(
     const std::vector<FeatureCorrespondence>& correspondences,
-    const Eigen::Vector3d& relative_rotation,
+    const Eigen::Vector3d& rotation1,
+    const Eigen::Vector3d& rotation2,
     Eigen::Vector3d* relative_position) {
   CHECK_NOTNULL(relative_position);
 
@@ -78,18 +79,22 @@ bool OptimizeRelativePositionWithKnownRotation(
                             position_parameterization);
 
   // Add correspondences to the optimization problem.
-  Eigen::Matrix3d rotation_matrix;
+  Eigen::Matrix3d rotation_matrix1;
   ceres::AngleAxisToRotationMatrix(
-      relative_rotation.data(),
-      ceres::ColumnMajorAdapter3x3(rotation_matrix.data()));
+      rotation1.data(), ceres::ColumnMajorAdapter3x3(rotation_matrix1.data()));
+  Eigen::Matrix3d rotation_matrix2;
+  ceres::AngleAxisToRotationMatrix(
+      rotation2.data(), ceres::ColumnMajorAdapter3x3(rotation_matrix2.data()));
 
   for (const FeatureCorrespondence& match : correspondences) {
-    const Eigen::Vector3d feature1 = match.feature1.homogeneous();
-    const Eigen::Vector3d feature2 = match.feature2.homogeneous();
-    const Eigen::Vector3d rotated_feature1 = rotation_matrix * feature1;
+    const Eigen::Vector3d rotated_feature1 =
+        rotation_matrix1.transpose() * match.feature1.homogeneous();
+    const Eigen::Vector3d rotated_feature2 =
+        rotation_matrix2.transpose() * match.feature2.homogeneous();
 
     const Eigen::Vector3d orthogonal_vector =
-        feature2.cross(rotated_feature1).transpose() * rotation_matrix;
+        -rotated_feature2.cross(rotated_feature1).transpose() *
+        rotation_matrix1.transpose();
     problem.AddResidualBlock(
         OrthogonalVectorError::Create(orthogonal_vector),
         loss_function.get(),

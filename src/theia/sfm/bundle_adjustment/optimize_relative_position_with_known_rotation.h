@@ -42,12 +42,18 @@
 
 namespace theia {
 
-// Using known relative rotations, optimize the relative position that
-// minimizes the epipolar constraint x1' * [t]_x * R * x0 = 0 for all
-// correspondences. NOTE: the position is -R' * t.
+// Using known relative rotations, optimize the relative position that minimizes
+// the epipolar constraint x2' * [t]_x * R * x1 = 0 for all
+// correspondences. NOTE: the position is -R' * t and the rotations correspond
+// to the absolute orientations of cameras 1 and 2.
+//
+// This algorithm is based on the robust pairwise translations estimation
+// algorithm from "Robust Camera Location Estimation by Convex Programming" by
+// Onur Ozyesil and Amit Singer (CVPR 2015).
 bool OptimizeRelativePositionWithKnownRotation(
     const std::vector<FeatureCorrespondence>& correspondences,
-    const Eigen::Vector3d& relative_rotation,
+    const Eigen::Vector3d& rotation1,
+    const Eigen::Vector3d& rotation2,
     Eigen::Vector3d* relative_position);
 
 }  // namespace theia
