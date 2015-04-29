@@ -104,7 +104,7 @@ bool NonlinearPositionEstimator::EstimatePositions(
 
   // Iterative schur is only used if the problem is large enough, otherwise
   // sparse schur is used.
-  static const int kMinNumCamerasForIterativeSchur = 1000;
+  static const int kMinNumCamerasForIterativeSolve = 1000;
 
   // Initialize positions to be random.
   InitializeRandomPositions(orientations, positions);
@@ -125,11 +125,24 @@ bool NonlinearPositionEstimator::EstimatePositions(
   solver_options_.num_linear_solver_threads = options_.num_threads;
   solver_options_.max_num_iterations = options_.max_num_iterations;
 
-  if (positions->size() > kMinNumCamerasForIterativeSchur) {
-    solver_options_.linear_solver_type = ceres::ITERATIVE_SCHUR;
-    solver_options_.preconditioner_type = ceres::SCHUR_JACOBI;
+  // Choose the type of linear solver. For sufficiently large problems, we want
+  // to use iterative methods (e.g., Conjugate Gradient or Iterative Schur);
+  // however, we only want to use a Schur solver if 3D points are used in the
+  // optimization.
+  if (positions->size() > kMinNumCamerasForIterativeSolve) {
+    if (options_.min_num_points_per_view > 0) {
+      solver_options_.linear_solver_type = ceres::ITERATIVE_SCHUR;
+      solver_options_.preconditioner_type = ceres::SCHUR_JACOBI;
+    } else {
+      solver_options_.linear_solver_type = ceres::CGNR;
+      solver_options_.preconditioner_type = ceres::JACOBI;
+    }
   } else {
-    solver_options_.linear_solver_type = ceres::SPARSE_SCHUR;
+    if (options_.min_num_points_per_view > 0) {
+      solver_options_.linear_solver_type = ceres::SPARSE_SCHUR;
+    } else {
+      solver_options_.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
+    }
   }
 
   ceres::Solve(solver_options_, problem_.get(), &summary);
