@@ -107,6 +107,10 @@ class L1Solver {
     CHECK_EQ(linear_solver_.info(), Eigen::Success);
   }
 
+  void SetMaxIterations(const int max_iterations) {
+    options_.max_num_iterations = max_iterations;
+  }
+
   // Solves ||Ax - b||_1 for the optimial L1 solution given an initial guess for
   // x. To solve this we introduce an auxillary variable y such that the
   // solution to:
@@ -137,7 +141,7 @@ class L1Solver {
       // TODO(cmsweeney): Check the dual residual for convergence.
       if (surrogate_duality_gap <= options_.duality_gap_tolerance) {
         VLOG(1) << "Converged in " << i + 1 << " iterations.";
-        break;
+        return;
       }
       const double tau = options_.mu * rhs_.size() / surrogate_duality_gap;
 
@@ -152,6 +156,8 @@ class L1Solver {
       // Compute the maximum step size to remain a feasible solution.
       ComputeStepSize(tau);
     }
+    VLOG(1) << "L1 solver did not converge after max_num_iterations ("
+            << options_.max_num_iterations << "). Exiting.";
   }
 
  private:
