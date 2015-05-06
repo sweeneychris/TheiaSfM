@@ -42,6 +42,11 @@
 #include <memory>
 #include <vector>
 
+// For MSVC, this macro is sometimes not defined so we need to define it here.
+#ifndef EIGEN_ALIGNED_ALLOCATOR
+  #define EIGEN_ALIGNED_ALLOCATOR Eigen::aligned_allocator
+#endif
+
 // This file should be included any time std::vector is used with Eigen!!! There
 // are alignment issues that cause vectorization difficulties for eigen types
 // that are sizes in multiples of 16 bytes.
