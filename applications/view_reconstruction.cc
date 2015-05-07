@@ -78,6 +78,7 @@ bool draw_axes = false;
 float point_size = 1.0;
 float normalized_focal_length = 1.0;
 int min_num_views_for_track = 3;
+double anti_aliasing_blend = 0.4;
 
 void GetPerspectiveParams(double* aspect_ratio, double* fovy) {
   double focal_length = 800.0;
@@ -148,7 +149,6 @@ void DrawCamera(const theia::Camera& camera) {
 
   // Create the camera wireframe. If intrinsic parameters are not set then use
   // the focal length as a guess.
-
   const double normalized_width =
       (camera.ImageWidth() / 2.0) / camera.FocalLength();
   const double normalized_height =
@@ -214,7 +214,7 @@ void RenderScene() {
   glPointParameterfv(GL_POINT_DISTANCE_ATTENUATION, point_size_coords);
 
   // Draw the points.
-  glColor3f(0.01, 0.01, 0.01);
+  glColor4f(0.01, 0.01, 0.01, anti_aliasing_blend);
   glBegin(GL_POINTS);
   for (int i = 0; i < world_points.size(); i++) {
     if (num_views_for_track[i] < min_num_views_for_track) {
@@ -293,7 +293,7 @@ void MouseMove(int x, int y) {
 void Keyboard(unsigned char key, int x, int y) {
   switch (key) {
     case 'r':  // reset viewpoint
-      distance = 100.0f;
+      distance = 1.0f;
       rot_x = 0.0f;
       rot_y = 0.0f;
       point_size = 1.0;
@@ -328,6 +328,16 @@ void Keyboard(unsigned char key, int x, int y) {
       break;
     case 'T':
       --min_num_views_for_track;
+      break;
+    case 'b':
+      if (anti_aliasing_blend > 0) {
+        anti_aliasing_blend -= 0.05;
+      }
+      break;
+    case 'B':
+      if (anti_aliasing_blend < 1.0) {
+        anti_aliasing_blend += 0.05;
+      }
       break;
   }
 }
