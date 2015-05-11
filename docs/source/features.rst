@@ -19,8 +19,6 @@ Keypoints
 
 The base :class:`Keypoint` class is a glorified struct that holds information about a keypoint that has been detected with a :class:`KeypointDetector`. Information about the keypoint's position, strength, scale, and orientation can be easily added and retrieved. The type of keypoint can be retrieved with the :func:`keypoint_type()` function.
 
-.. class:: Keypoint
-
 	.. code-block:: c++
 
            class Keypoint {
@@ -70,8 +68,6 @@ Keypoint Detector
 .. class:: KeypointDetector
 
 Detecting keypoints with Theia is very simple, and we have implemented a number of keypoint detectors that are commonly used in Computer Vision. Each keypoint detector is derived from the virtual class :class:`KeypointDetector`. Each derived class must implement the :func:`DetectKeypoints` method
-
-.. class:: KeypointDetector
 
 .. function:: bool KeypointDetector::Initialize()
 
