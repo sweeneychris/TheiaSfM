@@ -13,7 +13,7 @@ New Features
 
 Bug Fixes
 ---------
-* Some Visual Studio bugs and incompatabilities (thanks to Pierre Moulon and
+* Some Visual Studio bugs and incompatabilities (thanks to Pierre Moulon and Brojeshwar Bhowmick)
 
 
 `0.3.0 <https://github.com/sweeneychris/TheiaSfM/archive/v0.3.tar.gz>`_
