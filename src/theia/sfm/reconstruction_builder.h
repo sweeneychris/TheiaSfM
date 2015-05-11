@@ -192,7 +192,7 @@ class ReconstructionBuilder {
 };
 
 template <class DescriptorType>
-bool ReconstructionBuilder::MatchFeatures(
+inline bool ReconstructionBuilder::MatchFeatures(
     const std::vector<std::vector<Keypoint> >& keypoints,
     const std::vector<std::vector<DescriptorType> >& descriptors) {
   CHECK_EQ(image_filepaths_.size(), keypoints.size());

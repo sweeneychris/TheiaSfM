@@ -105,7 +105,7 @@ class FeatureExtractor {
 
 // ---------------------- Implementation ------------------------- //
 template <typename DescriptorType>
-bool FeatureExtractor::Extract(
+inline bool FeatureExtractor::Extract(
     const std::vector<std::string>& filenames,
     std::vector<std::vector<Keypoint> >* keypoints,
     std::vector<std::vector<DescriptorType> >* descriptors) {
@@ -134,7 +134,7 @@ bool FeatureExtractor::Extract(
 }
 
 template <typename DescriptorType>
-bool FeatureExtractor::ExtractFeatures(
+inline bool FeatureExtractor::ExtractFeatures(
     const std::string& filename,
     std::vector<Keypoint>* keypoints,
     std::vector<DescriptorType>* descriptors) {
