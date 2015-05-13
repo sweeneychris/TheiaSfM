@@ -139,7 +139,7 @@ bool Input1DSFM::ReadListsFile(
 
     // If the view is not in the connected component remove it. Adding it first
     // then removing it allows for our ViewIds to stay in sync with the index of
-    // the image in hte lists file. This will simplify the indexing throughout
+    // the image in the lists file. This will simplify the indexing throughout
     // the entire program.
     if (!ContainsKey(valid_image_index, view_id)) {
       reconstruction_->RemoveView(view_id);
