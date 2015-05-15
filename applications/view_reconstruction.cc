@@ -66,13 +66,22 @@ std::vector<int> num_views_for_track;
 // Parameters for OpenGL.
 int width = 1200;
 int height = 800;
-int mouse_down_x[3], mouse_down_y[3];
-float rot_x = 0.0f, rot_y = 0.0f;
-float prev_x, prev_y;
-float distance = 1.0;
-Eigen::Vector3d origin = Eigen::Vector3d::Zero();
-bool mouse_rotates = false, mouse_moves = false;
 
+// OpenGL camera parameters.
+Eigen::Vector3f viewer_position(0.0, 0.0, 0.0);
+float zoom = -50.0;
+float delta_zoom = 25;
+
+// Rotation values for the navigation
+Eigen::Vector2f navigation_rotation(0.0, 0.0);
+
+// Position of the mouse when pressed
+int mouse_pressed_x = 0, mouse_pressed_y = 0;
+float last_x_offset = 0.0, last_y_offset = 0.0;
+// Mouse button states
+int left_mouse_button_active = 0, right_mouse_button_active = 0;
+
+// Visualization parameters.
 bool draw_cameras = true;
 bool draw_axes = false;
 float point_size = 1.0;
@@ -184,17 +193,17 @@ void RenderScene() {
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
 
-  glTranslatef(0.0, 0.0, -10);
-
-  glRotatef(180.0f + rot_x, 1.0f, 0.0f, 0.0f);
-  glRotatef(-rot_y, 0.0f, 1.0f, 0.0f);
+  // Transformation to the viewer origin.
+  glTranslatef(0.0, 0.0, zoom);
+  glRotatef(navigation_rotation[0], 1.0f, 0.0f, 0.0f);
+  glRotatef(navigation_rotation[1], 0.0f, 1.0f, 0.0f);
   if (draw_axes) {
-    DrawAxes(1.0);
+    DrawAxes(10.0);
   }
 
-  glScalef(distance, distance, distance);
+  // Transformation from the viewer origin to the reconstruction origin.
+  glTranslatef(viewer_position[0], viewer_position[1], viewer_position[2]);
 
-  glTranslatef(-origin[0], -origin[1], -origin[2]);
   glClearColor(1.0f, 1.0f, 1.0f, 0.0f);
 
   // Plot the point cloud.
@@ -235,27 +244,21 @@ void RenderScene() {
 }
 
 void MouseButton(int button, int state, int x, int y) {
-  // button down: save coordinates
-  if (state == GLUT_DOWN && button <= 2) {
-    mouse_down_x[button] = x;
-    mouse_down_y[button] = y;
-    prev_x = x;
-    prev_y = y;
-
-    if (button == GLUT_RIGHT_BUTTON) {
-      mouse_rotates = true;
-    } else if (button == GLUT_LEFT_BUTTON) {
-      mouse_moves = true;
+  // get the mouse buttons
+  if (button == GLUT_RIGHT_BUTTON) {
+    if (state == GLUT_DOWN) {
+      right_mouse_button_active += 1;
+    } else {
+      right_mouse_button_active -= 1;
     }
-    return;
-  }
-
-  if (state == GLUT_UP && button == GLUT_RIGHT_BUTTON) {
-    mouse_rotates = false;
-  }
-
-  if (state == GLUT_UP && button == GLUT_LEFT_BUTTON) {
-    mouse_moves = false;
+  } else if (button == GLUT_LEFT_BUTTON) {
+    if (state == GLUT_DOWN) {
+      left_mouse_button_active += 1;
+      last_x_offset = 0.0;
+      last_y_offset = 0.0;
+    } else {
+      left_mouse_button_active -= 1;
+    }
   }
 
   // scroll event - wheel reports as button 3 (scroll up) and button 4 (scroll
@@ -263,47 +266,74 @@ void MouseButton(int button, int state, int x, int y) {
   if ((button == 3) || (button == 4)) {
     // Each wheel event reports like a button click, GLUT_DOWN then GLUT_UP
     if (state == GLUT_UP) return;  // Disregard redundant GLUT_UP events
-    if (button == 3)
-      distance /= 1.5f;
-    else
-      distance *= 1.5f;
+    if (button == 3) {
+      zoom += delta_zoom;
+    } else {
+      zoom -= delta_zoom;
+    }
   }
+
+  mouse_pressed_x = x;
+  mouse_pressed_y = y;
 }
 
 void MouseMove(int x, int y) {
-  if (mouse_rotates) {
-    const double rotate_factor = 0.5f;
-    // notice x & y difference (i.e., changes in x are to rotate about y-axis)
-    rot_x -= rotate_factor * (y - prev_y);
-    rot_y -= rotate_factor * (x - prev_x);
-    prev_x = x;
-    prev_y = y;
-  } else if (mouse_moves) {
-    const Eigen::Quaterniond inv_rot =
-        Eigen::Quaterniond(Eigen::AngleAxisd(theia::DegToRad(180.f + rot_x),
-                                             Eigen::Vector3d::UnitX()) *
-                           Eigen::AngleAxisd(theia::DegToRad(-rot_y),
-                                             Eigen::Vector3d::UnitY()));
-    origin += inv_rot * Eigen::Vector3d(prev_x - x, y - prev_y, 0);
-    prev_x = x;
-    prev_y = y;
+  float x_offset = 0.0, y_offset = 0.0;
+
+  // Rotation controls
+  if (right_mouse_button_active) {
+    navigation_rotation[0] += ((mouse_pressed_y - y) * 180.0f) / 200.0f;
+    navigation_rotation[1] += ((mouse_pressed_x - x) * 180.0f) / 200.0f;
+
+    mouse_pressed_y = y;
+    mouse_pressed_x = x;
+
+  } else if (left_mouse_button_active) {
+    float delta_x = 0, delta_y = 0;
+    const Eigen::AngleAxisf rotation(
+        Eigen::AngleAxisf(theia::DegToRad(navigation_rotation[0]),
+                          Eigen::Vector3f::UnitX()) *
+        Eigen::AngleAxisf(theia::DegToRad(navigation_rotation[1]),
+                          Eigen::Vector3f::UnitY()));
+
+    // Panning controls.
+    x_offset = (mouse_pressed_x - x);
+    if (last_x_offset != 0.0) {
+      delta_x = -(x_offset - last_x_offset) / 8.0;
+    }
+    last_x_offset = x_offset;
+
+    y_offset = (mouse_pressed_y - y);
+    if (last_y_offset != 0.0) {
+      delta_y = (y_offset - last_y_offset) / 8.0;
+    }
+    last_y_offset = y_offset;
+
+    // Compute the new viewer origin origin.
+    viewer_position +=
+        rotation.inverse() * Eigen::Vector3f(delta_x, delta_y, 0);
   }
 }
 
 void Keyboard(unsigned char key, int x, int y) {
   switch (key) {
     case 'r':  // reset viewpoint
-      distance = 1.0f;
-      rot_x = 0.0f;
-      rot_y = 0.0f;
+      viewer_position.setZero();
+      zoom = -50.0;
+      navigation_rotation.setZero();
+      mouse_pressed_x = 0;
+      mouse_pressed_y = 0;
+      last_x_offset = 0.0;
+      last_y_offset = 0.0;
+      left_mouse_button_active = 0;
+      right_mouse_button_active = 0;
       point_size = 1.0;
-      origin = Eigen::Vector3d::Zero();
       break;
     case 'z':
-      distance /= 1.2f;
+      zoom += delta_zoom;
       break;
     case 'Z':
-      distance *= 1.2f;
+      zoom -= delta_zoom;
       break;
     case 'p':
       point_size /= 1.2;
