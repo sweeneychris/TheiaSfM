@@ -34,51 +34,28 @@
 
 #include "theia/sfm/bundle_adjustment/optimize_relative_position_with_known_rotation.h"
 
-#include <ceres/ceres.h>
 #include <ceres/rotation.h>
 #include <Eigen/Core>
+#include <algorithm>
 #include <vector>
 
 #include "theia/math/util.h"
-#include "theia/sfm/bundle_adjustment/orthogonal_vector_error.h"
-#include "theia/sfm/bundle_adjustment/unit_norm_three_vector_parameterization.h"
 #include "theia/matching/feature_correspondence.h"
+#include "theia/sfm/triangulation/triangulation.h"
 
 namespace theia {
+namespace {
 
-// The epipolar constraint x1' * [t]_x * R * x0 = 0 may be rewritten as:
-//   -(x1.cross(R * x0))' * t = 0, or alternatively v' * t = 0 where
-// v = -x1.cross(R * x0). We can use this parameterization to optimize for the
-// relative position based on feature correspondences.
-bool OptimizeRelativePositionWithKnownRotation(
+// Creates the constraint matrix such that ||A * t|| is minimized, where A is
+// R_i * f_i x R_j * f_j. Given known rotations, we can solve for the
+// relative translation from this constraint matrix.
+void CreateConstraintMatrix(
     const std::vector<FeatureCorrespondence>& correspondences,
     const Eigen::Vector3d& rotation1,
     const Eigen::Vector3d& rotation2,
-    Eigen::Vector3d* relative_position) {
-  CHECK_NOTNULL(relative_position);
+    Eigen::MatrixXd* constraint_matrix) {
+  constraint_matrix->resize(3, correspondences.size());
 
-  // Set problem options.
-  ceres::Problem::Options problem_options;
-  // Only use one loss function for the entire problem.
-  std::unique_ptr<ceres::LossFunction> loss_function(new ceres::HuberLoss(0.1));
-  problem_options.loss_function_ownership = ceres::DO_NOT_TAKE_OWNERSHIP;
-  ceres::Problem problem(problem_options);
-
-  ceres::Solver::Options solver_options;
-  solver_options.linear_solver_type = ceres::DENSE_QR;
-  solver_options.logging_type = ceres::SILENT;
-
-  // Add position as a parameter with unit norm.
-  // Add the position as a parameter block, ensuring that the norm is 1.
-  const int kPositionSize = 3;
-  ceres::LocalParameterization* position_parameterization =
-      new ceres::AutoDiffLocalParameterization<
-          UnitNormThreeVectorParameterization, 3, 3>;
-  problem.AddParameterBlock(relative_position->data(),
-                            kPositionSize,
-                            position_parameterization);
-
-  // Add correspondences to the optimization problem.
   Eigen::Matrix3d rotation_matrix1;
   ceres::AngleAxisToRotationMatrix(
       rotation1.data(), ceres::ColumnMajorAdapter3x3(rotation_matrix1.data()));
@@ -86,28 +63,132 @@ bool OptimizeRelativePositionWithKnownRotation(
   ceres::AngleAxisToRotationMatrix(
       rotation2.data(), ceres::ColumnMajorAdapter3x3(rotation_matrix2.data()));
 
-  for (const FeatureCorrespondence& match : correspondences) {
+  for (int i = 0; i < correspondences.size(); i++) {
     const Eigen::Vector3d rotated_feature1 =
-        rotation_matrix1.transpose() * match.feature1.homogeneous();
+        rotation_matrix1.transpose() *
+        correspondences[i].feature1.homogeneous();
     const Eigen::Vector3d rotated_feature2 =
-        rotation_matrix2.transpose() * match.feature2.homogeneous();
+        rotation_matrix2.transpose() *
+        correspondences[i].feature2.homogeneous();
 
-    const Eigen::Vector3d orthogonal_vector =
-        -rotated_feature2.cross(rotated_feature1).transpose() *
+    constraint_matrix->col(i) =
+        rotated_feature2.cross(rotated_feature1).transpose() *
         rotation_matrix1.transpose();
-    problem.AddResidualBlock(
-        OrthogonalVectorError::Create(orthogonal_vector),
-        loss_function.get(),
-        relative_position->data());
+  }
+}
+
+// Determines if the majority of the points are in front of the cameras. This is
+// useful for determining the sign of the relative position. Returns true if
+// more than 50% of correspondences are in front of both cameras and false
+// otherwise.
+bool MajorityOfPointsInFrontOfCameras(
+    const std::vector<FeatureCorrespondence>& correspondences,
+    const Eigen::Vector3d& rotation1,
+    const Eigen::Vector3d& rotation2,
+    const Eigen::Vector3d& relative_position) {
+  // Compose the relative rotation.
+  Eigen::Matrix3d rotation_matrix1, rotation_matrix2;
+  ceres::AngleAxisToRotationMatrix(
+      rotation1.data(), ceres::ColumnMajorAdapter3x3(rotation_matrix1.data()));
+  ceres::AngleAxisToRotationMatrix(
+      rotation2.data(), ceres::ColumnMajorAdapter3x3(rotation_matrix2.data()));
+  const Eigen::Matrix3d relative_rotation_matrix =
+      rotation_matrix2 * rotation_matrix1.transpose();
+
+  // Tests all points for cheirality.
+  int num_points_in_front_of_cameras = 0;
+  for (const FeatureCorrespondence& match : correspondences) {
+    if (IsTriangulatedPointInFrontOfCameras(match,
+                                            relative_rotation_matrix,
+                                            relative_position)) {
+      ++num_points_in_front_of_cameras;
+    }
   }
 
-  // Solve.
-  ceres::Solver::Summary summary;
-  ceres::Solve(solver_options, &problem, &summary);
+  return num_points_in_front_of_cameras > (correspondences.size() / 2);
+}
 
-  VLOG(2) << summary.FullReport();
+}  // namespace
 
-  return summary.termination_type != ceres::FAILURE;
+// Given known camera rotations and feature correspondences, this method solves
+// for the relative translation that optimizes the epipolar error
+// f_i * E * f_j^t = 0.
+bool OptimizeRelativePositionWithKnownRotation(
+    const std::vector<FeatureCorrespondence>& correspondences,
+    const Eigen::Vector3d& rotation1,
+    const Eigen::Vector3d& rotation2,
+    Eigen::Vector3d* relative_position) {
+  CHECK_NOTNULL(relative_position);
+
+  // Constants used for the IRLS solving.
+  const double eps = 1e-5;
+  const int kMaxIterations = 100;
+  const int kMaxInnerIterations = 10;
+  const double kMinWeight = 1e-7;
+
+  // Create the constraint matrix from the known correspondences and rotations.
+  Eigen::MatrixXd constraint_matrix;
+  CreateConstraintMatrix(correspondences,
+                         rotation1,
+                         rotation2,
+                         &constraint_matrix);
+
+  // Initialize the weighting terms for each correspondence.
+  Eigen::VectorXd weights(correspondences.size());
+  weights.setConstant(1.0);
+
+  // Solve for the relative positions using a robust IRLS.
+  double cost = 0;
+  int num_inner_iterations = 0;
+  for (int i = 0;
+       i < kMaxIterations && num_inner_iterations < kMaxInnerIterations;
+       i++) {
+    // Limit the minimum weight at kMinWeight.
+    weights = (weights.array() < kMinWeight).select(kMinWeight, weights);
+
+    // Apply the weights to the constraint matrix.
+    const Eigen::Matrix3d lhs = constraint_matrix *
+                                weights.asDiagonal().inverse() *
+                                constraint_matrix.transpose();
+
+    // Solve for the relative position which is the null vector of the weighted
+    // constraints.
+    const Eigen::Vector3d new_relative_position =
+        lhs.jacobiSvd(Eigen::ComputeFullU).matrixU().rightCols<1>();
+
+    // Update the weights based on the current errors.
+    weights =
+        (new_relative_position.transpose() * constraint_matrix).array().abs();
+
+    // Compute the new cost.
+    const double new_cost = weights.sum();
+
+    // Check for convergence.
+    const double delta = std::max(std::abs(cost - new_cost),
+                                  1 - new_relative_position.squaredNorm());
+
+    // If we have good convergence, attempt an inner iteration.
+    if (delta <= eps) {
+      ++num_inner_iterations;
+    } else {
+      num_inner_iterations = 0;
+    }
+
+    cost = new_cost;
+    *relative_position = new_relative_position;
+  }
+
+  // The position solver above does not consider the sign of the relative
+  // position. We can determine the sign by choosing the sign that puts the most
+  // points in front of the camera.
+  if (!MajorityOfPointsInFrontOfCameras(correspondences,
+                                        rotation1,
+                                        rotation2,
+                                        *relative_position)) {
+    *relative_position *= -1.0;
+  }
+
+  return true;
 }
 
 }  // namespace theia
