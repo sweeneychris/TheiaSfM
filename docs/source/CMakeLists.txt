@@ -14,6 +14,6 @@ ADD_CUSTOM_TARGET(theia_docs ALL
                   python
                   "${CMAKE_SOURCE_DIR}/docs/make_docs.py"
                   "${CMAKE_SOURCE_DIR}"
-                  "${CMAKE_SOURCE_DIR}/docs"
+                  "${CMAKE_BINARY_DIR}/docs"
                   "${SPHINX_EXECUTABLE}"
                   COMMENT "Building HTML documentation with Sphinx")
