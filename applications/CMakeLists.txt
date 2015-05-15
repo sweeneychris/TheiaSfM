@@ -36,6 +36,9 @@ TARGET_LINK_LIBRARIES(compare_reconstructions theia ${GFLAGS_LIBRARIES} ${GLOG_L
 ADD_EXECUTABLE(compute_matching_relative_pose_errors compute_matching_relative_pose_errors.cc)
 TARGET_LINK_LIBRARIES(compute_matching_relative_pose_errors theia ${GFLAGS_LIBRARIES} ${GLOG_LIBRARIES})
 
+ADD_EXECUTABLE(evaluate_relative_translation_optimization evaluate_relative_translation_optimization.cc)
+TARGET_LINK_LIBRARIES(evaluate_relative_translation_optimization theia ${GFLAGS_LIBRARIES} ${GLOG_LIBRARIES})
+
 ADD_EXECUTABLE(verify_1dsfm_input verify_1dsfm_input.cc)
 TARGET_LINK_LIBRARIES(verify_1dsfm_input theia ${GFLAGS_LIBRARIES} ${GLOG_LIBRARIES})
 

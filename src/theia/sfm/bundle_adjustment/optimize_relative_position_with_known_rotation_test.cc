@@ -143,7 +143,7 @@ void TestOptimization(const Camera& camera1,
 }  // namespace
 
 TEST(OptimizeRelativePositionWithKnownRotationTest, NoNoise) {
-  static const double kTolerance = 1e-12;
+  static const double kTolerance = 1e-6;
   static const double kPixelNoise = 0.0;
   static const double kTranslationNoise = 0.0;
   static const int kNumPoints = 100;
