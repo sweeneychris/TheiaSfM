@@ -171,10 +171,14 @@ bool ReconstructionBuilder::AddImageWithCameraIntrinsicsPrior(
     LOG(INFO) << "Adding image " << image_file
               << " to reconstruction with focal length: "
               << camera_intrinsics_prior.focal_length.value;
-  } else {
+  } else if (!options_.only_calibrated_views) {
     LOG(INFO) << "Adding image " << image_file
               << " to reconstruction with focal length: UNKNOWN";
+  } else {
+    LOG(INFO) << "Image " << image_file
+              << " did not contain an EXIF focal length. Skipping this image.";
   }
+
   return true;
 }
 
