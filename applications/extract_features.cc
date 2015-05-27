@@ -77,6 +77,7 @@ int main(int argc, char *argv[]) {
   // Get image filenames.
   std::vector<std::string> img_filepaths;
   CHECK(theia::GetFilepathsFromWildcard(FLAGS_input_imgs, &img_filepaths));
+  CHECK_GT(image_files.size(), 0) << "No images found in: " << FLAGS_images;
 
   // Set up the feature extractor.
   theia::FeatureExtractorOptions feature_extractor_options;
