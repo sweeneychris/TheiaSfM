@@ -40,6 +40,14 @@ Finally, it should be noted that all the code in Theia is under the namespace
 theia, so you will have to reference that namespace in order to use functions
 from this library.
 
+Performance
+===========
+
+Theia achieves state-of-the-art SfM performance on large-scale
+datasets. Efficiency and robustness is a key componenet of the library. You can
+see the latest performance benchmarks for small and large-scale datasets on the
+:ref:`chapter-performance` page.
+
 Citation
 ========
 
@@ -67,6 +75,7 @@ The core of the original library is written by `Chris Sweeney <http://cs.ucsb.ed
    building
    api
    applications
+   performance
    contributions
    releases
    bibliography
