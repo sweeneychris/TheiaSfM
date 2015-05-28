@@ -14,7 +14,7 @@ Large Scale Benchmarks
 
 We use the `1DSfM Datasets <_http://www.cs.cornell.edu/projects/1dsfm/>`_ as benchmarks for large-scale reconstructions. These datasets provide 2-view matches and epipolar geometry as input, and a reference reconstruction from incremental SfM (computed with `Bundler <http://www.cs.cornell.edu/~snavely/bundler/>`_) for measuring error. The reference reconstruction is not necessarily considered ground truth, but it is a meaningful reference point since incremental SfM algorithms are rather robust and accurate.
 
-We measure the accuracy of camera positions (approximately in meters) and timing results on a 2008 Mac Pro using 1 core (sadly, clang does not allow multi-threading with OpenMP so Ceres cannot utilize multiple cores on this machine). We report N, the number of cameras that could be succesfully reconstructed,in addition to the mean and median camera position errors after robust alignment (via RANSAC) to ground truth camera positions.
+We measure the accuracy of camera positions (approximately in meters) and timing results on a 2008 Mac Pro using 1 core (sadly, clang does not allow multi-threading with OpenMP so Ceres cannot utilize multiple cores on this machine). We report N, the number of cameras that could be succesfully reconstructed, in addition to the mean and median camera position errors after robust alignment (via RANSAC) to ground truth camera positions.
 
 .. tabularcolumns:: |l|c||c|c|c|c|
 
