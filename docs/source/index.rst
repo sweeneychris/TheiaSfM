@@ -44,7 +44,7 @@ Performance
 ===========
 
 Theia achieves state-of-the-art SfM performance on large-scale
-datasets. Efficiency and robustness is a key componenet of the library. You can
+datasets. Efficiency and robustness is a key component of the library. You can
 see the latest performance benchmarks for small and large-scale datasets on the
 :ref:`chapter-performance` page.
 
