@@ -236,8 +236,15 @@ bool SiftDescriptorExtractor::DetectAndExtractDescriptors(
     for (int i = 0; i < num_keypoints; ++i) {
       // Calculate (up to 4) orientations of the keypoint.
       double angles[4];
-      int num_angles = vl_sift_calc_keypoint_orientations(sift_filter_, angles,
+      int num_angles = vl_sift_calc_keypoint_orientations(sift_filter_,
+                                                          angles,
                                                           &vl_keypoints[i]);
+      // If upright sift is enabled, only use the first keypoint at a given
+      // pixel location.
+      if (sift_params_.upright_sift && num_angles > 1) {
+        num_angles = 1;
+      }
+
       for (int j = 0; j < num_angles; ++j) {
         descriptors->emplace_back(128);
         vl_sift_calc_keypoint_descriptor(

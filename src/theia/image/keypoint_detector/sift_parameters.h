@@ -64,6 +64,10 @@ struct SiftParameters {
   float peak_threshold = 0.5f;
   // Descriptor parameters.
   bool root_sift = true;
+  // Upright sift enables only a single descriptor to be extracted at a given
+  // location. This is useful for SfM for a number of reasons, especially during
+  // geometric verification.
+  bool upright_sift = true;
 };
 
 #endif  // THEIA_IMAGE_KEYPOINT_DETECTOR_SIFT_PARAMETERS_H_
