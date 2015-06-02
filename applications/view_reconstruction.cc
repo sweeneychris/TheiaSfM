@@ -87,7 +87,7 @@ bool draw_axes = false;
 float point_size = 1.0;
 float normalized_focal_length = 1.0;
 int min_num_views_for_track = 3;
-double anti_aliasing_blend = 0.4;
+double anti_aliasing_blend = 0.01;
 
 void GetPerspectiveParams(double* aspect_ratio, double* fovy) {
   double focal_length = 800.0;
@@ -158,23 +158,25 @@ void DrawCamera(const theia::Camera& camera) {
 
   // Create the camera wireframe. If intrinsic parameters are not set then use
   // the focal length as a guess.
-  const double normalized_width =
-      (camera.ImageWidth() / 2.0) / camera.FocalLength();
-  const double normalized_height =
-      (camera.ImageHeight() / 2.0) / camera.FocalLength();
+  const float image_width =
+      (camera.ImageWidth() == 0) ? camera.FocalLength() : camera.ImageWidth();
+  const float image_height =
+      (camera.ImageHeight() == 0) ? camera.FocalLength() : camera.ImageHeight();
+  const float normalized_width = (image_width / 2.0) / camera.FocalLength();
+  const float normalized_height = (image_height / 2.0) / camera.FocalLength();
 
-  const Eigen::Vector3d top_left =
+  const Eigen::Vector3f top_left =
       normalized_focal_length *
-      Eigen::Vector3d(-normalized_width, -normalized_height, 1);
-  const Eigen::Vector3d top_right =
+      Eigen::Vector3f(-normalized_width, -normalized_height, 1);
+  const Eigen::Vector3f top_right =
       normalized_focal_length *
-      Eigen::Vector3d(normalized_width, -normalized_height, 1);
-  const Eigen::Vector3d bottom_right =
+      Eigen::Vector3f(normalized_width, -normalized_height, 1);
+  const Eigen::Vector3f bottom_right =
       normalized_focal_length *
-      Eigen::Vector3d(normalized_width, normalized_height, 1);
-  const Eigen::Vector3d bottom_left =
+      Eigen::Vector3f(normalized_width, normalized_height, 1);
+  const Eigen::Vector3f bottom_left =
       normalized_focal_length *
-      Eigen::Vector3d(-normalized_width, normalized_height, 1);
+      Eigen::Vector3f(-normalized_width, normalized_height, 1);
 
   glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
   glBegin(GL_TRIANGLE_FAN);
@@ -186,6 +188,49 @@ void DrawCamera(const theia::Camera& camera) {
   glVertex3f(top_right[0], top_right[1], top_right[2]);
   glEnd();
   glPopMatrix();
+}
+
+void DrawPoints(const float point_scale,
+                const float color_scale,
+                const float alpha_scale) {
+  const float default_point_size = point_size;
+  const float default_alpha_scale = anti_aliasing_blend;
+
+  // TODO(cmsweeney): Render points with the actual 3D point color! This would
+  // require Theia to save the colors during feature extraction.
+  const Eigen::Vector3f default_color(0.05, 0.05, 0.05);
+
+  // Enable anti-aliasing for round points and alpha blending that helps make
+  // points look nicer.
+  glDisable(GL_LIGHTING);
+  glEnable(GL_MULTISAMPLE);
+  glEnable(GL_BLEND);
+  glEnable(GL_POINT_SMOOTH);
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+  // The coordinates for calculating point attenuation. This allows for points
+  // to get smaller as the OpenGL camera moves farther away.
+  GLfloat point_size_coords[3];
+  point_size_coords[0] = 1.0f;
+  point_size_coords[1] = 0.055f;
+  point_size_coords[2] = 0.0f;
+  glPointParameterfv(GL_POINT_DISTANCE_ATTENUATION, point_size_coords);
+
+
+  glColor4f(color_scale * default_color[0],
+            color_scale * default_color[1],
+            color_scale * default_color[2],
+            alpha_scale * default_alpha_scale);
+
+  glPointSize(point_scale * default_point_size);
+  glBegin(GL_POINTS);
+  for (int i = 0; i < world_points.size(); i++) {
+    if (num_views_for_track[i] < min_num_views_for_track) {
+      continue;
+    }
+    glVertex3d(world_points[i].x(), world_points[i].y(), world_points[i].z());
+  }
+  glEnd();
 }
 
 void RenderScene() {
@@ -206,32 +251,20 @@ void RenderScene() {
 
   glClearColor(1.0f, 1.0f, 1.0f, 0.0f);
 
-  // Plot the point cloud.
-  glDisable(GL_LIGHTING);
-  glEnable(GL_MULTISAMPLE);
-  glEnable(GL_BLEND);
-  glEnable(GL_POINT_SMOOTH);
-  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  // Each 3D point is rendered 3 times with different point sizes, color
+  // intensity, and alpha blending. This allows for a more complete texture-like
+  // rendering of the 3D points. These values were found to experimentally
+  // produce nice visualizations on most scenes.
+  const float small_point_scale = 1.0, medium_point_scale = 5.0,
+              large_point_scale = 10.0;
+  const float small_color_scale = 1.0, medium_color_scale = 1.2,
+              large_color_scale = 1.5;
+  const float small_alpha_scale = 1.0, medium_alpha_scale = 2.1,
+              large_alpha_scale = 3.3;
 
-  glPointSize(point_size);
-
-  // the coordinates for calculating point attenuation:
-  GLfloat point_size_coords[3];
-  point_size_coords[0] = 1.0f;
-  point_size_coords[1] = 0.055f;
-  point_size_coords[2] = 0.0f;
-  glPointParameterfv(GL_POINT_DISTANCE_ATTENUATION, point_size_coords);
-
-  // Draw the points.
-  glColor4f(0.01, 0.01, 0.01, anti_aliasing_blend);
-  glBegin(GL_POINTS);
-  for (int i = 0; i < world_points.size(); i++) {
-    if (num_views_for_track[i] < min_num_views_for_track) {
-      continue;
-    }
-    glVertex3d(world_points[i].x(), world_points[i].y(), world_points[i].z());
-  }
-  glEnd();
+  DrawPoints(small_point_scale, small_color_scale, small_alpha_scale);
+  DrawPoints(medium_point_scale, medium_color_scale, medium_alpha_scale);
+  DrawPoints(large_point_scale, large_color_scale, large_alpha_scale);
 
   // Draw the cameras.
   if (draw_cameras) {
@@ -361,12 +394,12 @@ void Keyboard(unsigned char key, int x, int y) {
       break;
     case 'b':
       if (anti_aliasing_blend > 0) {
-        anti_aliasing_blend -= 0.05;
+        anti_aliasing_blend -= 0.01;
       }
       break;
     case 'B':
       if (anti_aliasing_blend < 1.0) {
-        anti_aliasing_blend += 0.05;
+        anti_aliasing_blend += 0.01;
       }
       break;
   }
