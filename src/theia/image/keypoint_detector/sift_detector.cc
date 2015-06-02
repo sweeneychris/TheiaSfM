@@ -92,6 +92,11 @@ bool SiftDetector::DetectKeypoints(const FloatImage& image,
       int num_angles = vl_sift_calc_keypoint_orientations(sift_filter_,
                                                           angles,
                                                           &vl_keypoints[i]);
+      // If upright sift is enabled, only use the first keypoint at a given
+      // pixel location.
+      if (sift_params_.upright_sift && num_angles > 1) {
+        num_angles = 1;
+      }
       for (int j = 0; j < num_angles; j++) {
         Keypoint keypoint(vl_keypoints[i].x, vl_keypoints[i].y, Keypoint::SIFT);
         keypoint.set_scale(vl_keypoints[i].sigma);
