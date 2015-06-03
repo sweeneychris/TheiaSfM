@@ -57,3 +57,6 @@ TARGET_LINK_LIBRARIES(export_reconstruction_to_pmvs theia ${GFLAGS_LIBRARIES} ${
 
 ADD_EXECUTABLE(create_calibration_file_from_exif create_calibration_file_from_exif.cc)
 TARGET_LINK_LIBRARIES(create_calibration_file_from_exif theia ${GFLAGS_LIBRARIES} ${GLOG_LIBRARIES})
+
+ADD_EXECUTABLE(create_reconstruction_from_strecha_dataset create_reconstruction_from_strecha_dataset.cc)
+TARGET_LINK_LIBRARIES(create_reconstruction_from_strecha_dataset theia ${GFLAGS_LIBRARIES} ${GLOG_LIBRARIES})
