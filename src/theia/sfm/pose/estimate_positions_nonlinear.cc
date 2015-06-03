@@ -113,6 +113,7 @@ bool NonlinearPositionEstimator::EstimatePositions(
   AddCameraToCameraConstraints(orientations, positions);
   if (options_.min_num_points_per_view > 0) {
     AddPointToCameraConstraints(orientations, positions);
+    AddCamerasAndPointsToParameterGroups(positions);
   }
 
   // Set one camera to be at the origin to remove the ambiguity of the origin.
@@ -345,6 +346,28 @@ void NonlinearPositionEstimator::AddTrackToProblem(
                                new ceres::HuberLoss(options_.robust_loss_width),
                                camera_position.data(),
                                point.data());
+  }
+}
+
+void NonlinearPositionEstimator::AddCamerasAndPointsToParameterGroups(
+    std::unordered_map<ViewId, Vector3d>* positions) {
+  CHECK_GT(triangulated_points_.size(), 0)
+      << "Cannot set the Ceres parameter groups for Schur based solvers "
+         "because there are no triangulated points.";
+
+  // Create a custom ordering for Schur-based problems.
+  solver_options_.linear_solver_ordering.reset(
+      new ceres::ParameterBlockOrdering);
+  ceres::ParameterBlockOrdering* parameter_ordering =
+      solver_options_.linear_solver_ordering.get();
+  // Add point parameters to group 0.
+  for (auto& point : triangulated_points_) {
+    parameter_ordering->AddElementToGroup(point.second.data(), 0);
+  }
+
+  // Add camera parameters to group 1.
+  for (auto& position : *positions) {
+    parameter_ordering->AddElementToGroup(position.second.data(), 1);
   }
 }
 

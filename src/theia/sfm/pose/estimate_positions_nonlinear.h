@@ -118,6 +118,14 @@ class NonlinearPositionEstimator {
       const double point_to_camera_weight,
       std::unordered_map<ViewId, Eigen::Vector3d>* positions);
 
+  // Adds the points and cameras to parameters groups 0 and 1 respectively. This
+  // allows for the Schur-based methods to take advantage of the sparse block
+  // structure of the problem by eliminating points first, then cameras. This
+  // method is only called if triangulated points are used when solving the
+  // problem.
+  void AddCamerasAndPointsToParameterGroups(
+      std::unordered_map<ViewId, Eigen::Vector3d>* positions);
+
   const NonlinearPositionEstimatorOptions options_;
   const Reconstruction& reconstruction_;
   const std::unordered_map<ViewIdPair, TwoViewInfo>& view_pairs_;
