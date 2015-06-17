@@ -144,7 +144,7 @@ void DrawAxes(float length) {
 
 void DrawCamera(const theia::Camera& camera) {
   glPushMatrix();
-  Eigen::Matrix4d transformation_matrix;
+  Eigen::Matrix4d transformation_matrix = Eigen::Matrix4d::Zero();
   transformation_matrix.block<3, 3>(0, 0) =
       camera.GetOrientationAsRotationMatrix().transpose();
   transformation_matrix.col(3).head<3>() = camera.GetPosition();
