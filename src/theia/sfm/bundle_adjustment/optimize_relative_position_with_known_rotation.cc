@@ -120,6 +120,10 @@ bool OptimizeRelativePositionWithKnownRotation(
     Eigen::Vector3d* relative_position) {
   CHECK_NOTNULL(relative_position);
 
+  // Set the initial relative position to random. This helps avoid a bad local
+  // minima that is achieved from poor initialization.
+  relative_position->setRandom();
+
   // Constants used for the IRLS solving.
   const double eps = 1e-5;
   const int kMaxIterations = 100;
