@@ -120,6 +120,8 @@ bool OptimizeRelativePositionWithKnownRotation(
     Eigen::Vector3d* relative_position) {
   CHECK_NOTNULL(relative_position);
 
+  *relative_position = Eigen::Vector3d::Random().normalized();
+
   // Constants used for the IRLS solving.
   const double eps = 1e-5;
   const int kMaxIterations = 100;
