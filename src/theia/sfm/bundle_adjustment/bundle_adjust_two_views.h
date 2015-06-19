@@ -45,13 +45,22 @@ namespace theia {
 
 struct TwoViewInfo;
 
+// Configuration parameters for two-view bundle adjustment. The two bools
+// control whether intrinsics are additionally optimized which is useful for
+// uncalibrated camera sets.
+struct TwoViewBundleAdjustmentOptions {
+  BundleAdjustmentOptions ba_options;
+  bool constant_camera1_intrinsics = true;
+  bool constant_camera2_intrinsics = true;
+};
+
 // Triangulates all 3d points and performs standard bundle adjustment on the
 // points and cameras. The first camera is held constant so only the second
 // camera and points are optimized. The cameras must be initialized with camera
 // intrinsics. The camera pose should be initialized based on epipolar geometry
 // estimation.
 BundleAdjustmentSummary BundleAdjustTwoViews(
-    const BundleAdjustmentOptions& options,
+    const TwoViewBundleAdjustmentOptions& options,
     const std::vector<FeatureCorrespondence>& correspondence,
     Camera* camera1,
     Camera* camera2);

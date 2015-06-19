@@ -72,9 +72,9 @@ bool BundleAdjustRelativePose(
     const CameraIntrinsicsPrior& intrinsics1,
     const CameraIntrinsicsPrior& intrinsics2,
     TwoViewInfo* info) {
-  BundleAdjustmentOptions options;
-  options.verbose = false;
-  options.linear_solver_type = ceres::DENSE_SCHUR;
+  TwoViewBundleAdjustmentOptions two_view_ba_options;
+  two_view_ba_options.ba_options.verbose = false;
+  two_view_ba_options.ba_options.linear_solver_type = ceres::DENSE_SCHUR;
 
   Camera camera1, camera2;
   camera1.SetFocalLength(info->focal_length_1);
@@ -87,8 +87,12 @@ bool BundleAdjustRelativePose(
 
   // Perform two view bundle adjustment. Alternatively, we can try to optimize
   // the angular error of features
+  two_view_ba_options.constant_camera1_intrinsics =
+      intrinsics1.focal_length.is_set;
+  two_view_ba_options.constant_camera2_intrinsics =
+      intrinsics2.focal_length.is_set;
   BundleAdjustmentSummary summary =
-      BundleAdjustTwoViews(options, inliers, &camera1, &camera2);
+      BundleAdjustTwoViews(two_view_ba_options, inliers, &camera1, &camera2);
 
   // Update the relative pose.
   info->rotation_2 = camera2.GetOrientationAsAngleAxis();

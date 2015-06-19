@@ -69,21 +69,27 @@ void SetSolverOptions(const BundleAdjustmentOptions& options,
       new ceres::ParameterBlockOrdering);
 }
 
-void AddCameraParametersToProblem(const bool constant_camera_parameters,
+void AddCameraParametersToProblem(const bool constant_extrinsic_parameters,
+                                  const bool constant_intrinsic_parameters,
                                   double* camera_parameters,
                                   ceres::Problem* problem) {
   // Keep the intrinsic parameters constant.
   std::vector<int> constant_intrinsics;
-  for (int i = 0; i < Camera::kIntrinsicsSize; i++) {
-    constant_intrinsics.push_back(Camera::kExtrinsicsSize + i);
+  if (constant_intrinsic_parameters) {
+    for (int i = 0; i < Camera::kIntrinsicsSize; i++) {
+      constant_intrinsics.push_back(Camera::kExtrinsicsSize + i);
+    }
+    ceres::SubsetParameterization* subset_parameterization =
+        new ceres::SubsetParameterization(Camera::kParameterSize,
+                                          constant_intrinsics);
+    problem->AddParameterBlock(camera_parameters,
+                               Camera::kParameterSize,
+                               subset_parameterization);
+  } else {
+    problem->AddParameterBlock(camera_parameters, Camera::kParameterSize);
   }
-  ceres::SubsetParameterization* subset_parameterization =
-      new ceres::SubsetParameterization(Camera::kParameterSize,
-                                        constant_intrinsics);
-  problem->AddParameterBlock(camera_parameters, Camera::kParameterSize,
-                             subset_parameterization);
 
-  if (constant_camera_parameters) {
+  if (constant_extrinsic_parameters) {
     problem->SetParameterBlockConstant(camera_parameters);
   }
 }
@@ -130,7 +136,7 @@ void TriangulatePoints(
 // Triangulates all 3d points and performs standard bundle adjustment on the
 // points and cameras.
 BundleAdjustmentSummary BundleAdjustTwoViews(
-    const BundleAdjustmentOptions& options,
+    const TwoViewBundleAdjustmentOptions& options,
     const std::vector<FeatureCorrespondence>& correspondences,
     Camera* camera1,
     Camera* camera2) {
@@ -148,13 +154,19 @@ BundleAdjustmentSummary BundleAdjustTwoViews(
 
   // Set solver options.
   ceres::Solver::Options solver_options;
-  SetSolverOptions(options, &solver_options);
+  SetSolverOptions(options.ba_options, &solver_options);
   ceres::ParameterBlockOrdering* parameter_ordering =
       solver_options.linear_solver_ordering.get();
 
   // Add the two cameras as parameter blocks.
-  AddCameraParametersToProblem(true, camera1->mutable_parameters(), &problem);
-  AddCameraParametersToProblem(false, camera2->mutable_parameters(), &problem);
+  AddCameraParametersToProblem(true,
+                               options.constant_camera1_intrinsics,
+                               camera1->mutable_parameters(),
+                               &problem);
+  AddCameraParametersToProblem(false,
+                               options.constant_camera2_intrinsics,
+                               camera2->mutable_parameters(),
+                               &problem);
   parameter_ordering->AddElementToGroup(camera1->mutable_parameters(), 1);
   parameter_ordering->AddElementToGroup(camera2->mutable_parameters(), 1);
 
@@ -190,7 +202,7 @@ BundleAdjustmentSummary BundleAdjustTwoViews(
   // Solve the problem.
   ceres::Solver::Summary solver_summary;
   ceres::Solve(solver_options, &problem, &solver_summary);
-  LOG_IF(INFO, options.verbose) << solver_summary.FullReport();
+  LOG_IF(INFO, options.ba_options.verbose) << solver_summary.FullReport();
 
   // Set the BundleAdjustmentSummary.
   summary.solve_time_in_seconds = solver_summary.total_time_in_seconds;
