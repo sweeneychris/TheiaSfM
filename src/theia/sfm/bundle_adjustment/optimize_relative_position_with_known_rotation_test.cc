@@ -217,7 +217,7 @@ TEST(OptimizeRelativePositionWithKnownRotationTest, TranslationNoise) {
 
 
 TEST(OptimizeRelativePositionWithKnownRotationTest, PixelAndTranslationNoise) {
-  static const double kTolerance = 2.0;
+  static const double kTolerance = 5.0;
   static const double kPixelNoise = 1.0;
   static const double kTranslationNoise = 5.0;
   static const int kNumPoints = 100;
