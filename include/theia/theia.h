@@ -114,6 +114,7 @@
 #include "theia/sfm/find_common_views_by_name.h"
 #include "theia/sfm/match_and_verify_features.h"
 #include "theia/sfm/nonlinear_reconstruction_estimator.h"
+#include "theia/sfm/pose/compute_triplet_baseline_ratios.h"
 #include "theia/sfm/pose/dls_impl.h"
 #include "theia/sfm/pose/dls_pnp.h"
 #include "theia/sfm/pose/eight_point_fundamental_matrix.h"

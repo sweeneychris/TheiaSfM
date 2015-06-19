@@ -89,6 +89,7 @@ SET(THEIA_SRC
   sfm/find_common_views_by_name.cc
   sfm/match_and_verify_features.cc
   sfm/nonlinear_reconstruction_estimator.cc
+  sfm/pose/compute_triplet_baseline_ratios.cc
   sfm/pose/dls_impl.cc
   sfm/pose/dls_pnp.cc
   sfm/pose/eight_point_fundamental_matrix.cc
@@ -214,6 +215,7 @@ IF (BUILD_TESTING)
   GTEST(sfm/filter_view_pairs_from_relative_translation)
   GTEST(sfm/find_common_tracks_in_views)
   GTEST(sfm/find_common_views_by_name)
+  GTEST(sfm/pose/compute_triplet_baseline_ratios)
   GTEST(sfm/pose/dls_pnp)
   GTEST(sfm/pose/eight_point_fundamental_matrix)
   GTEST(sfm/pose/essential_matrix_utils)
