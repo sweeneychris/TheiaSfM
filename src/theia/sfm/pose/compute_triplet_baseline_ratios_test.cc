@@ -98,11 +98,11 @@ void TestTripletBaselineComputation(const double pixel_noise,
 
   // Set up 3 views.
   Camera camera1, camera2, camera3;
-  camera1.SetPosition(Vector3d::Random());
+  camera1.SetPosition(Vector3d(-1, 0.8, -0.2));
   camera1.SetOrientationFromAngleAxis(0.2 * Vector3d::Random());
-  camera2.SetPosition(Vector3d::Random());
+  camera2.SetPosition(Vector3d(0.2, 0.3, -1.0));
   camera2.SetOrientationFromAngleAxis(0.2 * Vector3d::Random());
-  camera3.SetPosition(Vector3d::Random());
+  camera3.SetPosition(Vector3d(0.8, -0.7, 0.3));
   camera3.SetOrientationFromAngleAxis(0.2 * Vector3d::Random());
 
   // Add tracks.
@@ -153,19 +153,19 @@ void TestTripletBaselineComputation(const double pixel_noise,
 }
 
 TEST(ComputeTripletBaselineRatios, NoNoiseSmallScene) {
-  TestTripletBaselineComputation(0, 5, 1e-8);
+  TestTripletBaselineComputation(0, 2, 1e-8);
 }
 
 TEST(ComputeTripletBaselineRatios, NoiseSmallScene) {
-  TestTripletBaselineComputation(1, 5, 0.05);
+  TestTripletBaselineComputation(1, 2, 0.05);
 }
 
 TEST(ComputeTripletBaselineRatios, NoNoiseLargeScene) {
-  TestTripletBaselineComputation(0, 100, 1e-8);
+  TestTripletBaselineComputation(0, 20, 1e-8);
 }
 
 TEST(ComputeTripletBaselineRatios, NoiseLargeScene) {
-  TestTripletBaselineComputation(1, 100, 0.1);
+  TestTripletBaselineComputation(1, 20, 0.1);
 }
 
 }  // namespace theia
