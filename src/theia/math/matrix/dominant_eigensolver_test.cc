@@ -34,9 +34,7 @@
 
 #include <Eigen/Core>
 #include <Eigen/Eigenvalues>
-#include <Eigen/LU>
 #include <Eigen/SparseCore>
-#include <Eigen/SparseLU>
 #include <glog/logging.h>
 
 #include "gtest/gtest.h"
@@ -44,78 +42,6 @@
 #include "theia/math/matrix/linear_operator.h"
 
 namespace theia {
-
-class DenseLinearOperator : public LinearOperator{
- public:
-  explicit DenseLinearOperator(const Eigen::MatrixXd& A) : A_(A) {}
-
-  // y = A*x
-  virtual void RightMultiply(const Eigen::VectorXd& x,
-                             Eigen::VectorXd* y) const {
-    *y = A_ * x;
-  }
-
-  virtual int Cols() const { return A_.cols(); }
-  virtual int Rows() const { return A_.rows(); }
-
- private:
-  const Eigen::MatrixXd& A_;
-};
-
-class SparseLinearOperator : public LinearOperator{
- public:
-  explicit SparseLinearOperator(const Eigen::SparseMatrix<double>& A) : A_(A) {}
-
-  // y = A*x
-  virtual void RightMultiply(const Eigen::VectorXd& x,
-                             Eigen::VectorXd* y) const {
-    *y = A_ * x;
-  }
-
-  virtual int Cols() const { return A_.cols(); }
-  virtual int Rows() const { return A_.rows(); }
-
- private:
-  const Eigen::SparseMatrix<double>& A_;
-};
-
-class DenseInverseLinearOperator : public LinearOperator{
- public:
-  explicit  DenseInverseLinearOperator(const Eigen::MatrixXd& A) : A_(A) {}
-
-  virtual void RightMultiply(const Eigen::VectorXd& x,
-                             Eigen::VectorXd* y) const {
-    *y = A_.fullPivLu().solve(x);
-  }
-
-  virtual int Cols() const { return A_.cols(); }
-  virtual int Rows() const { return A_.rows(); }
-
- private:
-  const Eigen::MatrixXd& A_;
-};
-
-class SparseInverseLinearOperator : public LinearOperator{
- public:
-  explicit SparseInverseLinearOperator(const Eigen::SparseMatrix<double>& A)
-      : A_(A) {
-    linear_solver_.compute(A);
-    CHECK_EQ(linear_solver_.info(), Eigen::Success)
-        << "Sparse LU Decomposition failed.";
-  }
-
-  virtual void RightMultiply(const Eigen::VectorXd& x,
-                             Eigen::VectorXd* y) const {
-    *y = linear_solver_.solve(x);
-  }
-
-  virtual int Cols() const { return A_.cols(); }
-  virtual int Rows() const { return A_.rows(); }
-
- private:
-  const Eigen::SparseMatrix<double>& A_;
-  Eigen::SparseLU<Eigen::SparseMatrix<double> > linear_solver_;
-};
 
 TEST(DominantEigensolver, LargestEigenvalue) {
   static const int kNumDimensions = 10;
@@ -153,7 +79,7 @@ TEST(DominantEigensolver, SmallestEigenvalue) {
   Eigen::MatrixXd matrix(kNumDimensions, kNumDimensions);
   matrix.setRandom();
   matrix = (matrix.transpose() * matrix).eval();
-  DenseInverseLinearOperator linear_operator(matrix);
+  DenseInverseLULinearOperator linear_operator(matrix);
   DominantEigensolver::Options options;
   DominantEigensolver eigensolver(options, linear_operator);
 
@@ -216,7 +142,7 @@ TEST(DominantEigensolver, SparseMatrixSmallestEigenvalue) {
   matrix.setRandom();
   matrix = (matrix.transpose() * matrix).eval();
   const Eigen::SparseMatrix<double> sparse_matrix = matrix.sparseView();
-  SparseInverseLinearOperator linear_operator(sparse_matrix);
+  SparseInverseLULinearOperator linear_operator(sparse_matrix);
   DominantEigensolver::Options options;
   options.max_num_iterations = 1000;
   DominantEigensolver eigensolver(options, linear_operator);
@@ -255,7 +181,7 @@ TEST(DominantEigensolver, RankDeficiency) {
   matrix = (matrix.transpose() * diag.asDiagonal() * matrix).eval();
 
   const Eigen::SparseMatrix<double> sparse_matrix = matrix.sparseView();
-  SparseInverseLinearOperator linear_operator(sparse_matrix);
+  SparseInverseLULinearOperator linear_operator(sparse_matrix);
   DominantEigensolver::Options options;
   DominantEigensolver eigensolver(options, linear_operator);
 

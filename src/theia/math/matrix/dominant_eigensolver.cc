@@ -51,6 +51,7 @@ bool DominantEigensolver::Compute(double* eigenvalue,
 
     const double error =
         (*eigenvector * (*eigenvalue) -  previous_eigenvector).stableNorm();
+    VLOG(3) << "Iteration: " << i << "\tCurrent error = " << error;
     if (error < std::abs(*eigenvalue) * options_.tolerance) {
       VLOG(2) << "Power iterations converged after " << i + 1 << " iterations.";
       return true;
