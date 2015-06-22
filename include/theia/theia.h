@@ -119,6 +119,7 @@
 #include "theia/sfm/pose/dls_pnp.h"
 #include "theia/sfm/pose/eight_point_fundamental_matrix.h"
 #include "theia/sfm/pose/essential_matrix_utils.h"
+#include "theia/sfm/pose/estimate_positions_linear.h"
 #include "theia/sfm/pose/estimate_positions_nonlinear.h"
 #include "theia/sfm/pose/estimate_rotations_nonlinear.h"
 #include "theia/sfm/pose/estimate_rotations_robust.h"
