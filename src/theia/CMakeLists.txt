@@ -254,5 +254,5 @@ IF (BUILD_TESTING)
   GTEST(solvers/prosac)
   GTEST(solvers/random_sampler)
   GTEST(solvers/ransac)
-
+  GTEST(util/mutable_priority_queue)
 ENDIF (BUILD_TESTING)

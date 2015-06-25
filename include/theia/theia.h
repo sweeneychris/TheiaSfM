@@ -177,6 +177,7 @@
 #include "theia/util/filesystem.h"
 #include "theia/util/hash.h"
 #include "theia/util/map_util.h"
+#include "theia/util/mutable_priority_queue.h"
 #include "theia/util/random.h"
 #include "theia/util/stringprintf.h"
 #include "theia/util/threadpool.h"
