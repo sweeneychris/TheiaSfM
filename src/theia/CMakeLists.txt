@@ -75,6 +75,7 @@ SET(THEIA_SRC
   sfm/camera/radial_distortion.cc
   sfm/estimate_track.cc
   sfm/estimate_twoview_info.cc
+  sfm/estimators/estimate_calibrated_absolute_pose.cc
   sfm/estimators/estimate_essential_matrix.cc
   sfm/estimators/estimate_fundamental_matrix.cc
   sfm/estimators/estimate_relative_pose.cc
@@ -205,6 +206,7 @@ IF (BUILD_TESTING)
   GTEST(sfm/camera/camera)
   GTEST(sfm/camera/projection_matrix_utils)
   GTEST(sfm/camera/radial_distortion)
+  GTEST(sfm/estimators/estimate_calibrated_absolute_pose)
   GTEST(sfm/estimators/estimate_essential_matrix)
   GTEST(sfm/estimators/estimate_fundamental_matrix)
   GTEST(sfm/estimators/estimate_relative_pose)
