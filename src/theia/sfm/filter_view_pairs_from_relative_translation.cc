@@ -203,10 +203,11 @@ void TranslationFilteringIteration(
     std::mutex* mutex,
     std::unordered_map<ViewIdPair, double>* bad_edge_weight) {
   // Get a random vector to project all relative translations on to.
-  const Vector3d random_axis(
-      RandGaussian(direction_mean[0], direction_variance[0]),
-      RandGaussian(direction_mean[1], direction_variance[1]),
-      RandGaussian(direction_mean[2], direction_variance[2]));
+  const Vector3d random_axis =
+      Vector3d(RandGaussian(direction_mean[0], direction_variance[0]),
+               RandGaussian(direction_mean[1], direction_variance[1]),
+               RandGaussian(direction_mean[2], direction_variance[2]))
+          .normalized();
 
   // Project all vectors.
   const std::unordered_map<ViewIdPair, double>&
