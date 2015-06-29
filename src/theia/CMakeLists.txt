@@ -68,6 +68,7 @@ SET(THEIA_SRC
   math/sturm_chain.cc
   sfm/bundle_adjustment/bundle_adjust_track.cc
   sfm/bundle_adjustment/bundle_adjust_two_views.cc
+  sfm/bundle_adjustment/bundle_adjust_view.cc
   sfm/bundle_adjustment/bundle_adjustment.cc
   sfm/bundle_adjustment/optimize_relative_position_with_known_rotation.cc
   sfm/camera/camera.cc
