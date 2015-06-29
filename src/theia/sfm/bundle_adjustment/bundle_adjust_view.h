@@ -43,9 +43,9 @@ class Reconstruction;
 
 // Bundle adjust a view. This will keep all tracks constant and only modify the
 // view's pose and (optionally) the camera intrinsics.
-bool BundleAdjustTrack(const ViewId view_id,
-                       const bool optimize_intrinsics,
-                       Reconstruction* reconstruction);
+bool BundleAdjustView(const ViewId view_id,
+                      const bool optimize_intrinsics,
+                      Reconstruction* reconstruction);
 
 }  // namespace theia
 
