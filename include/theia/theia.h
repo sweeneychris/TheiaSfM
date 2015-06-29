@@ -104,6 +104,7 @@
 #include "theia/sfm/estimators/estimate_calibrated_absolute_pose.h"
 #include "theia/sfm/estimators/estimate_essential_matrix.h"
 #include "theia/sfm/estimators/estimate_fundamental_matrix.h"
+#include "theia/sfm/estimators/estimate_homography.h"
 #include "theia/sfm/estimators/estimate_relative_pose.h"
 #include "theia/sfm/estimators/estimate_triangulation.h"
 #include "theia/sfm/estimators/estimate_uncalibrated_absolute_pose.h"

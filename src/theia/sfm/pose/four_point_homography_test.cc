@@ -82,7 +82,6 @@ void CheckSymmetricError(const std::vector<Vector2d>& image_1_points,
                          const std::vector<Vector2d>& image_2_points,
                          const Matrix3d& homography_matrix,
                          const double max_symmetric_error) {
-  LOG(INFO) << "homography = \n" << homography_matrix;
   const Matrix3d inv_homography = homography_matrix.inverse();
   for (int i = 0; i < image_1_points.size(); i++) {
     const Vector3d image_1_hat =
@@ -94,8 +93,7 @@ void CheckSymmetricError(const std::vector<Vector2d>& image_1_points,
         (image_1_points[i] - image_1_hat.hnormalized()).squaredNorm();
     const double img_2_error =
         (image_2_points[i] - image_2_hat.hnormalized()).squaredNorm();
-    LOG(INFO) << "img pt 1 = " << image_1_points[i].transpose() << " vs "
-              << image_1_hat.hnormalized().transpose();
+
     EXPECT_LT(img_1_error, max_symmetric_error);
     EXPECT_LT(img_2_error, max_symmetric_error);
   }
@@ -114,8 +112,9 @@ void FourPointHomographyWithNoiseTest(const std::vector<Vector3d>& points_3d,
                       expected_translation, &image_1_points, &image_2_points);
   // Compute homography matrix.
   Matrix3d homography_matrix;
-  EXPECT_TRUE(FourPointHomography(image_1_points, image_2_points,
-                                   &homography_matrix));
+  EXPECT_TRUE(FourPointHomography(image_1_points,
+                                  image_2_points,
+                                  &homography_matrix));
 
   CheckSymmetricError(image_1_points, image_2_points, homography_matrix,
                          kMaxSymmetricError);

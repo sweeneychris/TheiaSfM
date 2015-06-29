@@ -79,6 +79,7 @@ SET(THEIA_SRC
   sfm/estimators/estimate_calibrated_absolute_pose.cc
   sfm/estimators/estimate_essential_matrix.cc
   sfm/estimators/estimate_fundamental_matrix.cc
+  sfm/estimators/estimate_homography.cc
   sfm/estimators/estimate_relative_pose.cc
   sfm/estimators/estimate_triangulation.cc
   sfm/estimators/estimate_uncalibrated_absolute_pose.cc
@@ -211,6 +212,7 @@ IF (BUILD_TESTING)
   GTEST(sfm/estimators/estimate_calibrated_absolute_pose)
   GTEST(sfm/estimators/estimate_essential_matrix)
   GTEST(sfm/estimators/estimate_fundamental_matrix)
+  GTEST(sfm/estimators/estimate_homography)
   GTEST(sfm/estimators/estimate_relative_pose)
   GTEST(sfm/estimators/estimate_triangulation)
   GTEST(sfm/estimators/estimate_uncalibrated_absolute_pose)
