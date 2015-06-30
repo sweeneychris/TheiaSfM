@@ -36,6 +36,8 @@
 #define THEIA_SFM_BUNDLE_ADJUSTMENT_BUNDLE_ADJUSTMENT_H_
 
 #include <ceres/ceres.h>
+#include <vector>
+#include "theia/sfm/types.h"
 
 namespace theia {
 
@@ -87,6 +89,12 @@ struct BundleAdjustmentSummary {
 // Bundle adjust all views and tracks in the reconstruction.
 BundleAdjustmentSummary BundleAdjustReconstruction(
     const BundleAdjustmentOptions& options, Reconstruction* reconstruction);
+
+// Bundle adjust the specified views and all tracks observed by those views.
+BundleAdjustmentSummary BundleAdjustPartialReconstruction(
+    const BundleAdjustmentOptions& options,
+    const std::vector<ViewId>& views_to_optimize,
+    Reconstruction* reconstruction);
 
 }  // namespace theia
 
