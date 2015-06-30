@@ -104,8 +104,9 @@ void AddCameraParametersToProblem(const bool constant_camera_intrinsics,
 }  // namespace
 
 // Bundle adjust the entire model.
-BundleAdjustmentSummary BundleAdjustReconstruction(
+BundleAdjustmentSummary BundleAdjustPartialReconstruction(
     const BundleAdjustmentOptions& options,
+    const std::vector<ViewId>& view_ids,
     Reconstruction* reconstruction) {
   CHECK_NOTNULL(reconstruction);
 
@@ -123,7 +124,7 @@ BundleAdjustmentSummary BundleAdjustReconstruction(
   // Per recommendation of Ceres documentation we group the parameters by points
   // (group 0) and camera parameters (group 1) so that the points are eliminated
   // first then the cameras.
-  const auto& view_ids = reconstruction->ViewIds();
+  std::vector<TrackId> tracks_to_optimize;
   for (const ViewId view_id : view_ids) {
     View* view = CHECK_NOTNULL(reconstruction->MutableView(view_id));
     // Only optimize estimated views.
@@ -137,6 +138,7 @@ BundleAdjustmentSummary BundleAdjustReconstruction(
     AddCameraParametersToProblem(options.constant_camera_intrinsics,
                                  camera->mutable_parameters(),
                                  &problem);
+
     // Add camera parameters to group 1.
     parameter_ordering->AddElementToGroup(camera->mutable_parameters(), 1);
 
@@ -156,6 +158,41 @@ BundleAdjustmentSummary BundleAdjustReconstruction(
           track->MutablePoint()->data());
       // Add the point to group 0.
       parameter_ordering->AddElementToGroup(track->MutablePoint()->data(), 0);
+      tracks_to_optimize.push_back(track_id);
+    }
+  }
+
+  // Keep a map of the views to optimize for convenience;
+  const std::unordered_set<ViewId> views_to_optimize(view_ids.begin(),
+                                                     view_ids.end());
+  // The previous loop gives us residuals for all tracks in all the views that
+  // we want to optimize. However, the tracks should still be constrained by
+  // *all* views that observe it, not just the ones we want to optimize. Here,
+  // we add in any views that were not part of the first loop and we keep them
+  // constant during the optimization.
+  for (const TrackId track_id : tracks_to_optimize) {
+    Track* track = CHECK_NOTNULL(reconstruction->MutableTrack(track_id));
+    const auto& view_ids = track->ViewIds();
+    for (const ViewId view_id : view_ids) {
+      View* view = CHECK_NOTNULL(reconstruction->MutableView(view_id));
+      // Only optimize estimated views that have not already been added.
+      if (ContainsKey(views_to_optimize, view_id) || !view->IsEstimated()) {
+        continue;
+      }
+
+      Camera* camera = view->MutableCamera();
+      const Feature* feature = CHECK_NOTNULL(view->GetFeature(track_id));
+      problem.AddResidualBlock(
+          ReprojectionError::Create(*feature),
+          NULL,
+          camera->mutable_parameters(),
+          track->MutablePoint()->data());
+
+      // Add camera parameters to group 1.
+      parameter_ordering->AddElementToGroup(camera->mutable_parameters(), 1);
+      // Any camera that reaches this point was not part of the first loop, so
+      // we do not want to optimize it.
+      problem.SetParameterBlockConstant(camera->mutable_parameters());
     }
   }
 
@@ -186,6 +223,14 @@ BundleAdjustmentSummary BundleAdjustReconstruction(
   summary.success = solver_summary.IsSolutionUsable();
 
   return summary;
+}
+
+// Bundle adjust the specified views and all tracks observed by those views.
+BundleAdjustmentSummary BundleAdjustReconstruction(
+    const BundleAdjustmentOptions& options,
+    Reconstruction* reconstruction) {
+  const auto& view_ids = reconstruction->ViewIds();
+  return BundleAdjustPartialReconstruction(options, view_ids, reconstruction);
 }
 
 }  // namespace theia

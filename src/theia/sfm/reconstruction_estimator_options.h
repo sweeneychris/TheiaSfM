@@ -39,6 +39,7 @@ namespace theia {
 
 enum class ReconstructionEstimatorType {
   NONLINEAR = 0,
+  INCREMENTAL = 1
 };
 
 // Options for the reconstruction estimation.
@@ -50,9 +51,8 @@ struct ReconstructionEstimatorOptions {
   // Number of threads to use.
   int num_threads = 1;
 
-  // Maximum reprojection error. This is used to determine inlier
-  // correspondences for absolute pose estimation. Additionally, this is the
-  // threshold used for filtering outliers after bundle adjustment.
+  // Maximum reprojection error. This is the threshold used for filtering
+  // outliers after bundle adjustment.
   double max_reprojection_error_in_pixels = 5.0;
 
   // Any edges in the view graph with fewer than min_num_two_view_inliers will
@@ -110,6 +110,36 @@ struct ReconstructionEstimatorOptions {
   // Weight of point to camera constraints with respect to camera to camera
   // constraints.
   double position_estimation_point_to_camera_weight = 0.5;
+
+  // --------------------- Incremental SfM Options --------------------- //
+
+  // If M is the maximum number of 3D points observed by any view, we want to
+  // localize all views that observe > M * multiple_view_localization_ratio 3D
+  // points. This allows for multiple well-conditioned views to be added to the
+  // reconstruction before needing bundle adjustment.
+  double multiple_view_localization_ratio = 0.8;
+
+  // When adding a new view to the current reconstruction, this is the
+  // reprojection error that determines whether a 2D-3D correspondence is an
+  // inlier during localization.
+  double absolute_pose_reprojection_error_threshold = 8.0;
+
+  // Minimum number of inliers for absolute pose estimation to be considered
+  // successful.
+  int min_num_absolute_pose_inliers = 30;
+
+  // Bundle adjustment of the entire reconstruction is triggered when the
+  // reconstruction has grown by more than this percent. That is, if we last ran
+  // BA when there were K views in the reconstruction and there are now N views,
+  // then G = (N - K) / K is the percent that the model has grown. We run bundle
+  // adjustment only if G is greater than this variable. This variable is
+  // indicated in percent so e.g., 5.0 = 5%.
+  double full_bundle_adjustment_growth_percent = 5.0;
+
+  // During incremental SfM we run "partial" bundle adjustment on the most
+  // recent views that have been added to the 3D reconstruction. This parameter
+  // controls how many views should be part of the partial BA.
+  int partial_bundle_adjustment_num_views = 20;
 
   // --------------- Triangulation Options --------------- //
 
