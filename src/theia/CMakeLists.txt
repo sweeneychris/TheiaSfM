@@ -91,6 +91,8 @@ SET(THEIA_SRC
   sfm/filter_view_pairs_from_relative_translation.cc
   sfm/find_common_tracks_in_views.cc
   sfm/find_common_views_by_name.cc
+  sfm/incremental_reconstruction_estimator.cc
+  sfm/localize_view_to_reconstruction.cc
   sfm/match_and_verify_features.cc
   sfm/nonlinear_reconstruction_estimator.cc
   sfm/pose/compute_triplet_baseline_ratios.cc

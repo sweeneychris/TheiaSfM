@@ -117,6 +117,8 @@
 #include "theia/sfm/filter_view_pairs_from_relative_translation.h"
 #include "theia/sfm/find_common_tracks_in_views.h"
 #include "theia/sfm/find_common_views_by_name.h"
+#include "theia/sfm/incremental_reconstruction_estimator.h"
+#include "theia/sfm/localize_view_to_reconstruction.h"
 #include "theia/sfm/match_and_verify_features.h"
 #include "theia/sfm/nonlinear_reconstruction_estimator.h"
 #include "theia/sfm/pose/compute_triplet_baseline_ratios.h"
