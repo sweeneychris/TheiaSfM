@@ -258,7 +258,7 @@ bool NonlinearReconstructionEstimator::FilterInitialViewGraph() {
 
   // Only reconstruct the largest connected component.
   RemoveDisconnectedViewPairs(view_graph_);
-  return view_graph_->NumEdges() >= 2;
+  return view_graph_->NumEdges() >= 1;
 }
 
 void NonlinearReconstructionEstimator::CalibrateCameras() {

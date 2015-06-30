@@ -289,7 +289,7 @@ void ReconstructionBuilder::InitializeReconstructionAndViewGraph(
 
 bool ReconstructionBuilder::BuildReconstruction(
     std::vector<Reconstruction*>* reconstructions) {
-  CHECK_GE(view_graph_->NumViews(), 3) << "At least 3 images must be provided "
+  CHECK_GE(view_graph_->NumViews(), 2) << "At least 2 images must be provided "
                                           "in order to create a "
                                           "reconstruction.";
 
@@ -304,7 +304,7 @@ bool ReconstructionBuilder::BuildReconstruction(
     RemoveUncalibratedViews();
   }
 
-  while (reconstruction_->NumViews() > 2) {
+  while (reconstruction_->NumViews() > 1) {
     LOG(INFO) << "Attempting to reconstruct " << reconstruction_->NumViews()
               << " images from " << view_graph_->NumEdges()
               << " two view matches.";
