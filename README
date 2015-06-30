@@ -5,13 +5,13 @@ UC Santa Barbara
 What is this library?
 ---------------------
 
-Theia is a structure-from-motion library that was created by UC Santa Barbara PhD
-candidate Chris Sweeney. It is designed to be very efficient, scalable, and
+Theia is a structure-from-motion library that was created by UC Santa Barbara
+PhD candidate Chris Sweeney. It is designed to be very efficient, scalable, and
 extendible.
 
-Please see the Theia website for detailed information, including instructions for
-building Theia and full documentation of the library. The website is currently
-located at http://cs.ucsb.edu/~cmsweeney/theia
+Please see the Theia website for detailed information, including instructions
+for building Theia and full documentation of the library. The website is
+currently located at http://www.theia-sfm.org
 
 -------------------
 Contact Information
