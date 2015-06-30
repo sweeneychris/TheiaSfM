@@ -81,6 +81,11 @@ class mutable_priority_queue {
     value_index_ = x.value_index_;
   }
 
+  inline void reserve(const int size) {
+    heap_.reserve(size);
+    value_index_.reserve(size);
+  }
+
   // Empties the queue.
   inline void clear() {
     STLDeleteElements(&heap_);
