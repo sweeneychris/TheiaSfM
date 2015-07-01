@@ -39,6 +39,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <sstream>  // NOLINT
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -60,6 +61,7 @@
 #include "theia/sfm/view_graph/view_graph.h"
 #include "theia/solvers/sample_consensus_estimator.h"
 #include "theia/util/map_util.h"
+#include "theia/util/stringprintf.h"
 #include "theia/util/timer.h"
 #include "theia/util/util.h"
 
@@ -232,19 +234,23 @@ ReconstructionEstimatorSummary IncrementalReconstructionEstimator::Estimate(
   }
 
   Timer total_timer;
+  Timer timer;
+  double time_to_find_initial_seed = 0;
 
   // Set the known camera intrinsics.
-  timer_.Reset();
+  timer.Reset();
   SetCameraIntrinsicsFromPriors(reconstruction_);
-  summary_.camera_intrinsics_calibration_time = timer_.ElapsedTimeInSeconds();
+  summary_.camera_intrinsics_calibration_time = timer.ElapsedTimeInSeconds();
 
   // Steps 1 - 3: Choose an initial camera pair to reconstruct.
+  timer.Reset();
   if (!ChooseInitialViewPair()) {
     LOG(ERROR) << "Could not find a suitable initial pair for starting "
                   "incremental SfM!";
     summary_.success = false;
     return summary_;
   }
+  time_to_find_initial_seed = timer.ElapsedTimeInSeconds();
 
   // Try to add as many views as possible to the reconstruction until no more
   // views can be localized.
@@ -259,12 +265,15 @@ ReconstructionEstimatorSummary IncrementalReconstructionEstimator::Estimate(
     // Step 4: Localize new views.
     // Compute the 2D-3D point count to determine which views should be
     // localized.
+    timer.Reset();
     FindViewsToLocalize(&views_to_localize);
+    summary_.pose_estimation_time += timer.ElapsedTimeInSeconds();
 
     // Attempt to localize all candidate views and estimate new 3D
     // points. Bundle Adjustment is run as either partial or full BA depending
     // on the current state of the reconstruction.
     for (int i = 0; i < views_to_localize.size(); i++) {
+      timer.Reset();
       if (!LocalizeViewToReconstruction(views_to_localize[i],
                                         localization_options_,
                                         reconstruction_,
@@ -272,6 +281,7 @@ ReconstructionEstimatorSummary IncrementalReconstructionEstimator::Estimate(
         ++failed_localization_attempts;
         continue;
       }
+      summary_.pose_estimation_time += timer.ElapsedTimeInSeconds();
 
       reconstructed_views_.push_back(views_to_localize[i]);
       views_to_localize_.erase(views_to_localize[i]);
@@ -282,12 +292,17 @@ ReconstructionEstimatorSummary IncrementalReconstructionEstimator::Estimate(
       // view.
       RemoveOutlierTracks(
           triangulation_options_.max_acceptable_reprojection_error_pixels);
+
       // Step 5: Estimate new 3D points.
+      timer.Reset();
       EstimateStructure();
+      summary_.triangulation_time += timer.ElapsedTimeInSeconds();
       SetUnderconstrainedAsUnestimated();
 
       // Step 6: Bundle Adjustment.
+      timer.Reset();
       BundleAdjustment();
+      summary_.bundle_adjustment_time += timer.ElapsedTimeInSeconds();
     }
   }
 
@@ -298,6 +313,12 @@ ReconstructionEstimatorSummary IncrementalReconstructionEstimator::Estimate(
                                        &summary_.estimated_tracks);
   summary_.success = true;
   summary_.total_time = total_timer.ElapsedTimeInSeconds();
+
+  std::ostringstream string_stream;
+  string_stream << "Incremental Reconstruction Estimator timings:"
+                << "\n\tTime to find an initial seed for the reconstruction: "
+                << time_to_find_initial_seed;
+  summary_.message = string_stream.str();
   return summary_;
 }
 
@@ -461,15 +482,12 @@ void IncrementalReconstructionEstimator::FindViewsToLocalize(
 
 void IncrementalReconstructionEstimator::EstimateStructure() {
   // Estimate all tracks.
-  timer_.Reset();
   EstimateAllTracks(triangulation_options_,
                     options_.num_threads,
                     reconstruction_);
-  summary_.triangulation_time += timer_.ElapsedTimeInSeconds();
 }
 
 void IncrementalReconstructionEstimator::BundleAdjustment() {
-  timer_.Reset();
   const double ba_growth_ratio =
       1.0 + options_.full_bundle_adjustment_growth_percent / 100.0;
 
@@ -509,7 +527,6 @@ void IncrementalReconstructionEstimator::BundleAdjustment() {
   }
 
   CHECK(ba_summary.success) << "Could not perform full bundle adjustment.";
-  summary_.bundle_adjustment_time += timer_.ElapsedTimeInSeconds();
 
   RemoveOutlierTracks(options_.max_reprojection_error_in_pixels);
 }

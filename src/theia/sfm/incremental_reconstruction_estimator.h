@@ -132,7 +132,6 @@ class IncrementalReconstructionEstimator : public ReconstructionEstimator {
   LocalizeViewToReconstructionOptions localization_options_;
 
   ReconstructionEstimatorSummary summary_;
-  Timer timer_;
 
   // A container to keep track of which views need to be localized.
   std::unordered_set<ViewId> views_to_localize_;

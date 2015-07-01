@@ -322,25 +322,16 @@ bool ReconstructionBuilder::BuildReconstruction(
     }
 
     LOG(INFO)
-        << "Reconstruction estimation statistics: "
+        << "\nReconstruction estimation statistics: "
         << "\n\tNum estimated views = " << summary.estimated_views.size()
         << "\n\tNum input views = " << reconstruction_->NumViews()
         << "\n\tNum estimated tracks = " << summary.estimated_tracks.size()
         << "\n\tNum input tracks = " << reconstruction_->NumTracks()
-        << "\n\tInitial view graph filtering time = "
-        << summary.initial_view_graph_filtering_time
-        << "\n\tCamera intrinsic calibration time = "
-        << summary.camera_intrinsics_calibration_time
-        << "\n\tRotation estimation time = " << summary.rotation_estimation_time
-        << "\n\tRotation filtering time = " << summary.rotation_filtering_time
-        << "\n\tRelative translation optimization time = "
-        << summary.relative_translation_optimization_time
-        << "\n\tRelative translation filtering time = "
-        << summary.relative_translation_filtering_time
-        << "\n\tPosition estimation time = " << summary.position_estimation_time
+        << "\n\tPose estimation time = " << summary.pose_estimation_time
         << "\n\tTriangulation time = " << summary.triangulation_time
         << "\n\tBundle Adjustment time = " << summary.bundle_adjustment_time
-        << "\n\tTotal time = " << summary.total_time;
+        << "\n\tTotal time = " << summary.total_time
+        << "\n\n" << summary.message;
 
     // Remove estimated views and tracks and attempt to create a reconstruction
     // from the remaining unestimated parts.
