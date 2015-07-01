@@ -36,8 +36,9 @@
 
 #include <glog/logging.h>
 
-#include "theia/sfm/reconstruction_estimator_options.h"
+#include "theia/sfm/incremental_reconstruction_estimator.h"
 #include "theia/sfm/nonlinear_reconstruction_estimator.h"
+#include "theia/sfm/reconstruction_estimator_options.h"
 
 namespace theia {
 
@@ -46,6 +47,9 @@ ReconstructionEstimator* ReconstructionEstimator::Create(
   switch (options.reconstruction_estimator_type) {
     case ReconstructionEstimatorType::NONLINEAR:
       return new NonlinearReconstructionEstimator(options);
+      break;
+    case ReconstructionEstimatorType::INCREMENTAL:
+      return new IncrementalReconstructionEstimator(options);
       break;
     default:
       LOG(FATAL) << "Invalid reconstruction estimator specified.";

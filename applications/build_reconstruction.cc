@@ -82,7 +82,7 @@ DEFINE_bool(keep_only_symmetric_matches, true,
 
 // Reconstruction building options.
 DEFINE_string(reconstruction_estimator, "NONLINEAR",
-              "Type of global SfM reconstruction estimation to use.");
+              "Type of SfM reconstruction estimation to use.");
 DEFINE_bool(reconstruct_largest_connected_component, false,
             "If set to true, only the single largest connected component is "
             "reconstructed. Otherwise, as many models as possible are "
@@ -96,8 +96,7 @@ DEFINE_bool(constant_camera_intrinsics, false,
             "bundle adjustment.");
 DEFINE_double(max_reprojection_error_pixels, 4.0,
               "Maximum reprojection error for a correspondence to be "
-              "considered an inlier. This is used for absolute pose estimation "
-              "as well as outlier filtering after bundle adjustment.");
+              "considered an inlier after bundle adjustment.");
 DEFINE_int32(num_retriangulation_iterations, 1,
              "Number of times to retriangulate any unestimated tracks. Bundle "
              "adjustment is performed after retriangulation.");
@@ -110,6 +109,20 @@ DEFINE_bool(refine_relative_translations_after_rotation_estimation, true,
 DEFINE_double(post_rotation_filtering_degrees, 5.0,
               "Max degrees difference in relative rotation and rotation "
               "estimates for rotation filtering.");
+
+// Incremental SfM options.
+DEFINE_double(absolute_pose_reprojection_error_threshold, 8.0,
+              "The inlier threshold for absolute pose estimation.");
+DEFINE_int32(min_num_absolute_pose_inliers, 30,
+             "Minimum number of inliers in order for absolute pose estimation "
+             "to be considered successful.");
+DEFINE_double(full_bundle_adjustment_growth_percent, 5.0,
+              "Full BA is only triggered for incremental SfM when the "
+              "reconstruction has growth by this percent since the last time "
+              "full BA was used.");
+DEFINE_int32(partial_bundle_adjustment_num_views, 20,
+             "When full BA is not being run, partial BA is executed on a "
+             "constant number of views specified by this parameter.");
 
 // Position estimation options.
 DEFINE_int32(
@@ -181,6 +194,8 @@ ReconstructionEstimatorType GetReconstructionEstimatorType(
     const std::string& reconstruction_estimator) {
   if (reconstruction_estimator == "NONLINEAR") {
     return ReconstructionEstimatorType::NONLINEAR;
+  } else if (reconstruction_estimator == "INCREMENTAL") {
+    return ReconstructionEstimatorType::INCREMENTAL;
   } else {
     LOG(FATAL)
         << "Invalid reconstruction estimator type. Using NONLINEAR instead.";
@@ -244,6 +259,17 @@ ReconstructionBuilderOptions SetReconstructionBuilderOptions() {
       .position_estimation_min_num_tracks_per_view =
       FLAGS_position_estimation_min_num_tracks_per_view;
   options.output_matches_file = FLAGS_output_matches_file;
+
+  options.reconstruction_estimator_options
+      .absolute_pose_reprojection_error_threshold =
+      FLAGS_absolute_pose_reprojection_error_threshold;
+  options.reconstruction_estimator_options.min_num_absolute_pose_inliers =
+      FLAGS_min_num_absolute_pose_inliers;
+  options.reconstruction_estimator_options
+      .full_bundle_adjustment_growth_percent =
+      FLAGS_full_bundle_adjustment_growth_percent;
+  options.reconstruction_estimator_options.partial_bundle_adjustment_num_views =
+      FLAGS_partial_bundle_adjustment_num_views;
 
   options.reconstruction_estimator_options.min_triangulation_angle_degrees =
       FLAGS_min_triangulation_angle_degrees;
