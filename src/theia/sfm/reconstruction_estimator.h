@@ -35,6 +35,7 @@
 #ifndef THEIA_SFM_RECONSTRUCTION_ESTIMATOR_H_
 #define THEIA_SFM_RECONSTRUCTION_ESTIMATOR_H_
 
+#include <string>
 #include <unordered_set>
 
 #include "theia/sfm/types.h"
@@ -52,16 +53,17 @@ struct ReconstructionEstimatorSummary {
   std::unordered_set<TrackId> estimated_tracks;
 
   // All times are given in seconds.
-  double initial_view_graph_filtering_time = 0.0;
   double camera_intrinsics_calibration_time = 0.0;
-  double rotation_estimation_time = 0.0;
-  double rotation_filtering_time = 0.0;
-  double relative_translation_optimization_time = 0.0;
-  double relative_translation_filtering_time = 0.0;
-  double position_estimation_time = 0.0;
+  double pose_estimation_time = 0.0;
   double triangulation_time = 0.0;
   double bundle_adjustment_time = 0.0;
   double total_time = 0.0;
+
+  // The child classes can fill this message with any useful information
+  // relevant to the reconstruction process. For instance, the nonlinear
+  // estimator may fill this message with timing statistics that are only
+  // relevant to the nonlinear estimator.
+  std::string message;
 };
 
 // A reconstruction estimator should build a reconstruction from a view graph

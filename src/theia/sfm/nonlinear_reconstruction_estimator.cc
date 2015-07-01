@@ -35,6 +35,7 @@
 #include "theia/sfm/nonlinear_reconstruction_estimator.h"
 
 #include <Eigen/Core>
+#include <sstream>  // NOLINT
 
 #include "theia/sfm/bundle_adjustment/bundle_adjustment.h"
 #include "theia/sfm/estimate_track.h"
@@ -60,6 +61,17 @@ namespace theia {
 using Eigen::Vector3d;
 
 namespace {
+
+// All times are given in seconds.
+struct NonlinearReconstructionEstimatorTimings {
+  double initial_view_graph_filtering_time = 0.0;
+  double camera_intrinsics_calibration_time = 0.0;
+  double rotation_estimation_time = 0.0;
+  double rotation_filtering_time = 0.0;
+  double relative_translation_optimization_time = 0.0;
+  double relative_translation_filtering_time = 0.0;
+  double position_estimation_time = 0.0;
+};
 
 FilterViewPairsFromRelativeTranslationOptions
 SetRelativeTranslationFilteringOptions(
@@ -153,6 +165,7 @@ ReconstructionEstimatorSummary NonlinearReconstructionEstimator::Estimate(
   positions_.clear();
 
   ReconstructionEstimatorSummary summary;
+  NonlinearReconstructionEstimatorTimings nonlinear_estimator_timings;
   Timer total_timer;
   Timer timer;
 
@@ -164,7 +177,8 @@ ReconstructionEstimatorSummary NonlinearReconstructionEstimator::Estimate(
     LOG(INFO) << "Insufficient view pairs to perform estimation.";
     return summary;
   }
-  summary.initial_view_graph_filtering_time = timer.ElapsedTimeInSeconds();
+  nonlinear_estimator_timings.initial_view_graph_filtering_time =
+      timer.ElapsedTimeInSeconds();
 
   // Step 2. Calibrate any uncalibrated cameras.
   LOG(INFO) << "Calibrating any uncalibrated cameras.";
@@ -176,31 +190,42 @@ ReconstructionEstimatorSummary NonlinearReconstructionEstimator::Estimate(
   LOG(INFO) << "Estimating the global rotations of all cameras.";
   timer.Reset();
   EstimateGlobalRotations();
-  summary.rotation_estimation_time = timer.ElapsedTimeInSeconds();
+  nonlinear_estimator_timings.rotation_estimation_time =
+      timer.ElapsedTimeInSeconds();
 
   // Step 4. Filter bad rotations.
   LOG(INFO) << "Filtering any bad rotation estimations.";
   timer.Reset();
   FilterRotations();
-  summary.rotation_filtering_time = timer.ElapsedTimeInSeconds();
+  nonlinear_estimator_timings.rotation_filtering_time =
+      timer.ElapsedTimeInSeconds();
 
   // Step 5. Optimize relative translations.
   LOG(INFO) << "Optimizing the pairwise translation estimations.";
   timer.Reset();
   OptimizePairwiseTranslations();
-  summary.relative_translation_optimization_time = timer.ElapsedTimeInSeconds();
+  nonlinear_estimator_timings.relative_translation_optimization_time =
+      timer.ElapsedTimeInSeconds();
 
   // Step 6. Filter bad relative translations.
   LOG(INFO) << "Filtering any bad relative translations.";
   timer.Reset();
   FilterRelativeTranslation();
-  summary.relative_translation_filtering_time = timer.ElapsedTimeInSeconds();
+  nonlinear_estimator_timings.relative_translation_filtering_time =
+      timer.ElapsedTimeInSeconds();
 
   // Step 7. Estimate global positions.
   LOG(INFO) << "Estimating the positions of all cameras.";
   timer.Reset();
   EstimatePosition();
-  summary.position_estimation_time = timer.ElapsedTimeInSeconds();
+  nonlinear_estimator_timings.position_estimation_time =
+      timer.ElapsedTimeInSeconds();
+  summary.pose_estimation_time =
+      nonlinear_estimator_timings.rotation_estimation_time +
+      nonlinear_estimator_timings.rotation_filtering_time +
+      nonlinear_estimator_timings.relative_translation_optimization_time +
+      nonlinear_estimator_timings.relative_translation_filtering_time +
+      nonlinear_estimator_timings.position_estimation_time;
 
   // Set the poses in the reconstruction object.
   SetReconstructionFromEstimatedPoses(orientations_,
@@ -237,8 +262,28 @@ ReconstructionEstimatorSummary NonlinearReconstructionEstimator::Estimate(
   GetEstimatedTracksFromReconstruction(*reconstruction_,
                                        &summary.estimated_tracks);
   summary.success = true;
-
   summary.total_time = total_timer.ElapsedTimeInSeconds();
+
+  // Output some timing statistics.
+  std::ostringstream string_stream;
+  string_stream
+      << "Nonlinear Reconstruction Estimator timings:"
+      << "\n\tInitial view graph filtering time = "
+      << nonlinear_estimator_timings.initial_view_graph_filtering_time
+      << "\n\tCamera intrinsic calibration time = "
+      << summary.camera_intrinsics_calibration_time
+      << "\n\tRotation estimation time = "
+      << nonlinear_estimator_timings.rotation_estimation_time
+      << "\n\tRotation filtering time = "
+      << nonlinear_estimator_timings.rotation_filtering_time
+      << "\n\tRelative translation optimization time = "
+      << nonlinear_estimator_timings.relative_translation_optimization_time
+      << "\n\tRelative translation filtering time = "
+      << nonlinear_estimator_timings.relative_translation_filtering_time
+      << "\n\tPosition estimation time = "
+      << nonlinear_estimator_timings.position_estimation_time;
+  summary.message = string_stream.str();
+
   return summary;
 }
 
