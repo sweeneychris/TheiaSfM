@@ -9,10 +9,31 @@ env:
   - OMP_NUM_THREADS=4
 
 before_install:
+  - echo "yes" | sudo add-apt-repository ppa:kalakris/cmake
+  - echo "yes" | sudo add-apt-repository ppa:ubuntu-toolchain-r/test -y
+  - sudo apt-get update -qq
+  - sudo apt-get install -qq
+  - sudo apt-get install cmake
+  # g++4.8.1
+  - if [ "$CXX" == "g++" ]; then sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test; fi
+
+  # clang 3.4
+  - if [ "$CXX" == "clang++" ]; then sudo add-apt-repository -y ppa:h-rayflood/llvm; fi
+
   - sudo apt-get update -qq
 
 install:
-- if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
+  # g++4.8.1
+  - if [ "$CXX" = "g++" ]; then sudo apt-get install -qq g++-4.8; fi
+  - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
+  - if [ "$CXX" = "g++" ]; then sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-4.8 90; fi
+  - if [ "$CXX" = "g++" ]; then sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 90; fi
+  - if [ "$CXX" = "g++" ]; then sudo apt-get install libstdc++-4.8-dev; fi
+
+  # clang 3.4
+  - if [ "$CXX" == "clang++" ]; then sudo apt-get install --allow-unauthenticated -qq clang-3.4; fi
+  - if [ "$CXX" == "clang++" ]; then export CXX="clang++-3.4"; fi
+
   # Install dependencies available from stock Ubuntu 12.04 repositories.
   # NOTE: The use of libsuitesparse-dev from Ubuntu 12.04 means that we are getting the broken version which
   #       cannot be used to build a shared library.
@@ -49,15 +70,6 @@ install:
   - sudo apt-get install libjpeg-dev
   - sudo apt-get install libpng-dev
   - sudo apt-get install imagemagick libmagickcore-dev
-
-addons:
-  apt:
-    sources:
-    - ubuntu-toolchain-r-test
-    packages:
-    - gcc-4.8
-    - g++-4.8
-    - clang
 
 before_script:
   - mkdir /tmp/theiasfm-build
