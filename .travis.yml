@@ -40,8 +40,8 @@ install:
   - cd /tmp/eigen-3.2.5-build
   - cmake /tmp/eigen-eigen-bdd17ee3b1b3 && make && sudo make install
   # Ceres Solver.
-  - wget https://github.com/ceres-solver/ceres-solver/archive/1.10.0.tar.gz -O /tmp/ceres_solver-1.10.0.tar.gz
-  - tar -C /tmp -xvzf /tmp/ceres-solver-1.10.0.tar.gz
+  - wget https://github.com/ceres-solver/ceres-solver/archive/1.10.0.tar.gz -O /tmp/ceres-solver-1.10.0.tar.gz
+  - tar -C /tmp -xzvf /tmp/ceres-solver-1.10.0.tar.gz
   - rm /tmp/ceres-solver-1.10.0.tar.gz
   - mkdir /tmp/ceres-solver-1.10.0-build
   - cd /tmp/ceres-solver-1.10.0-build
