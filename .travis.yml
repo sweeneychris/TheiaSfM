@@ -12,6 +12,15 @@ before_install:
   - sudo apt-get update -qq
 
 install:
+  - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
+  addons:
+    apt:
+      sources:
+      - ubuntu-toolchain-r-test
+      packages:
+      - gcc-4.8
+      - g++-4.8
+      - clang
   # Install dependencies available from stock Ubuntu 12.04 repositories.
   # NOTE: The use of libsuitesparse-dev from Ubuntu 12.04 means that we are getting the broken version which
   #       cannot be used to build a shared library.
