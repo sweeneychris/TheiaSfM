@@ -84,14 +84,13 @@ ENDMACRO(EIGEN_REPORT_NOT_FOUND)
 
 # Search user-installed locations first, so that we prefer user installs
 # to system installs where both exist.
-#
-# TODO: Add standard Windows search locations for Eigen.
 LIST(APPEND EIGEN_CHECK_INCLUDE_DIRS
   /usr/local/include/eigen3
   /usr/local/homebrew/include/eigen3 # Mac OS X
   /opt/local/var/macports/software/eigen3 # Mac OS X.
   /opt/local/include/eigen3
-  /usr/include/eigen3)
+  /usr/include/eigen3
+  ${CMAKE_INSTALL_PREFIX}/eigen3)
 
 # Search supplied hint directories first if supplied.
 FIND_PATH(EIGEN_INCLUDE_DIR

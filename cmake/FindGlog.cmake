@@ -89,19 +89,19 @@ ENDMACRO(GLOG_REPORT_NOT_FOUND)
 
 # Search user-installed locations first, so that we prefer user installs
 # to system installs where both exist.
-#
-# TODO: Add standard Windows search locations for glog.
 LIST(APPEND GLOG_CHECK_INCLUDE_DIRS
   /usr/local/include
   /usr/local/homebrew/include # Mac OS X
   /opt/local/var/macports/software # Mac OS X.
   /opt/local/include
-  /usr/include)
+  /usr/include
+  ${CMAKE_INSTALL_PREFIX})
 LIST(APPEND GLOG_CHECK_LIBRARY_DIRS
   /usr/local/lib
   /usr/local/homebrew/lib # Mac OS X.
   /opt/local/lib
-  /usr/lib)
+  /usr/lib
+  ${CMAKE_INSTALL_PREFIX})
 
 # Search supplied hint directories first if supplied.
 FIND_PATH(GLOG_INCLUDE_DIR
