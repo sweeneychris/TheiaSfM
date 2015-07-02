@@ -40,12 +40,10 @@ install:
   - cd /tmp/eigen-3.2.5-build
   - cmake /tmp/eigen-eigen-bdd17ee3b1b3 && make && sudo make install
   # Ceres Solver.
-  - wget https://github.com/ceres-solver/ceres-solver/archive/1.10.0.tar.gz -O /tmp/ceres-solver-1.10.0.tar.gz
-  - tar -C /tmp -xzvf /tmp/ceres-solver-1.10.0.tar.gz
-  - rm /tmp/ceres-solver-1.10.0.tar.gz
-  - mkdir /tmp/ceres-solver-1.10.0-build
-  - cd /tmp/ceres-solver-1.10.0-build
-  - cmake /tmp/ceres-solver-1.10.0 && make -j4 && sudo make install && cd -
+  - git clone --branch=master git://github.com/ceres-solver/ceres-solver.git /tmp/ceres-solver
+  - mkdir /tmp/ceres-solver-build
+  - cd /tmp/ceres-solver-build
+  - cmake /tmp/ceres-solver && make -j4 && sudo make install && cd -
   # Image libraries and ImageMagick.
   - sudo apt-get install libjpeg-dev
   - sudo apt-get install libpng-dev
