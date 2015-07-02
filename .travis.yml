@@ -1,0 +1,66 @@
+language: cpp
+
+compiler:
+  - gcc
+  - clang
+
+env:
+  # As per http://docs.travis-ci.com/user/languages/cpp/#OpenMP-projects don't be greedy with OpenMP.
+  - OMP_NUM_THREADS=4
+
+before_install:
+  - sudo apt-get update -qq
+
+install:
+  # Install dependencies available from stock Ubuntu 12.04 repositories.
+  # NOTE: The use of libsuitesparse-dev from Ubuntu 12.04 means that we are getting the broken version which
+  #       cannot be used to build a shared library.
+  - sudo apt-get install -y cmake libatlas-base-dev libsuitesparse-dev
+  # Install the latest gflags, as it is not available as a package in 12.04.
+  - wget https://github.com/gflags/gflags/archive/v2.1.2.tar.gz -O /tmp/gflags-2.1.2.tar.gz
+  - tar -C /tmp -xzvf /tmp/gflags-2.1.2.tar.gz
+  - rm /tmp/gflags-2.1.2.tar.gz
+  - mkdir /tmp/gflags-2.1.2-build
+  - cd /tmp/gflags-2.1.2-build
+  - cmake -DBUILD_SHARED_LIBS=ON /tmp/gflags-2.1.2 && make && sudo make install && cd -
+  # Install the latest glog, as it is not available as a package in 12.04.
+  # NOTE: We must apply the patch to handle the namespace change in gflags.
+  - wget https://github.com/google/glog/archive/v0.3.4.tar.gz -O /tmp/glog-0.3.4.tar.gz
+  - tar -C /tmp -xzvf /tmp/glog-0.3.4.tar.gz
+  - rm /tmp/glog-0.3.4.tar.gz
+  - wget https://gist.githubusercontent.com/alexsmac/e157dd7737310fa228c6/raw/7d3e50c5079a085fe08822fd6952d5fb19c2fe1e/glog-0.3.4-gflags-namespace.patch -O /tmp/glog-0.3.4-gflags-namespace.patch
+  - cd /tmp/glog-0.3.4 && patch -p1 < /tmp/glog-0.3.4-gflags-namespace.patch
+  - ./configure && make && sudo make install && cd -
+  # Install the latest version of Eigen, as libeigen3-dev in 12.04 is 3.0.5, which does not have
+  # Eigen/SparseCore required by covariance_impl.
+  - wget http://bitbucket.org/eigen/eigen/get/3.2.5.tar.gz -O /tmp/eigen-3.2.5.tar.gz
+  - tar -C /tmp -xzvf /tmp/eigen-3.2.5.tar.gz
+  - rm /tmp/eigen-3.2.5.tar.gz
+  - mkdir /tmp/eigen-3.2.5-build
+  - cd /tmp/eigen-3.2.5-build
+  - cmake /tmp/eigen-eigen-bdd17ee3b1b3 && make && sudo make install
+  # Ceres Solver.
+  - wget https://github.com/ceres-solver/ceres-solver/archive/1.10.0.tar.gz -O /tmp/ceres_solver-1.10.0.tar.gz
+  - tar -C /tmp -xvzf /tmp/ceres-solver-1.10.0.tar.gz
+  - rm /tmp/ceres-solver-1.10.0.tar.gz
+  - mkdir /tmp/ceres-solver-1.10.0-build
+  - cd /tmp/ceres-solver-1.10.0-build
+  - cmake /tmp/ceres-solver-1.10.0 && make -j4 && sudo make install && cd -
+  # Image libraries and ImageMagick.
+  - sudo apt-get install libjpeg-dev
+  - sudo apt-get install libpng-dev
+  - sudo apt-get install imagemagick libmagickcore-dev
+
+before_script:
+  - mkdir /tmp/theiasfm-build
+  - cd /tmp/theiasfm-build
+
+script:
+  # NOTE: TRAVIS_BUILD_DIR is actually the source directory for the project.
+  - cmake $TRAVIS_BUILD_DIR
+  - make -j4 && sudo make install
+  - make test
+
+notifications:
+  email:
+    - sweeney.chris.m@gmail.com
