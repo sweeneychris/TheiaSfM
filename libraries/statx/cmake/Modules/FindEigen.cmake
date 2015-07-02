@@ -1,8 +1,6 @@
-# Module copied from Google-Ceres solver.
-# 
 # Ceres Solver - A fast non-linear least squares minimizer
-# Copyright 2013 Google Inc. All rights reserved.
-# http://code.google.com/p/ceres-solver/
+# Copyright 2015 Google Inc. All rights reserved.
+# http://ceres-solver.org/
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -86,20 +84,32 @@ ENDMACRO(EIGEN_REPORT_NOT_FOUND)
 
 # Search user-installed locations first, so that we prefer user installs
 # to system installs where both exist.
-#
-# TODO: Add standard Windows search locations for Eigen.
 LIST(APPEND EIGEN_CHECK_INCLUDE_DIRS
   /usr/local/include/eigen3
   /usr/local/homebrew/include/eigen3 # Mac OS X
   /opt/local/var/macports/software/eigen3 # Mac OS X.
   /opt/local/include/eigen3
-  /usr/include/eigen3)
+  /usr/include/eigen3
+  ${CMAKE_INSTALL_PREFIX}
+  ${CMAKE_INSTALL_PREFIX}/eigen3)
 
 # Search supplied hint directories first if supplied.
 FIND_PATH(EIGEN_INCLUDE_DIR
   NAMES Eigen/Core
   PATHS ${EIGEN_INCLUDE_DIR_HINTS}
   ${EIGEN_CHECK_INCLUDE_DIRS})
+IF (NOT EIGEN_INCLUDE_DIR)
+  # Handle case where user / CMAKE_PREFIX_PATH does not specify the
+  # required eigen3 subdirectory, prepend it to search target and retry.
+  FIND_PATH(EIGEN_INCLUDE_DIR
+    NAMES eigen3/Eigen/Core
+    PATHS ${EIGEN_INCLUDE_DIR_HINTS}
+    ${EIGEN_CHECK_INCLUDE_DIRS})
+  IF (EIGEN_INCLUDE_DIR AND EXISTS ${EIGEN_INCLUDE_DIR})
+    UPDATE_CACHE_VARIABLE(EIGEN_INCLUDE_DIR "${EIGEN_INCLUDE_DIR}/eigen3")
+  ENDIF (EIGEN_INCLUDE_DIR AND EXISTS ${EIGEN_INCLUDE_DIR})
+ENDIF(NOT EIGEN_INCLUDE_DIR)
+
 IF (NOT EIGEN_INCLUDE_DIR OR
     NOT EXISTS ${EIGEN_INCLUDE_DIR})
   EIGEN_REPORT_NOT_FOUND(
