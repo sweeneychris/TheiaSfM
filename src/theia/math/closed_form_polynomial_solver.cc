@@ -97,10 +97,28 @@ int SolveQuadratic(const double a, const double b, const double c,
     return 1;
   }
 
-  std::complex<double> tmp_complex_num(b * b - 4.0 * a * c, 0.0);
-  std::complex<double> complex_sqrt(std::sqrt(tmp_complex_num));
-  roots[0] = (-1.0 * b + complex_sqrt) / (2.0 * a);
-  roots[1] = (-1.0 * b - complex_sqrt) / (2.0 * a);
+  const double D = b * b - 4 * a * c;
+  const double sqrt_D = std::sqrt(std::abs(D));
+
+  // Real roots.
+  if (D >= 0) {
+      // Stable quadratic roots according to BKP Horn.
+    // http://people.csail.mit.edu/bkph/articles/Quadratics.pdf
+    if (b >= 0) {
+      roots[0] = (-b - sqrt_D) / (2.0 * a);
+      roots[1] = (2.0 * c) / (-b - sqrt_D);
+    } else {
+      roots[0] = (2.0 * c) / (-b + sqrt_D);
+      roots[1] = (-b + sqrt_D) / (2.0 * a);
+    }
+    return 2;
+  }
+
+  // Use the normal quadratic formula for the complex case.
+  roots[0].real(-b / (2.0 * a));
+  roots[1].real(-b / (2.0 * a));
+  roots[0].imag(sqrt_D / (2.0 * a));
+  roots[1].imag(-sqrt_D / (2.0 * a));
   return 2;
 }
 
