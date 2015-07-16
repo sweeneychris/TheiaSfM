@@ -38,8 +38,6 @@
 #include <Eigen/Core>
 
 namespace theia {
-using Eigen::Matrix;
-using Eigen::Vector3d;
 
 // Put these methods in a nested namespace so that they are not part of the
 // common public theia namespace.
@@ -58,7 +56,7 @@ void ExtractJacobianCoefficients(
 
 // Constructs a Macaulay matrix to solve the system of equations using the
 // polynomial coefficients from the jacobians.
-Eigen::Matrix<double, 120, 120> CreateMacaulayMatrix(
+Eigen::MatrixXd CreateMacaulayMatrix(
     const double f1_coeff[20], const double f2_coeff[20],
     const double f3_coeff[20], const double rand_term[4]);
 

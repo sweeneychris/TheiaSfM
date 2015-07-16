@@ -50,6 +50,7 @@ namespace theia {
 using Eigen::Matrix3d;
 using Eigen::Matrix4d;
 using Eigen::Matrix;
+using Eigen::MatrixXd;
 using Eigen::Quaterniond;
 using Eigen::Vector3d;
 using dls_impl::CreateMacaulayMatrix;
@@ -150,13 +151,13 @@ void GdlsSimilarityTransform(const std::vector<Vector3d>& ray_origin,
                                     RandDouble(0.0, 100.0) };
 
   // Create Macaulay matrix that will be used to solve our polynonomial system.
-  const Matrix<double, 120, 120> macaulay_matrix =
+  const MatrixXd& macaulay_matrix =
       CreateMacaulayMatrix(f1_coeff, f2_coeff, f3_coeff, macaulay_term);
 
   // Via the Schur complement trick, the top-left of the Macaulay matrix
   // contains a multiplication matrix whose eigenvectors correspond to solutions
   // to our system of equations.
-  const Matrix<double, 27, 27> solution_polynomial =
+  const MatrixXd solution_polynomial =
       macaulay_matrix.block<27, 27>(0, 0) -
       (macaulay_matrix.block<27, 93>(0, 27) *
        macaulay_matrix.block<93, 93>(27, 27).partialPivLu().solve(
@@ -164,8 +165,7 @@ void GdlsSimilarityTransform(const std::vector<Vector3d>& ray_origin,
 
   // Extract eigenvectors of the solution polynomial to obtain the roots which
   // are contained in the entries of the eigenvectors.
-  const Eigen::EigenSolver<Matrix<double, 27, 27> > eigen_solver(
-      solution_polynomial);
+  const Eigen::EigenSolver<MatrixXd> eigen_solver(solution_polynomial);
 
   // Many of the eigenvectors will contain complex solutions so we must filter
   // them to find the real solutions.

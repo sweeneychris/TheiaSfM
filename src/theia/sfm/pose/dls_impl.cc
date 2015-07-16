@@ -39,6 +39,7 @@
 
 namespace theia {
 using Eigen::Matrix;
+using Eigen::MatrixXd;
 using Eigen::Vector3d;
 
 // Put these methods in a nested namespace so that they are not part of the
@@ -335,16 +336,17 @@ void ExtractJacobianCoefficients(
        2 * D(8, 2) - 2 * D(8, 6));                              // s1^3
 }
 
-Matrix<double, 120, 120> CreateMacaulayMatrix(const double a[20],
-                                              const double b[20],
-                                              const double c[20],
-                                              const double u[4]) {
-  Matrix<double, 120, 120> macaulay_matrix = Matrix<double, 120, 120>::Zero();
+MatrixXd CreateMacaulayMatrix(const double a[20],
+                              const double b[20],
+                              const double c[20],
+                              const double u[4]) {
+  MatrixXd macaulay_matrix(120, 120);
+  macaulay_matrix.setZero();
 
   // The matrix is very large (14400 elements!) and sparse (1968 non-zero
   // elements) so we load it from pre-computed values calculated in matlab.
 
-  double indices[1968] = {
+  const int indices[1968] = {
     0, 35, 83, 118, 120, 121, 154, 155, 174, 203, 219, 238, 241, 242, 274, 275,
     291, 294, 305, 323, 329, 339, 358, 360, 363, 395, 409, 436, 443, 478, 479,
     481, 483, 484, 514, 515, 523, 529, 534, 551, 556, 563, 579, 580, 598, 599,
@@ -515,7 +517,7 @@ Matrix<double, 120, 120> CreateMacaulayMatrix(const double a[20],
     14361, 14365, 14393, 14395
   };
 
-  double values[1968] = {
+  const double values[1968] = {
     u[0], a[0], b[0], c[0], u[3], u[0], a[0], a[9], b[0], b[9], c[0], c[9],
     u[3], u[0], a[9], a[13], a[0], b[9], b[0], b[13], c[0], c[9], c[13], u[2],
     u[0], a[10], a[0], b[0], b[10], c[10], c[0], u[2], u[3], u[0], a[10], a[4],
