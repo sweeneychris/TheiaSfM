@@ -12,15 +12,17 @@ Theia has a full Structure-from-Motion pipeline that is extremely efficient. Our
 overall pipeline consists of several steps. First, we extract features (SIFT is
 the default). Then, we perform two-view matching and geometric verification to
 obtain relative poses between image pairs and create a :class:`ViewGraph`. Next,
-we perform global pose estimation with global SfM. Global SfM is different from
-incremental SfM in that it considers the entire view graph at the same time
-instead of incrementally adding more and more images to the
-:class:`Reconstruction`. Global SfM methods have been proven to be very fast
-with comparable or better accuracy to incremental SfM approaches (See
-[JiangICCV]_, [MoulonICCV]_, [WilsonECCV2014]_), and they are much more readily
-parallelized. After we have obtained camera poses, we perform triangulation and
-:class:`BundleAdjustment` to obtain a valid 3D reconstruction consisting of
-cameras and 3D points.
+we perform either incremental or global SfM. Incremental SfM is the standard
+approach that adds on one image at a time to grow the reconstruction. While this
+method is robust, it is not scalable because it requires repeated operations of
+expensive bundle adjustment. Global SfM is different from incremental SfM in
+that it considers the entire view graph at the same time instead of
+incrementally adding more and more images to the :class:`Reconstruction`. Global
+SfM methods have been proven to be very fast with comparable or better accuracy
+to incremental SfM approaches (See [JiangICCV]_, [MoulonICCV]_,
+[WilsonECCV2014]_), and they are much more readily parallelized. After we have
+obtained camera poses, we perform triangulation and :class:`BundleAdjustment` to
+obtain a valid 3D reconstruction consisting of cameras and 3D points.
 
 The first step towards creating a reconstruction is to determine images which
 view the same objects. To do this, we must create a :class:`ViewGraph`.
@@ -28,8 +30,6 @@ view the same objects. To do this, we must create a :class:`ViewGraph`.
   #. Extract features in images.
   #. Match features to obtain image correspondences.
   #. Estimate camera poses from two-view matches and geometries.
-
-.. TODO:: Insert figure.
 
 #1. and #2. have been covered in other sections, so we will focus on creating a
 reconstruction from two-view matches and geometry. First, we will describe the
@@ -40,7 +40,7 @@ Reconstruction
 
 .. class:: Reconstruction
 
-.. TODO:: Insert figure.
+.. image:: pisa.png
 
 At the core of our SfM pipeline is an SfM :class:`Reconstruction`. A
 :class:`Reconstruction` is the representation of a 3D reconstuction consisting
@@ -116,8 +116,6 @@ ViewGraph
 =========
 
 .. class:: ViewGraph
-
-.. TODO:: INSERT FIGURE HERE
 
 A :class:`ViewGraph` is a basic SfM construct that is created from two-view
 matching information. Any pair of views that have a view correlation form an
@@ -296,8 +294,82 @@ In addition to typical getter/setter methods for the camera parameters, the
     according to the camera orientation in 3D space. The returned vector is not
     unit length.
 
+Incremental SfM Pipeline
+========================
+
+.. image:: incremental_sfm.png
+
+The incremental SfM pipeline follows very closely the pipelines of `Bundler
+<http://www.cs.cornell.edu/~snavely/bundler/>`_ [PhotoTourism]_ and `VisualSfM
+<http://ccwu.me/vsfm/>`_ [VisualSfM]_. The method begins by first estimating the
+3D structure and camera poses of 2 cameras based on their relative pose. Then
+additional cameras are added on sequentially and new 3D structure is estimated
+as new parts of the scene are observed. Bundle adjustment is repeatedly
+performed as more cameras are added to ensure high quality reconstructions and
+to avoid drift.
+
+The incremental SfM pipeline is as follows:
+  #. Choose an initial camera pair to reconstruct.
+  #. Estimate 3D structure of the scene.
+  #. Bundle adjustment on the 2-view reconstruction.
+  #. Localize a new camera to the current 3D points. Choose the camera that
+     observes the most 3D points currently in the scene.
+  #. Estimate new 3D structure.
+  #. Bundle adjustment if the model has grown by more than 5% since the last
+     bundle adjustment.
+  #. Repeat steps 4-6 until all cameras have been added.
+
+Incremental SfM is generally considered to be more robust than global SfM
+methods; hwoever, it requires many more instances of bundle adjustment (which
+is very costly) and so incremental SfM is not as efficient or scalable.
+
+.. member:: double ReconstructorEstimatorOptions::multiple_view_localization_ratio
+
+  DEFAULT: ``0.8``
+
+  If M is the maximum number of 3D points observed by any view, we want to
+  localize all views that observe > M * multiple_view_localization_ratio 3D
+  points. This allows for multiple well-conditioned views to be added to the
+  reconstruction before needing bundle adjustment.
+
+.. member::  double ReconstructionEstimatorOptions::absolute_pose_reprojection_error_threshold
+
+  DEFAULT: ``8.0``
+
+  When adding a new view to the current reconstruction, this is the
+  reprojection error that determines whether a 2D-3D correspondence is an
+  inlier during localization.
+
+.. member:: int ReconstructionEstimatorOptions::min_num_absolute_pose_inliers
+
+  DEFAULT: ``30``
+
+  Minimum number of inliers for absolute pose estimation to be considered
+  successful.
+
+.. member:: double ReconstructionEstimatorOptions::full_bundle_adjustment_growth_percent
+
+  DEFAULT: ``5.0``
+
+  Bundle adjustment of the entire reconstruction is triggered when the
+  reconstruction has grown by more than this percent. That is, if we last ran
+  BA when there were K views in the reconstruction and there are now N views,
+  then G = (N - K) / K is the percent that the model has grown. We run bundle
+  adjustment only if G is greater than this variable. This variable is
+  indicated in percent so e.g., 5.0 = 5%.
+
+.. member:: int ReconstructionEstimatorOptions::partial_bundle_adjustment_num_views
+
+  DEFAULT: ``20``
+
+  During incremental SfM we run "partial" bundle adjustment on the most
+  recent views that have been added to the 3D reconstruction. This parameter
+  controls how many views should be part of the partial BA.
+
 Global SfM Pipeline
 ===================
+
+.. image:: global_sfm.png
 
 The global SfM pipelines in Theia follow a general procedure of filtering
 outliers and estimating camera poses or structure. Removing outliers can help
@@ -325,8 +397,8 @@ follows:
 .. class:: ReconstructionEstimator
 
   This is the base class for which all SfM reconstruction pipelines derive
-  from. The reconstruction estimation type can be specified at runtime, though
-  currently only ``NONLINEAR`` is implemented.
+  from. The reconstruction estimation type can be specified at runtime
+  (currently ``NONLINEAR`` and ``INCREMENTAL`` are implemented).
 
 .. function:: ReconstructionEstimator::ReconstructionEstimator(const ReconstructorEstimatorOptions& options)
 
@@ -583,15 +655,17 @@ Estimating Global Positions
 ===========================
 
 Positions of cameras may be estimated simultaneously after the rotations are
-known. We use a nonlinear optimization to estimate camera positions based. Given
-pairwise relative translations from :class:`TwoViewInfo` and the estimated
-rotation, the constraint
+known. We use either a linear or a nonlinear optimization to estimate camera
+positions based.
+
+Given pairwise relative translations from :class:`TwoViewInfo`
+and the estimated rotation, the constraint
 
   .. math:: R_i * (c_j - c_i) = \alpha_{i,j} * t_{i,j}
 
-Where :math:`\alpha_{i,j} = ||c_j - c_i||^2`. This ensures that we optimize for
-positions that agree with the relative positions computed in two-view
-estimation.
+is used to determine the global camera positions, where :math:`\alpha_{i,j} =
+||c_j - c_i||^2`. This ensures that we optimize for positions that agree with
+the relative positions computed in two-view estimation.
 
 .. class:: NonlinearPositionEstimatorOptions
 
@@ -652,6 +726,40 @@ estimation.
     Estimates the positions of cameras given the global orientation estimates by
     using the nonlinear algorithm described above. Only positions that have an
     orientation set are estimated. Returns true upons success and false on failure.
+
+
+.. class:: LinearPositionEstimator
+
+.. image:: global_linear_position_estimation.png
+  :width: 40%
+  :align: center
+
+For the linear position estimator of [JiangICCV]_, we utilize an approximate geometric error to determine the position locations within a triplet as shown above. The cost function we minimize is:
+
+  .. math:: f(i, j, k) = c_k - \dfrac{1}{2} (c_i + ||c_k - c_i|| c_{ik}) + c_j + ||c_k - c_j|| c_{jk})
+
+This can be formed as a linear constraint in the unknown camera positions :math:`c_i`. Tthe solution that minimizes this cost lies in the null-space of the resultant linear system. Instead of extracting the entire null-space as [JiangICCV]_ does, we instead hold one camera constant at the origin and use the Inverse-Iteration Power Method to efficiently determine the null vector that best solves our minimization. This results in a dramatic speedup without sacrificing efficiency.
+
+.. NOTE:: Currently this position estimation method is not integrated into the Theia global SfM pipeline. More testing needs to be done with this method before it can be reliably integrated.
+
+.. member:: int LinearPositionEstimator::Options::num_threads
+
+  DEFAULT: ``1``
+
+  The number of threads to use to solve for camera positions
+
+.. member:: int LinearPositionEstimator::Options::max_power_iterations
+
+  DEFAULT: ``1000``
+
+  Maximum number of power iterations to perform while solving for camera positions.
+
+.. member:: double LinearPositionEstimator::Options::eigensolver_threshold
+
+  DEFAULT: ``1e-8``
+
+  This number determines the convergence of the power iteration method. The
+  lower the threshold the longer it will take to converge.
 
 Triangulation
 =============
@@ -853,7 +961,7 @@ the reprojection error.
 Similarity Transformation
 =========================
 
-  .. function:: void AlignPointCloudsICP(const int num_points, const double left[], const double right[], double rotation[3 * 3], double translation[3])
+  .. function:: void AlignPointCloudsICP(const int num_points, const double left[], const double right[], double rotation[], double translation[])
 
     We implement ICP for point clouds. We use Besl-McKay registration to align
     point clouds. We use SVD decomposition to find the rotation, as this is much
@@ -863,7 +971,7 @@ Similarity Transformation
     the left and right reconstructions have the same number of points, and that the
     points are aligned by correspondence (i.e. left[i] corresponds to right[i]).
 
-  .. function:: void AlignPointCloudsUmeyama(const int num_points, const double left[], const double right[], double rotation[3 * 3], double translation[3], double* scale)
+  .. function:: void AlignPointCloudsUmeyama(const int num_points, const double left[], const double right[], double rotation[], double translation[], double* scale)
 
     This function estimates the 3D similiarty transformation using the least
     squares method of [Umeyama]_. The returned rotation, translation, and scale
@@ -903,3 +1011,17 @@ Similarity Transformation
     ``solution_translation``: the translation of the candidate solutions
 
     ``solution_scale``: the scale of the candidate solutions
+
+  .. function:: void SimTransformPartialRotation(const Eigen::Vector3d& rotation_axis, const Eigen::Vector3d image_one_ray_directions[5], const Eigen::Vector3d image_one_ray_origins[5], const Eigen::Vector3d image_two_ray_directions[5], const Eigen::Vector3d image_two_ray_origins[5], std::vector<Eigen::Quaterniond>* soln_rotations, std::vector<Eigen::Vector3d>* soln_translations, std::vector<double>* soln_scales)
+
+    Solves for the similarity transformation that will transform rays in image
+    two such that the intersect with rays in image one such that:
+
+    .. math::  s * R * X' + t = X
+
+    where s, R, t are the scale, rotation, and translation returned, X' is a
+    point in coordinate system 2 and X is the point transformed back to
+    coordinate system 1. Up to 8 solutions will be returned.
+
+    Please cite the paper "Computing Similarity Transformations from Only Image
+    Correspondences" by C. Sweeney et al (CVPR 2015) [SweeneyCVPR2015]_ when using this algorithm.
