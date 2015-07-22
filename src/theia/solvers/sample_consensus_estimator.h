@@ -223,7 +223,7 @@ int SampleConsensusEstimator<ModelEstimator>::ComputeMaxIterations(
   // match for verification and a correct match is selected with probability
   // inlier_ratio.
   const double num_samples =
-      ransac_params_.use_Tdd_test ? min_sample_size : min_sample_size + 1;
+      ransac_params_.use_Tdd_test ? min_sample_size + 1 : min_sample_size;
 
   const double log_prob = log(1.0 - pow(inlier_ratio, num_samples));
 
