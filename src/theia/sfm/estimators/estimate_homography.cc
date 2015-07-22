@@ -68,8 +68,8 @@ class HomographyEstimator
   // Estimates candidate relative poses from correspondences.
   bool EstimateModel(const std::vector<FeatureCorrespondence>& correspondences,
                      std::vector<Eigen::Matrix3d>* homography) const {
-    std::vector<Eigen::Vector2d> image1_points(5), image2_points(5);
-    for (int i = 0; i < 5; i++) {
+    std::vector<Eigen::Vector2d> image1_points(4), image2_points(4);
+    for (int i = 0; i < 4; i++) {
       image1_points[i] = correspondences[i].feature1;
       image2_points[i] = correspondences[i].feature2;
     }
