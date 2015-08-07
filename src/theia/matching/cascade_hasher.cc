@@ -194,7 +194,7 @@ void CascadeHasher::MatchImages(
   // descriptors have that distance.
   Eigen::MatrixXi candidate_hamming_distances(hashed_image2.descriptors.size(),
                                               kHashCodeSize + 1);
-  Eigen::VectorXf num_descriptors_with_hamming_distance(kHashCodeSize + 1);
+  Eigen::VectorXi num_descriptors_with_hamming_distance(kHashCodeSize + 1);
 
   // Preallocate the container for keeping euclidean distances.
   std::vector<std::pair<float, int> > candidate_euclidean_distances;
