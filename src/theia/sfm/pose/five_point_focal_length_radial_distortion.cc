@@ -39,7 +39,7 @@
 #include <vector>
 
 #include "theia/alignment/alignment.h"
-#include "theia/math/closed_form_polynomial_solver.h"
+#include "theia/math/polynomial.h"
 
 namespace theia {
 using Eigen::Matrix;
@@ -47,6 +47,7 @@ using Eigen::Map;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
+using Eigen::VectorXd;
 
 namespace {
 // Helper function which takes in the null basis (three 8-dimension vectors)
@@ -62,104 +63,103 @@ void SetupAndSolveSylvesterMatrix(const Matrix<double, 8, 3>& n,
   // coefficients of the polynomial in y1. These variables are the coefficients
   // of y2 for each coefficient of y1. We compact them for simplicity so that
   // the quartic equation below is not 1 million lines long.
-  const long double s11_1 =
+  const double s11_1 =
       n(0, 0) * n(4, 0) + n(1, 0) * n(5, 0) + n(2, 0) * n(6, 0);
-  const long double s12_2 =
-      n(0, 0) * n(4, 1) + n(0, 1) * n(4, 0) + n(1, 0) * n(5, 1) +
-      n(1, 1) * n(5, 0) + n(2, 0) * n(6, 1) + n(2, 1) * n(6, 0);
-  const long double s12_1 =
-      n(0, 0) * n(4, 2) + n(0, 2) * n(4, 0) + n(1, 0) * n(5, 2) +
-      n(1, 2) * n(5, 0) + n(2, 0) * n(6, 2) + n(2, 2) * n(6, 0);
-  const long double s13_3 =
+  const double s12_2 = n(0, 0) * n(4, 1) + n(0, 1) * n(4, 0) +
+                       n(1, 0) * n(5, 1) + n(1, 1) * n(5, 0) +
+                       n(2, 0) * n(6, 1) + n(2, 1) * n(6, 0);
+  const double s12_1 = n(0, 0) * n(4, 2) + n(0, 2) * n(4, 0) +
+                       n(1, 0) * n(5, 2) + n(1, 2) * n(5, 0) +
+                       n(2, 0) * n(6, 2) + n(2, 2) * n(6, 0);
+  const double s13_3 =
       n(0, 1) * n(4, 1) + n(1, 1) * n(5, 1) + n(2, 1) * n(6, 1);
-  const long double s13_2 =
-      n(0, 1) * n(4, 2) + n(0, 2) * n(4, 1) + n(1, 1) * n(5, 2) +
-      n(1, 2) * n(5, 1) + n(2, 1) * n(6, 2) + n(2, 2) * n(6, 1);
-  const long double s13_1 =
+  const double s13_2 = n(0, 1) * n(4, 2) + n(0, 2) * n(4, 1) +
+                       n(1, 1) * n(5, 2) + n(1, 2) * n(5, 1) +
+                       n(2, 1) * n(6, 2) + n(2, 2) * n(6, 1);
+  const double s13_1 =
       n(0, 2) * n(4, 2) + n(1, 2) * n(5, 2) + n(2, 2) * n(6, 2);
-  const long double s21_1 =
-      n(0, 0) * n(0, 0) + n(1, 0) * n(1, 0) + n(2, 0) * n(2, 0) -
-      n(4, 0) * n(4, 0) - n(5, 0) * n(5, 0) - n(6, 0) * n(6, 0);
-  const long double s22_2 = n(0, 0) * n(0, 1) * 2.0 + n(1, 0) * n(1, 1) * 2.0 +
-                            n(2, 0) * n(2, 1) * 2.0 - n(4, 0) * n(4, 1) * 2.0 -
-                            n(5, 0) * n(5, 1) * 2.0 - n(6, 0) * n(6, 1) * 2.0;
-  const long double s22_1 = n(0, 0) * n(0, 2) * 2.0 + n(1, 0) * n(1, 2) * 2.0 +
-                            n(2, 0) * n(2, 2) * 2.0 - n(4, 0) * n(4, 2) * 2.0 -
-                            n(5, 0) * n(5, 2) * 2.0 - n(6, 0) * n(6, 2) * 2.0;
-  const long double s23_3 =
-      n(0, 1) * n(0, 1) + n(1, 1) * n(1, 1) + n(2, 1) * n(2, 1) -
-      n(4, 1) * n(4, 1) - n(5, 1) * n(5, 1) - n(6, 1) * n(6, 1);
-  const long double s23_2 = n(0, 1) * n(0, 2) * 2.0 + n(1, 1) * n(1, 2) * 2.0 +
-                            n(2, 1) * n(2, 2) * 2.0 - n(4, 1) * n(4, 2) * 2.0 -
-                            n(5, 1) * n(5, 2) * 2.0 - n(6, 1) * n(6, 2) * 2.0;
-  const long double s23_1 =
-      n(0, 2) * n(0, 2) + n(1, 2) * n(1, 2) + n(2, 2) * n(2, 2) -
-      n(4, 2) * n(4, 2) - n(5, 2) * n(5, 2) - n(6, 2) * n(6, 2);
+  const double s21_1 = n(0, 0) * n(0, 0) + n(1, 0) * n(1, 0) +
+                       n(2, 0) * n(2, 0) - n(4, 0) * n(4, 0) -
+                       n(5, 0) * n(5, 0) - n(6, 0) * n(6, 0);
+  const double s22_2 = n(0, 0) * n(0, 1) * 2.0 + n(1, 0) * n(1, 1) * 2.0 +
+                       n(2, 0) * n(2, 1) * 2.0 - n(4, 0) * n(4, 1) * 2.0 -
+                       n(5, 0) * n(5, 1) * 2.0 - n(6, 0) * n(6, 1) * 2.0;
+  const double s22_1 = n(0, 0) * n(0, 2) * 2.0 + n(1, 0) * n(1, 2) * 2.0 +
+                       n(2, 0) * n(2, 2) * 2.0 - n(4, 0) * n(4, 2) * 2.0 -
+                       n(5, 0) * n(5, 2) * 2.0 - n(6, 0) * n(6, 2) * 2.0;
+  const double s23_3 = n(0, 1) * n(0, 1) + n(1, 1) * n(1, 1) +
+                       n(2, 1) * n(2, 1) - n(4, 1) * n(4, 1) -
+                       n(5, 1) * n(5, 1) - n(6, 1) * n(6, 1);
+  const double s23_2 = n(0, 1) * n(0, 2) * 2.0 + n(1, 1) * n(1, 2) * 2.0 +
+                       n(2, 1) * n(2, 2) * 2.0 - n(4, 1) * n(4, 2) * 2.0 -
+                       n(5, 1) * n(5, 2) * 2.0 - n(6, 1) * n(6, 2) * 2.0;
+  const double s23_1 = n(0, 2) * n(0, 2) + n(1, 2) * n(1, 2) +
+                       n(2, 2) * n(2, 2) - n(4, 2) * n(4, 2) -
+                       n(5, 2) * n(5, 2) - n(6, 2) * n(6, 2);
 
   // Setting the determinant of the Sylvester matrix to 0 will create a quartic
   // polynomial in y2. The roots of this polynomial are the solutions to y2.
-  const long double quartic_coeffs[5] = {
-    (s11_1 * s11_1) * (s23_3 * s23_3) + (s13_3 * s13_3) * (s21_1 * s21_1) +
-        s11_1 * s13_3 * (s22_2 * s22_2) + (s12_2 * s12_2) * s21_1 * s23_3 -
-        s11_1 * s12_2 * s22_2 * s23_3 - s11_1 * s13_3 * s21_1 * s23_3 * 2.0 -
-        s12_2 * s13_3 * s21_1 * s22_2,
-    s11_1 * s13_2 * (s22_2 * s22_2) + s13_2 * s13_3 * (s21_1 * s21_1) * 2.0 +
-        (s12_2 * s12_2) * s21_1 * s23_2 +
-        (s11_1 * s11_1) * s23_2 * s23_3 * 2.0 - s11_1 * s12_1 * s22_2 * s23_3 -
-        s11_1 * s12_2 * s22_1 * s23_3 - s11_1 * s12_2 * s22_2 * s23_2 -
-        s11_1 * s13_2 * s21_1 * s23_3 * 2.0 -
-        s11_1 * s13_3 * s21_1 * s23_2 * 2.0 +
-        s11_1 * s13_3 * s22_1 * s22_2 * 2.0 +
-        s12_1 * s12_2 * s21_1 * s23_3 * 2.0 - s12_1 * s13_3 * s21_1 * s22_2 -
-        s12_2 * s13_2 * s21_1 * s22_2 - s12_2 * s13_3 * s21_1 * s22_1,
-    (s11_1 * s11_1) * (s23_2 * s23_2) + (s13_2 * s13_2) * (s21_1 * s21_1) +
-        s11_1 * s13_1 * (s22_2 * s22_2) + s11_1 * s13_3 * (s22_1 * s22_1) +
-        s13_1 * s13_3 * (s21_1 * s21_1) * 2.0 +
-        (s12_2 * s12_2) * s21_1 * s23_1 + (s12_1 * s12_1) * s21_1 * s23_3 +
-        (s11_1 * s11_1) * s23_1 * s23_3 * 2.0 - s11_1 * s12_1 * s22_1 * s23_3 -
-        s11_1 * s12_1 * s22_2 * s23_2 - s11_1 * s12_2 * s22_1 * s23_2 -
-        s11_1 * s12_2 * s22_2 * s23_1 - s11_1 * s13_1 * s21_1 * s23_3 * 2.0 -
-        s11_1 * s13_2 * s21_1 * s23_2 * 2.0 +
-        s11_1 * s13_2 * s22_1 * s22_2 * 2.0 -
-        s11_1 * s13_3 * s21_1 * s23_1 * 2.0 +
-        s12_1 * s12_2 * s21_1 * s23_2 * 2.0 - s12_1 * s13_2 * s21_1 * s22_2 -
-        s12_1 * s13_3 * s21_1 * s22_1 - s12_2 * s13_1 * s21_1 * s22_2 -
-        s12_2 * s13_2 * s21_1 * s22_1,
-    s11_1 * s13_2 * (s22_1 * s22_1) + s13_1 * s13_2 * (s21_1 * s21_1) * 2.0 +
-        (s12_1 * s12_1) * s21_1 * s23_2 +
-        (s11_1 * s11_1) * s23_1 * s23_2 * 2.0 - s11_1 * s12_1 * s22_1 * s23_2 -
-        s11_1 * s12_1 * s22_2 * s23_1 - s11_1 * s12_2 * s22_1 * s23_1 -
-        s11_1 * s13_1 * s21_1 * s23_2 * 2.0 +
-        s11_1 * s13_1 * s22_1 * s22_2 * 2.0 -
-        s11_1 * s13_2 * s21_1 * s23_1 * 2.0 +
-        s12_1 * s12_2 * s21_1 * s23_1 * 2.0 - s12_1 * s13_1 * s21_1 * s22_2 -
-        s12_1 * s13_2 * s21_1 * s22_1 - s12_2 * s13_1 * s21_1 * s22_1,
-    (s11_1 * s11_1) * (s23_1 * s23_1) + (s13_1 * s13_1) * (s21_1 * s21_1) +
-        s11_1 * s13_1 * (s22_1 * s22_1) + (s12_1 * s12_1) * s21_1 * s23_1 -
-        s11_1 * s12_1 * s22_1 * s23_1 - s11_1 * s13_1 * s21_1 * s23_1 * 2.0 -
-        s12_1 * s13_1 * s21_1 * s22_1
-  };
+  VectorXd coeffs(5);
+  coeffs(0) =
+      (s11_1 * s11_1) * (s23_3 * s23_3) + (s13_3 * s13_3) * (s21_1 * s21_1) +
+      s11_1 * s13_3 * (s22_2 * s22_2) + (s12_2 * s12_2) * s21_1 * s23_3 -
+      s11_1 * s12_2 * s22_2 * s23_3 - s11_1 * s13_3 * s21_1 * s23_3 * 2.0 -
+      s12_2 * s13_3 * s21_1 * s22_2;
+  coeffs(1) =
+      s11_1 * s13_2 * (s22_2 * s22_2) + s13_2 * s13_3 * (s21_1 * s21_1) * 2.0 +
+      (s12_2 * s12_2) * s21_1 * s23_2 + (s11_1 * s11_1) * s23_2 * s23_3 * 2.0 -
+      s11_1 * s12_1 * s22_2 * s23_3 - s11_1 * s12_2 * s22_1 * s23_3 -
+      s11_1 * s12_2 * s22_2 * s23_2 - s11_1 * s13_2 * s21_1 * s23_3 * 2.0 -
+      s11_1 * s13_3 * s21_1 * s23_2 * 2.0 +
+      s11_1 * s13_3 * s22_1 * s22_2 * 2.0 +
+      s12_1 * s12_2 * s21_1 * s23_3 * 2.0 - s12_1 * s13_3 * s21_1 * s22_2 -
+      s12_2 * s13_2 * s21_1 * s22_2 - s12_2 * s13_3 * s21_1 * s22_1;
+  coeffs(2) =
+      (s11_1 * s11_1) * (s23_2 * s23_2) + (s13_2 * s13_2) * (s21_1 * s21_1) +
+      s11_1 * s13_1 * (s22_2 * s22_2) + s11_1 * s13_3 * (s22_1 * s22_1) +
+      s13_1 * s13_3 * (s21_1 * s21_1) * 2.0 + (s12_2 * s12_2) * s21_1 * s23_1 +
+      (s12_1 * s12_1) * s21_1 * s23_3 + (s11_1 * s11_1) * s23_1 * s23_3 * 2.0 -
+      s11_1 * s12_1 * s22_1 * s23_3 - s11_1 * s12_1 * s22_2 * s23_2 -
+      s11_1 * s12_2 * s22_1 * s23_2 - s11_1 * s12_2 * s22_2 * s23_1 -
+      s11_1 * s13_1 * s21_1 * s23_3 * 2.0 -
+      s11_1 * s13_2 * s21_1 * s23_2 * 2.0 +
+      s11_1 * s13_2 * s22_1 * s22_2 * 2.0 -
+      s11_1 * s13_3 * s21_1 * s23_1 * 2.0 +
+      s12_1 * s12_2 * s21_1 * s23_2 * 2.0 - s12_1 * s13_2 * s21_1 * s22_2 -
+      s12_1 * s13_3 * s21_1 * s22_1 - s12_2 * s13_1 * s21_1 * s22_2 -
+      s12_2 * s13_2 * s21_1 * s22_1;
+  coeffs(3) =
+      s11_1 * s13_2 * (s22_1 * s22_1) + s13_1 * s13_2 * (s21_1 * s21_1) * 2.0 +
+      (s12_1 * s12_1) * s21_1 * s23_2 + (s11_1 * s11_1) * s23_1 * s23_2 * 2.0 -
+      s11_1 * s12_1 * s22_1 * s23_2 - s11_1 * s12_1 * s22_2 * s23_1 -
+      s11_1 * s12_2 * s22_1 * s23_1 - s11_1 * s13_1 * s21_1 * s23_2 * 2.0 +
+      s11_1 * s13_1 * s22_1 * s22_2 * 2.0 -
+      s11_1 * s13_2 * s21_1 * s23_1 * 2.0 +
+      s12_1 * s12_2 * s21_1 * s23_1 * 2.0 - s12_1 * s13_1 * s21_1 * s22_2 -
+      s12_1 * s13_2 * s21_1 * s22_1 - s12_2 * s13_1 * s21_1 * s22_1;
+  coeffs(4) =
+      (s11_1 * s11_1) * (s23_1 * s23_1) + (s13_1 * s13_1) * (s21_1 * s21_1) +
+      s11_1 * s13_1 * (s22_1 * s22_1) + (s12_1 * s12_1) * s21_1 * s23_1 -
+      s11_1 * s12_1 * s22_1 * s23_1 - s11_1 * s13_1 * s21_1 * s23_1 * 2.0 -
+      s12_1 * s13_1 * s21_1 * s22_1;
 
   // Solve Quartic
-  long double roots[4];
-  CHECK_GT(
-      SolveQuarticReals(quartic_coeffs[0], quartic_coeffs[1], quartic_coeffs[2],
-                        quartic_coeffs[3], quartic_coeffs[4], roots),
-      0) << "Quartic could not be solved for p5pfr.";
+  VectorXd roots;
+  CHECK(FindPolynomialRoots(coeffs, &roots, NULL))
+      << "Quartic could not be solved for p5pfr.";
 
   // Solve for y1 by substituting y2 solutions back into Eq 10, 11.
   for (int i = 0; i < 4; i++) {
     // Substituting solutions for y2 yields a linear equation of the form
     // ax + b = 0.
-    const long double a = (s22_2 - (s12_2 * s21_1) / s11_1) * roots[i] + s22_1 -
-                          (s12_1 * s21_1) / s11_1;
+    const double a = (s22_2 - (s12_2 * s21_1) / s11_1) * roots[i] + s22_1 -
+                     (s12_1 * s21_1) / s11_1;
 
-    const long double b =
-        (s23_3 - (s13_3 * s21_1) / s11_1) * roots[i] * roots[i] +
-        (s23_2 - (s13_2 * s21_1) / s11_1) * roots[i] + s23_1 -
-        (s13_1 * s21_1) / s11_1;
-    y1_soln[i] = -static_cast<double>(b) / static_cast<double>(a);
-    y2_soln[i] = static_cast<double>(roots[i]);
+    const double b = (s23_3 - (s13_3 * s21_1) / s11_1) * roots[i] * roots[i] +
+                     (s23_2 - (s13_2 * s21_1) / s11_1) * roots[i] + s23_1 -
+                     (s13_1 * s21_1) / s11_1;
+    y1_soln[i] = -b / a;
+    y2_soln[i] = roots[i];
   }
 }
 }  // namespace

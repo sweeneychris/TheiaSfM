@@ -40,7 +40,7 @@
 #include <complex>
 #include <algorithm>
 
-#include "theia/math/closed_form_polynomial_solver.h"
+#include "theia/math/polynomial.h"
 #include "theia/sfm/pose/util.h"
 
 namespace theia {
@@ -59,19 +59,19 @@ int SolvePlaneRotation(const Vector3d normalized_image_points[3],
                        const Vector3d& intermediate_image_point,
                        const Vector3d& intermediate_world_point,
                        const double d_12,
-                       long double cos_theta[4],
-                       long double cot_alphas[4],
+                       double cos_theta[4],
+                       double cot_alphas[4],
                        double* b) {
   // Calculate these parameters ahead of time for reuse and
   // readability. Notation for these variables is consistent with the notation
   // from the paper.
-  const long double f_1 =
+  const double f_1 =
       intermediate_image_point[0] / intermediate_image_point[2];
-  const long double f_2 =
+  const double f_2 =
       intermediate_image_point[1] / intermediate_image_point[2];
-  const long double p_1 = intermediate_world_point[0];
-  const long double p_2 = intermediate_world_point[1];
-  const long double cos_beta =
+  const double p_1 = intermediate_world_point[0];
+  const double p_2 = intermediate_world_point[1];
+  const double cos_beta =
       normalized_image_points[0].dot(normalized_image_points[1]);
   *b = 1.0 / (1.0 - cos_beta * cos_beta) - 1.0;
 
@@ -83,34 +83,34 @@ int SolvePlaneRotation(const Vector3d normalized_image_points[3],
 
   // Definition of temporary variables for readability in the coefficients
   // calculation.
-  const long double f_1_pw2 = f_1 * f_1;
-  const long double f_2_pw2 = f_2 * f_2;
-  const long double p_1_pw2 = p_1 * p_1;
-  const long double p_1_pw3 = p_1_pw2 * p_1;
-  const long double p_1_pw4 = p_1_pw3 * p_1;
-  const long double p_2_pw2 = p_2 * p_2;
-  const long double p_2_pw3 = p_2_pw2 * p_2;
-  const long double p_2_pw4 = p_2_pw3 * p_2;
-  const long double d_12_pw2 = d_12 * d_12;
-  const long double b_pw2 = (*b) * (*b);
+  const double f_1_pw2 = f_1 * f_1;
+  const double f_2_pw2 = f_2 * f_2;
+  const double p_1_pw2 = p_1 * p_1;
+  const double p_1_pw3 = p_1_pw2 * p_1;
+  const double p_1_pw4 = p_1_pw3 * p_1;
+  const double p_2_pw2 = p_2 * p_2;
+  const double p_2_pw3 = p_2_pw2 * p_2;
+  const double p_2_pw4 = p_2_pw3 * p_2;
+  const double d_12_pw2 = d_12 * d_12;
+  const double b_pw2 = (*b) * (*b);
 
   // Computation of coefficients of 4th degree polynomial.
-  Eigen::Matrix<long double, 5, 1> coefficients;
-  coefficients[0] = -f_2_pw2 * p_2_pw4 - p_2_pw4 * f_1_pw2 - p_2_pw4;
-  coefficients[1] =
+  Eigen::VectorXd coefficients(5);
+  coefficients(0) = -f_2_pw2 * p_2_pw4 - p_2_pw4 * f_1_pw2 - p_2_pw4;
+  coefficients(1) =
       2.0 * p_2_pw3 * d_12 * (*b) + 2.0 * f_2_pw2 * p_2_pw3 * d_12 * (*b) -
       2.0 * f_2 * p_2_pw3 * f_1 * d_12;
-  coefficients[2] =
+  coefficients(2) =
       -f_2_pw2 * p_2_pw2 * p_1_pw2 - f_2_pw2 * p_2_pw2 * d_12_pw2 * b_pw2 -
       f_2_pw2 * p_2_pw2 * d_12_pw2 + f_2_pw2 * p_2_pw4 + p_2_pw4 * f_1_pw2 +
       2.0 * p_1 * p_2_pw2 * d_12 +
       2.0 * f_1 * f_2 * p_1 * p_2_pw2 * d_12 * (*b) -
       p_2_pw2 * p_1_pw2 * f_1_pw2 + 2.0 * p_1 * p_2_pw2 * f_2_pw2 * d_12 -
       p_2_pw2 * d_12_pw2 * b_pw2 - 2.0 * p_1_pw2 * p_2_pw2;
-  coefficients[3] =
+  coefficients(3) =
       2.0 * p_1_pw2 * p_2 * d_12 * (*b) + 2.0 * f_2 * p_2_pw3 * f_1 * d_12 -
       2.0 * f_2_pw2 * p_2_pw3 * d_12 * (*b) - 2.0 * p_1 * p_2 * d_12_pw2 * (*b);
-  coefficients[4] =
+  coefficients(4) =
       -2 * f_2 * p_2_pw2 * f_1 * p_1 * d_12 * (*b) +
       f_2_pw2 * p_2_pw2 * d_12_pw2 + 2.0 * p_1_pw3 * d_12 - p_1_pw2 * d_12_pw2 +
       f_2_pw2 * p_2_pw2 * p_1_pw2 - p_1_pw4 -
@@ -118,18 +118,17 @@ int SolvePlaneRotation(const Vector3d normalized_image_points[3],
       f_2_pw2 * p_2_pw2 * d_12_pw2 * b_pw2;
 
   // Computation of roots.
-  const long double kEpsilon = 1e-6;
-  const int num_solutions = SolveQuarticReals(
-      coefficients[0], coefficients[1], coefficients[2], coefficients[3],
-      coefficients[4], kEpsilon, cos_theta);
+  Eigen::VectorXd roots;
+  FindPolynomialRoots(coefficients, &roots, NULL);
 
   // Calculate cot(alpha) needed for back-substitution.
-  for (int i = 0; i < num_solutions; i++) {
+  for (int i = 0; i < roots.size(); i++) {
+    cos_theta[i] = roots(i);
     cot_alphas[i] = (-f_1 * p_1 / f_2 - cos_theta[i] * p_2 + d_12 * (*b)) /
                     (-f_1 * cos_theta[i] * p_2 / f_2 + p_1 - d_12);
   }
 
-  return num_solutions;
+  return roots.size();
 }
 
 // Given the complete transformation between intermediate world and camera
@@ -138,8 +137,8 @@ int SolvePlaneRotation(const Vector3d normalized_image_points[3],
 void Backsubstitute(const Matrix3d& intermediate_world_frame,
                     const Matrix3d& intermediate_camera_frame,
                     const Vector3d& world_point_0,
-                    const long double cos_theta,
-                    const long double cot_alpha,
+                    const double cos_theta,
+                    const double cot_alpha,
                     const double d_12,
                     const double b,
                     Vector3d* translation,
@@ -264,8 +263,8 @@ bool PoseFromThreePoints(const Vector2d feature_point[3],
   // Solve for the cos(theta) that will give us the transformation from
   // intermediate world frame to intermediate camera frame. We also get the
   // cot(alpha) for each solution necessary for back-substitution.
-  long double cos_theta[4];
-  long double cot_alphas[4];
+  double cos_theta[4];
+  double cot_alphas[4];
   double b;
   const int num_solutions = SolvePlaneRotation(
       normalized_image_points, intermediate_image_point,

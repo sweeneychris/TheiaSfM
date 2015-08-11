@@ -41,7 +41,6 @@
 #include <cmath>
 #include <complex>
 
-#include "theia/math/closed_form_polynomial_solver.h"
 #include "theia/math/polynomial.h"
 #include "theia/math/util.h"
 

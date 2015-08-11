@@ -39,7 +39,7 @@
 #include <glog/logging.h>
 #include <vector>
 
-#include "theia/math/closed_form_polynomial_solver.h"
+#include "theia/math/polynomial.h"
 #include "theia/sfm/pose/util.h"
 
 namespace theia {
@@ -108,51 +108,51 @@ bool SevenPointFundamentalMatrix(
   const Eigen::Map<const Eigen::Matrix3d> F2(null_space.col(1).data());
 
   // This is the cubic equation resulting from det(x * F1 + F2) = 0.
-  const Eigen::Vector4d determinant_constraint(
+  Eigen::VectorXd determinant_constraint(4);
+  determinant_constraint(0) =
       -(F2(1, 2) * F2(2, 1) - F2(1, 1) * F2(2, 2)) * F2(0, 0) +
-          (F2(0, 2) * F2(2, 1) - F2(0, 1) * F2(2, 2)) * F2(1, 0) -
-          (F2(0, 2) * F2(1, 1) - F2(0, 1) * F2(1, 2)) * F2(2, 0),
+      (F2(0, 2) * F2(2, 1) - F2(0, 1) * F2(2, 2)) * F2(1, 0) -
+      (F2(0, 2) * F2(1, 1) - F2(0, 1) * F2(1, 2)) * F2(2, 0);
+  determinant_constraint(1) =
       -(F2(1, 2) * F2(2, 1) - F2(1, 1) * F2(2, 2)) * F1(0, 0) +
-          (F2(0, 2) * F2(2, 1) - F2(0, 1) * F2(2, 2)) * F1(1, 0) -
-          (F2(0, 2) * F2(1, 1) - F2(0, 1) * F2(1, 2)) * F1(2, 0) +
-          (F1(2, 2) * F2(1, 1) - F1(2, 1) * F2(1, 2) - F1(1, 2) * F2(2, 1) +
-           F1(1, 1) * F2(2, 2)) *
-              F2(0, 0) -
-          (F1(2, 2) * F2(0, 1) - F1(2, 1) * F2(0, 2) - F1(0, 2) * F2(2, 1) +
-           F1(0, 1) * F2(2, 2)) *
-              F2(1, 0) +
-          (F1(1, 2) * F2(0, 1) - F1(1, 1) * F2(0, 2) - F1(0, 2) * F2(1, 1) +
-           F1(0, 1) * F2(1, 2)) *
-              F2(2, 0),
+      (F2(0, 2) * F2(2, 1) - F2(0, 1) * F2(2, 2)) * F1(1, 0) -
+      (F2(0, 2) * F2(1, 1) - F2(0, 1) * F2(1, 2)) * F1(2, 0) +
       (F1(2, 2) * F2(1, 1) - F1(2, 1) * F2(1, 2) - F1(1, 2) * F2(2, 1) +
        F1(1, 1) * F2(2, 2)) *
-              F1(0, 0) -
-          (F1(2, 2) * F2(0, 1) - F1(2, 1) * F2(0, 2) - F1(0, 2) * F2(2, 1) +
-           F1(0, 1) * F2(2, 2)) *
-              F1(1, 0) +
-          (F1(1, 2) * F2(0, 1) - F1(1, 1) * F2(0, 2) - F1(0, 2) * F2(1, 1) +
-           F1(0, 1) * F2(1, 2)) *
-              F1(2, 0) -
-          (F1(1, 2) * F1(2, 1) - F1(1, 1) * F1(2, 2)) * F2(0, 0) +
-          (F1(0, 2) * F1(2, 1) - F1(0, 1) * F1(2, 2)) * F2(1, 0) -
-          (F1(0, 2) * F1(1, 1) - F1(0, 1) * F1(1, 2)) * F2(2, 0),
+          F2(0, 0) -
+      (F1(2, 2) * F2(0, 1) - F1(2, 1) * F2(0, 2) - F1(0, 2) * F2(2, 1) +
+       F1(0, 1) * F2(2, 2)) *
+          F2(1, 0) +
+      (F1(1, 2) * F2(0, 1) - F1(1, 1) * F2(0, 2) - F1(0, 2) * F2(1, 1) +
+       F1(0, 1) * F2(1, 2)) *
+          F2(2, 0);
+  determinant_constraint(2) =
+      (F1(2, 2) * F2(1, 1) - F1(2, 1) * F2(1, 2) - F1(1, 2) * F2(2, 1) +
+       F1(1, 1) * F2(2, 2)) *
+          F1(0, 0) -
+      (F1(2, 2) * F2(0, 1) - F1(2, 1) * F2(0, 2) - F1(0, 2) * F2(2, 1) +
+       F1(0, 1) * F2(2, 2)) *
+          F1(1, 0) +
+      (F1(1, 2) * F2(0, 1) - F1(1, 1) * F2(0, 2) - F1(0, 2) * F2(1, 1) +
+       F1(0, 1) * F2(1, 2)) *
+          F1(2, 0) -
+      (F1(1, 2) * F1(2, 1) - F1(1, 1) * F1(2, 2)) * F2(0, 0) +
+      (F1(0, 2) * F1(2, 1) - F1(0, 1) * F1(2, 2)) * F2(1, 0) -
+      (F1(0, 2) * F1(1, 1) - F1(0, 1) * F1(1, 2)) * F2(2, 0);
+  determinant_constraint(3) =
       -(F1(1, 2) * F1(2, 1) - F1(1, 1) * F1(2, 2)) * F1(0, 0) +
-          (F1(0, 2) * F1(2, 1) - F1(0, 1) * F1(2, 2)) * F1(1, 0) -
-          (F1(0, 2) * F1(1, 1) - F1(0, 1) * F1(1, 2)) * F1(2, 0));
+      (F1(0, 2) * F1(2, 1) - F1(0, 1) * F1(2, 2)) * F1(1, 0) -
+      (F1(0, 2) * F1(1, 1) - F1(0, 1) * F1(1, 2)) * F1(2, 0);
 
   // Solve the cubic equation for x.
-  double roots[3];
-  const int num_solutions = SolveCubicReals(determinant_constraint(3),
-                                            determinant_constraint(2),
-                                            determinant_constraint(1),
-                                            determinant_constraint(0),
-                                            roots);
+  Eigen::VectorXd roots;
+  FindPolynomialRoots(determinant_constraint, &roots, NULL);
 
-  for (int i = 0; i < num_solutions; i++) {
+  for (int i = 0; i < roots.size(); i++) {
     // Compose the fundamental matrix solution from the null space and
     // determinant constraint: F = x * F1 + F2;
     fundamental_matrices->emplace_back(img2_norm_mat.transpose() *
-                                       (roots[i] * F1 + F2) * img1_norm_mat);
+                                       (roots(i) * F1 + F2) * img1_norm_mat);
   }
   return fundamental_matrices->size() > 0;
 }
