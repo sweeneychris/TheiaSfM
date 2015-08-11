@@ -250,7 +250,7 @@ class JenkinsTraubSolver {
 
   // The maximum number of linear shift iterations to perform before considering
   // the shift as a failure.
-  static const int kMaxLinearShiftIterations = 10;
+  static const int kMaxLinearShiftIterations = 20;
 
   // The maximum number of quadratic shift iterations to perform before
   // considering the shift as a failure.
@@ -329,7 +329,7 @@ bool JenkinsTraubSolver::ExtractRoots() {
     }
 
     // Stage 3: Find the root(s) with variable shift iterations on the
-    // K-polynomial. If this stage was not successful then we
+    // K-polynomial. If this stage was not successful then we return a failure.
     if (!ApplyVariableShiftToKPolynomial(convergence, root)) {
       return false;
     }
@@ -475,7 +475,7 @@ bool JenkinsTraubSolver::ApplyQuadraticShiftToKPolynomial(
     // Check that the roots are close. If not, then try a linear shift.
     if (std::abs(std::abs(roots[0].real()) - std::abs(roots[1].real())) >
         kRootPairTolerance * std::abs(roots[1].real())) {
-      return ApplyLinearShiftToKPolynomial(root, max_iterations);
+      return ApplyLinearShiftToKPolynomial(root, kMaxLinearShiftIterations);
     }
 
     // Test for convergence by determining if the error is within expected
@@ -513,8 +513,7 @@ bool JenkinsTraubSolver::ApplyQuadraticShiftToKPolynomial(
     k_polynomial_ /= k_polynomial_(0);
     prev_poly_at_root = poly_at_root;
   }
-
-  return false;
+  return ApplyLinearShiftToKPolynomial(root, kMaxLinearShiftIterations);
 }
 
 // Generate K-Polynomials with variable-shifts that are linear. The shift is
@@ -567,10 +566,11 @@ bool JenkinsTraubSolver::ApplyLinearShiftToKPolynomial(
         std::abs(delta_root) < 0.001 * std::abs(real_root) &&
         std::abs(prev_polynomial_at_root) < std::abs(polynomial_at_root)) {
       const std::complex<double> new_root(real_root, 0);
-      return ApplyQuadraticShiftToKPolynomial(new_root, max_iterations);
+      return ApplyQuadraticShiftToKPolynomial(new_root,
+                                              kMaxQuadraticShiftIterations);
     }
   }
-  return ApplyQuadraticShiftToKPolynomial(root, max_iterations);
+  return ApplyQuadraticShiftToKPolynomial(root, kMaxQuadraticShiftIterations);
 }
 
 bool JenkinsTraubSolver::HasQuadraticSequenceConverged(
