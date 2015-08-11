@@ -47,14 +47,17 @@ Bibliography
 .. [Hesch] J. Hesch, S. Roumeliotis. **A Direct Least-Squares (DLS) Approach for PnP**,
    *In Proceedings of the IEEE International Conference on Computer Vision (ICCV) 2013*
 
-.. [Kneip] L. Kneip, D. Scaramuzza, R. Siegwart, **A Novel Parametrization of the
-   Perspective-Three-Point Problem for a Direct Computation of Absolute Camera
-   Position and Orientation**, *In Proceedings of The IEEE Conference on Computer Vision
-   and Pattern Recognition (CVPR)*. Colorado Springs, USA. June 2011.
+.. [JenkinsTraub] Jenkins and Traub. **A Three-Stage Algorithm for Real Polynomaials
+   Using Quadratic Iteration**, SIAM, 1970.
 
 .. [JiangICCV] Jiang, N. and Cui, Z., and Tan, P. **A Global Linear Method for
    Camera Pose Registration**, *International Conference on Computer Vision
    (ICCV)*, 2013.
+
+.. [Kneip] L. Kneip, D. Scaramuzza, R. Siegwart, **A Novel Parametrization of the
+   Perspective-Three-Point Problem for a Direct Computation of Absolute Camera
+   Position and Orientation**, *In Proceedings of The IEEE Conference on Computer Vision
+   and Pattern Recognition (CVPR)*. Colorado Springs, USA. June 2011.
 
 .. [Kukelova] Z. Kukelova, M. Bujnak, T. Pajdla. **Real-time Solution to the
    Absolute Pose Problem with Unknown Radial Distortion and Focal Length**. *In

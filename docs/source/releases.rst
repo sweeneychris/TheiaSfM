@@ -9,9 +9,16 @@ HEAD
 
 New Features
 ------------
+* Jenkins Traub polynomial root-finding algorithm.
 
 Bug Fixes
 ---------
+* Disable the unit tests for Optimo (thanks to bvanavery).
+
+Misc.
+-----
+* Refactoring of the polynomial root-finding algorithms to make the files easier to follow.
+
 
 `0.4.0 <https://github.com/sweeneychris/TheiaSfM/archive/v0.4.tar.gz>`_
 =======================================================================
