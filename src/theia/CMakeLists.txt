@@ -63,6 +63,7 @@ SET(THEIA_SRC
   matching/feature_matcher_utils.cc
   math/closed_form_polynomial_solver.cc
   math/find_polynomial_roots_companion_matrix.cc
+  math/find_polynomial_roots_jenkins_traub.cc
   math/matrix/dominant_eigensolver.cc
   math/polynomial.cc
   math/probability/sequential_probability_ratio.cc
@@ -201,6 +202,7 @@ IF (BUILD_TESTING)
   GTEST(matching/feature_matcher_utils)
   GTEST(math/closed_form_polynomial_solver)
   GTEST(math/find_polynomial_roots_companion_matrix)
+  GTEST(math/find_polynomial_roots_jenkins_traub)
   GTEST(math/graph/connected_components)
   GTEST(math/l1_solver)
   GTEST(math/matrix/dominant_eigensolver)
