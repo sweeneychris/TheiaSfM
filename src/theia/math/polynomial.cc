@@ -73,6 +73,7 @@
 #include <glog/logging.h>
 
 #include <cmath>
+#include <limits>
 
 #include "theia/math/find_polynomial_roots_companion_matrix.h"
 

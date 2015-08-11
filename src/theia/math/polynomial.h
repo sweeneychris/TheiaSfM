@@ -110,6 +110,7 @@ Eigen::VectorXd DifferentiatePolynomial(const Eigen::VectorXd& polynomial);
 Eigen::VectorXd MultiplyPolynomials(const Eigen::VectorXd& poly1,
                                     const Eigen::VectorXd& poly2);
 
+// Adds two polynomials (of potentially different sizes) together.
 Eigen::VectorXd AddPolynomials(const Eigen::VectorXd& poly1,
                                const Eigen::VectorXd& poly2);
 
