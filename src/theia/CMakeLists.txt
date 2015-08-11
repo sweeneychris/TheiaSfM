@@ -62,10 +62,10 @@ SET(THEIA_SRC
   matching/cascade_hashing_feature_matcher.cc
   matching/feature_matcher_utils.cc
   math/closed_form_polynomial_solver.cc
+  math/find_polynomial_roots_companion_matrix.cc
   math/matrix/dominant_eigensolver.cc
   math/polynomial.cc
   math/probability/sequential_probability_ratio.cc
-  math/sturm_chain.cc
   sfm/bundle_adjustment/bundle_adjust_track.cc
   sfm/bundle_adjustment/bundle_adjust_two_views.cc
   sfm/bundle_adjustment/bundle_adjust_view.cc
@@ -200,6 +200,7 @@ IF (BUILD_TESTING)
   GTEST(matching/distance)
   GTEST(matching/feature_matcher_utils)
   GTEST(math/closed_form_polynomial_solver)
+  GTEST(math/find_polynomial_roots_companion_matrix)
   GTEST(math/graph/connected_components)
   GTEST(math/l1_solver)
   GTEST(math/matrix/dominant_eigensolver)

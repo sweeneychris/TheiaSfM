@@ -85,7 +85,7 @@ void RadialUndistortPoint(const Eigen::Vector2d& distorted_point,
     quintic_polynomial(4) = 1;
     quintic_polynomial(5) = -distorted_point.x();
 
-    undistorted_point->x() = FindRealRootIterative(
+    undistorted_point->x() = FindRootIterativeLaguerre(
         quintic_polynomial, distorted_point.x(), kEpsilon, kMaxIter);
     undistorted_point->y() = point_ratio * undistorted_point->x();
   } else {
@@ -99,7 +99,7 @@ void RadialUndistortPoint(const Eigen::Vector2d& distorted_point,
     quintic_polynomial(4) = 1;
     quintic_polynomial(5) = -distorted_point.y();
 
-    undistorted_point->y() = FindRealRootIterative(
+    undistorted_point->y() = FindRootIterativeLaguerre(
         quintic_polynomial, distorted_point.y(), kEpsilon, kMaxIter);
     undistorted_point->x() = point_ratio * undistorted_point->y();
   }
