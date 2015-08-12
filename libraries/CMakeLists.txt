@@ -1,24 +1,24 @@
-IF (${BUILD_TESTING})
-  ADD_SUBDIRECTORY(gtest)
-ENDIF (${BUILD_TESTING})
+if (${BUILD_TESTING})
+  add_subdirectory(gtest)
+endif (${BUILD_TESTING})
 
 # Add Agast keypoint detector
-ADD_SUBDIRECTORY(agast)
+add_subdirectory(agast)
 
 # CImg for image input/output
-ADD_SUBDIRECTORY(cimg)
+add_subdirectory(cimg)
 
 # EasyExif for reading image metadata
-ADD_SUBDIRECTORY(easyexif)
+add_subdirectory(easyexif)
 
 # Add Optimo
-ADD_SUBDIRECTORY(optimo)
+add_subdirectory(optimo)
 
 # Add Statx
-ADD_SUBDIRECTORY(statx)
+add_subdirectory(statx)
 
 # STLPlus for filepath tools
-ADD_SUBDIRECTORY(stlplus3)
+add_subdirectory(stlplus3)
 
 # Add VLFeat
-ADD_SUBDIRECTORY(vlfeat)
+add_subdirectory(vlfeat)

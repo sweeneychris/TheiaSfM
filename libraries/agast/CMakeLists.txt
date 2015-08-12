@@ -1,7 +1,7 @@
 project (agast)
 
-INCLUDE_DIRECTORIES(./agast)
-SET (agast_sources
+include_directories(./agast)
+set (agast_sources
   agast/agast5_8.cc
   agast/agast5_8_nms.cc
   agast/agast7_12d.cc
@@ -19,8 +19,8 @@ SET (agast_sources
   agast/cvWrapper.h
   agast/oast9_16.h)
 
-ADD_LIBRARY(agast ${agast_sources})
-INSTALL(TARGETS agast
+add_library(agast ${agast_sources})
+install(TARGETS agast
   EXPORT  TheiaExport
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib${LIB_SUFFIX}

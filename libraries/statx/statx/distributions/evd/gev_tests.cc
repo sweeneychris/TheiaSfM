@@ -33,7 +33,7 @@
 #include "gtest/gtest.h"
 #include "statx/distributions/evd/gev.h"
 #include "statx/distributions/evd/gev_mle.h"
-#ifdef WITH_CERES
+#ifdef STATX_WITH_CERES
 #include "statx/distributions/evd/gev_ceres.h"
 #endif
 #include "statx/utils/common_funcs.h"
@@ -327,7 +327,7 @@ TEST(GEV, Quantile) {
   }
 }
 
-#ifdef WITH_CERES
+#ifdef STATX_WITH_CERES
 //////////////////////////////////////////
 // Testing GEV fit w/ CERES
 TEST(GEV, CERES_GEVCostFunction) {

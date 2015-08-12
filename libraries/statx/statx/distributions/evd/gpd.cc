@@ -33,7 +33,7 @@
 #include "statx/utils/ecdf.h"
 #include "statx/distributions/evd/gpd_mle.h"
 #include <vector>
-#ifdef WITH_CERES
+#ifdef STATX_WITH_CERES
 #include "statx/distributions/evd/gpd_ceres.h"
 #endif
 
@@ -57,7 +57,7 @@ bool gpdfit(const vector<double>& data,
       exit_flag = gpdfit_mle(data, xi, sigma);
       break;
     case QUANTILE_NLS:
-#ifdef WITH_CERES 
+#ifdef STATX_WITH_CERES
       exit_flag = gpdfit_ceres(data, xi, sigma);
 #endif
       break;

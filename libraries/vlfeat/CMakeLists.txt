@@ -1,10 +1,10 @@
 project(vlfeat)
 
-INCLUDE("${CMAKE_MODULE_PATH}/OptimizeTheiaCompilerFlags.cmake")
-OptimizeTheiaCompilerFlags()
+include("${CMAKE_MODULE_PATH}/OptimizeTheiaCompilerFlags.cmake")
+optimizetheiacompilerflags()
 
-INCLUDE_DIRECTORIES(./vl)
-SET(vl_sources
+include_directories(./vl)
+set(vl_sources
   vl/generic.c
   vl/host.c
   vl/imopv.c
@@ -13,9 +13,9 @@ SET(vl_sources
   vl/mathop_sse2.c
   vl/random.c
   vl/sift.c)
-SET_SOURCE_FILES_PROPERTIES(${vl_sources} PROPERTIES LANGUAGE C)
-ADD_LIBRARY(vlfeat SHARED ${vl_sources})
-INSTALL(TARGETS vlfeat
+set_source_files_properties(${vl_sources} PROPERTIES LANGUAGE C)
+add_library(vlfeat SHARED ${vl_sources})
+install(TARGETS vlfeat
   EXPORT  TheiaExport
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib${LIB_SUFFIX}

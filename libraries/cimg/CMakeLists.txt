@@ -2,17 +2,17 @@
 #
 # Haz-Edine Assemlal <assemlal@gmail.com>
 
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8.0)
+cmake_minimum_required(VERSION 2.8.0)
 
 set(CIMG_PACKAGE_VERSION_MAJOR 1)
 set(CIMG_PACKAGE_VERSION_MINOR 5)
 set(CIMG_PACKAGE_VERSION_PATCH 0)
 
 # register local modules
-SET(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_SOURCE_DIR}/cmake-modules")
+set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_SOURCE_DIR}/cmake-modules")
 
 
-PROJECT(cimg)
+project(cimg)
 
 # Packaging defines
 set(CPACK_GENERATOR TGZ)
@@ -28,89 +28,22 @@ set(PACKAGE_VERSION "${CIMG_PACKAGE_VERSION_MAJOR}.${CIMG_PACKAGE_VERSION_MINOR}
 set(PACKAGE_STRING "${PACKAGE_NAME} ${PACKAGE_VERSION}")
 
 
-option(BUILD_GIMP	  "Build GIMP plug-ins" OFF)
-option(WITH_VT100	  "Enable color output messages " OFF)
-option(WITH_CIMG_DISPLAY  "Use CImg display capabilities" OFF)
-option(WITH_OPENMP	  "Use OpenMP parallel core instructions" OFF)
-option(WITH_XRANDR	  "Use XRandR library" OFF)
-option(WITH_MAGICK	  "Use Magick library" OFF)
-option(WITH_LAPACK	  "Use LAPACK library" ON)
-
-if(WITH_VT100)
-  add_definitions(-Dcimg_use_vt100)
-endif(WITH_VT100)
-
-if( WITH_CIMG_DISPLAY )
-  if(UNIX OR APPLE)
-    if( CMAKE_SYSTEM_NAME MATCHES "(Solaris|SunOS)" )
-       list( APPEND DEPENDENCIES_LIBRARIES "-R$(X11PATH)/lib -lrt -lnsl -lsocket" )
-     else()
-       find_package( X11 REQUIRED )
-       include_directories( ${X11_INCLUDE_DIR} )
-       list( APPEND DEPENDENCIES_LIBRARIES ${X11_LIBRARIES} )
-     endif()
-  elseif(WIN32)
-    set( CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mwindows" )
-    list( APPEND DEPENDENCIES_LIBRARIES "-lgdi32" )
-  endif()
-else(WITH_CIMG_DISPLAY)
-  add_definitions(-Dcimg_display=0)
-endif(WITH_CIMG_DISPLAY)
-
-IF (WITH_OPENMP)
-  # Clang does not (yet) support OpenMP.
-  IF (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    # Retain the help string associated with the OPENMP option
-    # when updating it to disable use of OPENMP.
-    GET_PROPERTY(HELP_STRING CACHE OPENMP PROPERTY HELPSTRING)
-    SET(OPENMP OFF CACHE BOOL "${HELP_STRING}" FORCE)
-    MESSAGE("-- Compiler is Clang, disabling OpenMP.")
-  ELSE (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    # Find quietly s/t as we can continue without OpenMP if it is not found.
-    FIND_PACKAGE(OpenMP QUIET)
-    IF (OPENMP_FOUND)
-      MESSAGE("-- Building with OpenMP.")
-      ADD_DEFINITIONS(-Dcimg_use_openmp)
-      set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
-      SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-      IF (UNIX)
-        # At least on Linux, we need pthreads to be enabled for mutex to
-        # compile.  This may not work on Windows or Android.
-        FIND_PACKAGE(Threads REQUIRED)
-	list(APPEND DEPENDENCIES_LIBRARIES ${CMAKE_THREAD_LIBS_INIT})
-      ENDIF (UNIX)
-    ELSE (OPENMP_FOUND)
-      MESSAGE("-- Failed to find OpenMP, disabling.")
-      # Retain the help string associated with the OPENMP option
-      # when updating it to disable use of OPENMP.
-      GET_PROPERTY(HELP_STRING CACHE OPENMP PROPERTY HELPSTRING)
-      SET(OPENMP OFF CACHE BOOL "${HELP_STRING}" FORCE)
-    ENDIF (OPENMP_FOUND)
-  ENDIF (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-ELSE (WITH_OPENMP)
-  MESSAGE("-- Building without OpenMP.")
-ENDIF (WITH_OPENMP)
-
-if(WITH_XRANDR)
-  if(NOT X11_Xrandr_INCLUDE_PATH)
-    message(FATAL_ERROR "Failed to find X11 XrandR which is required")
-  endif(NOT X11_Xrandr_INCLUDE_PATH)
-endif(WITH_XRANDR)
+option(CIMG_WITH_LAPACK	  "Use LAPACK library" ON)
 
 # Try to find all image libraries. Throw an error if none can be found.
 find_package(PNG)
 find_package(JPEG)
 find_package(TIFF)
 
+if (NOT PNG_FOUND AND NOT JPEG_FOUND AND NOT TIFF_FOUND)
+  message(FATAL_ERROR "Cannot find libpng, libjpeg, or libtiff. At least one must be installed in order to use CImg for loading images.")
+endif (NOT PNG_FOUND AND NOT JPEG_FOUND AND NOT TIFF_FOUND)
+
 if(PNG_FOUND)
   add_definitions(-Dcimg_use_png ${PNG_DEFINITIONS})
   include_directories( ${PNG_INCLUDE_DIRS} )
   list( APPEND DEPENDENCIES_LIBRARIES ${PNG_LIBRARIES} )
 endif(PNG_FOUND)
-
-if (NOT PNG_FOUND AND NOT JPEG_FOUND AND NOT TIFF_FOUND)
-  MESSAGE(FATAL_ERROR "Cannot find libpng, libjpeg, or libtiff. At least one must be installed in order to use CImg for loading images.")
-endif (NOT PNG_FOUND AND NOT JPEG_FOUND AND NOT TIFF_FOUND)
 
 if(JPEG_FOUND)
   add_definitions( -Dcimg_use_jpeg )
@@ -124,38 +57,16 @@ if(TIFF_FOUND)
   list( APPEND DEPENDENCIES_LIBRARIES ${TIFF_LIBRARIES} )
 endif(TIFF_FOUND)
 
-if(WITH_MAGICK)
-  find_package( ImageMagick QUIET COMPONENTS Magick++ convert)
-  IF (ImageMagick_FOUND)
-    add_definitions( -Dcimg_use_magick )
-    include_directories( ${ImageMagick_INCLUDE_DIRS} )
-    list( APPEND DEPENDENCIES_LIBRARIES ${ImageMagick_LIBRARIES} )
-  ELSE (ImageMagick_FOUND)
-    MESSAGE("-- Failed to find ImageMagick, disabling.")
-  ENDIF(ImageMagick_FOUND)
-endif(WITH_MAGICK)
-
-if(WITH_LAPACK)
+if(CIMG_WITH_LAPACK)
   find_package( LAPACK QUIET )
-  IF (LAPACK_FOUND)
+  if (LAPACK_FOUND)
     add_definitions( -Dcimg_use_lapack )
     include_directories( ${LAPACK_INCLUDE_DIRS} )
     list( APPEND DEPENDENCIES_LIBRARIES ${LAPACK_LIBRARIES} )
-  ELSE (LAPACK_FOUND)
-    MESSAGE("-- Failed to find Lapack, disabling.")
-  ENDIF (LAPACK_FOUND)
-endif(WITH_LAPACK)
-
-if(WITH_BOARD)
-  find_package( BOARD  )
-  IF (BOARD_FOUND)
-    add_definitions( -Dcimg_use_board )
-    include_directories( ${BOARD_INCLUDE_DIR} )
-    list( APPEND DEPENDENCIES_LIBRARIES ${BOARD_LIBRARIES} )
-  ELSE (BOARD_FOUND)
-    MESSAGE("-- Failed to find Board library, disabling.")
-  ENDIF (BOARD_FOUND)
-endif(WITH_BOARD)
+  else (LAPACK_FOUND)
+    message("-- Failed to find Lapack, disabling.")
+  endif (LAPACK_FOUND)
+endif(CIMG_WITH_LAPACK)
 
 # aliases
 set(VERSION "${PACKAGE_VERSION}")

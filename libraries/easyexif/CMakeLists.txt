@@ -1,11 +1,11 @@
 project(easyexif)
 
-INCLUDE_DIRECTORIES(./)
-SET(easyexif_sources
+include_directories(./)
+set(easyexif_sources
   exif.cpp)
 
-ADD_LIBRARY(easyexif SHARED ${easyexif_sources})
-INSTALL(TARGETS easyexif
+add_library(easyexif SHARED ${easyexif_sources})
+install(TARGETS easyexif
   EXPORT  TheiaExport
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib${LIB_SUFFIX}

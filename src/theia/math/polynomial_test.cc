@@ -80,9 +80,6 @@ namespace theia {
 using Eigen::MatrixXd;
 using Eigen::VectorXd;
 
-// For IEEE-754 doubles, machine precision is about 2e-16.
-const double kEpsilon = 1e-13;
-
 TEST(Polynomial, FindRootIterativeLaguerreTest) {
   VectorXd polynomial(6);
   // (x - 3) * (x + 4) * (x + 5) * (x - 6) * (x + 7)

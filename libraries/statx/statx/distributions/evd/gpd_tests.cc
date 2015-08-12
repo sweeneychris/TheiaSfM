@@ -447,7 +447,7 @@ TEST(GPD, MLE_Gradient3) {
   x(1) = 0.9108;  // sigma
   gradient(x, &g);
   VLOG(1) << "Gradient: " << g.transpose();
-  ASSERT_LT(g.norm(), sqrt(n));  
+  ASSERT_LT(g.norm(), sqrt(n));
 }
 
 TEST(GPD, FitMLE1) {
@@ -501,7 +501,7 @@ TEST(GPD, FitMLE4) {
   ASSERT_NEAR(x(0), xi, 1.0);
   ASSERT_NEAR(x(1), sigma, 1.0);
 }
-#ifdef WITH_CERES
+#ifdef STATX_WITH_CERES
 //////////////////////////////////////////
 // Testing GEV fit w/ CERES
 TEST(GPD, FitQuantileLeastSquares_Case1) {

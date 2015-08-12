@@ -29,17 +29,17 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
-CMAKE_MINIMUM_REQUIRED(VERSION 2.8.0)
-CMAKE_POLICY(VERSION 2.8)
+cmake_minimum_required(VERSION 2.8.0)
+cmake_policy(VERSION 2.8)
 
-IF (COMMAND cmake_policy)
-  CMAKE_POLICY(SET CMP0003 NEW)
-ENDIF (COMMAND cmake_policy)
+if (COMMAND cmake_policy)
+  cmake_policy(SET CMP0003 NEW)
+endif (COMMAND cmake_policy)
 
-PROJECT (statx C CXX)
-INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR})
+project (statx C CXX)
+include_directories(${PROJECT_SOURCE_DIR})
 
-SET(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/libraries/statx/cmake/Modules/")
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/libraries/statx/cmake/Modules/")
 
 # C++11
 # Compiler-specific C++11 activation.
@@ -55,176 +55,151 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
 else ()
     message(FATAL_ERROR "Your C++ compiler does not support C++11.")
 endif ()
-MESSAGE("-- CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
+message("-- CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 
-SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
-SET(CMAKE_INSTALL_PREFIX /usr/local/)
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_INSTALL_PREFIX /usr/local/)
 
-MESSAGE("-- Default Install prefix: ${CMAKE_INSTALL_PREFIX}")
-
-# Add GTest as a target.
-OPTION(STATX_BUILD_TESTING "Enable testing" OFF)
-SET(STATX_BUILD_TESTING OFF)
-IF (${STATX_BUILD_TESTING})
-  ENABLE_TESTING()
-  ADD_SUBDIRECTORY(libraries/gtest)
-  INCLUDE_DIRECTORIES(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
-ENDIF (${STATX_BUILD_TESTING})
+message("-- Default Install prefix: ${CMAKE_INSTALL_PREFIX}")
 
 # Activate CERES
-OPTION(WITH_CERES "Enables GEV parameter estimation using Ceres" ON)
+option(STATX_WITH_CERES "Enables GEV parameter estimation using Ceres" ON)
 
 # Eigen
-FIND_PACKAGE(Eigen REQUIRED)
-IF (EIGEN_FOUND)
-  MESSAGE("-- Found Eigen version ${EIGEN_VERSION}: ${EIGEN_INCLUDE_DIRS}")
-ENDIF (EIGEN_FOUND)
-INCLUDE_DIRECTORIES(${EIGEN_INCLUDE_DIRS})
+find_package(Eigen REQUIRED)
+if (EIGEN_FOUND)
+  message("-- Found Eigen version ${EIGEN_VERSION}: ${EIGEN_INCLUDE_DIRS}")
+endif (EIGEN_FOUND)
+include_directories(${EIGEN_INCLUDE_DIRS})
 
 # Google Flags
-FIND_PACKAGE(Gflags REQUIRED)
-IF(GFLAGS_FOUND)
-INCLUDE_DIRECTORIES(${GFLAGS_INCLUDE_DIRS})
-ENDIF(GFLAGS_FOUND)
+find_package(Gflags REQUIRED)
+if(GFLAGS_FOUND)
+include_directories(${GFLAGS_INCLUDE_DIRS})
+endif(GFLAGS_FOUND)
 
 # Google Logging
-FIND_PACKAGE(Glog REQUIRED)
-IF(GLOG_FOUND)
-INCLUDE_DIRECTORIES(${GLOG_INCLUDE_DIRS})
-ENDIF(GLOG_FOUND)
+find_package(Glog REQUIRED)
+if(GLOG_FOUND)
+include_directories(${GLOG_INCLUDE_DIRS})
+endif(GLOG_FOUND)
 
 # Google ceres-solver
-IF(WITH_CERES)
+if(STATX_WITH_CERES)
   # Check for CERES
-  MESSAGE("-- Check for Google ceres-solver")
-  FIND_PACKAGE(Ceres REQUIRED)
-  IF (CERES_FOUND)
-    MESSAGE("-- Found Ceres headers in: ${CERES_INCLUDE_DIRS}")
-    INCLUDE_DIRECTORIES(${CERES_INCLUDE_DIR})
-  ELSE (CERES_FOUND)
-    MESSAGE(FATAL_ERROR "Could not find Ceres. Please set CERES_INCLUDE_DIRS and CERES_LIBRARIES")
-  ENDIF(CERES_FOUND)
+  message("-- Check for Google ceres-solver")
+  find_package(Ceres REQUIRED)
+  if (CERES_FOUND)
+    message("-- Found Ceres headers in: ${CERES_INCLUDE_DIRS}")
+    include_directories(${CERES_INCLUDE_DIR})
+  else (CERES_FOUND)
+    message(FATAL_ERROR "Could not find Ceres. Please set CERES_INCLUDE_DIRS and CERES_LIBRARIES")
+  endif(CERES_FOUND)
 
   # BLAS
-  FIND_PACKAGE(BLAS REQUIRED)
+  find_package(BLAS REQUIRED)
 
   # LAPACK
-  FIND_PACKAGE(LAPACK REQUIRED)
-ENDIF(WITH_CERES)
+  find_package(LAPACK REQUIRED)
+endif(STATX_WITH_CERES)
 
-# Include optimo headers
-SET(OPTIMO_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/libraries/optimo)
-FIND_PACKAGE(OPTIMO)
-MESSAGE("-- Check for Optimo")
-IF(OPTIMO_FOUND)
-  MESSAGE("-- Found optimo headers: ${OPTIMO_INCLUDE_DIR}")
-ELSE(OPTIMO_FOUND)
-  MESSAGE(FATAL_ERROR "Can't find optimo headers. Try passing -DOPTIMO_INCLUDE_DIR=...")
-ENDIF(OPTIMO_FOUND)
-INCLUDE_DIRECTORIES(${OPTIMO_INCLUDE_DIR})
+# Find and include optimo headers
+message("-- Check for Optimo")
+find_path(OPTIMO_INCLUDE_DIR
+  NAMES optimo/solvers/bfgs.h
+  PATHS ${CMAKE_SOURCE_DIR}/libraries/optimo /usr/include /usr/local/include)
+
+if(OPTIMO_INCLUDE_DIR)
+  message("-- Found optimo headers: ${OPTIMO_INCLUDE_DIR}")
+else(OPTIMO_INCLUDE_DIR)
+  message(FATAL_ERROR "Can't find optimo headers. Try passing -DOPTIMO_INCLUDE_DIR=...")
+endif(OPTIMO_INCLUDE_DIR)
+include_directories(${OPTIMO_INCLUDE_DIR})
 
 # Polygamma functions from burkardt
-SET(XGAMMA_FUNCS ${CMAKE_CURRENT_SOURCE_DIR}/libraries/burkardt_spec_funcs)
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR}/libraries/burkardt_spec_funcs)
-SET(XGAMMA_FILES ${XGAMMA_FUNCS}/asa121.cpp ${XGAMMA_FUNCS}/asa103.cpp)
+set(XGAMMA_FUNCS ${CMAKE_CURRENT_SOURCE_DIR}/libraries/burkardt_spec_funcs)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/libraries/burkardt_spec_funcs)
+set(XGAMMA_FILES ${XGAMMA_FUNCS}/asa121.cpp ${XGAMMA_FUNCS}/asa103.cpp)
 
 # Setting CXX FLAGS appropriately. The code below was inspired from
 # Google CERES and modified for this library.
-SET (CMAKE_BUILD_TYPE Release)
-SET (STATX_CXX_FLAGS)
+set (CMAKE_BUILD_TYPE Release)
+set (STATX_CXX_FLAGS)
 
-IF (CMAKE_BUILD_TYPE STREQUAL "Release")
-  IF (CMAKE_COMPILER_IS_GNUCXX)
+if (CMAKE_BUILD_TYPE STREQUAL "Release")
+  if (CMAKE_COMPILER_IS_GNUCXX)
     # Linux
-    IF (CMAKE_SYSTEM_NAME MATCHES "Linux")
-      IF (NOT GCC_VERSION VERSION_LESS 4.2)
-        SET (STATX_CXX_FLAGS
+    if (CMAKE_SYSTEM_NAME MATCHES "Linux")
+      if (NOT GCC_VERSION VERSION_LESS 4.2)
+        set (STATX_CXX_FLAGS
           "${STATX_CXX_FLAGS} -march=native -mtune=native -msse2 -msse3 -msse4")
-      ENDIF (NOT GCC_VERSION VERSION_LESS 4.2)
-    ENDIF (CMAKE_SYSTEM_NAME MATCHES "Linux")
+      endif (NOT GCC_VERSION VERSION_LESS 4.2)
+    endif (CMAKE_SYSTEM_NAME MATCHES "Linux")
     # Mac OS X
-    IF (CMAKE_SYSTEM_NAME MATCHES "Darwin")
-      SET (STATX_CXX_FLAGS "${STATX_CXX_FLAGS} -msse3 -msse4 -msse3 -msse2")
-      EXECUTE_PROCESS(COMMAND ${CMAKE_C_COMPILER}
+    if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
+      set (STATX_CXX_FLAGS "${STATX_CXX_FLAGS} -msse3 -msse4 -msse3 -msse2")
+      execute_process(COMMAND ${CMAKE_C_COMPILER}
         ARGS ${CMAKE_CXX_COMPILER_ARG1} -dumpversion
         OUTPUT_VARIABLE GCC_VERSION
         OUTPUT_STRIP_TRAILING_WHITESPACE)
-      IF (GCC_VERSION VERSION_LESS 4.3)
-        SET (STATX_CXX_FLAGS "${STATX_CXX_FLAGS} -fast")
-      ENDIF (GCC_VERSION VERSION_LESS 4.3)
-    ENDIF (CMAKE_SYSTEM_NAME MATCHES "Darwin")
-  ENDIF (CMAKE_COMPILER_IS_GNUCXX)
-  IF (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    SET (STATX_CXX_FLAGS "-Ofast -ffast-math -fvectorize -funroll-loops")
-  ENDIF ()
-ENDIF (CMAKE_BUILD_TYPE STREQUAL "Release")
+      if (GCC_VERSION VERSION_LESS 4.3)
+        set (STATX_CXX_FLAGS "${STATX_CXX_FLAGS} -fast")
+      endif (GCC_VERSION VERSION_LESS 4.3)
+    endif (CMAKE_SYSTEM_NAME MATCHES "Darwin")
+  endif (CMAKE_COMPILER_IS_GNUCXX)
+  if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    set (STATX_CXX_FLAGS "-Ofast -ffast-math -fvectorize -funroll-loops")
+  endif ()
+endif (CMAKE_BUILD_TYPE STREQUAL "Release")
 
-SET (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${STATX_CXX_FLAGS} -DNDEBUG")
+set (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${STATX_CXX_FLAGS} -DNDEBUG")
 
-IF (CMAKE_BUILD_TYPE STREQUAL "Debug")
-  IF (CMAKE_COMPILER_IS_GNUCXX)
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+  if (CMAKE_COMPILER_IS_GNUCXX)
     # Linux
-    IF (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-      SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g3 -O0")
-    ENDIF (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+    if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+      set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g3 -O0")
+    endif (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     # Mac OS X
-    IF (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-      SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g3 -O0")
-    ENDIF (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-  ENDIF (CMAKE_COMPILER_IS_GNUCXX)
+    if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+      set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g3 -O0")
+    endif (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+  endif (CMAKE_COMPILER_IS_GNUCXX)
   # CLANG
-  IF (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    SET (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS_DEBUG} -g3 -O0")
-  ENDIF ()
-ENDIF (CMAKE_BUILD_TYPE STREQUAL "Debug")
+  if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS_DEBUG} -g3 -O0")
+  endif ()
+endif (CMAKE_BUILD_TYPE STREQUAL "Debug")
 
 # Main Library
 # Note: Gumbel parameter estimator was removed due to compatibility issues with Eigen 3.2.3.
-SET(STATX_DISTRIBUTIONS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/statx/distributions)
-SET(EVD_PREFIX_DIR ${STATX_DISTRIBUTIONS_DIR}/evd)
-SET(UTILS_PREFIX_DIR statx/utils)
-SET(statx_src ${UTILS_PREFIX_DIR}/ecdf.cc ${XGAMMA_FILES}
+set(STATX_DISTRIBUTIONS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/statx/distributions)
+set(EVD_PREFIX_DIR ${STATX_DISTRIBUTIONS_DIR}/evd)
+set(UTILS_PREFIX_DIR statx/utils)
+set(statx_src ${UTILS_PREFIX_DIR}/ecdf.cc ${XGAMMA_FILES}
   ${STATX_DISTRIBUTIONS_DIR}/gamma.cc
   ${EVD_PREFIX_DIR}/gev_mle.cc ${EVD_PREFIX_DIR}/gev.cc
   ${EVD_PREFIX_DIR}/gpd_mle.cc ${EVD_PREFIX_DIR}/gpd.cc)
-SET(default_link_libraries ${GLOG_LIBRARIES})
+set(default_link_libraries ${GLOG_LIBRARIES})
 
 # Check if CERES was activated
-IF(WITH_CERES)
-SET(statx_src ${statx_src} ${EVD_PREFIX_DIR}/gev_ceres.cc ${EVD_PREFIX_DIR}/gpd_ceres.cc)
-ADD_DEFINITIONS(-DWITH_CERES)
-SET(default_link_libraries ${default_link_libraries} ${CERES_LIBRARIES}
+if(STATX_WITH_CERES)
+set(statx_src ${statx_src} ${EVD_PREFIX_DIR}/gev_ceres.cc ${EVD_PREFIX_DIR}/gpd_ceres.cc)
+add_definitions(-DSTATX_WITH_CERES)
+set(default_link_libraries ${default_link_libraries} ${CERES_LIBRARIES}
   ${SUITESPARSE_LIBRARIES} ${BLAS_LIBRARIES} ${LAPACK_LIBRARIES})
-ENDIF(WITH_CERES)
-ADD_LIBRARY(statx STATIC ${statx_src})
+endif(STATX_WITH_CERES)
+add_library(statx STATIC ${statx_src})
 
-TARGET_LINK_LIBRARIES(statx ${default_link_libraries})
-
-IF (${STATX_BUILD_TESTING})
-  # The Macro below was extracted from Chris Sweeney's libtheia.
-  # Macro for tests
-  #   Ex: Your test is written in myclass_test.cc  and uses a class in myclass.cc
-  #       which has been compiled as target: myclass then calling
-  #       GTEST(myclass_test myclass) will create a test executable myclass_test
-  #       by automatically compiling myclass_test.cc and linking the mytest target
-  ADD_LIBRARY(test_main test/test_main.cc)
-  TARGET_LINK_LIBRARIES(test_main gtest ${GLOG_LIBRARIES} ${GFLAGS_LIBRARIES}
-    ${CERES_LIBRARIES} ${SUITESPARSE_LIBRARIES})
-  MACRO (GTEST NAME)
-    ADD_EXECUTABLE(${NAME} ${NAME}.cc)
-    TARGET_LINK_LIBRARIES(${NAME} test_main gtest ${ARGN} ${GFLAGS_LIBRARIES}
-      ${GLOG_LIBRARIES} ${CERES_LIBRARIES} ${SUITESPARSE_LIBRARIES})
-    ADD_TEST(NAME ${NAME} COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${NAME})
-  ENDMACRO (GTEST)
-ENDIF (${STATX_BUILD_TESTING})
+target_link_libraries(statx ${default_link_libraries})
 
 # Adding subdirectory
-ADD_SUBDIRECTORY(statx)
+add_subdirectory(statx)
 
 # Exporting target for Theia
-INSTALL(TARGETS statx
+install(TARGETS statx
   EXPORT  TheiaExport
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib${LIB_SUFFIX}
