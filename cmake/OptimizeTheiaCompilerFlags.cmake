@@ -128,25 +128,20 @@ macro(OptimizeTheiaCompilerFlags)
   endif (CMAKE_BUILD_TYPE STREQUAL "Release")
 
   # Set c++ standard to c++11
-  if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+  include(CheckCXXCompilerFlag)
+  check_cxx_compiler_flag("-std=c++11" COMPILER_HAS_CXX11_FLAG)
+  if (COMPILER_HAS_CXX11_FLAG)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
       # Mac OS X before Mavericks uses libstdc++ by default but does not support
       # c++11. Force it to use libc++.
       if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
       endif (CMAKE_SYSTEM_NAME MATCHES "Darwin")
-  else()
-    execute_process(COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
-    if (GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7)
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-    elseif(GCC_VERSION VERSION_GREATER 4.3 OR GCC_VERSION VERSION_EQUAL 4.3)
-      message(WARNING "C++0x activated. If you get any errors update to a compiler which fully supports C++11")
-      add_definitions("-std=gnu++0x")
-      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++0x")
-    else ()
-      message(FATAL_ERROR "C++11 needed. Therefore a gcc compiler with a version higher than 4.3 is needed.")
-    endif()
-  endif()
+    endif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+  else (COMPILER_HAS_CXX11_FLAG)
+      message(FATAL_ERROR "A compiler with C++11 support is required for Theia.")
+  endif (COMPILER_HAS_CXX11_FLAG)
 
   set (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${THEIA_CXX_FLAGS}")
 
