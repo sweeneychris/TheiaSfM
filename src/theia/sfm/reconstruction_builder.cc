@@ -39,7 +39,6 @@
 #include <string>
 #include <vector>
 
-#include "theia/image/descriptor/binary_descriptor.h"
 #include "theia/sfm/camera_intrinsics_prior.h"
 #include "theia/sfm/exif_reader.h"
 #include "theia/sfm/feature_extractor.h"
@@ -55,13 +54,6 @@
 namespace theia {
 
 namespace {
-
-inline bool IsFloatDescriptor(const DescriptorExtractorType& descriptor_type) {
-  if (descriptor_type == DescriptorExtractorType::SIFT) {
-    return true;
-  }
-  return false;
-}
 
 Reconstruction* CreateEstimatedSubreconstruction(
     const Reconstruction& input_reconstruction) {
@@ -219,32 +211,17 @@ bool ReconstructionBuilder::ExtractAndMatchFeatures() {
   FeatureExtractor feature_extractor(feature_extractor_options);
 
   bool success = false;
-  if (IsFloatDescriptor(options_.descriptor_type)) {
-    std::vector<std::vector<Eigen::VectorXf> > float_descriptors;
+  std::vector<std::vector<Eigen::VectorXf> > float_descriptors;
 
-    // Extract and match floating point descriptors.
-    LOG(INFO) << "Extracting features.";
-    CHECK(feature_extractor.Extract(image_filepaths_,
-                                    &keypoints,
-                                    &float_descriptors))
-        << "Could not extract features.";
+  // Extract and match floating point descriptors.
+  LOG(INFO) << "Extracting features.";
+  CHECK(feature_extractor.Extract(image_filepaths_,
+                                  &keypoints,
+                                  &float_descriptors))
+      << "Could not extract features.";
 
-    LOG(INFO) << "Matching features.";
-    success = MatchFeatures(keypoints, float_descriptors);
-  } else {
-    std::vector<std::vector<BinaryVectorX> > binary_descriptors;
-
-    LOG(INFO) << "Extracting features.";
-    // Extract and match binary descriptors.
-    CHECK(feature_extractor.Extract(image_filepaths_,
-                                    &keypoints,
-                                    &binary_descriptors))
-        << "Could not extract features.";
-
-    LOG(INFO) << "Matching features.";
-    success = MatchFeatures(keypoints, binary_descriptors);
-  }
-
+  LOG(INFO) << "Matching features.";
+  success = MatchFeatures(keypoints, float_descriptors);
   return success;
 }
 
@@ -350,6 +327,65 @@ bool ReconstructionBuilder::BuildReconstruction(
       return reconstructions->size() > 0;
     }
   }
+  return true;
+}
+
+bool ReconstructionBuilder::MatchFeatures(
+    const std::vector<std::vector<Keypoint> >& keypoints,
+    const std::vector<std::vector<Eigen::VectorXf> >& descriptors) {
+  CHECK_EQ(image_filepaths_.size(), keypoints.size());
+  CHECK_EQ(descriptors.size(), keypoints.size());
+
+  // Set up options.
+  MatchAndVerifyFeaturesOptions match_and_verify_features_options;
+  match_and_verify_features_options.num_threads = options_.num_threads;
+  match_and_verify_features_options.min_num_inlier_matches =
+      options_.min_num_inlier_matches;
+  match_and_verify_features_options.matching_strategy =
+      options_.matching_strategy;
+  match_and_verify_features_options.feature_matcher_options =
+      options_.matching_options;
+  match_and_verify_features_options.geometric_verification_options =
+      options_.geometric_verification_options;
+  match_and_verify_features_options.geometric_verification_options
+      .min_num_inlier_matches = options_.min_num_inlier_matches;
+
+  // Match images and perform geometric verification.
+  std::vector<ImagePairMatch> matches;
+  CHECK(MatchAndVerifyFeatures(match_and_verify_features_options,
+                               camera_intrinsics_priors_,
+                               keypoints,
+                               descriptors,
+                               &matches)) << "Could not match features.";
+  const int num_total_view_pairs =
+      keypoints.size() * (keypoints.size() - 1) / 2;
+  LOG(INFO) << matches.size() << " of " << num_total_view_pairs
+            << " view pairs were matched and geometrically verified.";
+
+  // Get the image names to use as the unique view name.
+  std::vector<std::string> image_filenames(image_filepaths_.size());
+  for (int i = 0; i < image_filenames.size(); i++) {
+    const std::string& image_filepath = image_filepaths_[i];
+    CHECK(GetFilenameFromFilepath(image_filepath, true, &image_filenames[i]));
+  }
+
+  // Write the matches to a file if it exists.
+  if (options_.output_matches_file.length() > 0) {
+    LOG(INFO) << "Writing matches to file: " << options_.output_matches_file;
+    CHECK(WriteMatchesAndGeometry(options_.output_matches_file,
+                                  image_filenames,
+                                  camera_intrinsics_priors_,
+                                  matches))
+        << "Could not write the matches to " << options_.output_matches_file;
+  }
+
+  // Add the matches to the view graph and reconstruction.
+  for (const auto& match : matches) {
+    AddTwoViewMatch(image_filenames[match.image1_index],
+                    image_filenames[match.image2_index],
+                    match);
+  }
+
   return true;
 }
 

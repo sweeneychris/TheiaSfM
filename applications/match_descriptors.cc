@@ -47,7 +47,7 @@ DEFINE_string(
 DEFINE_string(
     descriptor, "SIFT",
     "Type of feature descriptor to use. Must be one of the following: "
-    "SIFT, BRIEF, BRISK, FREAK");
+    "SIFT");
 DEFINE_string(matcher, "brute_force",
               "Matching type to use. Must be brute_force, or "
               "cascade_hashing");
@@ -60,16 +60,10 @@ theia::DescriptorExtractorType GetDescriptorExtractorType(
     const std::string& descriptor) {
   if (descriptor == "SIFT") {
     return theia::DescriptorExtractorType::SIFT;
-  } else if (descriptor == "BRIEF") {
-    return theia::DescriptorExtractorType::BRIEF;
-  } else if (descriptor == "BRISK") {
-    return theia::DescriptorExtractorType::BRISK;
-  } else if (descriptor == "FREAK") {
-    return theia::DescriptorExtractorType::FREAK;
+  } else {
+    LOG(ERROR) << "Invalid DescriptorExtractor specified. Using SIFT instead.";
+    return theia::DescriptorExtractorType::SIFT;
   }
-
-  LOG(ERROR) << "Invalid DescriptorExtractor specified. Using SIFT instead.";
-  return theia::DescriptorExtractorType::SIFT;
 }
 
 template <class DistanceMetric>
@@ -79,17 +73,6 @@ theia::FeatureMatcher<DistanceMetric>* CreateMatcher(
     return new theia::CascadeHashingFeatureMatcher;
   } else if (matcher == "brute_force") {
     return new theia::BruteForceFeatureMatcher<DistanceMetric>;
-  }
-
-  LOG(ERROR) << "Invalid matcher specified";
-  return nullptr;
-}
-
-template <>
-theia::FeatureMatcher<theia::Hamming>* CreateMatcher(
-    const std::string& matcher) {
-  if (matcher == "brute_force") {
-    return new theia::BruteForceFeatureMatcher<theia::Hamming>;
   }
 
   LOG(ERROR) << "Invalid matcher specified";
@@ -155,15 +138,9 @@ int main(int argc, char *argv[]) {
   std::vector<theia::FloatImage*> images;
   std::vector<std::vector<theia::Keypoint>> keypoints;
   std::vector<theia::ImagePairMatch> image_pair_matches;
-  if (FLAGS_descriptor == "SIFT") {
-    ExtractAndMatchFeatures<theia::L2, Eigen::VectorXf>(&images,
-                                                        &keypoints,
-                                                        &image_pair_matches);
-  } else {
-    ExtractAndMatchFeatures<theia::Hamming, theia::BinaryVectorX>(
-        &images, &keypoints, &image_pair_matches);
-  }
-
+  ExtractAndMatchFeatures<theia::L2, Eigen::VectorXf>(&images,
+                                                      &keypoints,
+                                                      &image_pair_matches);
   for (int i = 0; i < image_pair_matches.size(); i++) {
     theia::ImageCanvas image_canvas;
     const int img1_index = image_pair_matches[i].image1_index;

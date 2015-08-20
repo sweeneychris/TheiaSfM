@@ -38,14 +38,9 @@
 #include <Eigen/Core>
 #include <glog/logging.h>
 
-#include "theia/image/descriptor/binary_descriptor.h"
-
 namespace theia {
 // This file includes all of the distance metrics that are used:
 // L2 distance for euclidean features.
-// Hamming distance for binary vectors.
-// TODO(cmsweeney): Could implement Hamming distance for FREAK (checks the first
-// 128 bits, then checks the rest).
 
 // Squared Euclidean distance functor. We let Eigen handle the SSE optimization.
 // NOTE: This assumes that each vector has a unit norm:
@@ -59,41 +54,6 @@ struct L2 {
     DCHECK_EQ(descriptor_a.size(), descriptor_b.size());
     const DistanceType dist = 2.0 - 2.0 * descriptor_a.dot(descriptor_b);
     return dist;
-  }
-};
-
-// Haming distance functor. We break the binary descriptor down into bytes and
-// use a lookup table to make the xor really fast.
-struct Hamming {
-  typedef int DistanceType;
-  typedef BinaryVectorX DescriptorType;
-
-  DistanceType operator()(const BinaryVectorX& descriptor_a,
-                          const BinaryVectorX& descriptor_b) const {
-    DCHECK_EQ(descriptor_a.size(), descriptor_b.size());
-    static constexpr unsigned char pop_count_table[] = {
-      0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4, 1, 2, 2, 3, 2, 3, 3, 4, 2,
-      3, 3, 4, 3, 4, 4, 5, 1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5, 2, 3,
-      3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, 1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3,
-      4, 3, 4, 4, 5, 2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, 2, 3, 3, 4,
-      3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5, 6, 3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5,
-      6, 6, 7, 1, 2, 2, 3, 2, 3, 3, 4, 2, 3, 3, 4, 3, 4, 4, 5, 2, 3, 3, 4, 3, 4,
-      4, 5, 3, 4, 4, 5, 4, 5, 5, 6, 2, 3, 3, 4, 3, 4, 4, 5, 3, 4, 4, 5, 4, 5, 5,
-      6, 3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7, 2, 3, 3, 4, 3, 4, 4, 5,
-      3, 4, 4, 5, 4, 5, 5, 6, 3, 4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7, 3,
-      4, 4, 5, 4, 5, 5, 6, 4, 5, 5, 6, 5, 6, 6, 7, 4, 5, 5, 6, 5, 6, 6, 7, 5, 6,
-      6, 7, 6, 7, 7, 8
-    };
-
-    int result = 0;
-    const unsigned char* char_a = descriptor_a.data();
-    const unsigned char* char_b = descriptor_b.data();
-    for (size_t i = 0;
-         i < descriptor_a.size() / (8 * sizeof(unsigned char)); i++) {
-      result += pop_count_table[char_a[i] ^ char_b[i]];
-    }
-
-    return result;
   }
 };
 

@@ -2,9 +2,6 @@ if (${BUILD_TESTING})
   add_subdirectory(gtest)
 endif (${BUILD_TESTING})
 
-# Add Agast keypoint detector
-add_subdirectory(agast)
-
 # CImg for image input/output
 add_subdirectory(cimg)
 

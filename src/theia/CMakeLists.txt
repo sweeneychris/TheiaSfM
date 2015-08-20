@@ -37,15 +37,9 @@ file(GLOB THEIA_HDRS *.h)
 
 # Add sources
 set(THEIA_SRC
-  image/descriptor/brief_descriptor.cc
-  image/descriptor/brisk_descriptor.cc
   image/descriptor/descriptor_extractor.cc
-  image/descriptor/freak_descriptor.cc
   image/descriptor/sift_descriptor.cc
   image/image_canvas.cc
-  image/keypoint_detector/agast_detector.cc
-  image/keypoint_detector/brisk_detector.cc
-  image/keypoint_detector/brisk_impl.cc
   image/keypoint_detector/sift_detector.cc
   io/read_1dsfm.cc
   io/read_bundler_files.cc
@@ -155,8 +149,7 @@ set(THEIA_LIBRARY_DEPENDENCIES
   easyexif
   statx
   stlplus3
-  vlfeat
-  agast)
+  vlfeat)
 
 set(THEIA_LIBRARY_SOURCE
   ${THEIA_SRC}
@@ -189,13 +182,8 @@ if (BUILD_TESTING)
       COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TEST_NAME}_test)
   endmacro (GTEST)
 
-  gtest(image/descriptor/brief_descriptor)
-  gtest(image/descriptor/brisk_descriptor)
-  gtest(image/descriptor/freak_descriptor)
   gtest(image/descriptor/sift_descriptor)
   gtest(image/image)
-  gtest(image/keypoint_detector/agast_detector)
-  gtest(image/keypoint_detector/brisk_detector)
   gtest(image/keypoint_detector/sift_detector)
   gtest(matching/brute_force_feature_matcher)
   gtest(matching/distance)

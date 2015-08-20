@@ -38,7 +38,6 @@
 #include <Eigen/Core>
 #include <vector>
 
-#include "theia/image/descriptor/binary_descriptor.h"
 #include "theia/image/keypoint_detector/keypoint.h"
 #include "theia/matching/feature_correspondence.h"
 #include "theia/matching/image_pair_match.h"
@@ -83,13 +82,6 @@ bool MatchAndVerifyFeatures(
     const std::vector<CameraIntrinsicsPrior>& intrinsics,
     const std::vector<std::vector<Keypoint> >& keypoints,
     const std::vector<std::vector<Eigen::VectorXf> >& descriptor,
-    std::vector<ImagePairMatch>* matches);
-
-bool MatchAndVerifyFeatures(
-    const MatchAndVerifyFeaturesOptions& options,
-    const std::vector<CameraIntrinsicsPrior>& intrinsics,
-    const std::vector<std::vector<Keypoint> >& keypoints,
-    const std::vector<std::vector<BinaryVectorX> >& descriptor,
     std::vector<ImagePairMatch>* matches);
 
 }  // namespace theia

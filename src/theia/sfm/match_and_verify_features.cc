@@ -39,7 +39,6 @@
 #include <mutex>
 #include <vector>
 
-#include "theia/image/descriptor/binary_descriptor.h"
 #include "theia/image/keypoint_detector/keypoint.h"
 #include "theia/matching/brute_force_feature_matcher.h"
 #include "theia/matching/cascade_hashing_feature_matcher.h"
@@ -55,23 +54,26 @@
 #include "theia/util/threadpool.h"
 
 namespace theia {
-namespace {
-
-// Templated method so that we can perform the same operations of binary and
-// float descriptors in one method.
-template <class DistanceMetric, class DescriptorType>
 bool MatchAndVerifyFeatures(
     const MatchAndVerifyFeaturesOptions& options,
     const std::vector<CameraIntrinsicsPrior>& intrinsics,
     const std::vector<std::vector<Keypoint> >& keypoints,
-    const std::vector<std::vector<DescriptorType> >& descriptors,
-    FeatureMatcher<DistanceMetric>* matcher,
+    const std::vector<std::vector<Eigen::VectorXf> >& descriptors,
     std::vector<ImagePairMatch>* matches) {
   CHECK_GT(options.num_threads, 0);
   CHECK_GT(options.min_num_inlier_matches, 0);
   CHECK_EQ(intrinsics.size(), keypoints.size());
   CHECK_EQ(keypoints.size(), descriptors.size());
   CHECK_NOTNULL(matches);
+
+  std::unique_ptr<FeatureMatcher<L2>> matcher;
+  if (options.matching_strategy == MatchingStrategy::CASCADE_HASHING) {
+    matcher.reset(new CascadeHashingFeatureMatcher);
+  } else if (options.matching_strategy == MatchingStrategy::BRUTE_FORCE) {
+    matcher.reset(new BruteForceFeatureMatcher<L2>);
+  } else {
+    LOG(FATAL) << "Invalid matching strategy specified.";
+  }
 
   // Match features.
   std::vector<ImagePairMatch> image_pair_matches;
@@ -87,60 +89,11 @@ bool MatchAndVerifyFeatures(
       options.geometric_verification_options;
   verification_options.min_num_inlier_matches = options.min_num_inlier_matches;
 
+  // Perform the matching.
   matcher->MatchImagesWithGeometricVerification(matcher_options,
                                                 verification_options,
                                                 matches);
   return true;
-}
-
-}  // namespace
-
-bool MatchAndVerifyFeatures(
-    const MatchAndVerifyFeaturesOptions& options,
-    const std::vector<CameraIntrinsicsPrior>& intrinsics,
-    const std::vector<std::vector<Keypoint> >& keypoints,
-    const std::vector<std::vector<Eigen::VectorXf> >& descriptor,
-    std::vector<ImagePairMatch>* matches) {
-  std::unique_ptr<FeatureMatcher<L2>> matcher;
-  if (options.matching_strategy == MatchingStrategy::CASCADE_HASHING) {
-    matcher.reset(new CascadeHashingFeatureMatcher);
-  } else if (options.matching_strategy == MatchingStrategy::BRUTE_FORCE) {
-    matcher.reset(new BruteForceFeatureMatcher<L2>);
-  } else {
-    LOG(FATAL) << "Invalid matching strategy specified.";
-  }
-
-  return MatchAndVerifyFeatures(options,
-                                intrinsics,
-                                keypoints,
-                                descriptor,
-                                matcher.get(),
-                                matches);
-}
-
-bool MatchAndVerifyFeatures(
-    const MatchAndVerifyFeaturesOptions& options,
-    const std::vector<CameraIntrinsicsPrior>& intrinsics,
-    const std::vector<std::vector<Keypoint> >& keypoints,
-    const std::vector<std::vector<BinaryVectorX> >& descriptor,
-    std::vector<ImagePairMatch>* matches) {
-  std::unique_ptr<FeatureMatcher<Hamming>> matcher;
-  if (options.matching_strategy == MatchingStrategy::CASCADE_HASHING) {
-    LOG(WARNING) << "Invalid matching specified for binary vectors. Using "
-        "brute force matching instead.";
-    matcher.reset(new BruteForceFeatureMatcher<Hamming>);
-  } else if (options.matching_strategy == MatchingStrategy::BRUTE_FORCE) {
-    matcher.reset(new BruteForceFeatureMatcher<Hamming>);
-  } else {
-    LOG(FATAL) << "Invalid matching strategy specified.";
-  }
-
-  return MatchAndVerifyFeatures(options,
-                                intrinsics,
-                                keypoints,
-                                descriptor,
-                                matcher.get(),
-                                matches);
 }
 
 }  // namespace theia

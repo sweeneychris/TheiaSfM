@@ -179,7 +179,6 @@ include_directories(SYSTEM ${EIGEN_INCLUDE_DIRS})
 add_subdirectory(libraries)
 include_directories(
   libraries
-  ${agast_SOURCE_DIR}
   ${cimg_SOURCE_DIR}
   ${cimg_INCLUDE_DIR}
   ${easyexif_INCLUDE_DIR}

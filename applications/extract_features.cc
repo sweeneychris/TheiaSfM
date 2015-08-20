@@ -52,18 +52,12 @@ DEFINE_int32(num_threads, 1,
 DEFINE_string(
     descriptor, "SIFT",
     "Type of feature descriptor to use. Must be one of the following: "
-    "SIFT, BRIEF, BRISK, FREAK");
+    "SIFT");
 
 theia::DescriptorExtractorType GetDescriptorExtractorType(
     const std::string& descriptor) {
   if (descriptor == "SIFT") {
     return theia::DescriptorExtractorType::SIFT;
-  } else if (descriptor == "BRIEF") {
-    return theia::DescriptorExtractorType::BRIEF;
-  } else if (descriptor == "BRISK") {
-    return theia::DescriptorExtractorType::BRISK;
-  } else if (descriptor == "FREAK") {
-    return theia::DescriptorExtractorType::FREAK;
   } else {
     LOG(ERROR) << "Invalid DescriptorExtractor specified. Using SIFT instead.";
     return theia::DescriptorExtractorType::SIFT;
@@ -89,29 +83,17 @@ int main(int argc, char *argv[]) {
 
   std::vector<std::vector<theia::Keypoint> > keypoints;
   std::vector<std::vector<Eigen::VectorXf> > descriptors;
-  std::vector<std::vector<theia::BinaryVectorX> > binary_descriptors;
 
   // Extract features from all images.
   double time_to_extract_features;
-  if (FLAGS_descriptor == "SIFT") {
-    auto start = std::chrono::system_clock::now();
-    CHECK(feature_extractor.Extract(img_filepaths,
-                                    &keypoints,
-                                    &descriptors))
-        << "Feature extraction failed!";
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
-        std::chrono::system_clock::now() - start);
-    time_to_extract_features = duration.count();
-  } else {
-    auto start = std::chrono::system_clock::now();
-    CHECK(feature_extractor.Extract(img_filepaths,
-                                    &keypoints,
-                                    &binary_descriptors))
-        << "Feature extraction failed!";
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
-        std::chrono::system_clock::now() - start);
-    time_to_extract_features = duration.count();
-  }
+  auto start = std::chrono::system_clock::now();
+  CHECK(feature_extractor.Extract(img_filepaths,
+                                  &keypoints,
+                                  &descriptors))
+      << "Feature extraction failed!";
+  auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+      std::chrono::system_clock::now() - start);
+  time_to_extract_features = duration.count();
 
   for (int i = 0; i < keypoints.size(); i++) {
     theia::FloatImage image(img_filepaths[i]);

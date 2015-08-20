@@ -50,7 +50,7 @@ namespace theia {
 template<class T> class Image;
 typedef Image<float> FloatImage;
 
-class SiftDescriptorExtractor : public FloatDescriptorExtractor {
+class SiftDescriptorExtractor : public DescriptorExtractor {
  public:
   //  We only implement the standard 128-dimension descriptor. Specify the
   //  number of image octaves, number of scale levels per octave, and where the

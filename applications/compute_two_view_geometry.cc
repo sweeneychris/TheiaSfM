@@ -56,7 +56,7 @@ DEFINE_int32(num_threads, 1,
 DEFINE_string(
     descriptor, "SIFT",
     "Type of feature descriptor to use. Must be one of the following: "
-    "SIFT, BRIEF, BRISK, FREAK");
+    "SIFT");
 DEFINE_string(matching_strategy, "BRUTE_FORCE",
               "Strategy used to match features. Must be BRUTE_FORCE, "
               "or CASCADE_HASHING");
@@ -81,12 +81,6 @@ DescriptorExtractorType GetDescriptorExtractorType(
     const std::string& descriptor) {
   if (descriptor == "SIFT") {
     return DescriptorExtractorType::SIFT;
-  } else if (descriptor == "BRIEF") {
-    return DescriptorExtractorType::BRIEF;
-  } else if (descriptor == "BRISK") {
-    return DescriptorExtractorType::BRISK;
-  } else if (descriptor == "FREAK") {
-    return DescriptorExtractorType::FREAK;
   } else {
     LOG(ERROR) << "Invalid DescriptorExtractor specified. Using SIFT instead.";
     return DescriptorExtractorType::SIFT;

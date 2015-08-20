@@ -35,17 +35,83 @@
 #include "theia/sfm/feature_extractor.h"
 
 #include <Eigen/Core>
+#include <algorithm>
+#include <memory>
 #include <string>
 #include <vector>
 
-#include "theia/image/descriptor/brief_descriptor.h"
-#include "theia/image/descriptor/brisk_descriptor.h"
 #include "theia/image/descriptor/descriptor_extractor.h"
-#include "theia/image/descriptor/freak_descriptor.h"
 #include "theia/image/descriptor/sift_descriptor.h"
 #include "theia/image/image.h"
+#include "theia/util/filesystem.h"
+#include "theia/util/threadpool.h"
 
 namespace theia {
+
+bool FeatureExtractor::Extract(
+    const std::vector<std::string>& filenames,
+    std::vector<std::vector<Keypoint> >* keypoints,
+    std::vector<std::vector<Eigen::VectorXf> >* descriptors) {
+  CHECK_GT(filenames.size(), 0) << "FeatureExtractor::Extract requires at "
+                                   "least one image in order to extract "
+                                   "features.";
+  CHECK_NOTNULL(keypoints)->resize(filenames.size());
+  CHECK_NOTNULL(descriptors)->resize(filenames.size());
+
+  // The thread pool will wait to finish all jobs when it goes out of scope.
+  const int num_threads =
+      std::min(options_.num_threads, static_cast<int>(filenames.size()));
+  ThreadPool feature_extractor_pool(num_threads);
+  for (int i = 0; i < filenames.size(); i++) {
+    if (!FileExists(filenames[i])) {
+      LOG(ERROR) << "Could not extract features for " << filenames[i]
+                 << " because the file cannot be found.";
+      continue;
+    }
+
+    feature_extractor_pool.Add(
+        &FeatureExtractor::ExtractFeatures,
+        this,
+        filenames[i],
+        &(*keypoints)[i],
+        &(*descriptors)[i]);
+  }
+  return true;
+}
+
+bool FeatureExtractor::ExtractFeatures(
+    const std::string& filename,
+    std::vector<Keypoint>* keypoints,
+    std::vector<Eigen::VectorXf>* descriptors) {
+  std::unique_ptr<FloatImage> image(new FloatImage(filename));
+
+  // We create these variable here instead of upon the construction of the
+  // object so that they can be thread-safe. We *should* be able to use the
+  // static thread_local keywords, but apparently Mac OS-X's version of clang
+  // does not actually support it!
+  //
+  // TODO(cmsweeney): Change this so that each thread in the threadpool receives
+  // exactly one object.
+  std::unique_ptr<DescriptorExtractor> descriptor_extractor =
+      CreateDescriptorExtractor(options_.descriptor_extractor_type);
+
+  // Exit if the descriptor extraction fails.
+  if (!descriptor_extractor->DetectAndExtractDescriptors(*image,
+                                                         keypoints,
+                                                         descriptors)) {
+    LOG(ERROR) << "Could not extract descriptors in image " << filename;
+    return false;
+  }
+
+  if (keypoints->size() > options_.max_num_features) {
+    keypoints->resize(options_.max_num_features);
+    descriptors->resize(options_.max_num_features);
+  }
+
+  VLOG(1) << "Successfully extracted " << descriptors->size()
+          << " features from image " << filename;
+  return true;
+}
 
 std::unique_ptr<DescriptorExtractor>
 FeatureExtractor::CreateDescriptorExtractor(
@@ -55,15 +121,6 @@ FeatureExtractor::CreateDescriptorExtractor(
     case DescriptorExtractorType::SIFT:
       descriptor_extractor.reset(
           new SiftDescriptorExtractor(options_.sift_parameters));
-      break;
-    case DescriptorExtractorType::BRIEF:
-      descriptor_extractor.reset(new BriefDescriptorExtractor);
-      break;
-    case DescriptorExtractorType::BRISK:
-      descriptor_extractor.reset(new BriskDescriptorExtractor);
-      break;
-    case DescriptorExtractorType::FREAK:
-      descriptor_extractor.reset(new FreakDescriptorExtractor);
       break;
     default:
       LOG(ERROR) << "Invalid Descriptor Extractor specified.";

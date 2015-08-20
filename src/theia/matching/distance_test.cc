@@ -76,57 +76,5 @@ TEST(L2Distance, KnownDistance) {
   }
 }
 
-// Zero distance.
-TEST(HammingDistance, ZeroDistance) {
-  BinaryVectorX descriptor1(512);
-  descriptor1.setZero();
-  BinaryVectorX descriptor2(512);
-  descriptor2.setZero();
-  Hamming hamming_distance;
-  ASSERT_EQ(hamming_distance(descriptor1, descriptor2), 0);
-}
-
-// Max distance.
-TEST(HammingDistance, MaxDistance) {
-  BinaryVectorX descriptor1(512);
-  descriptor1.setZero();
-  BinaryVectorX descriptor2(512);
-  std::bitset<512>* ones =
-      reinterpret_cast<std::bitset<512>*>(descriptor2.data());
-  ones->reset().flip();
-
-  Hamming hamming_distance;
-  ASSERT_EQ(hamming_distance(descriptor1, descriptor2), 512);
-}
-
-// Known distance.
-TEST(HammingDistance, KnownDistance) {
-  InitRandomGenerator();
-
-  std::bitset<512> zeros;
-  zeros.reset();
-
-  BinaryVectorX descriptor1(512);
-  descriptor1.setZero();
-
-  for (int i = 0; i < kNumTrials; i++) {
-    BinaryVectorX descriptor2(512);
-    descriptor2.setZero();
-    std::bitset<512>* rand_bitset =
-        reinterpret_cast<std::bitset<512>*>(descriptor2.data());
-
-    int hamming_dist = 0;
-    for (int j = 0; j < 512; j++) {
-      if (RandDouble(0.0, 1.0) > 0.7) {
-        rand_bitset->set(j);
-        hamming_dist++;
-      }
-    }
-
-    Hamming hamming_distance;
-    ASSERT_EQ(hamming_distance(descriptor1, descriptor2), hamming_dist);
-  }
-}
-
 }  // namespace
 }  // namespace theia

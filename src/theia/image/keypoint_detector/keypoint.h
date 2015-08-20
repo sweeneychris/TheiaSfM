@@ -48,8 +48,6 @@ class Keypoint {
     INVALID = -1,
     OTHER = 0,
     SIFT,
-    AGAST,
-    BRISK
   };
 
   Keypoint(double x, double y, KeypointType type)

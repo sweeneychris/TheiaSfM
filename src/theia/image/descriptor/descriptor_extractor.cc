@@ -36,7 +36,6 @@
 
 #include <Eigen/Core>
 
-#include "theia/image/descriptor/binary_descriptor.h"
 #include "theia/image/image.h"
 #include "theia/image/keypoint_detector/keypoint.h"
 
@@ -53,28 +52,6 @@ bool DescriptorExtractor::ComputeDescriptors(
   auto keypoint_it = keypoints->begin();
   while (keypoint_it != keypoints->end()) {
     Eigen::VectorXf descriptor;
-    if (!ComputeDescriptor(gray_image,
-                           *keypoint_it,
-                           &descriptor)) {
-      keypoint_it = keypoints->erase(keypoint_it);
-      continue;
-    }
-
-    descriptors->push_back(descriptor);
-  }
-  return true;
-}
-
-bool DescriptorExtractor::ComputeDescriptors(
-    const FloatImage& image,
-    std::vector<Keypoint>* keypoints,
-    std::vector<BinaryVectorX>* descriptors) {
-  const FloatImage& gray_image = image.AsGrayscaleImage();
-  descriptors->reserve(keypoints->size());
-
-  auto keypoint_it = keypoints->begin();
-  while (keypoint_it != keypoints->end()) {
-    BinaryVectorX descriptor;
     if (!ComputeDescriptor(gray_image,
                            *keypoint_it,
                            &descriptor)) {

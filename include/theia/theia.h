@@ -36,17 +36,10 @@
 #define THEIA_THEIA_H_
 
 #include "theia/alignment/alignment.h"
-#include "theia/image/descriptor/binary_descriptor.h"
-#include "theia/image/descriptor/brief_descriptor.h"
-#include "theia/image/descriptor/brisk_descriptor.h"
 #include "theia/image/descriptor/descriptor_extractor.h"
-#include "theia/image/descriptor/freak_descriptor.h"
 #include "theia/image/descriptor/sift_descriptor.h"
 #include "theia/image/image.h"
 #include "theia/image/image_canvas.h"
-#include "theia/image/keypoint_detector/agast_detector.h"
-#include "theia/image/keypoint_detector/brisk_detector.h"
-#include "theia/image/keypoint_detector/brisk_impl.h"
 #include "theia/image/keypoint_detector/keypoint.h"
 #include "theia/image/keypoint_detector/keypoint_detector.h"
 #include "theia/image/keypoint_detector/sift_detector.h"
