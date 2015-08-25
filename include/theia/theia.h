@@ -36,6 +36,7 @@
 #define THEIA_THEIA_H_
 
 #include "theia/alignment/alignment.h"
+#include "theia/image/descriptor/create_descriptor_extractor.h"
 #include "theia/image/descriptor/descriptor_extractor.h"
 #include "theia/image/descriptor/sift_descriptor.h"
 #include "theia/image/image.h"
@@ -58,6 +59,7 @@
 #include "theia/matching/brute_force_feature_matcher.h"
 #include "theia/matching/cascade_hasher.h"
 #include "theia/matching/cascade_hashing_feature_matcher.h"
+#include "theia/matching/create_feature_matcher.h"
 #include "theia/matching/distance.h"
 #include "theia/matching/feature_correspondence.h"
 #include "theia/matching/feature_matcher.h"

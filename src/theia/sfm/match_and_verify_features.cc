@@ -40,8 +40,7 @@
 #include <vector>
 
 #include "theia/image/keypoint_detector/keypoint.h"
-#include "theia/matching/brute_force_feature_matcher.h"
-#include "theia/matching/cascade_hashing_feature_matcher.h"
+#include "theia/matching/create_feature_matcher.h"
 #include "theia/matching/distance.h"
 #include "theia/matching/feature_correspondence.h"
 #include "theia/matching/feature_matcher.h"
@@ -66,14 +65,8 @@ bool MatchAndVerifyFeatures(
   CHECK_EQ(keypoints.size(), descriptors.size());
   CHECK_NOTNULL(matches);
 
-  std::unique_ptr<FeatureMatcher<L2>> matcher;
-  if (options.matching_strategy == MatchingStrategy::CASCADE_HASHING) {
-    matcher.reset(new CascadeHashingFeatureMatcher);
-  } else if (options.matching_strategy == MatchingStrategy::BRUTE_FORCE) {
-    matcher.reset(new BruteForceFeatureMatcher<L2>);
-  } else {
-    LOG(FATAL) << "Invalid matching strategy specified.";
-  }
+  std::unique_ptr<FeatureMatcher<L2>> matcher =
+      CreateFeatureMatcher(options.matching_strategy);
 
   // Match features.
   std::vector<ImagePairMatch> image_pair_matches;

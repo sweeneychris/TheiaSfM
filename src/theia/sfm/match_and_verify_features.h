@@ -39,6 +39,7 @@
 #include <vector>
 
 #include "theia/image/keypoint_detector/keypoint.h"
+#include "theia/matching/create_feature_matcher.h"
 #include "theia/matching/feature_correspondence.h"
 #include "theia/matching/image_pair_match.h"
 #include "theia/matching/feature_matcher_options.h"
@@ -47,12 +48,6 @@
 #include "theia/sfm/verify_two_view_matches.h"
 
 namespace theia {
-
-// The type of matching to perform.
-enum class MatchingStrategy {
-  BRUTE_FORCE = 0,
-  CASCADE_HASHING = 1,
-};
 
 // Options for image matching with geometric verification.
 struct MatchAndVerifyFeaturesOptions {

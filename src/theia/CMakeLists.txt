@@ -55,6 +55,7 @@ set(THEIA_SRC
   io/write_ply_file.cc
   matching/cascade_hasher.cc
   matching/cascade_hashing_feature_matcher.cc
+  matching/create_feature_matcher.cc
   matching/feature_matcher_utils.cc
   math/closed_form_polynomial_solver.cc
   math/find_polynomial_roots_companion_matrix.cc
