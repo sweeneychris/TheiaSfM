@@ -53,10 +53,10 @@ class CascadeHashingFeatureMatcher : public FeatureMatcher<L2> {
 
   // These methods are the same as the base class except that the HashedImage is
   // created as the descriptors are added.
-  void AddImage(const std::vector<Keypoint>* keypoints,
-                const std::vector<Eigen::VectorXf>* descriptors) override;
-  void AddImage(const std::vector<Keypoint>* keypoints,
-                const std::vector<Eigen::VectorXf>* descriptors,
+  void AddImage(const std::vector<Keypoint>& keypoints,
+                const std::vector<Eigen::VectorXf>& descriptors) override;
+  void AddImage(const std::vector<Keypoint>& keypoints,
+                const std::vector<Eigen::VectorXf>& descriptors,
                 const CameraIntrinsicsPrior& intrinsics) override;
 
  private:

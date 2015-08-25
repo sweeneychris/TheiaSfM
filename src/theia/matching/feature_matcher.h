@@ -87,15 +87,15 @@ template <class DistanceMetric> class FeatureMatcher {
   // Adds an image to the matcher with no known intrinsics for this image. The
   // caller still owns the keypoints and descriptors so they must remain valid
   // objects throughout the matching.
-  virtual void AddImage(const std::vector<Keypoint>* keypoints,
-                        const std::vector<DescriptorType>* descriptors);
+  virtual void AddImage(const std::vector<Keypoint>& keypoints,
+                        const std::vector<DescriptorType>& descriptors);
 
   // Adds an image to the matcher with the known camera intrinsics. The
   // intrinsics (if known) are useful for geometric verification. The caller
   // still owns the keypoints and descriptors so they must remain valid objects
   // throughout the matching.
-  virtual void AddImage(const std::vector<Keypoint>* keypoints,
-                        const std::vector<DescriptorType>* descriptors,
+  virtual void AddImage(const std::vector<Keypoint>& keypoints,
+                        const std::vector<DescriptorType>& descriptors,
                         const CameraIntrinsicsPrior& intrinsics);
 
   // Matches features between all images. No geometric verification is
@@ -138,8 +138,8 @@ template <class DistanceMetric> class FeatureMatcher {
   // Will be set to true if geometric verification is enabled.
   bool verify_image_pairs_;
 
-  std::vector<const std::vector<Keypoint>*> keypoints_;
-  std::vector<const std::vector<DescriptorType>*> descriptors_;
+  std::vector<const std::vector<Keypoint> > keypoints_;
+  std::vector<const std::vector<DescriptorType> > descriptors_;
   std::unordered_map<int, CameraIntrinsicsPrior> intrinsics_;
   std::vector<std::pair<int, int> > pairs_to_match_;
   std::mutex mutex_;
@@ -152,23 +152,17 @@ template <class DistanceMetric> class FeatureMatcher {
 
 template <class DistanceMetric>
 void FeatureMatcher<DistanceMetric>::AddImage(
-    const std::vector<Keypoint>* keypoints,
-    const std::vector<DescriptorType>* descriptors) {
-  CHECK_NOTNULL(keypoints);
-  CHECK_NOTNULL(descriptors);
-
+    const std::vector<Keypoint>& keypoints,
+    const std::vector<DescriptorType>& descriptors) {
   keypoints_.push_back(keypoints);
   descriptors_.push_back(descriptors);
 }
 
 template <class DistanceMetric>
 void FeatureMatcher<DistanceMetric>::AddImage(
-    const std::vector<Keypoint>* keypoints,
-    const std::vector<DescriptorType>* descriptors,
+    const std::vector<Keypoint>& keypoints,
+    const std::vector<DescriptorType>& descriptors,
     const CameraIntrinsicsPrior& intrinsics) {
-  CHECK_NOTNULL(keypoints);
-  CHECK_NOTNULL(descriptors);
-
   keypoints_.push_back(keypoints);
   descriptors_.push_back(descriptors);
   const int image_index = keypoints_.size() - 1;
@@ -207,11 +201,11 @@ void FeatureMatcher<DistanceMetric>::MatchImagesWithGeometricVerification(
 
   // Create a list of all possible image pairs.
   for (int i = 0; i < keypoints_.size(); i++) {
-    if (keypoints_[i]->size() == 0) {
+    if (keypoints_[i].size() == 0) {
       continue;
     }
     for (int j = i + 1; j < keypoints_.size(); j++) {
-      if (keypoints_[j]->size() == 0) {
+      if (keypoints_[j].size() == 0) {
         continue;
       }
       pairs_to_match_.emplace_back(i, j);

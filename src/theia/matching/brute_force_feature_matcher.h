@@ -83,9 +83,9 @@ bool BruteForceFeatureMatcher<DistanceMetric>::MatchImagePair(
       this->matcher_options_.lowes_ratio * this->matcher_options_.lowes_ratio;
 
   const std::vector<DescriptorType>& descriptors1 =
-      *(this->descriptors_[image1_index]);
+      this->descriptors_[image1_index];
   const std::vector<DescriptorType>& descriptors2 =
-      *(this->descriptors_[image2_index]);
+      this->descriptors_[image2_index];
 
   DistanceMetric distance;
   std::vector<IndexedFeatureMatch> matches;
@@ -149,8 +149,8 @@ bool BruteForceFeatureMatcher<DistanceMetric>::MatchImagePair(
   }
 
   // Convert to FeatureCorrespondences and return true
-  const std::vector<Keypoint>& keypoints1 = *this->keypoints_[image1_index];
-  const std::vector<Keypoint>& keypoints2 = *this->keypoints_[image2_index];
+  const std::vector<Keypoint>& keypoints1 = this->keypoints_[image1_index];
+  const std::vector<Keypoint>& keypoints2 = this->keypoints_[image2_index];
   matched_features->resize(matches.size());
   for (int i = 0; i < matches.size(); i++) {
     const Keypoint& keypoint1 = keypoints1[matches[i].feature1_ind];

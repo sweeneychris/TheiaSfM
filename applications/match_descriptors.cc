@@ -115,7 +115,7 @@ void ExtractAndMatchFeatures(
   // Match features.
   start = std::chrono::system_clock::now();
   for (int i = 0; i < keypoints->size(); i++) {
-    matcher->AddImage(&keypoints->at(i), &descriptors[i]);
+    matcher->AddImage(keypoints->at(i), descriptors[i]);
   }
   theia::VerifyTwoViewMatchesOptions verification_options;
   matcher->MatchImagesWithGeometricVerification(options,

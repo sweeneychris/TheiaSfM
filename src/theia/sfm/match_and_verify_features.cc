@@ -71,7 +71,7 @@ bool MatchAndVerifyFeatures(
   // Match features.
   std::vector<ImagePairMatch> image_pair_matches;
   for (int i = 0; i < keypoints.size(); i++) {
-    matcher->AddImage(&keypoints[i], &descriptors[i], intrinsics[i]);
+    matcher->AddImage(keypoints[i], descriptors[i], intrinsics[i]);
   }
 
   // Set the options to ensure they are consistent with each other.

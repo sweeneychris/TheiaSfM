@@ -49,36 +49,24 @@
 namespace theia {
 
 void CascadeHashingFeatureMatcher::AddImage(
-    const std::vector<Keypoint>* keypoints,
-    const std::vector<Eigen::VectorXf>* descriptors) {
-  CHECK_NOTNULL(keypoints);
-  CHECK_NOTNULL(descriptors);
+    const std::vector<Keypoint>& keypoints,
+    const std::vector<Eigen::VectorXf>& descriptors) {
   if (cascade_hasher_.get() == nullptr) {
     cascade_hasher_.reset(new CascadeHasher());
-    CHECK(cascade_hasher_->Initialize(descriptors->at(0).size()))
+    CHECK(cascade_hasher_->Initialize(descriptors[0].size()))
         << "Could not initialize the cascade hasher.";
   }
 
   keypoints_.push_back(keypoints);
   hashed_images_.emplace_back(
-      cascade_hasher_->CreateHashedSiftDescriptors(*descriptors));
+      cascade_hasher_->CreateHashedSiftDescriptors(descriptors));
 }
 
 void CascadeHashingFeatureMatcher::AddImage(
-    const std::vector<Keypoint>* keypoints,
-    const std::vector<Eigen::VectorXf>* descriptors,
+    const std::vector<Keypoint>& keypoints,
+    const std::vector<Eigen::VectorXf>& descriptors,
     const CameraIntrinsicsPrior& intrinsics) {
-  CHECK_NOTNULL(keypoints);
-  CHECK_NOTNULL(descriptors);
-  if (cascade_hasher_.get() == nullptr) {
-    cascade_hasher_.reset(new CascadeHasher());
-    CHECK(cascade_hasher_->Initialize(descriptors->at(0).size()))
-        << "Could not initialize the cascade hasher.";
-  }
-
-  keypoints_.push_back(keypoints);
-  hashed_images_.emplace_back(
-      cascade_hasher_->CreateHashedSiftDescriptors(*descriptors));
+  AddImage(keypoints, descriptors);
   const int image_index = keypoints_.size() - 1;
   intrinsics_[image_index] = intrinsics;
 }
@@ -108,8 +96,8 @@ bool CascadeHashingFeatureMatcher::MatchImagePair(
   }
 
   // Convert to FeatureCorrespondences and return true;
-  const std::vector<Keypoint>& keypoints1 = *this->keypoints_[image1_index];
-  const std::vector<Keypoint>& keypoints2 = *this->keypoints_[image2_index];
+  const std::vector<Keypoint>& keypoints1 = this->keypoints_[image1_index];
+  const std::vector<Keypoint>& keypoints2 = this->keypoints_[image2_index];
   matched_features->resize(matches.size());
   for (int i = 0; i < matches.size(); i++) {
     const Keypoint& keypoint1 = keypoints1[matches[i].feature1_ind];
