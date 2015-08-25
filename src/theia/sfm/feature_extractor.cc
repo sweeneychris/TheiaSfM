@@ -40,8 +40,8 @@
 #include <string>
 #include <vector>
 
+#include "theia/image/descriptor/create_descriptor_extractor.h"
 #include "theia/image/descriptor/descriptor_extractor.h"
-#include "theia/image/descriptor/sift_descriptor.h"
 #include "theia/image/image.h"
 #include "theia/util/filesystem.h"
 #include "theia/util/threadpool.h"
@@ -92,8 +92,12 @@ bool FeatureExtractor::ExtractFeatures(
   //
   // TODO(cmsweeney): Change this so that each thread in the threadpool receives
   // exactly one object.
+  CreateDescriptorExtractorOptions options;
+  options.descriptor_extractor_type = options_.descriptor_extractor_type;
+  options.sift_options = options_.sift_parameters;
+
   std::unique_ptr<DescriptorExtractor> descriptor_extractor =
-      CreateDescriptorExtractor(options_.descriptor_extractor_type);
+      CreateDescriptorExtractor(options);
 
   // Exit if the descriptor extraction fails.
   if (!descriptor_extractor->DetectAndExtractDescriptors(*image,
@@ -111,23 +115,6 @@ bool FeatureExtractor::ExtractFeatures(
   VLOG(1) << "Successfully extracted " << descriptors->size()
           << " features from image " << filename;
   return true;
-}
-
-std::unique_ptr<DescriptorExtractor>
-FeatureExtractor::CreateDescriptorExtractor(
-    const DescriptorExtractorType& descriptor_extractor_type) {
-  std::unique_ptr<DescriptorExtractor> descriptor_extractor;
-  switch (descriptor_extractor_type) {
-    case DescriptorExtractorType::SIFT:
-      descriptor_extractor.reset(
-          new SiftDescriptorExtractor(options_.sift_parameters));
-      break;
-    default:
-      LOG(ERROR) << "Invalid Descriptor Extractor specified.";
-  }
-  CHECK(descriptor_extractor->Initialize())
-      << "Could not initialize the Descriptor Extractor";
-  return descriptor_extractor;
 }
 
 }  // namespace theia

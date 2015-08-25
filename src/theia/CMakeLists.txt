@@ -37,6 +37,7 @@ file(GLOB THEIA_HDRS *.h)
 
 # Add sources
 set(THEIA_SRC
+  image/descriptor/create_descriptor_extractor.cc
   image/descriptor/descriptor_extractor.cc
   image/descriptor/sift_descriptor.cc
   image/image_canvas.cc
