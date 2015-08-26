@@ -83,6 +83,7 @@ set(THEIA_SRC
   sfm/estimators/estimate_uncalibrated_relative_pose.cc
   sfm/exif_reader.cc
   sfm/feature_extractor.cc
+  sfm/feature_extractor_and_matcher.cc
   sfm/filter_view_graph_cycles_by_rotation.cc
   sfm/filter_view_pairs_from_orientation.cc
   sfm/filter_view_pairs_from_relative_translation.cc
