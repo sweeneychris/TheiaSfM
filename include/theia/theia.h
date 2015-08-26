@@ -108,6 +108,7 @@
 #include "theia/sfm/exif_reader.h"
 #include "theia/sfm/feature.h"
 #include "theia/sfm/feature_extractor.h"
+#include "theia/sfm/feature_extractor_and_matcher.h"
 #include "theia/sfm/filter_view_graph_cycles_by_rotation.h"
 #include "theia/sfm/filter_view_pairs_from_orientation.h"
 #include "theia/sfm/filter_view_pairs_from_relative_translation.h"

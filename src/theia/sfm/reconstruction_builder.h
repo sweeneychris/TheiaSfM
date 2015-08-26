@@ -42,12 +42,10 @@
 #include "theia/image/keypoint_detector/sift_parameters.h"
 #include "theia/io/write_matches.h"
 #include "theia/util/util.h"
+#include "theia/matching/create_feature_matcher.h"
 #include "theia/matching/feature_matcher_options.h"
 #include "theia/sfm/camera_intrinsics_prior.h"
-#include "theia/sfm/estimate_twoview_info.h"
-#include "theia/sfm/exif_reader.h"
-#include "theia/sfm/feature_extractor.h"
-#include "theia/sfm/match_and_verify_features.h"
+#include "theia/sfm/feature_extractor_and_matcher.h"
 #include "theia/sfm/reconstruction_estimator_options.h"
 
 namespace theia {
@@ -80,7 +78,7 @@ struct ReconstructionBuilderOptions {
   int min_num_inlier_matches = 30;
 
   // Descriptor type for extracting features.
-  // See //theia/sfm/feature_extractor.h
+  // See //theia/image/descriptor/create_descriptor_extractor.h
   DescriptorExtractorType descriptor_type = DescriptorExtractorType::SIFT;
 
   // Sift parameters controlling keypoint detection and description options.
@@ -88,7 +86,7 @@ struct ReconstructionBuilderOptions {
   SiftParameters sift_parameters;
 
   // Matching strategy type.
-  // See //theia/sfm/match_and_verify_features.h
+  // See //theia/matching/create_feature_matcher.h
   MatchingStrategy matching_strategy = MatchingStrategy::BRUTE_FORCE;
 
   // Options for computing matches between images.
@@ -153,11 +151,6 @@ class ReconstructionBuilder {
   bool BuildReconstruction(std::vector<Reconstruction*>* reconstructions);
 
  private:
-  // Matches features and adds the matches to the view graph and feature
-  // correspondences to the track builder.
-  bool MatchFeatures(
-      const std::vector<std::vector<Keypoint> >& keypoints,
-      const std::vector<std::vector<Eigen::VectorXf> >& descriptors);
 
   // Adds the given matches as edges in the view graph.
   void AddMatchToViewGraph(const ViewId view_id1,
@@ -182,10 +175,9 @@ class ReconstructionBuilder {
 
   // Container of image information.
   std::vector<std::string> image_filepaths_;
-  std::vector<CameraIntrinsicsPrior> camera_intrinsics_priors_;
 
-  // Exif reader.
-  std::unique_ptr<ExifReader> exif_reader_;
+  // Module for performing feature extraction and matching.
+  std::unique_ptr<FeatureExtractorAndMatcher> feature_extractor_and_matcher_;
 
   DISALLOW_COPY_AND_ASSIGN(ReconstructionBuilder);
 };
