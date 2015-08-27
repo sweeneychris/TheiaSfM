@@ -138,8 +138,8 @@ template <class DistanceMetric> class FeatureMatcher {
   // Will be set to true if geometric verification is enabled.
   bool verify_image_pairs_;
 
-  std::vector<const std::vector<Keypoint> > keypoints_;
-  std::vector<const std::vector<DescriptorType> > descriptors_;
+  std::vector<std::vector<Keypoint> > keypoints_;
+  std::vector<std::vector<DescriptorType> > descriptors_;
   std::unordered_map<int, CameraIntrinsicsPrior> intrinsics_;
   std::vector<std::pair<int, int> > pairs_to_match_;
   std::mutex mutex_;
