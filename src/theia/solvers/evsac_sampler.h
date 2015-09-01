@@ -186,7 +186,7 @@ template <class Datum> class EvsacSampler : public Sampler<Datum> {
   // Fitting method.
   FittingMethod fitting_method_;
   // Correspondence sampler following the computed probabilities.
-  std::unique_ptr<std::discrete_distribution<>> correspondence_sampler;
+  std::unique_ptr<std::discrete_distribution<>> correspondence_sampler_;
   // RNG
   std::mt19937 rng_;
   // Mixture Model Params.
@@ -628,7 +628,7 @@ bool EvsacSampler<Datum>::Initialize() {
   }
 
   // Initialize sampler.
-  correspondence_sampler.reset(new std::discrete_distribution<>(
+  correspondence_sampler_.reset(new std::discrete_distribution<>(
       probabilities.begin(), probabilities.end()));
 
   return true;
@@ -644,7 +644,7 @@ bool EvsacSampler<Datum>::Sample(const std::vector<Datum>& data,
     int rand_number;
     // Generate a random number that has not already been used.
     while (std::find(random_numbers.begin(), random_numbers.end(),
-                     (rand_number = (*correspondence_sampler)(rng_)))
+                     (rand_number = (*correspondence_sampler_)(rng_)))
            != random_numbers.end()) {}
 
     random_numbers.push_back(rand_number);
