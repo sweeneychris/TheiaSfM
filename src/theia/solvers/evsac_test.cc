@@ -362,11 +362,12 @@ TEST(EvsacSamplerTest, MixtureModelParamsCalculation) {
   // Reversed GEV parameters gev = [0.0148 4.1872 -84.7617].
   EvsacSampler<Vector2d>::MixtureModelParams mixture_model_params;
   vector<float> probabilities;
+  vector<float> sampling_weights;
   const MatrixXd distances =
       Eigen::Map<const MatrixXd>(&mixture_samples[0], 50, 6);
   EvsacSampler<Vector2d>::CalculateMixtureModel(
       distances, kPredictorThreshold, MLE,
-      &mixture_model_params, &probabilities);
+      &mixture_model_params, &probabilities, &sampling_weights);
   // Checking mixture model params.
   // Checking Gamma parameters.
   EXPECT_NEAR(mixture_model_params.k, 3.2807, 0.1);
@@ -377,10 +378,10 @@ TEST(EvsacSamplerTest, MixtureModelParamsCalculation) {
   EXPECT_NEAR(mixture_model_params.mu, -84.7617, 0.1);
   // Checking inlier ratio.
   EXPECT_NEAR(mixture_model_params.inlier_ratio, 1.0, 0.1);
-  // Check that probabilities are high and non zero!
+  // Check that sampling weights are high and non zero!
   float avg_p = 0.0f;
-  for (const float p : probabilities) avg_p += p;
-  avg_p /= probabilities.size();
+  for (const float p : sampling_weights) avg_p += p;
+  avg_p /= sampling_weights.size();
   EXPECT_GT(avg_p, 0.95);
   VLOG(1) << "Average probability: " << avg_p;
 }
