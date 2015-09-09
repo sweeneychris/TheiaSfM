@@ -100,6 +100,9 @@ void ChangeSize(int w, int h) {
   // (you cant make a window of zero width).
   if (h == 0) h = 1;
 
+  width = w;
+  height = h;
+
   // Use the Projection Matrix
   glMatrixMode(GL_PROJECTION);
 
