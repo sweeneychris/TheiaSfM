@@ -129,8 +129,11 @@ TEST_F(LmedTest, ComputingQualityMeasureOfCorrectModel) {
   for (int i = 0; i < residuals.size(); ++i) {
     residuals[i] = line_estimator.Error(input_points->at(i), correct_line);
   }
-  EXPECT_LT(lmed_quality_measurement.ComputeCost(residuals), 0.5);
-  EXPECT_NEAR(lmed_quality_measurement.GetInlierRatio(), 0.5, 0.1);
+  std::vector<int> inliers;
+  EXPECT_LT(lmed_quality_measurement.ComputeCost(residuals, &inliers), 0.5);
+  const double inlier_ratio = static_cast<double>(inliers.size()) /
+                              static_cast<double>(residuals.size());
+  EXPECT_NEAR(inlier_ratio, 0.5, 0.1);
 }
 
 // TODO(vfragoso): Add tests for the LMed estimator.

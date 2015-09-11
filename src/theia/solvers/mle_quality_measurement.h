@@ -49,40 +49,27 @@ namespace theia {
 // estimator with application to estimating image geometry" by Torr.
 class MLEQualityMeasurement : public QualityMeasurement {
  public:
-  // Params:
   explicit MLEQualityMeasurement(const double error_thresh)
       : QualityMeasurement(error_thresh) {}
 
   ~MLEQualityMeasurement() {}
 
-  bool Initialize()  {
-    max_inlier_ratio_ = 0.0;
-    return true;
-  }
-
   // Given the residuals, assess a quality metric for the data. Returns the
   // quality assessment and outputs a vector of bools indicating the inliers.
-  double ComputeCost(const std::vector<double>& residuals) {
-    double num_inliers = 0.0;
+  double ComputeCost(const std::vector<double>& residuals,
+                     std::vector<int>* inliers) {
+    inliers->reserve(residuals.size());
     double mle_score = 0.0;
     for (int i = 0; i < residuals.size(); i++) {
       if (residuals[i] < error_thresh_) {
-        num_inliers += 1.0;
         mle_score += residuals[i];
+        inliers->emplace_back(i);
       } else {
         mle_score += error_thresh_;
       }
     }
-    const double inlier_ratio =
-        num_inliers / static_cast<double>(residuals.size());
-    max_inlier_ratio_ = std::max(inlier_ratio, max_inlier_ratio_);
     return mle_score;
   }
-
-  double GetInlierRatio() const { return max_inlier_ratio_; }
-
- private:
-  double max_inlier_ratio_;
 };
 
 }  // namespace theia
