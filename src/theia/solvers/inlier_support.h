@@ -49,30 +49,18 @@ class InlierSupport : public QualityMeasurement {
       : QualityMeasurement(error_thresh) {}
   ~InlierSupport() {}
 
-  bool Initialize()  {
-    max_inlier_ratio_ = 0.0;
-    return true;
-  }
-
   // Count the number of inliers in the data and return the cost such that lower
   // cost is better.
-  double ComputeCost(const std::vector<double>& residuals) {
-    double num_inliers = 0.0;
+  double ComputeCost(const std::vector<double>& residuals,
+                     std::vector<int>* inliers) override {
+    inliers->reserve(residuals.size());
     for (int i = 0; i < residuals.size(); i++) {
       if (residuals[i] < this->error_thresh_) {
-        num_inliers += 1.0;
+        inliers->emplace_back(i);
       }
     }
-    const double inlier_ratio =
-        num_inliers / static_cast<double>(residuals.size());
-    max_inlier_ratio_ = std::max(inlier_ratio, max_inlier_ratio_);
-    return residuals.size() - num_inliers;
+    return residuals.size() - inliers->size();
   }
-
-  double GetInlierRatio() const { return max_inlier_ratio_; }
-
- private:
-  double max_inlier_ratio_;
 };
 
 }  // namespace theia

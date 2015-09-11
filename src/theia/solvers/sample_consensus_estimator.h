@@ -281,17 +281,21 @@ bool SampleConsensusEstimator<ModelEstimator>::Estimate(
 
     // Calculate residuals from estimated model.
     for (const Model& temp_model : temp_models) {
-      std::vector<double> residuals = estimator_.Residuals(data, temp_model);
+      const std::vector<double> residuals =
+          estimator_.Residuals(data, temp_model);
 
       // Determine cost of the generated model.
-      double sample_cost = quality_measurement_->ComputeCost(residuals);
+      std::vector<int> inlier_indices;
+      const double sample_cost =
+          quality_measurement_->ComputeCost(residuals, &inlier_indices);
+      const double inlier_ratio = static_cast<double>(inlier_indices.size()) /
+                                  static_cast<double>(data.size());
 
       // Update best model if error is the best we have seen.
       if (sample_cost < best_cost) {
         *best_model = temp_model;
         best_cost = sample_cost;
 
-        const double inlier_ratio = quality_measurement_->GetInlierRatio();
         if (inlier_ratio <
             estimator_.SampleSize() / static_cast<double>(data.size())) {
           continue;
@@ -310,8 +314,11 @@ bool SampleConsensusEstimator<ModelEstimator>::Estimate(
     }
   }
 
-  summary->inliers =
-      estimator_.GetInliers(data, *best_model, ransac_params_.error_thresh);
+  // Compute the final inliers for the best model.
+  const std::vector<double> best_residuals =
+      estimator_.Residuals(data, *best_model);
+  quality_measurement_->ComputeCost(best_residuals, &summary->inliers);
+
   const double inlier_ratio =
       static_cast<double>(summary->inliers.size()) / data.size();
   summary->confidence =

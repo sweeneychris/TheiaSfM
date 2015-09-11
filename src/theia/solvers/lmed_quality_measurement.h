@@ -49,29 +49,24 @@ namespace theia {
 // minimizes the median of the squared residuals.
 class LmedQualityMeasurement : public QualityMeasurement {
  public:
-  explicit LmedQualityMeasurement(const int min_sample_size) :
-      QualityMeasurement(0.0), min_sample_size_(min_sample_size) {}
+  explicit LmedQualityMeasurement(const int min_sample_size)
+      : min_sample_size_(min_sample_size) {}
   virtual ~LmedQualityMeasurement() {}
 
   // The cost is the squared residual. LMed minimizes the median of the squared
   // residuals over the hypotheses.
-  double ComputeCost(const std::vector<double>& residuals) override {
+  double ComputeCost(const std::vector<double>& residuals,
+                     std::vector<int>* inliers) override {
+    inliers->reserve(residuals.size());
     const double median = CalculateMedianOfSquaredResiduals(residuals);
-    max_inlier_ratio_ =
-        CalculateInlierRatio(residuals, median, min_sample_size_);
+    CalculateInliers(residuals, median, min_sample_size_, inliers);
     return median;
-  }
-
-  double GetInlierRatio() const override {
-    return max_inlier_ratio_;
   }
 
  private:
   // Minimum number of samples to generate a hypothesis. This is used to
   // calculate a good threshold to count inliers.
   const int min_sample_size_;
-  // The maximum inlier ratio.
-  double max_inlier_ratio_;
 
   // --------------------------- Helper functions ------------------------------
   // Computes the squared of a residual.
@@ -105,22 +100,21 @@ class LmedQualityMeasurement : public QualityMeasurement {
   }
 
   // Calculates the inlier ratio from the residuals.
-  double CalculateInlierRatio(const std::vector<double>& residuals,
-                              const double median,
-                              const int min_num_samples) {
+  void CalculateInliers(const std::vector<double>& residuals,
+                        const double median,
+                        const int min_num_samples,
+                        std::vector<int>* inliers) {
     // The median holds a squared residual. Thus, we take the squared root.
     // The threshold calculated here is computed based on a heuristic that
     // OpenCV uses. See modules/calib3d/src/ptsetreg.cpp
     const double inlier_threshold = 2.5 * 1.4826 *
         (1 + 5.0 / (residuals.size() - min_num_samples)) * std::sqrt(median);
     const double squared_inlier_threshold = inlier_threshold * inlier_threshold;
-    int num_inliers = 0;
-    for (const double residual : residuals) {
-      if ((residual * residual) < squared_inlier_threshold) {
-        ++num_inliers;
+    for (int i = 0; i < residuals.size(); i++) {
+      if ((residuals[i] * residuals[i]) < squared_inlier_threshold) {
+        inliers->emplace_back(i);
       }
     }
-    return static_cast<double>(num_inliers) / residuals.size();
   }
 };
 

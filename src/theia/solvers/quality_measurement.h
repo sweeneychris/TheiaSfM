@@ -45,6 +45,7 @@ namespace theia {
 // inlier).
 class QualityMeasurement {
  public:
+  QualityMeasurement() {}
   explicit QualityMeasurement(const double error_thresh)
       : error_thresh_(error_thresh) {}
   virtual ~QualityMeasurement() {}
@@ -53,14 +54,11 @@ class QualityMeasurement {
   // necessary. Must be called before Compare is called.
   virtual bool Initialize() { return true; }
 
-  // Given the residuals, assess a quality metric for the data. This is a cost,
-  // so lower is better.
-  virtual double ComputeCost(const std::vector<double>& residuals) = 0;
-
-  // Returns the maximum inlier ratio found thus far through the Compare
-  // call. This is used in SampleConsensusEstimator to recompute the necessary
-  // number of iterations.
-  virtual double GetInlierRatio() const = 0;
+  // Given the residuals, assess a quality metric for the data. This returns a
+  // cost, so lower is better. The indicies of the inliers are additionally
+  // returned.
+  virtual double ComputeCost(const std::vector<double>& residuals,
+                             std::vector<int>* inliers) = 0;
 
  protected:
   double error_thresh_;
