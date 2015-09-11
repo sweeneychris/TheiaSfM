@@ -44,6 +44,7 @@
 
 #include "theia/solvers/estimator.h"
 #include "theia/solvers/inlier_support.h"
+#include "theia/solvers/lmed_quality_measurement.h"
 #include "theia/solvers/mle_quality_measurement.h"
 #include "theia/solvers/quality_measurement.h"
 #include "theia/solvers/sampler.h"
@@ -96,6 +97,11 @@ struct RansacParameters {
   // (MLE) to determine the best solution. Inliers are weighted by their error
   // and outliers count as a constant penalty.
   bool use_mle;
+
+  // The idea is to find the model that minimizes the median of the squared
+  // residuals. The constraint for this method is that the dataset has to have
+  // at most 50% of the points as inliers.
+  bool use_lmed;
 
   // Whether to use the T_{d,d}, with d=1, test proposed in
   // Chum, O. and Matas, J.: Randomized RANSAC and T(d,d) test, BMVC 2002.
@@ -201,6 +207,9 @@ bool SampleConsensusEstimator<ModelEstimator>::Initialize(
   if (ransac_params_.use_mle) {
     quality_measurement_.reset(
         new MLEQualityMeasurement(ransac_params_.error_thresh));
+  } else if(ransac_params_.use_lmed) {
+    quality_measurement_.reset(
+        new LmedQualityMeasurement(estimator_.SampleSize()));
   } else {
     quality_measurement_.reset(
         new InlierSupport(ransac_params_.error_thresh));
