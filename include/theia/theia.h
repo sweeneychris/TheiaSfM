@@ -170,6 +170,8 @@
 #include "theia/solvers/evsac.h"
 #include "theia/solvers/evsac_sampler.h"
 #include "theia/solvers/inlier_support.h"
+#include "theia/solvers/lmed.h"
+#include "theia/solvers/lmed_quality_measurement.h"
 #include "theia/solvers/mle_quality_measurement.h"
 #include "theia/solvers/prosac.h"
 #include "theia/solvers/prosac_sampler.h"
