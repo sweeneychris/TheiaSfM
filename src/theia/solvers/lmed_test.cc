@@ -39,6 +39,7 @@
 #include "gtest/gtest.h"
 
 #include "theia/solvers/estimator.h"
+#include "theia/solvers/lmed.h"
 #include "theia/solvers/lmed_quality_measurement.h"
 #include "theia/util/random.h"
 
@@ -136,6 +137,20 @@ TEST_F(LmedTest, ComputingQualityMeasureOfCorrectModel) {
   EXPECT_NEAR(inlier_ratio, 0.5, 0.1);
 }
 
-// TODO(vfragoso): Add tests for the LMed estimator.
+// Tests the Lmed estimator by fitting a line to the input_points.
+TEST_F(LmedTest, LineFitting) {
+  LineEstimator line_estimator;
+  Line line;
+  RansacParameters params;
+  // This threshold is arbitrary to comply with sample_consensus_estimator.h.
+  params.error_thresh = 5.0;
+  LMed<LineEstimator> lmed_line(params, line_estimator);
+  lmed_line.Initialize();
+  RansacSummary summary;
+  CHECK(lmed_line.Estimate(*input_points, &line, &summary));
+  EXPECT_LT(fabs(line.m - 1.0), 0.1);
+  EXPECT_NEAR(static_cast<double>(summary.inliers.size()) /
+              input_points->size(), 0.5, 0.1);
+}
 
 }  // namespace theia

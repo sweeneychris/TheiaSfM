@@ -23,6 +23,7 @@ The following RANSAC methods are implemented in Theia:
 * :class:`Prosac`
 * :class:`Arrsac`
 * :class:`Evsac`
+* :class:`LMed`
 
 :class:`Estimator`
 ==================
@@ -317,6 +318,26 @@ constructor. The constructors for each method are specified as follows
 
      ``fitting_method``:  The fitting method MLE or QUANTILE_NLS.
      The recommended fitting method is the MLE estimation.
+
+.. class:: LMed
+
+   LMed implements the robust least-median-of-squares regression method
+   proposed by [Rousseeuw]_. The main idea of this regressor is to find
+   the model that minimizes the median of the squared residuals. The
+   constraint for this method is that the dataset has to have at most
+   50% of the points as outliers. However, the main advantage of LMed
+   is that the threshold to detect inliers is calculated
+   automatically. Thus, an accurate threshold to detect inliers is not required.
+
+   The implementation explores the model solution space randomly. In
+   other words, the hypotheses (or models) are generated from subsets
+   of data drawn uniformly.
+
+.. function:: LMed::LMed(const RansacParameters& ransac_params, const  ModelEstimator& estimator)
+
+     ``ransac_params``: The ransac parameters.
+
+     ``estimator``: The model estimator to use.
 
 Implementing a New RANSAC Method
 ================================

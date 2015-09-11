@@ -102,6 +102,9 @@ Bibliography
    Estimation via Residual Consensus**. *International Conference on Computer
    Vision (ICCV)*, 2011.
 
+.. [Rousseeuw] P. Rousseeuw. **Least Median of Squares Regression**. *Journal of
+               the American Statistical Association, 1984*.
+
 .. [PhotoTourism] N. Snavely, S. Seitz, and R. Szeliski. **Photo tourism:
    exploring photo collections in 3D.** *ACM transactions on graphics (TOG)*, 2006.
 
