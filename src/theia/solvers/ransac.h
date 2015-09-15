@@ -50,8 +50,7 @@ class Ransac : public SampleConsensusEstimator<ModelEstimator> {
   typedef typename ModelEstimator::Datum Datum;
   typedef typename ModelEstimator::Model Model;
 
-  explicit Ransac(const RansacParameters& ransac_params,
-                  const ModelEstimator& estimator)
+  Ransac(const RansacParameters& ransac_params, const ModelEstimator& estimator)
       : SampleConsensusEstimator<ModelEstimator>(ransac_params, estimator) {}
   virtual ~Ransac() {}
 
