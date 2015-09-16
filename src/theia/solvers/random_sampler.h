@@ -37,6 +37,7 @@
 
 #include <stdlib.h>
 #include <algorithm>
+#include <numeric>
 #include <vector>
 
 #include "theia/solvers/sampler.h"
@@ -52,7 +53,7 @@ template <class Datum> class RandomSampler : public Sampler<Datum> {
       : Sampler<Datum>(min_num_samples) {}
   ~RandomSampler() {}
 
-  bool Initialize() {
+  bool Initialize() override {
     InitRandomGenerator();
     return true;
   }
