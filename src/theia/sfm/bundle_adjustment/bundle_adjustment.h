@@ -49,7 +49,7 @@ struct BundleAdjustmentOptions {
   ceres::LinearSolverType linear_solver_type = ceres::SPARSE_SCHUR;
   ceres::PreconditionerType preconditioner_type = ceres::SCHUR_JACOBI;
   ceres::VisibilityClusteringType visibility_clustering_type =
-      ceres::SINGLE_LINKAGE;
+      ceres::CANONICAL_VIEWS;
 
   // If true, ceres will log verbosely.
   bool verbose = false;
