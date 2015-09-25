@@ -90,7 +90,9 @@ namespace theia {
 // Writes the feature matches between view pairs as well as the two view
 // geometry (i.e., TwoViewInfo) that describes the relative pose between the two
 // views. The names of all views must be provided such that the image indices in
-// the matches objects corresponds to the index of view_names.
+// the matches objects corresponds to the index of view_names. view_names should 
+// only store image names with extension and not the full image path. 
+// (e.g. abc.jpg and not /somepath/abc.jpg )
 bool WriteMatchesAndGeometry(
     const std::string& matches_file,
     const std::vector<std::string>& view_names,
