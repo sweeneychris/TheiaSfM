@@ -43,6 +43,9 @@
 DEFINE_string(images, "", "Wildcard of images to reconstruct.");
 DEFINE_string(output_calibration_file, "",
               "Calibration file containing image calibration data.");
+DEFINE_bool(initialize_uncalibrated_images_with_median_viewing_angle, false,
+            "Images with no EXIF information initialize the focal length based "
+            "on a focal length corresponding to a median viewing angle.");
 
 int main(int argc, char *argv[]) {
   THEIA_GFLAGS_NAMESPACE::ParseCommandLineFlags(&argc, &argv, true);
@@ -71,7 +74,15 @@ int main(int argc, char *argv[]) {
     // Only write the calibration for images with a focal length that was
     // extracted.
     if (!prior.focal_length.is_set) {
-      continue;
+      if (FLAGS_initialize_uncalibrated_images_with_median_viewing_angle) {
+        continue;
+      } else {
+        // Set the focal length based on a median viewing angle.
+        prior.focal_length.is_set = true;
+        prior.focal_length.value =
+            1.2 *
+            static_cast<double>(std::max(prior.image_width, prior.image_height));
+      }
     }
 
     std::string image_name;
