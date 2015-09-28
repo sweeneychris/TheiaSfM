@@ -3248,6 +3248,7 @@ Sigma;Sigma SD10;20.7
 Sigma;Sigma SD14;20.7
 Sigma;Sigma SD15;20.7
 Sigma;Sigma SD9;20.7
+Sony;NEX-7;23.5
 Sony;Sony A77 II;23.5
 Sony;Sony Alpha 7;35.8
 Sony;Sony Alpha 7R;35.9
