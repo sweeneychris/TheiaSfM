@@ -179,6 +179,8 @@ include_directories(SYSTEM ${EIGEN_INCLUDE_DIRS})
 add_subdirectory(libraries)
 include_directories(
   libraries
+  ${cereal_SOURCE_DIR}
+  ${cereal_SOURCE_DIR}/include
   ${cimg_SOURCE_DIR}
   ${cimg_INCLUDE_DIR}
   ${easyexif_INCLUDE_DIR}

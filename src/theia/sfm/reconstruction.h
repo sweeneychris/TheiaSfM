@@ -35,6 +35,9 @@
 #ifndef THEIA_SFM_RECONSTRUCTION_H_
 #define THEIA_SFM_RECONSTRUCTION_H_
 
+#include <cereal/access.hpp>
+#include <cereal/types/string.hpp>
+#include <cereal/types/unordered_map.hpp>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -110,6 +113,18 @@ class Reconstruction {
   void Normalize();
 
  private:
+  // Templated method for disk I/O with cereal. This method tells cereal which
+  // data members should be used when reading/writing to/from disk.
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& ar) {  // NOLINT
+    ar(next_track_id_,
+       next_view_id_,
+       view_name_to_id_,
+       views_,
+       tracks_);
+  }
+
   TrackId next_track_id_;
   ViewId next_view_id_;
 

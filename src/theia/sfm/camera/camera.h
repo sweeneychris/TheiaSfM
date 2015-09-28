@@ -35,6 +35,8 @@
 #ifndef THEIA_SFM_CAMERA_CAMERA_H_
 #define THEIA_SFM_CAMERA_CAMERA_H_
 
+#include <cereal/cereal.hpp>
+#include <cereal/access.hpp>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <vector>
@@ -186,6 +188,15 @@ class Camera {
   static constexpr int kParameterSize = kExtrinsicsSize + kIntrinsicsSize;
 
  private:
+  // Templated method for disk I/O with cereal. This method tells cereal which
+  // data members should be used when reading/writing to/from disk.
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& ar) {  // NOLINT
+    ar(cereal::binary_data(camera_parameters_, sizeof(double) * kParameterSize),
+       cereal::binary_data(image_size_, sizeof(int) * 2));
+  }
+
   double camera_parameters_[kParameterSize];
 
   // The image size as width then height.

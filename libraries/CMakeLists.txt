@@ -2,6 +2,9 @@ if (${BUILD_TESTING})
   add_subdirectory(gtest)
 endif (${BUILD_TESTING})
 
+# Cereal for portable IO
+add_subdirectory(cereal)
+
 # CImg for image input/output
 add_subdirectory(cimg)
 

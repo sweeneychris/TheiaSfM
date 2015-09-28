@@ -35,18 +35,31 @@
 #ifndef THEIA_SFM_CAMERA_INTRINSICS_PRIOR_H_
 #define THEIA_SFM_CAMERA_INTRINSICS_PRIOR_H_
 
+#include <cereal/access.hpp>
+
 namespace theia {
 
 // Weak calibration is not always available, so we need this helper struct to
 // keep track of which data fields have been set.
 struct Prior {
+ public:
   bool is_set = false;
   double value = 0;
+
+ private:
+  // Templated method for disk I/O with cereal. This method tells cereal which
+  // data members should be used when reading/writing to/from disk.
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& ar) {  // NOLINT
+    ar(is_set, value);
+  }
 };
 
 // Prior information about a View. This is typically gathered from EXIF or
 // sensor data that provides weak calibration.
 struct CameraIntrinsicsPrior {
+ public:
   // The image size *should* always be set, so we don't have to worry about
   // making it an Prior type.
   int image_width;
@@ -57,6 +70,21 @@ struct CameraIntrinsicsPrior {
   Prior aspect_ratio;
   Prior skew;
   Prior radial_distortion[2];
+
+ private:
+  // Templated method for disk I/O with cereal. This method tells cereal which
+  // data members should be used when reading/writing to/from disk.
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& ar) {  // NOLINT
+    ar(focal_length,
+       principal_point[0],
+       principal_point[1],
+       aspect_ratio,
+       skew,
+       radial_distortion[0],
+       radial_distortion[1]);
+  }
 };
 
 }  // namespace theia
