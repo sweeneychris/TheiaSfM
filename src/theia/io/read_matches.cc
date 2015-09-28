@@ -34,112 +34,20 @@
 
 #include "theia/io/read_matches.h"
 
+#include <cereal/archives/portable_binary.hpp>
+#include <cereal/types/string.hpp>
+#include <cereal/types/vector.hpp>
+
 #include <glog/logging.h>
 #include <cstdlib>
 #include <fstream>   // NOLINT
 #include <iostream>  // NOLINT
 #include <string>
 
-#include "theia/matching/feature_matcher.h"
-#include "theia/sfm/match_and_verify_features.h"
-#include "theia/sfm/twoview_info.h"
+#include "theia/matching/image_pair_match.h"
+#include "theia/sfm/camera_intrinsics_prior.h"
 
 namespace theia {
-namespace {
-
-// Reads a camera_intrinsics_prior field.
-void ReadCameraIntrinsicsPrior(std::ifstream* matches_reader,
-                               Prior* prior) {
-  matches_reader->read(reinterpret_cast<char*>(&prior->is_set),
-                       sizeof(prior->is_set));
-  matches_reader->read(reinterpret_cast<char*>(&prior->value),
-                       sizeof(prior->value));
-}
-
-// Read the data for a particular view.
-void ReadView(std::ifstream* matches_reader,
-              std::string* view_name,
-              CameraIntrinsicsPrior* camera_intrinsics_prior) {
-  // Read the view name.
-  uint32_t name_length;
-  matches_reader->read(reinterpret_cast<char*>(&name_length),
-                       sizeof(name_length));
-  char* buffer = new char[name_length + 1];
-  matches_reader->read(buffer, name_length);
-  buffer[name_length] = '\0';
-  *view_name = std::string(buffer, name_length);
-  delete[] buffer;
-
-  // Read image size.
-  matches_reader->read(
-      reinterpret_cast<char*>(&camera_intrinsics_prior->image_width),
-      sizeof(camera_intrinsics_prior->image_width));
-  matches_reader->read(
-      reinterpret_cast<char*>(&camera_intrinsics_prior->image_height),
-      sizeof(camera_intrinsics_prior->image_height));
-
-  // Read view camera_intrinsics_prior.
-  ReadCameraIntrinsicsPrior(matches_reader,
-                            &camera_intrinsics_prior->focal_length);
-  ReadCameraIntrinsicsPrior(matches_reader,
-                            &camera_intrinsics_prior->principal_point[0]);
-  ReadCameraIntrinsicsPrior(matches_reader,
-                            &camera_intrinsics_prior->principal_point[1]);
-  ReadCameraIntrinsicsPrior(matches_reader,
-                            &camera_intrinsics_prior->aspect_ratio);
-  ReadCameraIntrinsicsPrior(matches_reader,
-                            &camera_intrinsics_prior->skew);
-  ReadCameraIntrinsicsPrior(matches_reader,
-                            &camera_intrinsics_prior->radial_distortion[0]);
-  ReadCameraIntrinsicsPrior(matches_reader,
-                            &camera_intrinsics_prior->radial_distortion[1]);
-}
-
-// Reads the two image indices.
-void ReadImagePairIndices(std::ifstream* matches_reader,
-                          int* image1_index, int* image2_index) {
-  uint32_t image_index;
-  matches_reader->read(reinterpret_cast<char*>(&image_index),
-                       sizeof(image_index));
-  *image1_index = image_index;
-  matches_reader->read(reinterpret_cast<char*>(&image_index),
-                       sizeof(image_index));
-  *image2_index = image_index;
-}
-
-// Read a two view info struct from the matches files.
-void ReadTwoViewInfo(std::ifstream* matches_reader, TwoViewInfo* info) {
-  // Read focal lengths.
-  matches_reader->read(reinterpret_cast<char*>(&info->focal_length_1),
-                       sizeof(info->focal_length_1));
-  matches_reader->read(reinterpret_cast<char*>(&info->focal_length_2),
-                       sizeof(info->focal_length_2));
-  // Read relative position and rotation.
-  matches_reader->read(reinterpret_cast<char*>(info->position_2.data()),
-                       sizeof(info->position_2));
-  matches_reader->read(reinterpret_cast<char*>(info->rotation_2.data()),
-                       sizeof(info->rotation_2));
-
-  // Read number of geometrically verified features.
-  matches_reader->read(reinterpret_cast<char*>(&info->num_verified_matches),
-                       sizeof(info->num_verified_matches));
-}
-
-void ReadFeatureMatches(std::ifstream* matches_reader,
-                        std::vector<FeatureCorrespondence>* matches) {
-  uint32_t num_feature_matches;
-  matches_reader->read(reinterpret_cast<char*>(&num_feature_matches),
-                       sizeof(num_feature_matches));
-  matches->resize(num_feature_matches);
-  for (int i = 0; i < num_feature_matches; i++) {
-    matches_reader->read(reinterpret_cast<char*>((*matches)[i].feature1.data()),
-                         sizeof((*matches)[i].feature1));
-    matches_reader->read(reinterpret_cast<char*>((*matches)[i].feature2.data()),
-                         sizeof((*matches)[i].feature2));
-  }
-}
-
-}  // namespace
 
 bool ReadMatchesAndGeometry(
     const std::string& matches_file,
@@ -158,28 +66,8 @@ bool ReadMatchesAndGeometry(
     return false;
   }
 
-  // Read all view information.
-  uint32_t num_views;
-  matches_reader.read(reinterpret_cast<char*>(&num_views), sizeof(num_views));
-  view_names->resize(num_views);
-  camera_intrinsics_prior->resize(num_views);
-  for (int i = 0; i < num_views; i++) {
-    ReadView(&matches_reader, &(*view_names)[i],
-             &(*camera_intrinsics_prior)[i]);
-  }
-
-  // Read image pair matches.
-  uint64_t num_image_matches;
-  matches_reader.read(reinterpret_cast<char*>(&num_image_matches),
-                      sizeof(num_image_matches));
-  matches->resize(num_image_matches);
-  for (auto& match : *matches) {
-    ReadImagePairIndices(&matches_reader,
-                         &match.image1_index,
-                         &match.image2_index);
-    ReadTwoViewInfo(&matches_reader, &match.twoview_info);
-    ReadFeatureMatches(&matches_reader, &match.correspondences);
-  }
+  cereal::PortableBinaryInputArchive input_archive(matches_reader);
+  input_archive(*view_names, *camera_intrinsics_prior, *matches);
 
   return true;
 }

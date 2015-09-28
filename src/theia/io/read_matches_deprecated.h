@@ -32,23 +32,23 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#ifndef THEIA_IO_WRITE_MATCHES_H_
-#define THEIA_IO_WRITE_MATCHES_H_
+#ifndef THEIA_IO_READ_MATCHES_DEPRECATED_H_
+#define THEIA_IO_READ_MATCHES_DEPRECATED_H_
 
 #include <string>
 #include <vector>
 
 #include "theia/matching/feature_matcher.h"
-#include "theia/sfm/camera_intrinsics_prior.h"
 #include "theia/sfm/match_and_verify_features.h"
+#include "theia/sfm/camera_intrinsics_prior.h"
 
 namespace theia {
 
-// Thi functions writes a Theia matches file. Matches files contain information
+// This function reads a Theia matches file. Matches files contain information
 // needed to recreate a view graph and initialize a model before camera pose and
-// structure estimation. This includes all two-view match information and
-// optionally the two-view geometry as well. The format is as follows (in binary
-// format with no newlines):
+// structure estimation. This includes all two-view match information and the
+// two-view geometry as well. The format is as follows (in binary format with no
+// newlines):
 //
 //   # views (uint32)
 //   <View 1>
@@ -87,18 +87,16 @@ namespace theia {
 // produce two view geometry estimations then the TwoViewInfo can simply be
 // ignored and reestimated using Theia.
 
-// Writes the feature matches between view pairs as well as the two view
-// geometry (i.e., TwoViewInfo) that describes the relative pose between the two
-// views. The names of all views must be provided such that the image indices in
-// the matches objects corresponds to the index of view_names. view_names should
-// only store image names with extension and not the full image path.
-// (e.g. abc.jpg and not /somepath/abc.jpg )
-bool WriteMatchesAndGeometry(
+// Reads the feature matches between view pairs as well as the two view geometry
+// (i.e., TwoViewInfo) that describes the relative pose between the two
+// views. The names of all views are returned and the image indices in the
+// matches objects corresponds to the index of view_names.
+bool ReadMatchesAndGeometryDeprecated(
     const std::string& matches_file,
-    const std::vector<std::string>& view_names,
-    const std::vector<CameraIntrinsicsPrior>& camera_intrinsics_prior,
-    const std::vector<ImagePairMatch>& matches);
+    std::vector<std::string>* view_names,
+    std::vector<CameraIntrinsicsPrior>* camera_intrinsics_prior,
+    std::vector<ImagePairMatch>* matches);
 
 }  // namespace theia
 
-#endif  // THEIA_IO_WRITE_MATCHES_H__
+#endif  // THEIA_IO_READ_MATCHES_DEPRECATED_H_

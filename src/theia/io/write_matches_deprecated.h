@@ -32,8 +32,8 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#ifndef THEIA_IO_WRITE_MATCHES_H_
-#define THEIA_IO_WRITE_MATCHES_H_
+#ifndef THEIA_IO_WRITE_MATCHES_DEPRECATED_H_
+#define THEIA_IO_WRITE_MATCHES_DEPRECATED_H_
 
 #include <string>
 #include <vector>
@@ -93,7 +93,7 @@ namespace theia {
 // the matches objects corresponds to the index of view_names. view_names should
 // only store image names with extension and not the full image path.
 // (e.g. abc.jpg and not /somepath/abc.jpg )
-bool WriteMatchesAndGeometry(
+bool WriteMatchesAndGeometryDeprecated(
     const std::string& matches_file,
     const std::vector<std::string>& view_names,
     const std::vector<CameraIntrinsicsPrior>& camera_intrinsics_prior,
@@ -101,4 +101,4 @@ bool WriteMatchesAndGeometry(
 
 }  // namespace theia
 
-#endif  // THEIA_IO_WRITE_MATCHES_H__
+#endif  // THEIA_IO_WRITE_MATCHES_DEPRECATED_H_

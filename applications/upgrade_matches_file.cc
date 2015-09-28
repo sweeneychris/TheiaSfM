@@ -1,4 +1,4 @@
-// Copyright (C) 2014 The Regents of the University of California (Regents).
+// Copyright (C) 2015 The Regents of the University of California (Regents).
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -32,43 +32,37 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#ifndef THEIA_MATCHING_IMAGE_PAIR_MATCH_H_
-#define THEIA_MATCHING_IMAGE_PAIR_MATCH_H_
+#include <glog/logging.h>
+#include <gflags/gflags.h>
+#include <theia/theia.h>
 
-#include <cereal/access.hpp>
-#include <cereal/types/vector.hpp>
-#include <vector>
+#include <string>
 
-#include "theia/alignment/alignment.h"
-#include "theia/matching/feature_correspondence.h"
-#include "theia/sfm/twoview_info.h"
+DEFINE_string(deprecated_matches_file, "",
+              "Deprecated matches file in old binary format.");
+DEFINE_string(matches_file, "", "Upgraded matches file in new binary format.");
 
-namespace theia {
+// This program will take in an old matches file and convert it to the current
+// (as of 9/26/2015) matches file format.
+int main(int argc, char* argv[]) {
+  google::InitGoogleLogging(argv[0]);
+  THEIA_GFLAGS_NAMESPACE::ParseCommandLineFlags(&argc, &argv, true);
 
-struct ImagePairMatch {
- public:
-  // Indices of the matches image pair with respect to the input vectors.
-  int image1_index;
-  int image2_index;
+  // Read in the deprecated matches file.
+  std::vector<std::string> view_names;
+  std::vector<theia::CameraIntrinsicsPrior> camera_intrinsics_prior;
+  std::vector<theia::ImagePairMatch> matches;
+  CHECK(theia::ReadMatchesAndGeometryDeprecated(FLAGS_deprecated_matches_file,
+                                                &view_names,
+                                                &camera_intrinsics_prior,
+                                                &matches))
+      << "Could not read deprecated matches file.";
 
-  // If the matches are verified matches then the two view info contains the
-  // relative pose information between the images.
-  TwoViewInfo twoview_info;
+  CHECK(theia::WriteMatchesAndGeometry(FLAGS_matches_file,
+                                       view_names,
+                                       camera_intrinsics_prior,
+                                       matches))
+      << "Could not write matches file.";
 
-  // Feature locations in pixel coordinates. If the match is a verified match
-  // then this only contains inlier correspondences.
-  std::vector<FeatureCorrespondence> correspondences;
-
- private:
-  // Templated method for disk I/O with cereal. This method tells cereal which
-  // data members should be used when reading/writing to/from disk.
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& ar) {  // NOLINT
-    ar(image1_index, image2_index, twoview_info, correspondences);
-  }
-};
-
-}  // namespace theia
-
-#endif  // THEIA_MATCHING_IMAGE_PAIR_MATCH_H_
+  return 0;
+}

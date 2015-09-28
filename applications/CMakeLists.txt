@@ -60,3 +60,9 @@ TARGET_LINK_LIBRARIES(create_calibration_file_from_exif theia ${GFLAGS_LIBRARIES
 
 ADD_EXECUTABLE(create_reconstruction_from_strecha_dataset create_reconstruction_from_strecha_dataset.cc)
 TARGET_LINK_LIBRARIES(create_reconstruction_from_strecha_dataset theia ${GFLAGS_LIBRARIES} ${GLOG_LIBRARIES})
+
+ADD_EXECUTABLE(upgrade_matches_file upgrade_matches_file.cc)
+TARGET_LINK_LIBRARIES(upgrade_matches_file theia ${GFLAGS_LIBRARIES} ${GLOG_LIBRARIES})
+
+ADD_EXECUTABLE(upgrade_reconstruction_file upgrade_reconstruction_file.cc)
+TARGET_LINK_LIBRARIES(upgrade_reconstruction_file theia ${GFLAGS_LIBRARIES} ${GLOG_LIBRARIES})
