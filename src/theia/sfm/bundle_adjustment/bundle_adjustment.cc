@@ -44,6 +44,7 @@
 #include "theia/sfm/camera/camera.h"
 #include "theia/sfm/camera/reprojection_error.h"
 #include "theia/sfm/reconstruction.h"
+#include "theia/sfm/reconstruction_estimator_utils.h"
 #include "theia/sfm/types.h"
 
 namespace theia {
@@ -109,6 +110,17 @@ BundleAdjustmentSummary BundleAdjustPartialReconstruction(
     const std::vector<ViewId>& view_ids,
     Reconstruction* reconstruction) {
   CHECK_NOTNULL(reconstruction);
+
+  const int num_estimated_views = NumEstimatedViews(*reconstruction);
+  const int num_estimated_tracks = NumEstimatedTracks(*reconstruction);
+  CHECK_GE(num_estimated_views, 2)
+      << "There are only " << num_estimated_views
+      << " estimated views but at least 2 estimated views are required for "
+         "bundle adjustment.";
+  CHECK_GE(num_estimated_tracks, 1)
+      << "There are only " << num_estimated_tracks
+      << " estimated tracks but at least 1 estimated 3d point is required for "
+         "bundle adjustment.";
 
   // Start setup timer.
   Timer timer;

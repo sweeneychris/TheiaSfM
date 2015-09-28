@@ -43,6 +43,7 @@
 #include "theia/sfm/estimators/estimate_triangulation.h"
 #include "theia/sfm/feature.h"
 #include "theia/sfm/reconstruction.h"
+#include "theia/sfm/reconstruction_estimator_utils.h"
 #include "theia/sfm/track.h"
 #include "theia/sfm/triangulation/triangulation.h"
 #include "theia/sfm/types.h"
@@ -118,19 +119,6 @@ int NumEstimatedViewsObservingTrack(const Reconstruction& reconstruction,
     }
   }
   return num_estimated_views;
-}
-
-int NumEstimatedTracks(const Reconstruction& reconstruction) {
-  int num_estimated_tracks = 0;
-  const auto& track_ids = reconstruction.TrackIds();
-  for (const TrackId track_id : track_ids) {
-    const Track* track = reconstruction.Track(track_id);
-    if (track == nullptr || !track->IsEstimated()) {
-      continue;
-    }
-    ++num_estimated_tracks;
-  }
-  return num_estimated_tracks;
 }
 
 }  // namespace

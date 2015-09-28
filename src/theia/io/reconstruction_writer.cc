@@ -45,6 +45,7 @@
 
 #include "theia/sfm/camera/camera.h"
 #include "theia/sfm/reconstruction.h"
+#include "theia/sfm/reconstruction_estimator_utils.h"
 #include "theia/sfm/track.h"
 #include "theia/sfm/types.h"
 #include "theia/sfm/view.h"
@@ -52,26 +53,6 @@
 namespace theia {
 
 namespace {
-
-int NumEstimatedViews(const Reconstruction& reconstruction) {
-  int num_estimated_views = 0;
-  for (const ViewId view_id : reconstruction.ViewIds()) {
-    if (reconstruction.View(view_id)->IsEstimated()) {
-      ++num_estimated_views;
-    }
-  }
-  return num_estimated_views;
-}
-
-int NumEstimatedTracks(const Reconstruction& reconstruction) {
-  int num_estimated_tracks = 0;
-  for (const TrackId track_id : reconstruction.TrackIds()) {
-    if (reconstruction.Track(track_id)->IsEstimated()) {
-      ++num_estimated_tracks;
-    }
-  }
-  return num_estimated_tracks;
-}
 
 bool WriteView(const View view,
                const ViewId view_id,

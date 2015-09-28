@@ -100,6 +100,10 @@ int SetUnderconstrainedTracksToUnestimated(Reconstruction* reconstruction);
 // Returns the number of views set to unestimated.
 int SetUnderconstrainedViewsToUnestimated(Reconstruction* reconstruction);
 
+// Return the number of estimated views or tracks in the reconstruction.
+int NumEstimatedViews(const Reconstruction& reconstruction);
+int NumEstimatedTracks(const Reconstruction& reconstruction);
+
 }  // namespace theia
 
 #endif  // THEIA_SFM_RECONSTRUCTION_ESTIMATOR_UTILS_H_

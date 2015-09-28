@@ -364,4 +364,28 @@ int SetUnderconstrainedViewsToUnestimated(Reconstruction* reconstruction) {
   return num_underconstrained_views;
 }
 
+int NumEstimatedViews(const Reconstruction& reconstruction) {
+  int num_estimated_views = 0;
+  for (const ViewId view_id : reconstruction.ViewIds()) {
+    const View* view = reconstruction.View(view_id);
+    if (view == nullptr || !view->IsEstimated()) {
+      continue;
+    }
+    ++num_estimated_views;
+  }
+  return num_estimated_views;
+}
+
+int NumEstimatedTracks(const Reconstruction& reconstruction) {
+  int num_estimated_tracks = 0;
+  for (const TrackId track_id : reconstruction.TrackIds()) {
+    const Track* track = reconstruction.Track(track_id);
+    if (track == nullptr || !track->IsEstimated()) {
+      continue;
+    }
+    ++num_estimated_tracks;
+  }
+  return num_estimated_tracks;
+}
+
 }  // namespace theia
