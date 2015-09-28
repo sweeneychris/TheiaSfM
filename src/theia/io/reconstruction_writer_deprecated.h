@@ -32,34 +32,23 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#include "theia/io/reconstruction_writer.h"
+#ifndef THEIA_IO_RECONSTRUCTION_WRITER_DEPRECATED_H_
+#define THEIA_IO_RECONSTRUCTION_WRITER_DEPRECATED_H_
 
-#include <cereal/archives/portable_binary.hpp>
-#include <Eigen/Core>
-#include <glog/logging.h>
-
-#include <cstdio>
-#include <cstdlib>
-#include <fstream>   // NOLINT
-#include <iostream>  // NOLINT
 #include <string>
-
-#include "theia/sfm/reconstruction.h"
 
 namespace theia {
 
-bool WriteReconstruction(const Reconstruction& reconstruction,
-                         const std::string& output_file) {
-  std::ofstream output_writer(output_file, std::ios::out | std::ios::binary);
-  if (!output_writer.is_open()) {
-    LOG(ERROR) << "Could not open the file: " << output_file << " for writing.";
-    return false;
-  }
+class Reconstruction;
 
-  cereal::PortableBinaryOutputArchive output_archive(output_writer);
-  output_archive(reconstruction);
-
-  return true;
-}
+// Writes the reconstruction to a binary file. Only the estimated views and
+// tracks are output.
+//
+// See //theia/sfm/reconstruction.h for more details about the
+// information contained in a reconstruction.
+bool WriteReconstructionDeprecated(const Reconstruction& reconstruction,
+                                   const std::string& output_file);
 
 }  // namespace theia
+
+#endif  // THEIA_IO_RECONSTRUCTION_WRITER_DEPRECATED_H_

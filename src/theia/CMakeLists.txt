@@ -46,7 +46,9 @@ set(THEIA_SRC
   io/read_bundler_files.cc
   io/read_calibration.cc
   io/read_matches.cc
+  io/reconstruction_reader_deprecated.cc
   io/reconstruction_reader.cc
+  io/reconstruction_writer_deprecated.cc
   io/reconstruction_writer.cc
   io/sift_binary_file.cc
   io/sift_text_file.cc

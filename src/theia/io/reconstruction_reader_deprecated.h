@@ -32,34 +32,24 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#include "theia/io/reconstruction_writer.h"
+#ifndef THEIA_IO_RECONSTRUCTION_READER_DEPRECATED_H_
+#define THEIA_IO_RECONSTRUCTION_READER_DEPRECATED_H_
 
-#include <cereal/archives/portable_binary.hpp>
-#include <Eigen/Core>
-#include <glog/logging.h>
-
-#include <cstdio>
-#include <cstdlib>
-#include <fstream>   // NOLINT
-#include <iostream>  // NOLINT
 #include <string>
-
-#include "theia/sfm/reconstruction.h"
 
 namespace theia {
 
-bool WriteReconstruction(const Reconstruction& reconstruction,
-                         const std::string& output_file) {
-  std::ofstream output_writer(output_file, std::ios::out | std::ios::binary);
-  if (!output_writer.is_open()) {
-    LOG(ERROR) << "Could not open the file: " << output_file << " for writing.";
-    return false;
-  }
+class Reconstruction;
 
-  cereal::PortableBinaryOutputArchive output_archive(output_writer);
-  output_archive(reconstruction);
-
-  return true;
-}
+// Reads the reconstruction from a binary file. All views and tracks are assumed
+// to be estimated. The ids of the views and tracks will not be preserved, but
+// all views and tracks will be present and complete.
+//
+// See //theia/sfm/reconstruction.h for more details about the information
+// contained in a reconstruction.
+bool ReadReconstructionDeprecated(const std::string& input_file,
+                                  Reconstruction* reconstruction);
 
 }  // namespace theia
+
+#endif  // THEIA_IO_RECONSTRUCTION_READER_DEPRECATED_H_
