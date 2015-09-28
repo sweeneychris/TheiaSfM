@@ -294,6 +294,9 @@ void Reconstruction::Normalize() {
   median(1) = Median(&points[1]);
   median(2) = Median(&points[2]);
 
+  // Apply position transformation.
+  TransformReconstruction(Eigen::Matrix3d::Identity(), -median, 1.0, this);
+
   // Find the median absolute deviation of the points from the median.
   std::vector<double> distance_to_median;
   distance_to_median.reserve(track_ids.size());
@@ -305,6 +308,11 @@ void Reconstruction::Normalize() {
   // This will scale the reconstruction so that the median absolute deviation of
   // the points is 100.
   const double scale = 100.0 / Median(&distance_to_median);
+
+  TransformReconstruction(Eigen::Matrix3d::Identity(),
+                          Eigen::Vector3d::Zero(),
+                          scale,
+                          this);
 
   // Compute a rotation such that the x-z plane is aligned to the dominating
   // plane of the cameras.
@@ -322,8 +330,8 @@ void Reconstruction::Normalize() {
       RotationForDominantPlane(cameras);
 
   TransformReconstruction(rotation_for_dominant_plane.transpose(),
-                          -rotation_for_dominant_plane.transpose() * median,
-                          scale,
+                          Eigen::Vector3d::Zero(),
+                          1.0,
                           this);
 }
 
