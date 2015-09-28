@@ -247,7 +247,7 @@ bool RobustRotationEstimator::SolveIRLS() {
         sparse_matrix_.transpose() * weights.matrix().asDiagonal();
     linear_solver.factorize(at_weight * sparse_matrix_);
     if (linear_solver.info() != Eigen::Success) {
-      LOG(ERROR) << "Failed to solve the least squares system.";
+      LOG(ERROR) << "Failed to factorize the least squares system.";
       return false;
     }
 
