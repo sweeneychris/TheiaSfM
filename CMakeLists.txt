@@ -179,6 +179,7 @@ include_directories(SYSTEM ${EIGEN_INCLUDE_DIRS})
 add_subdirectory(libraries)
 include_directories(
   libraries
+  libraries/spectra
   ${cereal_SOURCE_DIR}
   ${cereal_SOURCE_DIR}/include
   ${cimg_SOURCE_DIR}
