@@ -225,7 +225,8 @@ int SampleConsensusEstimator<ModelEstimator>::ComputeMaxIterations(
   const double num_samples =
       ransac_params_.use_Tdd_test ? min_sample_size + 1 : min_sample_size;
 
-  const double log_prob = log(1.0 - pow(inlier_ratio, num_samples));
+  const double log_prob = log(1.0 - pow(inlier_ratio, num_samples))
+      - std::numeric_limits<double>::epsilon();
 
   // NOTE: For very low inlier ratios the number of iterations can actually
   // exceed the maximum value for an int. We need to keep this variable as a
