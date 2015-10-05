@@ -40,10 +40,9 @@
 #include <algorithm>
 #include <string>
 
-DEFINE_string(lists_file, "", "Input bundle lists file.");
-DEFINE_string(bundle_file, "", "Input bundle file.");
-DEFINE_string(output_reconstruction_file, "",
-              "Output reconstruction file in binary format.");
+DEFINE_string(lists_file, "", "Output bundle lists file.");
+DEFINE_string(bundle_file, "", "Output bundle file.");
+DEFINE_string(reconstruction_file, "", "Input reconstruction file.");
 
 int main(int argc, char* argv[]) {
   google::InitGoogleLogging(argv[0]);
@@ -51,12 +50,11 @@ int main(int argc, char* argv[]) {
 
   // Load the reconstuction.
   theia::Reconstruction reconstruction;
-  CHECK(theia::ReadBundlerFiles(FLAGS_lists_file,
-                                FLAGS_bundle_file,
-                                &reconstruction))
-      << "Could not read Bundler files.";
+  CHECK(theia::ReadReconstruction(FLAGS_reconstruction_file, &reconstruction));
 
-  CHECK(WriteReconstruction(reconstruction, FLAGS_output_reconstruction_file))
-      << "Could not write out reconstruction file.";
+  CHECK(theia::WriteBundlerFiles(reconstruction,
+                                 FLAGS_lists_file,
+                                 FLAGS_bundle_file))
+      << "Could not write out Bundler files.";
   return 0;
 }
