@@ -117,6 +117,7 @@ bool WriteBundleFile(const Reconstruction& reconstruction,
   const Eigen::Matrix3d theia_to_bundler =
       Eigen::Vector3d(1.0, -1.0, -1.0).asDiagonal();
 
+  ofs << "# Bundle file v0.3" << std::endl;
   ofs << reconstruction.NumViews() << " " << reconstruction.NumTracks()
       << std::endl;
 
@@ -134,7 +135,9 @@ bool WriteBundleFile(const Reconstruction& reconstruction,
         theia_to_bundler * camera.GetOrientationAsRotationMatrix();
     ofs << rotation.format(unaligned) << std::endl;
 
-    const Eigen::Vector3d translation = -rotation * camera.GetPosition();
+    const Eigen::Vector3d translation =
+        theia_to_bundler *
+        (-camera.GetOrientationAsRotationMatrix() * camera.GetPosition());
     ofs << translation.transpose().format(unaligned) << std::endl;
   }
 
@@ -161,7 +164,8 @@ bool WriteBundleFile(const Reconstruction& reconstruction,
 
       // Note we give the keypoint index as 0 because we do not store SIFT
       // keyfiles.
-      ofs << " " << index << " 0 " << feature->transpose().format(unaligned);
+      ofs << " " << index << " 0 "
+          << adjusted_feature.transpose().format(unaligned);
     }
     ofs << std::endl;
   }
@@ -176,7 +180,7 @@ bool WriteBundlerFiles(const Reconstruction& reconstruction,
   std::unique_ptr<Reconstruction> estimated_reconstruction(
       CreateEstimatedSubreconstruction(reconstruction));
 
-  if (!WriteListsFile(reconstruction, lists_file)) {
+  if (!WriteListsFile(*estimated_reconstruction, lists_file)) {
     return false;
   }
 

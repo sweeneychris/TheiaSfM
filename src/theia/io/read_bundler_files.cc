@@ -183,10 +183,12 @@ bool ReadBundlerFiles(const std::string& lists_file,
       Eigen::Vector3d(1.0, -1.0, -1.0).asDiagonal();
 
   std::string header_string;
-  // There is one line of filler, so skip that line!
   std::getline(ifs, header_string);
 
-  std::getline(ifs, header_string);
+  // If the first line starts with '#' then it is a comment, so skip it!
+  if (header_string[0] == '#') {
+    std::getline(ifs, header_string);
+  }
   const char* p = header_string.c_str();
   char* p2;
   const int num_cameras = strtol(p, &p2, 10);
