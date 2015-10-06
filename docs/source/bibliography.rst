@@ -120,6 +120,10 @@ Bibliography
    Scalable Solution to the Generalized Pose and Scale Problem**. *European
    Conference on Computer Vision (ECCV)*, 2014
 
+.. [SweeneyISMAR2015] C. Sweeney, J. Flynn, B. Nuernberger, M. Turk, T. Hollerer.
+   **Efficient Computation of Absolute Pose for Gravity-Aware Augmented Reality.**
+   *International Symposium on Mixed and Augmented Reality (ISMAR)*, 2015.
+
 .. [SweeneyQEP] C. Sweeney, J. Flynn, M. Turk. **Solving for Relative Pose with a
    Partially Known Rotation is a Quadratic Eigenvalue Problem**. *International
    Conference on 3D Vision (3DV)*, 2014

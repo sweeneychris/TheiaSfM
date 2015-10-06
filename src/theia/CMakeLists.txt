@@ -120,6 +120,7 @@ set(THEIA_SRC
   sfm/pose/sim_transform_partial_rotation.cc
   sfm/pose/test_util.cc
   sfm/pose/three_point_relative_pose_partial_rotation.cc
+  sfm/pose/two_point_pose_partial_rotation.cc
   sfm/pose/util.cc
   sfm/reconstruction.cc
   sfm/reconstruction_builder.cc
@@ -243,6 +244,7 @@ if (BUILD_TESTING)
   gtest(sfm/pose/seven_point_fundamental_matrix)
   gtest(sfm/pose/sim_transform_partial_rotation)
   gtest(sfm/pose/three_point_relative_pose_partial_rotation)
+  gtest(sfm/pose/two_point_pose_partial_rotation)
   gtest(sfm/reconstruction)
   gtest(sfm/track)
   gtest(sfm/track_builder)

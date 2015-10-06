@@ -223,3 +223,40 @@ Four Point Relative Pose with a Partially Known Rotation
     rotation (when considering rotations as an angle axis). This is equivalent
     to aligning the two cameras to a common direction such as the vertical
     direction, which can be done using IMU data.
+
+
+Two Point Absolute Pose with a Partially Known Rotation
+=======================================================
+
+  .. function:: int TwoPointPosePartialRotation(const Eigen::Vector3d& axis, const Eigen::Vector3d& model_point_1, const Eigen::Vector3d& model_point_2, const Eigen::Vector3d& image_ray_1, const Eigen::Vector3d& image_ray_2, Eigen::Quaterniond soln_rotations[2], Eigen::Vector3d soln_translations[2])
+
+
+    Solves for the limited pose of a camera from two 3D points to image ray
+    correspondences. The pose is limited in that while it solves for the three
+    translation components, it only solves for a single rotation around a passed
+    axis.
+
+    This is intended for use with camera phones that have accelerometers, so that
+    the 'up' vector is known, meaning the other two rotations are known. The
+    effect of the other rotations should be removed before using this function.
+
+    This implementation is intended to form the core of a RANSAC routine, and as
+    such has an optimized interface for this use case.
+
+    Computes the limited pose between the 3D model points and the (unit-norm)
+    image rays. Places the rotation and translation solutions in soln_rotations
+    and soln_translations.
+    There are at most 2 solutions, and the number of solutions is returned.
+
+    The rotations and translation are defined such that model points are
+    transformed according to  :math:`image_point = Q * model_point + t`
+
+    This function computes the rotation and translation such that the model
+    points, after transformation, lie along the corresponding image_rays. The
+    axis referred to is the axis of rotation between the camera coordinate system
+    and world (3D point) coordinate system. For most users, this axis will be
+    (0, 1, 0) i.e., the up direction. This requires that the input image rays
+    have been rotated such that the up direction of the camera coordinate system
+    is indeed equal to (0, 1, 0).
+
+    When using this algorithm please cite the paper [SweeneyISMAR]_.
