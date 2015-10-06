@@ -39,6 +39,8 @@
 #include <stdio.h>
 #include <cmath>
 
+#include "theia/math/util.h"
+
 namespace theia {
 // Abstract class for probability disributions.
 class Distribution {
