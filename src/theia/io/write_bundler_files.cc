@@ -121,7 +121,7 @@ bool WriteBundleFile(const Reconstruction& reconstruction,
   ofs << reconstruction.NumViews() << " " << reconstruction.NumTracks()
       << std::endl;
 
-  const Eigen::IOFormat unaligned(Eigen::StreamPrecision, Eigen::DontAlignCols);
+  const Eigen::IOFormat unaligned(Eigen::FullPrecision, Eigen::DontAlignCols);
   // Output all cameras first.
   std::unordered_map<ViewId, int> view_id_to_index;
   const auto& view_ids = reconstruction.ViewIds();
