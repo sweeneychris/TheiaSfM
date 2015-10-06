@@ -297,7 +297,7 @@ class HomographyEstimator : public Estimator<Correspondence, Matrix3d> {
   HomographyEstimator() {}
   ~HomographyEstimator() {}
 
-  double SampleSize() const { return 4; }
+  double SampleSize() const override { return 4; }
 
   bool EstimateModel(const vector<Correspondence>& data,
                      vector<Matrix3d>* models) const override {
