@@ -34,6 +34,7 @@
 
 #include "theia/sfm/track_builder.h"
 
+#include <stdint.h>
 #include <cstddef>
 #include <memory>
 #include <string>

@@ -35,6 +35,7 @@
 #ifndef THEIA_SFM_TRACK_BUILDER_H_
 #define THEIA_SFM_TRACK_BUILDER_H_
 
+#include <stdint.h>
 #include <cstddef>
 #include <memory>
 #include <string>

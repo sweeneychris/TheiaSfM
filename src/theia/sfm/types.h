@@ -36,6 +36,7 @@
 #define THEIA_SFM_TYPES_H_
 
 #include <Eigen/Core>
+#include <stdint.h>
 #include <cstdint>
 #include <limits>
 #include <utility>

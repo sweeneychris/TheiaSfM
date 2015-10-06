@@ -36,6 +36,8 @@
 
 #include <Eigen/Core>
 #include <glog/logging.h>
+#include <stdint.h>
+
 #include <cstdlib>
 #include <fstream>  // NOLINT
 #include <iostream>  // NOLINT

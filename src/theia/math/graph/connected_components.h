@@ -36,6 +36,7 @@
 #define THEIA_MATH_GRAPH_CONNECTED_COMPONENTS_H_
 
 #include <glog/logging.h>
+#include <stdint.h>
 
 #include <limits>
 #include <unordered_map>

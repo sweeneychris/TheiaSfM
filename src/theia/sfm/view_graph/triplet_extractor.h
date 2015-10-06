@@ -35,6 +35,7 @@
 #ifndef THEIA_SFM_VIEW_GRAPH_TRIPLET_EXTRACTOR_H_
 #define THEIA_SFM_VIEW_GRAPH_TRIPLET_EXTRACTOR_H_
 
+#include <stdint.h>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>

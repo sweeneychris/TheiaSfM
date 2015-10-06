@@ -275,7 +275,6 @@ void CascadeHasher::MatchImages(
                           candidate_euclidean_distances[0].second,
                           candidate_euclidean_distances[0].first);
   }
-
 }
 
 

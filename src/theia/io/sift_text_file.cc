@@ -36,6 +36,7 @@
 
 #include <Eigen/Core>
 #include <glog/logging.h>
+#include <stdint.h>
 
 #include <cstdio>
 #include <cstdlib>
