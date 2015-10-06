@@ -196,7 +196,7 @@ void TestTriangulationManyPoints(const double projection_noise,
     poses[i] << kRotations[i].toRotationMatrix(), kTranslations[i];
   }
 
-  for (int j = 0; j < ARRAYSIZE(kTestPoints); j++) {
+  for (int j = 0; j < THEIA_ARRAYSIZE(kTestPoints); j++) {
     // Reproject model point into the images.
     std::vector<Vector2d> image_points(num_views);
     const Vector3d model_point(kTestPoints[j][0], kTestPoints[j][1],

@@ -213,7 +213,7 @@ TEST(ThreePointRelativePosePartialRotationTest, NoiseTest) {
   };
 
   InitRandomGenerator();
-  for (int transform_index = 0; transform_index < ARRAYSIZE(kAxes);
+  for (int transform_index = 0; transform_index < THEIA_ARRAYSIZE(kAxes);
        ++transform_index) {
     Quaterniond kExpectedRotation(
         AngleAxisd(DegToRad(kAngles[transform_index]), kAxes[transform_index]));
@@ -273,10 +273,10 @@ TEST(ThreePointRelativePosePartialRotationTest, IncorrectAxisTest) {
   };
 
   for (int transform_index = 0;
-       transform_index < ARRAYSIZE(kAxes);
+       transform_index < THEIA_ARRAYSIZE(kAxes);
        ++transform_index) {
     for (int axis_rotation_index = 0;
-         axis_rotation_index < ARRAYSIZE(kAxisPerturbations);
+         axis_rotation_index < THEIA_ARRAYSIZE(kAxisPerturbations);
          ++axis_rotation_index) {
       // Perturbs the axis by the axis perturbation.
       const Vector3d perturbed_axis =
@@ -330,7 +330,7 @@ TEST(ThreePointRelativePosePartialRotationTest, ManyPoints) {
 
   InitRandomGenerator();
   for (int i = 0; i < 1000; ++i) {
-    for (int transform_index = 0; transform_index < ARRAYSIZE(kAxes);
+    for (int transform_index = 0; transform_index < THEIA_ARRAYSIZE(kAxes);
          ++transform_index) {
       std::vector<Vector3d> random_points;
       CreateRandomPointsInFrustum(1.0,

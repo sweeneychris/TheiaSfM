@@ -33,8 +33,8 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#ifndef THEIA_SFM_POSE_TWO_POINT_POSE_H_
-#define THEIA_SFM_POSE_TWO_POINT_POSE_H_
+#ifndef THEIA_SFM_POSE_TWO_POINT_POSE_PARTIAL_ROTATION_H_
+#define THEIA_SFM_POSE_TWO_POINT_POSE_PARTIAL_ROTATION_H_
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -82,4 +82,4 @@ int TwoPointPosePartialRotation(const Eigen::Vector3d& axis,
                                 Eigen::Vector3d soln_translations[2]);
 }  // namespace theia
 
-#endif  // THEIA_SFM_POSE_TWO_POINT_POSE_H_
+#endif  // THEIA_SFM_POSE_TWO_POINT_POSE_PARTIAL_ROTATION_H_

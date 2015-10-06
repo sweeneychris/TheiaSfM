@@ -45,7 +45,7 @@ typedef unsigned char uchar;
   void operator=(const TypeName&)
 
 // Determines the array size an array a.
-#define ARRAYSIZE(a) \
+#define THEIA_ARRAYSIZE(a) \
   ((sizeof(a) / sizeof(*(a))) / \
   static_cast<size_t>(!(sizeof(a) % sizeof(*(a)))))
 

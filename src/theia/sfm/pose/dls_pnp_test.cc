@@ -193,7 +193,7 @@ TEST(DlsPnp, ManyPoints) {
       Vector3d(1.0, 1.0, 1.0).normalized()
   };
 
-  static const double kRotationAngles[ARRAYSIZE(kAxes)] = {
+  static const double kRotationAngles[THEIA_ARRAYSIZE(kAxes)] = {
       DegToRad(7.0),
       DegToRad(12.0),
       DegToRad(15.0),
@@ -204,7 +204,7 @@ TEST(DlsPnp, ManyPoints) {
       DegToRad(0.0)  // Tests no rotation and no translation.
   };
 
-  static const Vector3d kTranslations[ARRAYSIZE(kAxes)] = {
+  static const Vector3d kTranslations[THEIA_ARRAYSIZE(kAxes)] = {
       Vector3d(1.0, 1.0, 1.0),
       Vector3d(3.0, 2.0, 13.0),
       Vector3d(4.0, 5.0, 11.0),
@@ -221,9 +221,9 @@ TEST(DlsPnp, ManyPoints) {
   const double kMaxAllowedRotationDifference = DegToRad(0.3);
   const double kMaxAllowedTranslationDifference = 5e-3;
 
-  for (int i = 0; i < ARRAYSIZE(kAxes); i++) {
+  for (int i = 0; i < THEIA_ARRAYSIZE(kAxes); i++) {
     const Quaterniond soln_rotation(AngleAxisd(kRotationAngles[i], kAxes[i]));
-    for (int j = 0; j < ARRAYSIZE(num_points); j++) {
+    for (int j = 0; j < THEIA_ARRAYSIZE(num_points); j++) {
       std::vector<Vector3d> points_3d;
       points_3d.reserve(num_points[j]);
       for (int k = 0; k < num_points[j]; k++) {
