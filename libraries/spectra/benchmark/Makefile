@@ -1,0 +1,26 @@
+CXX = g++
+CXXFLAGS = -Wall -O2
+CPPFLAGS = -I../include -I.
+FC = gfortran
+FFLAGS = -O3
+LDFLAGS =
+LIBS = -larpack -llapack -lblas -lgfortran
+
+HEADERS = $(wildcard ../include/MatOp/*.h) $(wildcard ../include/LinAlg/*.h) $(wildcard ../include/*.h)
+OBJS = F77.o Cpp.o wrapper.o
+
+.PHONY: all clean
+
+all: benchmark.out
+
+benchmark.out: $(OBJS) main.cpp
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) main.cpp $(OBJS) -o benchmark.out $(LDFLAGS) $(LIBS)
+
+%.o: %.cpp $(HEADERS)
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $< -o $@
+
+%.o: %.f
+	$(FC) $(FFLAGS) -c $< -o $@
+
+clean:
+	-rm *.out *.o
