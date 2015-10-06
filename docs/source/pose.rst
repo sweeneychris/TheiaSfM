@@ -259,4 +259,4 @@ Two Point Absolute Pose with a Partially Known Rotation
     have been rotated such that the up direction of the camera coordinate system
     is indeed equal to (0, 1, 0).
 
-    When using this algorithm please cite the paper [SweeneyISMAR]_.
+    When using this algorithm please cite the paper [SweeneyISMAR2015]_.
