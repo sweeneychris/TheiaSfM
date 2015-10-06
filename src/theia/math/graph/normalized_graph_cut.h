@@ -125,7 +125,7 @@ class NormalizedGraphCut {
     // where z = D^{1/2} * y.
     const Eigen::SparseMatrix<double> lhs =
         node_weight_inv_sqrt_ *
-        (node_weight_ - edge_weight_).selfadjointView<Eigen::Upper>() *
+        (node_weight_ - edge_weight_).template selfadjointView<Eigen::Upper>() *
         node_weight_inv_sqrt_;
 
     // Note that D^{-1/2} * (D - W) * D^{-1/2} is a symmetric positive
