@@ -47,8 +47,8 @@ namespace theia {
 namespace {
 // Number of synthetic points. Note that the points have a 0.5 contamination
 // rate, which is the maximum contamination rate that LMeds can take.
-constexpr int kNumInlierPoints = 5000;
-constexpr int kNumOutlierPoints = 5000;
+const int kNumInlierPoints = 5000;
+const int kNumOutlierPoints = 5000;
 
 // TODO(vfragoso): These classes below  (Point, Line, and LineEstimator) can be
 // put in a single file. Several tests such as ransac_test.cc and prosac_test.cc

@@ -227,7 +227,7 @@ TEST(Polynomial, BothOutputArgumentsNullWorks) {
 }
 
 TEST(Polynomial, JenkinsTraubManyRoots) {
-  static constexpr int N = 25;
+  static const int N = 25;
   VectorXd poly = ConstantPolynomial(1.23);
   VectorXd roots = VectorXd::Random(N);
   roots = SortVector(roots);

@@ -44,8 +44,8 @@
 
 namespace theia {
 
-static constexpr double kRadToDeg = 180.0 / M_PI;
-static constexpr double kDegToRad = M_PI / 180.0;
+static const double kRadToDeg = 180.0 / M_PI;
+static const double kDegToRad = M_PI / 180.0;
 
 inline double RadToDeg(double angle_radians) {
   return angle_radians * kRadToDeg;

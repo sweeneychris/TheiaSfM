@@ -183,9 +183,9 @@ class Camera {
     RADIAL_DISTORTION_2 = 6
   };
 
-  static constexpr int kExtrinsicsSize = 6;
-  static constexpr int kIntrinsicsSize = 7;
-  static constexpr int kParameterSize = kExtrinsicsSize + kIntrinsicsSize;
+  static const int kExtrinsicsSize = 6;
+  static const int kIntrinsicsSize = 7;
+  static const int kParameterSize = kExtrinsicsSize + kIntrinsicsSize;
 
  private:
   // Templated method for disk I/O with cereal. This method tells cereal which

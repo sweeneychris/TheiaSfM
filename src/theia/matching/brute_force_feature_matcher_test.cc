@@ -46,8 +46,8 @@ namespace theia {
 
 using Eigen::VectorXf;
 
-static constexpr int kNumDescriptors = 10;
-static constexpr int kNumDescriptorDimensions = 10;
+static const int kNumDescriptors = 10;
+static const int kNumDescriptorDimensions = 10;
 
 TEST(BruteForceFeatureMatcherTest, NoOptions) {
   // Set up descriptors.

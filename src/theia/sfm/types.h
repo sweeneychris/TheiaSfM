@@ -46,8 +46,8 @@ typedef uint32_t ViewId;
 typedef uint32_t TrackId;
 typedef std::pair<ViewId, ViewId> ViewIdPair;
 
-static constexpr ViewId kInvalidViewId = std::numeric_limits<ViewId>::max();
-static constexpr ViewId kInvalidTrackId = std::numeric_limits<TrackId>::max();
+static const ViewId kInvalidViewId = std::numeric_limits<ViewId>::max();
+static const ViewId kInvalidTrackId = std::numeric_limits<TrackId>::max();
 
 // Used as the projection matrix type.
 typedef Eigen::Matrix<double, 3, 4> Matrix3x4d;
