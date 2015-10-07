@@ -45,12 +45,11 @@
 #include "gtest/gtest.h"
 #include "theia/math/util.h"
 #include "theia/sfm/camera/camera.h"
-#include "theia/sfm/global_pose_estimation/estimate_positions_linear.h"
+#include "theia/sfm/global_pose_estimation/linear_position_estimator.h"
 #include "theia/sfm/reconstruction.h"
 #include "theia/sfm/track.h"
 #include "theia/sfm/transformation/align_point_clouds.h"
 #include "theia/sfm/types.h"
-#include "theia/sfm/view_graph/triplet_extractor.h"
 #include "theia/util/map_util.h"
 #include "theia/util/stringprintf.h"
 
@@ -136,15 +135,13 @@ class EstimatePositionsLinearTest : public ::testing::Test {
     // Set up the camera.
     SetupReconstruction(num_views, num_tracks);
     GetTwoViewInfos(num_view_pairs, pose_noise);
-    GetTriplets();
 
     // Estimate the positions.
-    LinearPositionEstimator position_estimator(options_,
-                                               reconstruction_,
-                                               triplets_);
+    LinearPositionEstimator position_estimator(options_, reconstruction_);
 
     std::unordered_map<ViewId, Vector3d> estimated_positions;
-    EXPECT_TRUE(position_estimator.EstimatePositions(orientations_,
+    EXPECT_TRUE(position_estimator.EstimatePositions(view_pairs_,
+                                                     orientations_,
                                                      &estimated_positions));
     EXPECT_EQ(estimated_positions.size(), positions_.size());
 
@@ -252,19 +249,10 @@ class EstimatePositionsLinearTest : public ::testing::Test {
     return info;
   }
 
-  // Get the triplets
-  void GetTriplets() {
-    TripletExtractor extractor;
-    std::vector<std::vector<ViewTriplet> > triplets_vec;
-    CHECK(extractor.ExtractTripletsFromViewPairs(view_pairs_, &triplets_vec));
-    triplets_ = triplets_vec[0];
-  }
-
   LinearPositionEstimator::Options options_;
   std::unordered_map<ViewId, Vector3d> positions_;
   std::unordered_map<ViewId, Vector3d> orientations_;
   std::unordered_map<ViewIdPair, TwoViewInfo> view_pairs_;
-  std::vector<ViewTriplet> triplets_;
   Reconstruction reconstruction_;
 };
 
