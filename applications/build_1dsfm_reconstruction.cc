@@ -54,30 +54,32 @@ DEFINE_int32(num_threads, 1,
              "Number of threads to use for feature extraction and matching.");
 
 // Reconstruction building options.
-DEFINE_string(reconstruction_estimator, "NONLINEAR",
+DEFINE_string(reconstruction_estimator, "GLOBAL",
               "Type of SfM reconstruction estimation to use.");
-DEFINE_bool(reconstruct_largest_connected_component, false,
-            "If set to true, only the single largest connected component is "
-            "reconstructed. Otherwise, as many models as possible are "
-            "estimated.");
-DEFINE_bool(constant_camera_intrinsics, false,
-            "Set to true to keep camera intrinsic parameters constant during "
-            "bundle adjustment.");
-DEFINE_bool(only_calibrated_views, true,
-            "Set to true to only reconstruct the views where calibration is "
-            "provided or can be extracted from EXIF");
 DEFINE_int32(min_num_inliers_for_valid_match, 30,
              "Minimum number of geometrically verified inliers that a pair on "
              "images must have in order to be considered a valid two-view "
              "match.");
+DEFINE_bool(reconstruct_largest_connected_component, false,
+            "If set to true, only the single largest connected component is "
+            "reconstructed. Otherwise, as many models as possible are "
+            "estimated.");
+DEFINE_bool(only_calibrated_views, false,
+            "Set to true to only reconstruct the views where calibration is "
+            "provided or can be extracted from EXIF");
+DEFINE_int32(max_track_length, 20, "Maximum length of a track.");
+DEFINE_bool(constant_camera_intrinsics, false,
+            "Set to true to keep camera intrinsic parameters constant during "
+            "bundle adjustment.");
 DEFINE_double(max_reprojection_error_pixels, 4.0,
               "Maximum reprojection error for a correspondence to be "
               "considered an inlier after bundle adjustment.");
-DEFINE_int32(num_retriangulation_iterations, 1,
-             "Number of times to retriangulate any unestimated tracks. Bundle "
-             "adjustment is performed after retriangulation.");
 
-// View graph filtering options.
+// Global SfM options.
+DEFINE_string(global_rotation_estimator, "ROBUST_L1L2",
+              "Type of global rotation estimation to use for global SfM.");
+DEFINE_string(global_position_estimator, "NONLINEAR",
+              "Type of global position estimation to use for global SfM.");
 DEFINE_bool(refine_relative_translations_after_rotation_estimation, true,
             "Refine the relative translation estimation after computing the "
             "absolute rotations. This can help improve the accuracy of the "
@@ -85,6 +87,16 @@ DEFINE_bool(refine_relative_translations_after_rotation_estimation, true,
 DEFINE_double(post_rotation_filtering_degrees, 5.0,
               "Max degrees difference in relative rotation and rotation "
               "estimates for rotation filtering.");
+DEFINE_int32(num_retriangulation_iterations, 1,
+             "Number of times to retriangulate any unestimated tracks. Bundle "
+             "adjustment is performed after retriangulation.");
+
+// Nonlinear position estimation options.
+DEFINE_int32(
+    position_estimation_min_num_tracks_per_view, 0,
+    "Minimum number of point to camera constraints for position estimation.");
+DEFINE_double(position_estimation_robust_loss_width, 0.1,
+              "Robust loss width to use for position estimation.");
 
 // Incremental SfM options.
 DEFINE_double(absolute_pose_reprojection_error_threshold, 8.0,
@@ -100,22 +112,18 @@ DEFINE_int32(partial_bundle_adjustment_num_views, 20,
              "When full BA is not being run, partial BA is executed on a "
              "constant number of views specified by this parameter.");
 
-// Position estimation options.
-DEFINE_int32(
-    position_estimation_min_num_tracks_per_view, 6,
-    "Minimum number of point to camera constraints for position estimation.");
 
 // Triangulation options.
-DEFINE_double(min_triangulation_angle_degrees, 3.0,
+DEFINE_double(min_triangulation_angle_degrees, 4.0,
               "Minimum angle between views for triangulation.");
 DEFINE_double(
-    triangulation_reprojection_error_pixels, 10.0,
+    triangulation_reprojection_error_pixels, 15.0,
     "Max allowable reprojection error on initial triangulation of points.");
 DEFINE_bool(bundle_adjust_tracks, true,
             "Set to true to optimize tracks immediately upon estimation.");
 
-using theia::DescriptorExtractorType;
-using theia::MatchingStrategy;
+using theia::GlobalPositionEstimatorType;
+using theia::GlobalRotationEstimatorType;
 using theia::Reconstruction;
 using theia::ReconstructionBuilder;
 using theia::ReconstructionBuilderOptions;
@@ -123,14 +131,40 @@ using theia::ReconstructionEstimatorType;
 
 ReconstructionEstimatorType GetReconstructionEstimatorType(
     const std::string& reconstruction_estimator) {
-  if (reconstruction_estimator == "NONLINEAR") {
-    return ReconstructionEstimatorType::NONLINEAR;
+  if (reconstruction_estimator == "GLOBAL") {
+    return ReconstructionEstimatorType::GLOBAL;
   } else if (reconstruction_estimator == "INCREMENTAL") {
     return ReconstructionEstimatorType::INCREMENTAL;
   }  else {
     LOG(FATAL)
-        << "Invalid reconstruction estimator type. Using NONLINEAR instead.";
-    return ReconstructionEstimatorType::NONLINEAR;
+        << "Invalid reconstruction estimator type. Using GLOBAL instead.";
+    return ReconstructionEstimatorType::GLOBAL;
+  }
+}
+
+GlobalRotationEstimatorType GetRotationEstimatorType(
+    const std::string& rotation_estimator) {
+  if (rotation_estimator == "ROBUST_L1L2") {
+    return GlobalRotationEstimatorType::ROBUST_L1L2;
+  } else if (rotation_estimator == "NONLINEAR") {
+    return GlobalRotationEstimatorType::NONLINEAR;
+  }  else {
+    LOG(FATAL)
+        << "Invalid rotation estimator type. Using ROBUST_L1L2 instead.";
+    return GlobalRotationEstimatorType::ROBUST_L1L2;
+  }
+}
+
+GlobalPositionEstimatorType GetPositionEstimatorType(
+    const std::string& position_estimator) {
+  if (position_estimator == "NONLINEAR") {
+    return GlobalPositionEstimatorType::NONLINEAR;
+  } else if (position_estimator == "LINEAR") {
+    return GlobalPositionEstimatorType::LINEAR_TRIPLET;
+  }  else {
+    LOG(FATAL)
+        << "Invalid position estimator type. Using NONLINEAR instead.";
+    return GlobalPositionEstimatorType::NONLINEAR;
   }
 }
 
@@ -140,50 +174,62 @@ ReconstructionEstimatorType GetReconstructionEstimatorType(
 ReconstructionBuilderOptions SetReconstructionBuilderOptions() {
   ReconstructionBuilderOptions options;
   options.num_threads = FLAGS_num_threads;
-  options.reconstruction_estimator_options.num_threads = FLAGS_num_threads;
+  options.max_track_length = FLAGS_max_track_length;
 
-  options.reconstruction_estimator_options.constant_camera_intrinsics =
-      FLAGS_constant_camera_intrinsics;
-  options.min_num_inlier_matches = FLAGS_min_num_inliers_for_valid_match;
-  options.reconstruction_estimator_options.min_num_two_view_inliers =
+  // Reconstruction Estimator Options.
+  theia::ReconstructionEstimatorOptions& reconstruction_estimator_options =
+      options.reconstruction_estimator_options;
+  reconstruction_estimator_options.min_num_two_view_inliers =
       FLAGS_min_num_inliers_for_valid_match;
-  options.reconstruction_estimator_options.reconstruction_estimator_type =
-      GetReconstructionEstimatorType(FLAGS_reconstruction_estimator);
+  reconstruction_estimator_options.num_threads = FLAGS_num_threads;
+  reconstruction_estimator_options.constant_camera_intrinsics =
+      FLAGS_constant_camera_intrinsics;
   options.reconstruct_largest_connected_component =
       FLAGS_reconstruct_largest_connected_component;
   options.only_calibrated_views = FLAGS_only_calibrated_views;
-  options.reconstruction_estimator_options.max_reprojection_error_in_pixels =
+  reconstruction_estimator_options.max_reprojection_error_in_pixels =
       FLAGS_max_reprojection_error_pixels;
-  options.reconstruction_estimator_options.num_retriangulation_iterations =
-      FLAGS_num_retriangulation_iterations;
 
-  options.reconstruction_estimator_options
+  // Which type of SfM pipeline to use (e.g., incremental, global, etc.);
+  reconstruction_estimator_options.reconstruction_estimator_type =
+      GetReconstructionEstimatorType(FLAGS_reconstruction_estimator);
+
+  // Global SfM Options.
+  reconstruction_estimator_options.global_rotation_estimator_type =
+      GetRotationEstimatorType(FLAGS_global_rotation_estimator);
+  reconstruction_estimator_options.global_position_estimator_type =
+      GetPositionEstimatorType(FLAGS_global_position_estimator);
+  reconstruction_estimator_options.num_retriangulation_iterations =
+      FLAGS_num_retriangulation_iterations;
+  reconstruction_estimator_options
       .refine_relative_translations_after_rotation_estimation =
       FLAGS_refine_relative_translations_after_rotation_estimation;
-  options.reconstruction_estimator_options
+  reconstruction_estimator_options
       .rotation_filtering_max_difference_degrees =
       FLAGS_post_rotation_filtering_degrees;
-  options.reconstruction_estimator_options
-      .position_estimation_min_num_tracks_per_view =
+  reconstruction_estimator_options.nonlinear_position_estimator_options
+      .min_num_points_per_view =
       FLAGS_position_estimation_min_num_tracks_per_view;
 
-  options.reconstruction_estimator_options
+  // Incremental SfM Options.
+  reconstruction_estimator_options
       .absolute_pose_reprojection_error_threshold =
       FLAGS_absolute_pose_reprojection_error_threshold;
-  options.reconstruction_estimator_options.min_num_absolute_pose_inliers =
+  reconstruction_estimator_options.min_num_absolute_pose_inliers =
       FLAGS_min_num_absolute_pose_inliers;
-  options.reconstruction_estimator_options
+  reconstruction_estimator_options
       .full_bundle_adjustment_growth_percent =
       FLAGS_full_bundle_adjustment_growth_percent;
-  options.reconstruction_estimator_options.partial_bundle_adjustment_num_views =
+  reconstruction_estimator_options.partial_bundle_adjustment_num_views =
       FLAGS_partial_bundle_adjustment_num_views;
 
-  options.reconstruction_estimator_options.min_triangulation_angle_degrees =
+  // Triangulation options (used by all SfM pipelines).
+  reconstruction_estimator_options.min_triangulation_angle_degrees =
       FLAGS_min_triangulation_angle_degrees;
-  options.reconstruction_estimator_options
+  reconstruction_estimator_options
       .triangulation_max_reprojection_error_in_pixels =
       FLAGS_triangulation_reprojection_error_pixels;
-  options.reconstruction_estimator_options.bundle_adjust_tracks =
+  reconstruction_estimator_options.bundle_adjust_tracks =
       FLAGS_bundle_adjust_tracks;
   return options;
 }

@@ -32,8 +32,8 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#ifndef THEIA_SFM_NONLINEAR_RECONSTRUCTION_ESTIMATOR_H_
-#define THEIA_SFM_NONLINEAR_RECONSTRUCTION_ESTIMATOR_H_
+#ifndef THEIA_SFM_GLOBAL_RECONSTRUCTION_ESTIMATOR_H_
+#define THEIA_SFM_GLOBAL_RECONSTRUCTION_ESTIMATOR_H_
 
 #include "theia/sfm/bundle_adjustment/bundle_adjustment.h"
 #include "theia/sfm/filter_view_pairs_from_relative_translation.h"
@@ -50,9 +50,9 @@ namespace theia {
 class Reconstruction;
 class ViewGraph;
 
-// Estimates the camera position and 3D structure of the scene using nonlinear
-// methods to estimate camera poses. First, rotation is estimated nonlinearlly
-// then the position is estimated using a nonlinear optimization.
+// Estimates the camera position and 3D structure of the scene using global
+// methods to estimate camera poses. First, rotation is estimated globally
+// then the position is estimated using a global optimization.
 //
 // The pipeline for estimating camera poses and structure is as follows:
 //   1) Filter potentially bad pairwise geometries by enforcing a loop
@@ -71,9 +71,9 @@ class ViewGraph;
 //
 // After each filtering step we remove any views which are no longer connected
 // to the largest connected component in the view graph.
-class NonlinearReconstructionEstimator : public ReconstructionEstimator {
+class GlobalReconstructionEstimator : public ReconstructionEstimator {
  public:
-  NonlinearReconstructionEstimator(
+  GlobalReconstructionEstimator(
       const ReconstructionEstimatorOptions& options);
 
   ReconstructionEstimatorSummary Estimate(ViewGraph* view_graph,
@@ -95,16 +95,15 @@ class NonlinearReconstructionEstimator : public ReconstructionEstimator {
 
   ReconstructionEstimatorOptions options_;
   FilterViewPairsFromRelativeTranslationOptions translation_filter_options_;
-  NonlinearPositionEstimator::Options position_estimator_options_;
   BundleAdjustmentOptions bundle_adjustment_options_;
   RansacParameters ransac_params_;
 
   std::unordered_map<ViewId, Eigen::Vector3d> orientations_;
   std::unordered_map<ViewId, Eigen::Vector3d> positions_;
 
-  DISALLOW_COPY_AND_ASSIGN(NonlinearReconstructionEstimator);
+  DISALLOW_COPY_AND_ASSIGN(GlobalReconstructionEstimator);
 };
 
 }  // namespace theia
 
-#endif  // THEIA_SFM_NONLINEAR_RECONSTRUCTION_ESTIMATOR_H_
+#endif  // THEIA_SFM_GLOBAL_RECONSTRUCTION_ESTIMATOR_H_

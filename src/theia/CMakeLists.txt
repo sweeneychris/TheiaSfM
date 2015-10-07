@@ -94,16 +94,16 @@ set(THEIA_SRC
   sfm/find_common_tracks_in_views.cc
   sfm/find_common_views_by_name.cc
   sfm/global_pose_estimation/compute_triplet_baseline_ratios.cc
-  sfm/global_pose_estimation/linear_position_estimator.cc
-  sfm/global_pose_estimation/nonlinear_position_estimator.cc
   sfm/global_pose_estimation/estimate_rotations_nonlinear.cc
   sfm/global_pose_estimation/estimate_rotations_robust.cc
+  sfm/global_pose_estimation/linear_position_estimator.cc
+  sfm/global_pose_estimation/nonlinear_position_estimator.cc
   sfm/global_pose_estimation/pairwise_rotation_error.cc
   sfm/global_pose_estimation/pairwise_translation_error.cc
+  sfm/global_reconstruction_estimator.cc
   sfm/incremental_reconstruction_estimator.cc
   sfm/localize_view_to_reconstruction.cc
   sfm/match_and_verify_features.cc
-  sfm/nonlinear_reconstruction_estimator.cc
   sfm/pose/dls_impl.cc
   sfm/pose/dls_pnp.cc
   sfm/pose/eight_point_fundamental_matrix.cc

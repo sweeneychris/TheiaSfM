@@ -1,32 +1,59 @@
+############### Input/Output ###############
 # Input/output files.
---1dsfm_dataset_directory=
---output_reconstruction=
+# Set these if a matches file is not present. Images should be a filepath with a
+# wildcard e.g., /home/my_username/my_images/*.jpg
+--1dsfm_dataset_directory=/home/cmsweeney/projects/datasets/1dsfm/Alamo
+--output_reconstruction=ellis
 
-# Building a reconstruction.
---reconstruction_estimator=NONLINEAR
+############### Multithreading ###############
+# Set to the number of threads you want to use.
+--num_threads=16
+
+############### General SfM Options ###############
+--reconstruction_estimator=GLOBAL
+--min_num_inliers_for_valid_match=30
+--max_track_length=50
 --reconstruct_largest_connected_component=true
---constant_camera_intrinsics=true
---only_calibrated_views=true
---max_reprojection_error_pixels=4.0
+# If set to true, only views with known calibration are reconstructed.
+--only_calibrated_views=false
+
+############### Global SfM Options ###############
+--global_position_estimator=NONLINEAR
+--global_rotation_estimator=ROBUST_L1L2
+--post_rotation_filtering_degrees=15.0
+
+# This refinement is very unstable for rotation-only motions so
+# it is advised that this is set to false for these motions.
+--refine_relative_translations_after_rotation_estimation=true
+
+# Nonlinear position estimation options
+--position_estimation_min_num_tracks_per_view=0
+--position_estimation_robust_loss_width=0.1
+
+# After estimating camera poses, we perform trianguation, then BA,
+# then filter out bad points. This controls how many times we repeat
+# this process.
 --num_retriangulation_iterations=1
 
-# View graph filtering.
---min_num_inliers_for_valid_match=30
---post_rotation_filtering_degrees=5.0
-# NOTE: this refinement is very unstable for rotation-only motions.
---refine_relative_translations_after_rotation_estimation=false
+############### Incremental SfM Options ###############
+--absolute_pose_reprojection_error_threshold=8
+--partial_bundle_adjustment_num_views=20
+--full_bundle_adjustment_growth_percent=5
+--min_num_absolute_pose_inliers=30
 
-# Position estimation.
---position_estimation_min_num_tracks_per_view=0
+############### Bundle Adjustment Options ###############
+# Set to true to hold camera intrinsics constant during BA.
+--constant_camera_intrinsics=true
+# After BA, remove any points that have a reprojection error greater
+# than this.
+--max_reprojection_error_pixels=4.0
 
-# Triangulation options.
+############### Triangulation Options ###############
 --min_triangulation_angle_degrees=4.0
 --triangulation_reprojection_error_pixels=15.0
 --bundle_adjust_tracks=true
 
-# Set to the number of threads you want to use.
---num_threads=1
-
+############### Logging Options ###############
 # Logging verbosity.
 --logtostderr
 # Increase this number to get more verbose logging.
