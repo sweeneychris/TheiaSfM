@@ -82,7 +82,7 @@ int SolveQuadraticReals(const double a, const double b, const double c,
   int num_complex_solutions = SolveQuadratic(a, b, c, complex_roots);
   int num_real_solutions = 0;
   for (int i = 0; i < num_complex_solutions; i++) {
-    if (fabs(complex_roots[i].imag()) < tolerance) {
+    if (std::abs(complex_roots[i].imag()) < tolerance) {
       roots[num_real_solutions++] = complex_roots[i].real();
     }
   }
@@ -141,7 +141,7 @@ int SolveCubicReals(const double a, const double b, const double c,
   int num_complex_solutions = SolveCubic(a, b, c, d, complex_roots);
   int num_real_solutions = 0;
   for (int i = 0; i < num_complex_solutions; i++) {
-    if (fabs(complex_roots[i].imag()) < tolerance) {
+    if (std::abs(complex_roots[i].imag()) < tolerance) {
       roots[num_real_solutions++] = complex_roots[i].real();
     }
   }
@@ -188,7 +188,7 @@ int SolveQuarticReals(const long double a, const long double b,
   int num_complex_solutions = SolveQuartic(a, b, c, d, e, complex_roots);
   int num_real_solutions = 0;
   for (int i = 0; i < num_complex_solutions; i++) {
-    if (fabs(complex_roots[i].imag()) < tolerance) {
+    if (std::abs(complex_roots[i].imag()) < tolerance) {
       roots[num_real_solutions++] = complex_roots[i].real();
     }
   }
@@ -227,7 +227,7 @@ int SolveQuartic(const long double a, const long double b, const long double c,
   std::complex<long double> y;
 
   const long double kEpsilon = 1e-8;
-  if (fabs(U.real()) < kEpsilon) {
+  if (std::abs(U.real()) < kEpsilon) {
     y = -5.0l * alpha / 6.0l - std::pow(Q, (1.0l / 3.0l));
   } else {
     y = -5.0l * alpha / 6.0l - P / (3.0l * U) + U;
