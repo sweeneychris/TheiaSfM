@@ -32,14 +32,15 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#ifndef THEIA_SFM_GLOBAL_POSE_ESTIMATION_ESTIMATE_POSITIONS_LINEAR_H_
-#define THEIA_SFM_GLOBAL_POSE_ESTIMATION_ESTIMATE_POSITIONS_LINEAR_H_
+#ifndef THEIA_SFM_GLOBAL_POSE_ESTIMATION_LINEAR_POSITION_ESTIMATOR_H_
+#define THEIA_SFM_GLOBAL_POSE_ESTIMATION_LINEAR_POSITION_ESTIMATOR_H_
 
 #include <Eigen/Core>
 #include <Eigen/SparseCore>
 #include <unordered_map>
 #include <vector>
 
+#include "theia/sfm/global_pose_estimation/position_estimator.h"
 #include "theia/sfm/reconstruction.h"
 #include "theia/sfm/types.h"
 #include "theia/sfm/view_triplet.h"
@@ -52,7 +53,7 @@ namespace theia {
 // linear system to solve for the positions. This implementation closely follows
 // "A Global Linear Method for Camera Pose Registration" by Jiang et al, ICCV
 // 2013. Please see the paper for more details on the mathematics.
-class LinearPositionEstimator {
+class LinearPositionEstimator : public PositionEstimator {
  public:
   struct Options {
     int num_threads = 1;
@@ -66,14 +67,11 @@ class LinearPositionEstimator {
   };
 
   LinearPositionEstimator(const Options& options,
-                          const Reconstruction& reconstruction,
-                          const std::vector<ViewTriplet>& triplets);
+                          const Reconstruction& reconstruction);
 
-  // Estimate the positions given triplets and global orientation estimates. No
-  // filtering is done on the triplets to assure the triplets are of good
-  // quality, so it is likely that you will want to filter the triplets before
-  // calling this method.
+  // Estimate the positions given view pairs and global orientation estimates.
   bool EstimatePositions(
+      const std::unordered_map<ViewIdPair, TwoViewInfo>& view_pairs,
       const std::unordered_map<ViewId, Eigen::Vector3d>& orientation,
       std::unordered_map<ViewId, Eigen::Vector3d>* positions);
 
@@ -104,7 +102,7 @@ class LinearPositionEstimator {
 
   const Options options_;
   const Reconstruction& reconstruction_;
-  const std::vector<ViewTriplet>& triplets_;
+  std::vector<ViewTriplet> triplets_;
 
   // We keep one of the positions as constant to remove the ambiguity of the
   // origin of the linear system.
@@ -118,4 +116,4 @@ class LinearPositionEstimator {
 
 }  // namespace theia
 
-#endif  // THEIA_SFM_GLOBAL_POSE_ESTIMATION_ESTIMATE_POSITIONS_LINEAR_H_
+#endif  // THEIA_SFM_GLOBAL_POSE_ESTIMATION_LINEAR_POSITION_ESTIMATOR_H_

@@ -94,7 +94,7 @@ set(THEIA_SRC
   sfm/find_common_tracks_in_views.cc
   sfm/find_common_views_by_name.cc
   sfm/global_pose_estimation/compute_triplet_baseline_ratios.cc
-  sfm/global_pose_estimation/estimate_positions_linear.cc
+  sfm/global_pose_estimation/linear_position_estimator.cc
   sfm/global_pose_estimation/nonlinear_position_estimator.cc
   sfm/global_pose_estimation/estimate_rotations_nonlinear.cc
   sfm/global_pose_estimation/estimate_rotations_robust.cc
@@ -226,7 +226,7 @@ if (BUILD_TESTING)
   gtest(sfm/find_common_tracks_in_views)
   gtest(sfm/find_common_views_by_name)
   gtest(sfm/global_pose_estimation/compute_triplet_baseline_ratios)
-  gtest(sfm/global_pose_estimation/estimate_positions_linear)
+  gtest(sfm/global_pose_estimation/linear_position_estimator)
   gtest(sfm/global_pose_estimation/nonlinear_position_estimator)
   gtest(sfm/global_pose_estimation/estimate_rotations_robust)
   gtest(sfm/global_pose_estimation/pairwise_rotation_error)

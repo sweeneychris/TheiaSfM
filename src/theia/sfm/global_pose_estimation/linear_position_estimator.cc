@@ -32,7 +32,7 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#include "theia/sfm/global_pose_estimation/estimate_positions_linear.h"
+#include "theia/sfm/global_pose_estimation/linear_position_estimator.h"
 
 #include <ceres/rotation.h>
 #include <Eigen/Core>
@@ -46,13 +46,14 @@
 
 #include "theia/math/matrix/dominant_eigensolver.h"
 #include "theia/math/matrix/linear_operator.h"
-#include "theia/util/map_util.h"
-#include "theia/util/threadpool.h"
 #include "theia/sfm/find_common_tracks_in_views.h"
 #include "theia/sfm/global_pose_estimation/compute_triplet_baseline_ratios.h"
 #include "theia/sfm/reconstruction.h"
 #include "theia/sfm/types.h"
+#include "theia/sfm/view_graph/triplet_extractor.h"
 #include "theia/sfm/view_triplet.h"
+#include "theia/util/map_util.h"
+#include "theia/util/threadpool.h"
 
 namespace theia {
 
@@ -169,16 +170,24 @@ bool VectorsAreSameDirection(const Vector3d& position1,
 
 LinearPositionEstimator::LinearPositionEstimator(
     const Options& options,
-    const Reconstruction& reconstruction,
-    const std::vector<ViewTriplet>& triplets)
-    : options_(options), reconstruction_(reconstruction), triplets_(triplets) {
+    const Reconstruction& reconstruction)
+    : options_(options), reconstruction_(reconstruction) {
   CHECK_GT(options.num_threads, 0);
 }
 
 bool LinearPositionEstimator::EstimatePositions(
+    const std::unordered_map<ViewIdPair, TwoViewInfo>& view_pairs,
     const std::unordered_map<ViewId, Vector3d>& orientations,
     std::unordered_map<ViewId, Vector3d>* positions) {
   CHECK_NOTNULL(positions)->clear();
+
+  // Extract triplets from the view pairs. As of now, we only consider the
+  // largest connected triplet in the viewing graph.
+  // TODO(cmsweeney): Utilize all connected triplet graphs.
+  TripletExtractor extractor;
+  std::vector<std::vector<ViewTriplet> > triplets_vec;
+  CHECK(extractor.ExtractTripletsFromViewPairs(view_pairs, &triplets_vec));
+  triplets_ = triplets_vec[0];
 
   // Count the number of times each view is in a triplet.
   for (int i = 0; i < triplets_.size(); i++) {
