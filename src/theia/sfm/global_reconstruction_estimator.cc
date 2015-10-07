@@ -32,9 +32,10 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#include "theia/sfm/nonlinear_reconstruction_estimator.h"
+#include "theia/sfm/global_reconstruction_estimator.h"
 
 #include <Eigen/Core>
+#include <memory>
 #include <sstream>  // NOLINT
 
 #include "theia/sfm/bundle_adjustment/bundle_adjustment.h"
@@ -42,8 +43,10 @@
 #include "theia/sfm/filter_view_graph_cycles_by_rotation.h"
 #include "theia/sfm/filter_view_pairs_from_orientation.h"
 #include "theia/sfm/filter_view_pairs_from_relative_translation.h"
-#include "theia/sfm/global_pose_estimation/nonlinear_position_estimator.h"
 #include "theia/sfm/global_pose_estimation/estimate_rotations_robust.h"
+#include "theia/sfm/global_pose_estimation/linear_position_estimator.h"
+#include "theia/sfm/global_pose_estimation/nonlinear_position_estimator.h"
+#include "theia/sfm/global_pose_estimation/position_estimator.h"
 #include "theia/sfm/reconstruction.h"
 #include "theia/sfm/reconstruction_estimator_options.h"
 #include "theia/sfm/reconstruction_estimator_utils.h"
@@ -63,7 +66,7 @@ using Eigen::Vector3d;
 namespace {
 
 // All times are given in seconds.
-struct NonlinearReconstructionEstimatorTimings {
+struct GlobalReconstructionEstimatorTimings {
   double initial_view_graph_filtering_time = 0.0;
   double camera_intrinsics_calibration_time = 0.0;
   double rotation_estimation_time = 0.0;
@@ -82,21 +85,6 @@ SetRelativeTranslationFilteringOptions(
   fvpfrt_options.translation_projection_tolerance =
       options.translation_filtering_projection_tolerance;
   return fvpfrt_options;
-}
-
-// Sets the nonlinear position estimation options from the reconstruction
-// estimator options.
-NonlinearPositionEstimator::Options SetNonlinearPositionEstimatorOptions(
-    const ReconstructionEstimatorOptions& options) {
-  NonlinearPositionEstimator::Options npe_options;
-  npe_options.num_threads = options.num_threads;
-  npe_options.robust_loss_width =
-      options.position_estimation_robust_loss_scale;
-  npe_options.min_num_points_per_view =
-      options.position_estimation_min_num_tracks_per_view;
-  npe_options.point_to_camera_weight =
-      options.position_estimation_point_to_camera_weight;
-  return npe_options;
 }
 
 ViewId RandomViewId(const ViewGraph& view_graph) {
@@ -131,11 +119,14 @@ void SetUnderconstrainedAsUnestimated(Reconstruction* reconstruction) {
 
 }  // namespace
 
-NonlinearReconstructionEstimator::NonlinearReconstructionEstimator(
+GlobalReconstructionEstimator::GlobalReconstructionEstimator(
     const ReconstructionEstimatorOptions& options) {
   options_ = options;
   translation_filter_options_ = SetRelativeTranslationFilteringOptions(options);
-  position_estimator_options_ = SetNonlinearPositionEstimatorOptions(options);
+  options_.nonlinear_position_estimator_options.num_threads =
+      options_.num_threads;
+  options_.linear_triplet_position_estimator_options.num_threads =
+      options_.num_threads;
   ransac_params_ = SetRansacParameters(options);
 }
 
@@ -156,7 +147,7 @@ NonlinearReconstructionEstimator::NonlinearReconstructionEstimator(
 //
 // After each filtering step we remove any views which are no longer connected
 // to the largest connected component in the view graph.
-ReconstructionEstimatorSummary NonlinearReconstructionEstimator::Estimate(
+ReconstructionEstimatorSummary GlobalReconstructionEstimator::Estimate(
     ViewGraph* view_graph, Reconstruction* reconstruction) {
   CHECK_NOTNULL(reconstruction);
   reconstruction_ = reconstruction;
@@ -165,7 +156,7 @@ ReconstructionEstimatorSummary NonlinearReconstructionEstimator::Estimate(
   positions_.clear();
 
   ReconstructionEstimatorSummary summary;
-  NonlinearReconstructionEstimatorTimings nonlinear_estimator_timings;
+  GlobalReconstructionEstimatorTimings global_estimator_timings;
   Timer total_timer;
   Timer timer;
 
@@ -177,7 +168,7 @@ ReconstructionEstimatorSummary NonlinearReconstructionEstimator::Estimate(
     LOG(INFO) << "Insufficient view pairs to perform estimation.";
     return summary;
   }
-  nonlinear_estimator_timings.initial_view_graph_filtering_time =
+  global_estimator_timings.initial_view_graph_filtering_time =
       timer.ElapsedTimeInSeconds();
 
   // Step 2. Calibrate any uncalibrated cameras.
@@ -190,42 +181,42 @@ ReconstructionEstimatorSummary NonlinearReconstructionEstimator::Estimate(
   LOG(INFO) << "Estimating the global rotations of all cameras.";
   timer.Reset();
   EstimateGlobalRotations();
-  nonlinear_estimator_timings.rotation_estimation_time =
+  global_estimator_timings.rotation_estimation_time =
       timer.ElapsedTimeInSeconds();
 
   // Step 4. Filter bad rotations.
   LOG(INFO) << "Filtering any bad rotation estimations.";
   timer.Reset();
   FilterRotations();
-  nonlinear_estimator_timings.rotation_filtering_time =
+  global_estimator_timings.rotation_filtering_time =
       timer.ElapsedTimeInSeconds();
 
   // Step 5. Optimize relative translations.
   LOG(INFO) << "Optimizing the pairwise translation estimations.";
   timer.Reset();
   OptimizePairwiseTranslations();
-  nonlinear_estimator_timings.relative_translation_optimization_time =
+  global_estimator_timings.relative_translation_optimization_time =
       timer.ElapsedTimeInSeconds();
 
   // Step 6. Filter bad relative translations.
   LOG(INFO) << "Filtering any bad relative translations.";
   timer.Reset();
   FilterRelativeTranslation();
-  nonlinear_estimator_timings.relative_translation_filtering_time =
+  global_estimator_timings.relative_translation_filtering_time =
       timer.ElapsedTimeInSeconds();
 
   // Step 7. Estimate global positions.
   LOG(INFO) << "Estimating the positions of all cameras.";
   timer.Reset();
   EstimatePosition();
-  nonlinear_estimator_timings.position_estimation_time =
+  global_estimator_timings.position_estimation_time =
       timer.ElapsedTimeInSeconds();
   summary.pose_estimation_time =
-      nonlinear_estimator_timings.rotation_estimation_time +
-      nonlinear_estimator_timings.rotation_filtering_time +
-      nonlinear_estimator_timings.relative_translation_optimization_time +
-      nonlinear_estimator_timings.relative_translation_filtering_time +
-      nonlinear_estimator_timings.position_estimation_time;
+      global_estimator_timings.rotation_estimation_time +
+      global_estimator_timings.rotation_filtering_time +
+      global_estimator_timings.relative_translation_optimization_time +
+      global_estimator_timings.relative_translation_filtering_time +
+      global_estimator_timings.position_estimation_time;
 
   // Set the poses in the reconstruction object.
   SetReconstructionFromEstimatedPoses(orientations_,
@@ -267,27 +258,27 @@ ReconstructionEstimatorSummary NonlinearReconstructionEstimator::Estimate(
   // Output some timing statistics.
   std::ostringstream string_stream;
   string_stream
-      << "Nonlinear Reconstruction Estimator timings:"
+      << "Global Reconstruction Estimator timings:"
       << "\n\tInitial view graph filtering time = "
-      << nonlinear_estimator_timings.initial_view_graph_filtering_time
+      << global_estimator_timings.initial_view_graph_filtering_time
       << "\n\tCamera intrinsic calibration time = "
       << summary.camera_intrinsics_calibration_time
       << "\n\tRotation estimation time = "
-      << nonlinear_estimator_timings.rotation_estimation_time
+      << global_estimator_timings.rotation_estimation_time
       << "\n\tRotation filtering time = "
-      << nonlinear_estimator_timings.rotation_filtering_time
+      << global_estimator_timings.rotation_filtering_time
       << "\n\tRelative translation optimization time = "
-      << nonlinear_estimator_timings.relative_translation_optimization_time
+      << global_estimator_timings.relative_translation_optimization_time
       << "\n\tRelative translation filtering time = "
-      << nonlinear_estimator_timings.relative_translation_filtering_time
+      << global_estimator_timings.relative_translation_filtering_time
       << "\n\tPosition estimation time = "
-      << nonlinear_estimator_timings.position_estimation_time;
+      << global_estimator_timings.position_estimation_time;
   summary.message = string_stream.str();
 
   return summary;
 }
 
-bool NonlinearReconstructionEstimator::FilterInitialViewGraph() {
+bool GlobalReconstructionEstimator::FilterInitialViewGraph() {
   // Remove any view pairs that do not have a sufficient number of inliers.
   std::unordered_set<ViewIdPair> view_pairs_to_remove;
   const auto& view_pairs = view_graph_->GetAllEdges();
@@ -306,11 +297,11 @@ bool NonlinearReconstructionEstimator::FilterInitialViewGraph() {
   return view_graph_->NumEdges() >= 1;
 }
 
-void NonlinearReconstructionEstimator::CalibrateCameras() {
+void GlobalReconstructionEstimator::CalibrateCameras() {
   SetCameraIntrinsicsFromPriors(reconstruction_);
 }
 
-void NonlinearReconstructionEstimator::EstimateGlobalRotations() {
+void GlobalReconstructionEstimator::EstimateGlobalRotations() {
   const ViewId random_starting_view = RandomViewId(*view_graph_);
   OrientationsFromViewGraph(*view_graph_, random_starting_view, &orientations_);
   const auto& relative_rotations = RelativeRotationsFromViewGraph(*view_graph_);
@@ -321,7 +312,7 @@ void NonlinearReconstructionEstimator::EstimateGlobalRotations() {
       << "Could not estimate rotations.";
 }
 
-void NonlinearReconstructionEstimator::FilterRotations() {
+void GlobalReconstructionEstimator::FilterRotations() {
   // Filter view pairs based on the relative rotation and the estimated global
   // orientations.
   FilterViewPairsFromOrientation(
@@ -331,7 +322,7 @@ void NonlinearReconstructionEstimator::FilterRotations() {
   RemoveDisconnectedViewPairs(view_graph_);
 }
 
-void NonlinearReconstructionEstimator::OptimizePairwiseTranslations() {
+void GlobalReconstructionEstimator::OptimizePairwiseTranslations() {
   if (options_.refine_relative_translations_after_rotation_estimation) {
     RefineRelativeTranslationsWithKnownRotations(*reconstruction_,
                                                  orientations_,
@@ -340,7 +331,7 @@ void NonlinearReconstructionEstimator::OptimizePairwiseTranslations() {
   }
 }
 
-void NonlinearReconstructionEstimator::FilterRelativeTranslation() {
+void GlobalReconstructionEstimator::FilterRelativeTranslation() {
   // Filter potentially bad relative translations.
   FilterViewPairsFromRelativeTranslation(translation_filter_options_,
                                          orientations_,
@@ -348,20 +339,33 @@ void NonlinearReconstructionEstimator::FilterRelativeTranslation() {
   RemoveDisconnectedViewPairs(view_graph_);
 }
 
-void NonlinearReconstructionEstimator::EstimatePosition() {
+void GlobalReconstructionEstimator::EstimatePosition() {
   // Estimate position.
   const auto& view_pairs = view_graph_->GetAllEdges();
-  NonlinearPositionEstimator position_estimator(position_estimator_options_,
-                                                *reconstruction_);
-  CHECK(position_estimator.EstimatePositions(view_pairs,
-                                             orientations_,
-                                             &positions_))
+  std::unique_ptr<PositionEstimator> position_estimator;
+
+  // Choose the global position estimation type.
+  if (options_.global_position_estimator_type ==
+      GlobalPositionEstimatorType::NONLINEAR) {
+    position_estimator.reset(new NonlinearPositionEstimator(
+        options_.nonlinear_position_estimator_options, *reconstruction_));
+  } else if (options_.global_position_estimator_type ==
+             GlobalPositionEstimatorType::LINEAR_TRIPLET) {
+    position_estimator.reset(new LinearPositionEstimator(
+        options_.linear_triplet_position_estimator_options, *reconstruction_));
+  } else {
+    LOG(FATAL) << "Invalid type of global position estimation chosen.";
+  }
+
+  CHECK(position_estimator->EstimatePositions(view_pairs,
+                                              orientations_,
+                                              &positions_))
       << "Position estimation failed!";
   LOG(INFO) << positions_.size()
             << " camera positions were estimated successfully.";
 }
 
-void NonlinearReconstructionEstimator::EstimateStructure() {
+void GlobalReconstructionEstimator::EstimateStructure() {
   // Estimate all tracks.
   EstimateTrackOptions triangulation_options;
   triangulation_options.max_acceptable_reprojection_error_pixels =
@@ -374,7 +378,7 @@ void NonlinearReconstructionEstimator::EstimateStructure() {
                     reconstruction_);
 }
 
-void NonlinearReconstructionEstimator::BundleAdjustment() {
+void GlobalReconstructionEstimator::BundleAdjustment() {
   // Bundle adjustment.
   bundle_adjustment_options_ =
       SetBundleAdjustmentOptions(options_, positions_.size());
