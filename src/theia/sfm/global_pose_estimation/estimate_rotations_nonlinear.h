@@ -1,4 +1,4 @@
-// Copyright (C) 2015 The Regents of the University of California (Regents).
+// Copyright (C) 2014 The Regents of the University of California (Regents).
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -32,35 +32,25 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#ifndef THEIA_SFM_POSE_COMPUTE_TRIPLET_BASELINE_RATIOS_H_
-#define THEIA_SFM_POSE_COMPUTE_TRIPLET_BASELINE_RATIOS_H_
+#ifndef THEIA_SFM_GLOBAL_POSE_ESTIMATION_ESTIMATE_ROTATIONS_NONLINEAR_H_
+#define THEIA_SFM_GLOBAL_POSE_ESTIMATION_ESTIMATE_ROTATIONS_NONLINEAR_H_
 
 #include <Eigen/Core>
-#include <vector>
+#include <unordered_map>
 
-#include "theia/sfm/feature.h"
-#include "theia/sfm/view_triplet.h"
+#include "theia/util/hash.h"
+#include "theia/sfm/types.h"
 
 namespace theia {
 
-// The baselines of the relative poses between views are estimated by
-// triangulating features common to all 3 views. Based on the depth of the
-// triangulated features, the baseline between views is recovered. The order of
-// the features must be aligned such that feature1[i] corresponds to feature2[i]
-// and feature3[i].
-//
-// The baselines returned in the 3-vector correspond to the baseline between
-// views 1 and 2, between views 1 and 3, and between views 2 and 3 in that
-// order.
-//
-// NOTE: The features must be normalized by the camera intrinsics (i.e.,
-// principal point and focal length must be removed).
-void ComputeTripletBaselineRatios(const ViewTriplet& triplet,
-                                  const std::vector<Feature>& feature1,
-                                  const std::vector<Feature>& feature2,
-                                  const std::vector<Feature>& feature3,
-                                  Eigen::Vector3d* baseline);
+// Computes the global rotations given relative rotations and an initial guess
+// for the global orientations. Nonlinear optimization is performed with Ceres
+// using a SoftL1 loss function to be robust to outliers.
+bool EstimateRotationsNonlinear(
+    const std::unordered_map<ViewIdPair, Eigen::Vector3d>& relative_rotations,
+    const double robust_loss_width,
+    std::unordered_map<ViewId, Eigen::Vector3d>* global_orientations);
 
 }  // namespace theia
 
-#endif  // THEIA_SFM_POSE_COMPUTE_TRIPLET_BASELINE_RATIOS_H_
+#endif  // THEIA_SFM_GLOBAL_POSE_ESTIMATION_ESTIMATE_ROTATIONS_NONLINEAR_H_

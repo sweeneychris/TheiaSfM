@@ -42,7 +42,7 @@
 #include "theia/sfm/bundle_adjustment/bundle_adjustment.h"
 #include "theia/sfm/reconstruction.h"
 #include "theia/sfm/reconstruction_estimator.h"
-#include "theia/sfm/pose/estimate_positions_nonlinear.h"
+#include "theia/sfm/global_pose_estimation/estimate_positions_nonlinear.h"
 #include "theia/sfm/twoview_info.h"
 #include "theia/sfm/view_graph/view_graph.h"
 

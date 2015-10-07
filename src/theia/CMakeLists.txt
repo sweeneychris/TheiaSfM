@@ -45,17 +45,17 @@ set(THEIA_SRC
   io/read_1dsfm.cc
   io/read_bundler_files.cc
   io/read_calibration.cc
-  io/read_matches_deprecated.cc
   io/read_matches.cc
-  io/reconstruction_reader_deprecated.cc
+  io/read_matches_deprecated.cc
   io/reconstruction_reader.cc
-  io/reconstruction_writer_deprecated.cc
+  io/reconstruction_reader_deprecated.cc
   io/reconstruction_writer.cc
+  io/reconstruction_writer_deprecated.cc
   io/sift_binary_file.cc
   io/sift_text_file.cc
   io/write_bundler_files.cc
-  io/write_matches_deprecated.cc
   io/write_matches.cc
+  io/write_matches_deprecated.cc
   io/write_ply_file.cc
   matching/cascade_hasher.cc
   matching/cascade_hashing_feature_matcher.cc
@@ -93,19 +93,21 @@ set(THEIA_SRC
   sfm/filter_view_pairs_from_relative_translation.cc
   sfm/find_common_tracks_in_views.cc
   sfm/find_common_views_by_name.cc
+  sfm/global_pose_estimation/compute_triplet_baseline_ratios.cc
+  sfm/global_pose_estimation/estimate_positions_linear.cc
+  sfm/global_pose_estimation/estimate_positions_nonlinear.cc
+  sfm/global_pose_estimation/estimate_rotations_nonlinear.cc
+  sfm/global_pose_estimation/estimate_rotations_robust.cc
+  sfm/global_pose_estimation/pairwise_rotation_error.cc
+  sfm/global_pose_estimation/pairwise_translation_error.cc
   sfm/incremental_reconstruction_estimator.cc
   sfm/localize_view_to_reconstruction.cc
   sfm/match_and_verify_features.cc
   sfm/nonlinear_reconstruction_estimator.cc
-  sfm/pose/compute_triplet_baseline_ratios.cc
   sfm/pose/dls_impl.cc
   sfm/pose/dls_pnp.cc
   sfm/pose/eight_point_fundamental_matrix.cc
   sfm/pose/essential_matrix_utils.cc
-  sfm/pose/estimate_positions_linear.cc
-  sfm/pose/estimate_positions_nonlinear.cc
-  sfm/pose/estimate_rotations_nonlinear.cc
-  sfm/pose/estimate_rotations_robust.cc
   sfm/pose/five_point_focal_length_radial_distortion.cc
   sfm/pose/five_point_relative_pose.cc
   sfm/pose/four_point_focal_length.cc
@@ -113,8 +115,6 @@ set(THEIA_SRC
   sfm/pose/four_point_homography.cc
   sfm/pose/four_point_relative_pose_partial_rotation.cc
   sfm/pose/fundamental_matrix_util.cc
-  sfm/pose/pairwise_rotation_error.cc
-  sfm/pose/pairwise_translation_error.cc
   sfm/pose/perspective_three_point.cc
   sfm/pose/seven_point_fundamental_matrix.cc
   sfm/pose/sim_transform_partial_rotation.cc
@@ -225,21 +225,21 @@ if (BUILD_TESTING)
   gtest(sfm/filter_view_pairs_from_relative_translation)
   gtest(sfm/find_common_tracks_in_views)
   gtest(sfm/find_common_views_by_name)
-  gtest(sfm/pose/compute_triplet_baseline_ratios)
+  gtest(sfm/global_pose_estimation/compute_triplet_baseline_ratios)
+  gtest(sfm/global_pose_estimation/estimate_positions_linear)
+  gtest(sfm/global_pose_estimation/estimate_positions_nonlinear)
+  gtest(sfm/global_pose_estimation/estimate_rotations_robust)
+  gtest(sfm/global_pose_estimation/pairwise_rotation_error)
+  gtest(sfm/global_pose_estimation/pairwise_translation_error)
   gtest(sfm/pose/dls_pnp)
   gtest(sfm/pose/eight_point_fundamental_matrix)
   gtest(sfm/pose/essential_matrix_utils)
-  gtest(sfm/pose/estimate_positions_linear)
-  gtest(sfm/pose/estimate_positions_nonlinear)
-  gtest(sfm/pose/estimate_rotations_robust)
   gtest(sfm/pose/five_point_focal_length_radial_distortion)
   gtest(sfm/pose/five_point_relative_pose)
   gtest(sfm/pose/four_point_focal_length)
   gtest(sfm/pose/four_point_homography)
   gtest(sfm/pose/four_point_relative_pose_partial_rotation)
   gtest(sfm/pose/fundamental_matrix_util)
-  gtest(sfm/pose/pairwise_rotation_error)
-  gtest(sfm/pose/pairwise_translation_error)
   gtest(sfm/pose/perspective_three_point)
   gtest(sfm/pose/seven_point_fundamental_matrix)
   gtest(sfm/pose/sim_transform_partial_rotation)

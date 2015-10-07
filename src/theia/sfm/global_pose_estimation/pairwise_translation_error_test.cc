@@ -36,7 +36,7 @@
 #include <glog/logging.h>
 
 #include "gtest/gtest.h"
-#include "theia/sfm/pose/pairwise_translation_error.h"
+#include "theia/sfm/global_pose_estimation/pairwise_translation_error.h"
 
 namespace theia {
 

@@ -32,8 +32,8 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#ifndef THEIA_SFM_POSE_ESTIMATE_POSITIONS_LINEAR_H_
-#define THEIA_SFM_POSE_ESTIMATE_POSITIONS_LINEAR_H_
+#ifndef THEIA_SFM_GLOBAL_POSE_ESTIMATION_ESTIMATE_POSITIONS_LINEAR_H_
+#define THEIA_SFM_GLOBAL_POSE_ESTIMATION_ESTIMATE_POSITIONS_LINEAR_H_
 
 #include <Eigen/Core>
 #include <Eigen/SparseCore>
@@ -118,4 +118,4 @@ class LinearPositionEstimator {
 
 }  // namespace theia
 
-#endif  // THEIA_SFM_POSE_ESTIMATE_POSITIONS_LINEAR_H_
+#endif  // THEIA_SFM_GLOBAL_POSE_ESTIMATION_ESTIMATE_POSITIONS_LINEAR_H_

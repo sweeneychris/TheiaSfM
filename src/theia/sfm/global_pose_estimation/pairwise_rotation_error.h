@@ -32,8 +32,8 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#ifndef THEIA_SFM_POSE_PAIRWISE_ROTATION_ERROR_H_
-#define THEIA_SFM_POSE_PAIRWISE_ROTATION_ERROR_H_
+#ifndef THEIA_SFM_GLOBAL_POSE_ESTIMATION_PAIRWISE_ROTATION_ERROR_H_
+#define THEIA_SFM_GLOBAL_POSE_ESTIMATION_PAIRWISE_ROTATION_ERROR_H_
 
 #include <ceres/ceres.h>
 #include <ceres/rotation.h>
@@ -91,4 +91,4 @@ bool PairwiseRotationError::operator() (const T* rotation1,
 
 }  // namespace theia
 
-#endif  // THEIA_SFM_POSE_PAIRWISE_ROTATION_ERROR_H_
+#endif  // THEIA_SFM_GLOBAL_POSE_ESTIMATION_PAIRWISE_ROTATION_ERROR_H_

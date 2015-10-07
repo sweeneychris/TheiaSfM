@@ -32,7 +32,7 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#include "theia/sfm/pose/pairwise_translation_error.h"
+#include "theia/sfm/global_pose_estimation/pairwise_translation_error.h"
 
 #include <ceres/ceres.h>
 #include <glog/logging.h>

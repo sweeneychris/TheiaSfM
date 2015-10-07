@@ -32,7 +32,7 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#include "theia/sfm/pose/compute_triplet_baseline_ratios.h"
+#include "theia/sfm/global_pose_estimation/compute_triplet_baseline_ratios.h"
 
 #include <ceres/rotation.h>
 #include <Eigen/Core>

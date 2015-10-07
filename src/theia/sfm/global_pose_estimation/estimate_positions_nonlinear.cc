@@ -32,7 +32,7 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#include "theia/sfm/pose/estimate_positions_nonlinear.h"
+#include "theia/sfm/global_pose_estimation/estimate_positions_nonlinear.h"
 
 #include <ceres/ceres.h>
 #include <ceres/rotation.h>
@@ -43,11 +43,11 @@
 #include <utility>
 #include <vector>
 
+#include "theia/sfm/global_pose_estimation/pairwise_translation_error.h"
+#include "theia/sfm/reconstruction.h"
+#include "theia/sfm/types.h"
 #include "theia/util/map_util.h"
 #include "theia/util/util.h"
-#include "theia/sfm/reconstruction.h"
-#include "theia/sfm/pose/pairwise_translation_error.h"
-#include "theia/sfm/types.h"
 
 namespace theia {
 namespace {

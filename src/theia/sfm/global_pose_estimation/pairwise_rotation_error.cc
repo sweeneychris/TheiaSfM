@@ -32,25 +32,21 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#ifndef THEIA_SFM_POSE_ESTIMATE_ROTATIONS_NONLINEAR_H_
-#define THEIA_SFM_POSE_ESTIMATE_ROTATIONS_NONLINEAR_H_
+#include "theia/sfm/global_pose_estimation/pairwise_rotation_error.h"
 
+#include <ceres/ceres.h>
 #include <Eigen/Core>
-#include <unordered_map>
-
-#include "theia/util/hash.h"
-#include "theia/sfm/types.h"
 
 namespace theia {
 
-// Computes the global rotations given relative rotations and an initial guess
-// for the global orientations. Nonlinear optimization is performed with Ceres
-// using a SoftL1 loss function to be robust to outliers.
-bool EstimateRotationsNonlinear(
-    const std::unordered_map<ViewIdPair, Eigen::Vector3d>& relative_rotations,
-    const double robust_loss_width,
-    std::unordered_map<ViewId, Eigen::Vector3d>* global_orientations);
+PairwiseRotationError::PairwiseRotationError(
+    const Eigen::Vector3d& relative_rotation, const double weight)
+    : relative_rotation_(relative_rotation), weight_(weight) {}
+
+ceres::CostFunction* PairwiseRotationError::Create(
+    const Eigen::Vector3d& relative_rotation, const double weight) {
+  return new ceres::AutoDiffCostFunction<PairwiseRotationError, 3, 3, 3>(
+      new PairwiseRotationError(relative_rotation, weight));
+}
 
 }  // namespace theia
-
-#endif  // THEIA_SFM_POSE_ESTIMATE_ROTATIONS_NONLINEAR_H_

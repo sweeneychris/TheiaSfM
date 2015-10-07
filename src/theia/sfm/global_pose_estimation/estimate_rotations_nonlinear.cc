@@ -32,7 +32,7 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#include "theia/sfm/pose/estimate_rotations_nonlinear.h"
+#include "theia/sfm/global_pose_estimation/estimate_rotations_nonlinear.h"
 
 #include <ceres/ceres.h>
 #include <Eigen/Core>
@@ -41,7 +41,7 @@
 
 #include "theia/util/hash.h"
 #include "theia/util/map_util.h"
-#include "theia/sfm/pose/pairwise_rotation_error.h"
+#include "theia/sfm/global_pose_estimation/pairwise_rotation_error.h"
 #include "theia/sfm/types.h"
 
 namespace theia {

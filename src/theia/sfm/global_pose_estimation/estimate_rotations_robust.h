@@ -32,8 +32,8 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#ifndef THEIA_SFM_POSE_ESTIMATE_ROTATIONS_ROBUST_H_
-#define THEIA_SFM_POSE_ESTIMATE_ROTATIONS_ROBUST_H_
+#ifndef THEIA_SFM_GLOBAL_POSE_ESTIMATION_ESTIMATE_ROTATIONS_ROBUST_H_
+#define THEIA_SFM_GLOBAL_POSE_ESTIMATION_ESTIMATE_ROTATIONS_ROBUST_H_
 
 #include <Eigen/Core>
 #include <Eigen/SparseCore>
@@ -128,4 +128,4 @@ class RobustRotationEstimator {
 
 }  // namespace theia
 
-#endif  // THEIA_SFM_POSE_ESTIMATE_ROTATIONS_ROBUST_H_
+#endif  // THEIA_SFM_GLOBAL_POSE_ESTIMATION_ESTIMATE_ROTATIONS_ROBUST_H_

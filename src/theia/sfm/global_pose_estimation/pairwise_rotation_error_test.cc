@@ -38,7 +38,7 @@
 #include <Eigen/Geometry>
 
 #include "gtest/gtest.h"
-#include "theia/sfm/pose/pairwise_rotation_error.h"
+#include "theia/sfm/global_pose_estimation/pairwise_rotation_error.h"
 #include "theia/math/util.h"
 
 namespace theia {

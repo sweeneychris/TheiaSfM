@@ -40,7 +40,7 @@
 
 #include "gtest/gtest.h"
 
-#include "theia/sfm/pose/compute_triplet_baseline_ratios.h"
+#include "theia/sfm/global_pose_estimation/compute_triplet_baseline_ratios.h"
 #include "theia/sfm/camera/camera.h"
 #include "theia/sfm/feature.h"
 #include "theia/sfm/view_triplet.h"
