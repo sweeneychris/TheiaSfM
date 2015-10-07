@@ -45,7 +45,7 @@
 #include "gtest/gtest.h"
 #include "theia/math/util.h"
 #include "theia/sfm/camera/camera.h"
-#include "theia/sfm/global_pose_estimation/estimate_positions_nonlinear.h"
+#include "theia/sfm/global_pose_estimation/nonlinear_position_estimator.h"
 #include "theia/sfm/global_pose_estimation/pairwise_translation_error.h"
 #include "theia/sfm/reconstruction.h"
 #include "theia/sfm/track.h"
@@ -138,11 +138,10 @@ class EstimatePositionsNonlinearTest : public ::testing::Test {
     GetTwoViewInfos(num_view_pairs, pose_noise);
 
     // Estimate the positions.
-    NonlinearPositionEstimator position_estimator(options_,
-                                                  reconstruction_,
-                                                  view_pairs_);
+    NonlinearPositionEstimator position_estimator(options_, reconstruction_);
     std::unordered_map<ViewId, Vector3d> estimated_positions;
-    EXPECT_TRUE(position_estimator.EstimatePositions(orientations_,
+    EXPECT_TRUE(position_estimator.EstimatePositions(view_pairs_,
+                                                     orientations_,
                                                      &estimated_positions));
     EXPECT_EQ(estimated_positions.size(), positions_.size());
 

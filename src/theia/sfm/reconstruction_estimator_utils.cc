@@ -46,7 +46,7 @@
 #include "theia/sfm/bundle_adjustment/bundle_adjustment.h"
 #include "theia/sfm/bundle_adjustment/optimize_relative_position_with_known_rotation.h"
 #include "theia/sfm/camera/reprojection_error.h"
-#include "theia/sfm/global_pose_estimation/estimate_positions_nonlinear.h"
+#include "theia/sfm/global_pose_estimation/nonlinear_position_estimator.h"
 #include "theia/sfm/reconstruction.h"
 #include "theia/sfm/reconstruction_estimator.h"
 #include "theia/sfm/triangulation/triangulation.h"

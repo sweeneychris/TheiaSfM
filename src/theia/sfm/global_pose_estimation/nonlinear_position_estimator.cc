@@ -32,7 +32,7 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#include "theia/sfm/global_pose_estimation/estimate_positions_nonlinear.h"
+#include "theia/sfm/global_pose_estimation/nonlinear_position_estimator.h"
 
 #include <ceres/ceres.h>
 #include <ceres/rotation.h>
@@ -84,11 +84,8 @@ bool CompareViewsPerTrack(const std::pair<TrackId, int>& t1,
 
 NonlinearPositionEstimator::NonlinearPositionEstimator(
     const NonlinearPositionEstimatorOptions& options,
-    const Reconstruction& reconstruction,
-    const std::unordered_map<ViewIdPair, TwoViewInfo>& view_pairs)
-    : options_(options),
-      reconstruction_(reconstruction),
-      view_pairs_(view_pairs) {
+    const Reconstruction& reconstruction)
+    : options_(options), reconstruction_(reconstruction) {
   CHECK_GT(options_.num_threads, 0);
   CHECK_GE(options_.min_num_points_per_view, 0);
   CHECK_GT(options_.point_to_camera_weight, 0);
@@ -96,11 +93,13 @@ NonlinearPositionEstimator::NonlinearPositionEstimator(
 }
 
 bool NonlinearPositionEstimator::EstimatePositions(
+    const std::unordered_map<ViewIdPair, TwoViewInfo>& view_pairs,
     const std::unordered_map<ViewId, Vector3d>& orientations,
     std::unordered_map<ViewId, Vector3d>* positions) {
   CHECK_NOTNULL(positions);
   triangulated_points_.clear();
   problem_.reset(new ceres::Problem());
+  view_pairs_ = &view_pairs;
 
   // Iterative schur is only used if the problem is large enough, otherwise
   // sparse schur is used.
@@ -156,7 +155,7 @@ void NonlinearPositionEstimator::InitializeRandomPositions(
     std::unordered_map<ViewId, Vector3d>* positions) {
   std::unordered_set<ViewId> constrained_positions;
   constrained_positions.reserve(orientations.size());
-  for (const auto& view_pair : view_pairs_) {
+  for (const auto& view_pair : *view_pairs_) {
     constrained_positions.insert(view_pair.first.first);
     constrained_positions.insert(view_pair.first.second);
   }
@@ -172,7 +171,7 @@ void NonlinearPositionEstimator::InitializeRandomPositions(
 void NonlinearPositionEstimator::AddCameraToCameraConstraints(
     const std::unordered_map<ViewId, Vector3d>& orientations,
     std::unordered_map<ViewId, Vector3d>* positions) {
-  for (const auto& view_pair : view_pairs_) {
+  for (const auto& view_pair : *view_pairs_) {
     const ViewId view_id1 = view_pair.first.first;
     const ViewId view_id2 = view_pair.first.second;
     Vector3d* position1 = FindOrNull(*positions, view_id1);

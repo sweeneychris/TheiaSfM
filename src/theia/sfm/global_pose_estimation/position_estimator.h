@@ -35,6 +35,11 @@
 #ifndef THEIA_SFM_GLOBAL_POSE_ESTIMATION_POSITION_ESTIMATOR_H_
 #define THEIA_SFM_GLOBAL_POSE_ESTIMATION_POSITION_ESTIMATOR_H_
 
+#include <Eigen/Core>
+#include <unordered_map>
+
+#include "theia/sfm/twoview_info.h"
+#include "theia/sfm/types.h"
 #include "theia/util/util.h"
 
 namespace theia {
@@ -55,7 +60,7 @@ class PositionEstimator {
   //
   // Returns true if the position estimation was a success, false if there was a
   // failure. If false is returned, the contents of positions are undefined.
-  bool EstimatePositions(
+  virtual bool EstimatePositions(
       const std::unordered_map<ViewIdPair, TwoViewInfo>& view_pairs,
       const std::unordered_map<ViewId, Eigen::Vector3d>& orientation,
       std::unordered_map<ViewId, Eigen::Vector3d>* positions) = 0;

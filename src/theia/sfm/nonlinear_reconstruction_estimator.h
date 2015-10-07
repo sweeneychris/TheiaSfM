@@ -37,7 +37,7 @@
 
 #include "theia/sfm/bundle_adjustment/bundle_adjustment.h"
 #include "theia/sfm/filter_view_pairs_from_relative_translation.h"
-#include "theia/sfm/global_pose_estimation/estimate_positions_nonlinear.h"
+#include "theia/sfm/global_pose_estimation/nonlinear_position_estimator.h"
 #include "theia/sfm/reconstruction_estimator.h"
 #include "theia/sfm/reconstruction_estimator_options.h"
 #include "theia/sfm/twoview_info.h"

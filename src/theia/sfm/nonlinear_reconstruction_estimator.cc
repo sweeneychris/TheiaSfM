@@ -42,7 +42,7 @@
 #include "theia/sfm/filter_view_graph_cycles_by_rotation.h"
 #include "theia/sfm/filter_view_pairs_from_orientation.h"
 #include "theia/sfm/filter_view_pairs_from_relative_translation.h"
-#include "theia/sfm/global_pose_estimation/estimate_positions_nonlinear.h"
+#include "theia/sfm/global_pose_estimation/nonlinear_position_estimator.h"
 #include "theia/sfm/global_pose_estimation/estimate_rotations_robust.h"
 #include "theia/sfm/reconstruction.h"
 #include "theia/sfm/reconstruction_estimator_options.h"
@@ -352,9 +352,10 @@ void NonlinearReconstructionEstimator::EstimatePosition() {
   // Estimate position.
   const auto& view_pairs = view_graph_->GetAllEdges();
   NonlinearPositionEstimator position_estimator(position_estimator_options_,
-                                                *reconstruction_,
-                                                view_pairs);
-  CHECK(position_estimator.EstimatePositions(orientations_, &positions_))
+                                                *reconstruction_);
+  CHECK(position_estimator.EstimatePositions(view_pairs,
+                                             orientations_,
+                                             &positions_))
       << "Position estimation failed!";
   LOG(INFO) << positions_.size()
             << " camera positions were estimated successfully.";

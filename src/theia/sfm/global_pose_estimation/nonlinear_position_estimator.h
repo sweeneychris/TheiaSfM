@@ -32,8 +32,8 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#ifndef THEIA_SFM_GLOBAL_POSE_ESTIMATION_ESTIMATE_POSITIONS_NONLINEAR_H_
-#define THEIA_SFM_GLOBAL_POSE_ESTIMATION_ESTIMATE_POSITIONS_NONLINEAR_H_
+#ifndef THEIA_SFM_GLOBAL_POSE_ESTIMATION_NONLINEAR_POSITION_ESTIMATOR_H_
+#define THEIA_SFM_GLOBAL_POSE_ESTIMATION_NONLINEAR_POSITION_ESTIMATOR_H_
 
 #include <ceres/ceres.h>
 #include <Eigen/Core>
@@ -42,6 +42,7 @@
 #include <vector>
 
 #include "theia/util/util.h"
+#include "theia/sfm/global_pose_estimation/position_estimator.h"
 #include "theia/sfm/reconstruction.h"
 #include "theia/sfm/types.h"
 #include "theia/sfm/view_triplet.h"
@@ -69,16 +70,16 @@ struct NonlinearPositionEstimatorOptions {
 // solver with a robust cost function. This solution strategy closely follows
 // the method outlined in "Robust Global Translations with 1DSfM" by Wilson and
 // Snavely (ECCV 2014)
-class NonlinearPositionEstimator {
+class NonlinearPositionEstimator : public PositionEstimator {
  public:
   NonlinearPositionEstimator(
       const NonlinearPositionEstimatorOptions& options,
-      const Reconstruction& reconstruction,
-      const std::unordered_map<ViewIdPair, TwoViewInfo>& view_pairs);
+      const Reconstruction& reconstruction);
 
   // Returns true if the optimization was a success, false if there was a
   // failure.
   bool EstimatePositions(
+      const std::unordered_map<ViewIdPair, TwoViewInfo>& view_pairs,
       const std::unordered_map<ViewId, Eigen::Vector3d>& orientation,
       std::unordered_map<ViewId, Eigen::Vector3d>* positions);
 
@@ -128,7 +129,7 @@ class NonlinearPositionEstimator {
 
   const NonlinearPositionEstimatorOptions options_;
   const Reconstruction& reconstruction_;
-  const std::unordered_map<ViewIdPair, TwoViewInfo>& view_pairs_;
+  const std::unordered_map<ViewIdPair, TwoViewInfo>* view_pairs_;
 
   std::unordered_map<TrackId, Eigen::Vector3d> triangulated_points_;
   std::unique_ptr<ceres::Problem> problem_;
@@ -141,4 +142,4 @@ class NonlinearPositionEstimator {
 
 }  // namespace theia
 
-#endif  // THEIA_SFM_GLOBAL_POSE_ESTIMATION_ESTIMATE_POSITIONS_NONLINEAR_H_
+#endif  // THEIA_SFM_GLOBAL_POSE_ESTIMATION_NONLINEAR_POSITION_ESTIMATOR_H_
