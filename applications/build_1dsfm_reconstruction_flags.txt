@@ -2,18 +2,18 @@
 # Input/output files.
 # Set these if a matches file is not present. Images should be a filepath with a
 # wildcard e.g., /home/my_username/my_images/*.jpg
---1dsfm_dataset_directory=/home/cmsweeney/projects/datasets/1dsfm/Alamo
---output_reconstruction=ellis
+--1dsfm_dataset_directory=
+--output_reconstruction=
 
 ############### Multithreading ###############
 # Set to the number of threads you want to use.
---num_threads=16
+--num_threads=1
 
 ############### General SfM Options ###############
 --reconstruction_estimator=GLOBAL
 --min_num_inliers_for_valid_match=30
 --max_track_length=50
---reconstruct_largest_connected_component=true
+--reconstruct_largest_connected_component=false
 # If set to true, only views with known calibration are reconstructed.
 --only_calibrated_views=false
 
