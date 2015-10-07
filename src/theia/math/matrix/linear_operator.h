@@ -35,108 +35,46 @@
 #ifndef THEIA_MATH_MATRIX_LINEAR_OPERATOR_H_
 #define THEIA_MATH_MATRIX_LINEAR_OPERATOR_H_
 
-#include <Eigen/Core>
-#include <Eigen/LU>
+#include <Eigen/SparseCholesky>
 #include <Eigen/SparseCore>
-#include <Eigen/SparseLU>
 #include <glog/logging.h>
 
 namespace theia {
 
-// A pure virtual class that will specify multiply methods. This will allow
-// custom implementation of multiplication e.g., using sparse matrices or linear
-// solving.
-//
-// NOTE: This class was inspired from the LinearOperator class of Ceres Solver:
-// http://www.ceres-solver.org
-class LinearOperator {
+// A sparse method for computing the shift and inverse linear operator. This
+// method is intended for use with the Spectra library.
+class SparseSymShiftSolveLDLT {
  public:
-  virtual ~LinearOperator() {}
-
-  // y = A*x
-  virtual void RightMultiply(const Eigen::VectorXd& x,
-                             Eigen::VectorXd* y) const = 0;
-
-  virtual int Cols() const = 0;
-  virtual int Rows() const = 0;
-};
-
-// A standard linear operator for dense matrices.
-class DenseLinearOperator : public LinearOperator{
- public:
-  explicit DenseLinearOperator(const Eigen::MatrixXd& A) : A_(A) {}
-
-  // y = A*x
-  virtual void RightMultiply(const Eigen::VectorXd& x,
-                             Eigen::VectorXd* y) const {
-    *y = A_ * x;
+  explicit SparseSymShiftSolveLDLT(const Eigen::SparseMatrix<double>& mat)
+      : mat_(mat) {
+    CHECK_EQ(mat_.rows(), mat_.cols());
+    ldlt_.compute(mat_);
+    if (ldlt_.info() != Eigen::Success) {
+      LOG(FATAL)
+          << "Could not perform Cholesky decomposition on the matrix. Are "
+          "you sure it is positive semi-definite?";
+    }
   }
 
-  virtual int Cols() const { return A_.cols(); }
-  virtual int Rows() const { return A_.rows(); }
+  int rows() { return mat_.rows(); }
+  int cols() { return mat_.cols(); }
+  void set_shift(double sigma) { sigma_ = sigma; }
 
- private:
-  const Eigen::MatrixXd& A_;
-};
-
-// A standard linear operator for sparse matrices.
-class SparseLinearOperator : public LinearOperator{
- public:
-  explicit SparseLinearOperator(const Eigen::SparseMatrix<double>& A) : A_(A) {}
-
-  // y = A*x
-  virtual void RightMultiply(const Eigen::VectorXd& x,
-                             Eigen::VectorXd* y) const {
-    *y = A_ * x;
+  // Use LDLT to perform matrix inversion on the positive semidefinite matrix.
+  void perform_op(double* x_in, double* y_out) {
+    Eigen::Map<Eigen::VectorXd> x(x_in, mat_.rows());
+    Eigen::Map<Eigen::VectorXd> y(y_out, mat_.cols());
+    y = ldlt_.solve(x);
+    if (ldlt_.info() != Eigen::Success) {
+      LOG(FATAL)
+          << "Could not perform Cholesky decomposition on the matrix. Are "
+          "you sure it is positive semi-definite?";
+    }
   }
 
-  virtual int Cols() const { return A_.cols(); }
-  virtual int Rows() const { return A_.rows(); }
-
- private:
-  const Eigen::SparseMatrix<double>& A_;
-};
-
-// An inverse linear operator that can be used with power iterations to
-// determine the smallest eigenvalues and eigenvectors of a matrix A.
-class DenseInverseLULinearOperator : public LinearOperator {
- public:
-  explicit DenseInverseLULinearOperator(const Eigen::MatrixXd& A) : A_(A) {}
-
-  virtual void RightMultiply(const Eigen::VectorXd& x,
-                             Eigen::VectorXd* y) const {
-    *y = A_.fullPivLu().solve(x);
-  }
-
-  virtual int Cols() const { return A_.cols(); }
-  virtual int Rows() const { return A_.rows(); }
-
- private:
-  const Eigen::MatrixXd& A_;
-};
-
-// An inverse linear operator that can be used with power iterations to
-// determine the smallest eigenvalues and eigenvectors of a matrix A.
-class SparseInverseLULinearOperator : public LinearOperator{
- public:
-  explicit SparseInverseLULinearOperator(const Eigen::SparseMatrix<double>& A)
-      : A_(A) {
-    linear_solver_.compute(A);
-    CHECK_EQ(linear_solver_.info(), Eigen::Success)
-        << "Sparse LU Decomposition failed.";
-  }
-
-  virtual void RightMultiply(const Eigen::VectorXd& x,
-                             Eigen::VectorXd* y) const {
-    *y = linear_solver_.solve(x);
-  }
-
-  virtual int Cols() const { return A_.cols(); }
-  virtual int Rows() const { return A_.rows(); }
-
- private:
-  const Eigen::SparseMatrix<double>& A_;
-  Eigen::SparseLU<Eigen::SparseMatrix<double> > linear_solver_;
+  const Eigen::SparseMatrix<double>& mat_;
+  Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>, Eigen::Upper> ldlt_;
+  double sigma_;
 };
 
 }  // namespace theia

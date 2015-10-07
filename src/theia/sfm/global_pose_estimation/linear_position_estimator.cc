@@ -34,6 +34,8 @@
 
 #include "theia/sfm/global_pose_estimation/linear_position_estimator.h"
 
+#include <Eigen/Eigenvalues>
+
 #include <ceres/rotation.h>
 #include <Eigen/Core>
 #include <Eigen/SparseCore>
@@ -44,7 +46,8 @@
 #include <unordered_set>
 #include <vector>
 
-#include "theia/math/matrix/dominant_eigensolver.h"
+#include "spectra/include/SymEigsSolver.h"
+
 #include "theia/math/matrix/linear_operator.h"
 #include "theia/sfm/find_common_tracks_in_views.h"
 #include "theia/sfm/global_pose_estimation/compute_triplet_baseline_ratios.h"
@@ -105,11 +108,11 @@ void AddTripletConstraint(const ViewTriplet& triplet,
   // Relative camera positions.
   const Matrix3d orientation0 = AngleAxisToRotationMatrix(orientations[0]);
   const Matrix3d orientation1 = AngleAxisToRotationMatrix(orientations[1]);
-  const Vector3d& t01 =
+  const Vector3d t01 =
       -orientation0.transpose() * triplet.info_one_two.position_2;
-  const Vector3d& t02 =
+  const Vector3d t02 =
       -orientation0.transpose() * triplet.info_one_three.position_2;
-  const Vector3d& t12 =
+  const Vector3d t12 =
       -orientation1.transpose() * triplet.info_two_three.position_2;
 
   // Rotations between the translation vectors.
@@ -181,13 +184,27 @@ bool LinearPositionEstimator::EstimatePositions(
     std::unordered_map<ViewId, Vector3d>* positions) {
   CHECK_NOTNULL(positions)->clear();
 
+  LOG(WARNING)
+      << "\n***************************************************\n"
+      " Warning: The linear position estimation method\n"
+      " is very unstable. Pleace use with caution.\n"
+      "***************************************************\n";
+
   // Extract triplets from the view pairs. As of now, we only consider the
   // largest connected triplet in the viewing graph.
   // TODO(cmsweeney): Utilize all connected triplet graphs.
+  VLOG(2) << "Extracting triplets from the viewing graph.";
   TripletExtractor extractor;
   std::vector<std::vector<ViewTriplet> > triplets_vec;
   CHECK(extractor.ExtractTripletsFromViewPairs(view_pairs, &triplets_vec));
-  triplets_ = triplets_vec[0];
+  // Find the largest triplet.
+  int largest_triplet_graph = 0;
+  for (int i = 1; i < triplets_vec.size(); i++) {
+    if (triplets_vec[i].size() > triplets_vec[largest_triplet_graph].size()) {
+      largest_triplet_graph = i;
+    }
+  }
+  triplets_ = triplets_vec[largest_triplet_graph];
 
   // Count the number of times each view is in a triplet.
   for (int i = 0; i < triplets_.size(); i++) {
@@ -233,26 +250,21 @@ bool LinearPositionEstimator::EstimatePositions(
   // Try to remove any 0 elements that were accidentally added.
   constraint_matrix.makeCompressed();
 
-  const Eigen::SparseMatrix<double> aTa =
-      constraint_matrix.transpose() * constraint_matrix;
+  const Eigen::SparseMatrix<double> aTa(constraint_matrix.transpose() *
+                                        constraint_matrix);
 
   // Solve for positions by examining the smallest eigenvalues. Since we have
   // set one position constant at the origin, we only need to solve for the
   // eigenvector corresponding to the smallest eigenvalue. This can be done
   // efficiently with inverse power iterations.
   VLOG(2) << "Solving for positions from the sparse eigenvalue problem...";
-  SparseInverseLULinearOperator linear_operator(aTa);
-  DominantEigensolver::Options eigensolver_options;
-  eigensolver_options.max_num_iterations = options_.max_power_iterations;
-  eigensolver_options.tolerance = options_.eigensolver_threshold;
-  DominantEigensolver eigensolver(eigensolver_options, linear_operator);
-
+  SparseSymShiftSolveLDLT op(aTa);
+  Spectra::SymEigsShiftSolver<double, Spectra::LARGEST_MAGN,
+                              SparseSymShiftSolveLDLT> eigs(&op, 1, 6, 0.0);
+  eigs.init();
+  eigs.compute();
   // Compute with power iterations.
-  Eigen::VectorXd solution;
-  double unused_eigenvalue;
-  CHECK(eigensolver.Compute(&unused_eigenvalue, &solution))
-      << "Could not solve for the eigenvector corresponding to the smallest "
-         "eigenvalue. Camera positions cannot be recovered.";
+  const Eigen::VectorXd solution = eigs.eigenvectors().col(0);
 
   // Add the solutions to the output. Set the position with an index of -1 to
   // be at the origin.
@@ -307,13 +319,16 @@ void LinearPositionEstimator::CreateLinearSystem(
     Eigen::SparseMatrix<double>* constraint_matrix) {
   const int num_views = num_triplets_for_view_.size();
 
-  // One position is set constant, which is why we use (num_views - 1) * 3
-  // columns.
-  constraint_matrix->resize(triplets_.size() * 9, (num_views - 1) * 3);
-
   std::vector<Eigen::Triplet<double> > triplet_list;
 
+  int num_valid_triplets = 0;
   for (int i = 0; i < triplets_.size(); i++) {
+    // If we were not able to extract a stable baseline for this triplet then
+    // skip this triplet.
+    if (baselines[i] == Eigen::Vector3d::Zero()) {
+      continue;
+    }
+
     const ViewTriplet& triplet = triplets_[i];
     const std::vector<Vector3d> triplet_orientations = {
       FindOrDie(orientations, triplet.view_ids[0]),
@@ -333,15 +348,18 @@ void LinearPositionEstimator::CreateLinearSystem(
         1.0 / sqrt(std::min({num_triplets_for_view_[triplet.view_ids[0]],
                              num_triplets_for_view_[triplet.view_ids[1]],
                              num_triplets_for_view_[triplet.view_ids[2]]}));
-
     AddTripletConstraint(triplet,
-                         9 * i,
+                         9 * num_valid_triplets,
                          cols,
                          w,
                          triplet_orientations,
                          baselines[i],
                          &triplet_list);
+    ++num_valid_triplets;
   }
+  // One position is set constant, which is why we use (num_views - 1) * 3
+  // columns.
+  constraint_matrix->resize(num_valid_triplets * 9, (num_views - 1) * 3);
   constraint_matrix->setFromTriplets(triplet_list.begin(), triplet_list.end());
 }
 

@@ -87,7 +87,7 @@ bool GetTriangulatedPointDepths(const TwoViewInfo& info,
 
 }  // namespace
 
-void ComputeTripletBaselineRatios(const ViewTriplet& triplet,
+bool ComputeTripletBaselineRatios(const ViewTriplet& triplet,
                                   const std::vector<Feature>& feature1,
                                   const std::vector<Feature>& feature2,
                                   const std::vector<Feature>& feature3,
@@ -136,9 +136,12 @@ void ComputeTripletBaselineRatios(const ViewTriplet& triplet,
     baseline2.emplace_back(depth1_12 / depth1_13);
     baseline3.emplace_back(depth2_12 / depth2_23);
   }
-  CHECK_GT(baseline2.size(), 0) << "Could not compute the triplet baseline "
-                                   "ratios. An inusfficient number of "
-                                   "well-constrained 3D points were observed.";
+
+  if (baseline2.size() == 0) {
+    VLOG(2) << "Could not compute the triplet baseline ratios. An inusfficient "
+               "number of well-constrained 3D points were observed.";
+    return false;
+  }
 
   // Take the median as the baseline ratios.
   const int mid_index = baseline2.size() / 2;
@@ -149,6 +152,7 @@ void ComputeTripletBaselineRatios(const ViewTriplet& triplet,
                    baseline3.begin() + mid_index,
                    baseline3.end());
   *baseline = Vector3d(1.0, baseline2[mid_index], baseline3[mid_index]);
+  return true;
 }
 
 }  // namespace theia

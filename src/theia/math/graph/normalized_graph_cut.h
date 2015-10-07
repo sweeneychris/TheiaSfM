@@ -37,7 +37,6 @@
 
 #include <Eigen/Core>
 #include <Eigen/SparseCore>
-#include <Eigen/SparseCholesky>
 #include <glog/logging.h>
 
 #include <algorithm>
@@ -49,6 +48,7 @@
 
 #include "spectra/include/SymEigsSolver.h"
 
+#include "theia/math/matrix/linear_operator.h"
 #include "theia/util/hash.h"
 #include "theia/util/map_util.h"
 
@@ -273,41 +273,6 @@ class NormalizedGraphCut {
         node_weight_inv_sqrt_coefficients.begin(),
         node_weight_inv_sqrt_coefficients.end());
   }
-
-  // A sparse method for computing the shift and inverse linear operator.
-  class SparseSymShiftSolveLDLT {
-   public:
-    explicit SparseSymShiftSolveLDLT(const Eigen::SparseMatrix<double>& mat)
-        : mat_(mat) {
-      CHECK_EQ(mat_.rows(), mat_.cols());
-      ldlt_.compute(mat_);
-      if (ldlt_.info() != Eigen::Success) {
-        LOG(FATAL)
-            << "Could not perform Cholesky decomposition on the matrix. Are "
-               "you sure it is positive semi-definite?";
-      }
-    }
-
-    int rows() { return mat_.rows(); }
-    int cols() { return mat_.cols(); }
-    void set_shift(double sigma) { sigma_ = sigma; }
-
-    // Use LDLT to perform matrix inversion on the positive semidefinite matrix.
-    void perform_op(double* x_in, double* y_out) {
-      Eigen::Map<Eigen::VectorXd> x(x_in, mat_.rows());
-      Eigen::Map<Eigen::VectorXd> y(y_out, mat_.cols());
-      y = ldlt_.solve(x);
-      if (ldlt_.info() != Eigen::Success) {
-        LOG(FATAL)
-            << "Could not perform Cholesky decomposition on the matrix. Are "
-               "you sure it is positive semi-definite?";
-      }
-    }
-
-    const Eigen::SparseMatrix<double>& mat_;
-    Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>, Eigen::Upper> ldlt_;
-    double sigma_;
-  };
 
  private:
   Options options_;

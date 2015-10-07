@@ -133,8 +133,11 @@ void TestTripletBaselineComputation(const double pixel_noise,
   TwoViewInfoFromCameras(camera1, camera2, &triplet.info_one_two);
   TwoViewInfoFromCameras(camera1, camera3, &triplet.info_one_three);
   TwoViewInfoFromCameras(camera2, camera3, &triplet.info_two_three);
-  ComputeTripletBaselineRatios(triplet, feature1, feature2, feature3,
-                               &baseline);
+  EXPECT_TRUE(ComputeTripletBaselineRatios(triplet,
+                                           feature1,
+                                           feature2,
+                                           feature3,
+                                           &baseline));
 
   // Measure the error.
   const double baseline_12 =
