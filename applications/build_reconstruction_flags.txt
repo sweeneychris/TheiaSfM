@@ -1,7 +1,8 @@
+############### Input/Output ###############
 # Input/output files.
 # Set these if a matches file is not present. Images should be a filepath with a
 # wildcard e.g., /home/my_username/my_images/*.jpg
- --images=
+--images=
 --output_matches_file=
 
 # If a matches file has already been created, set the filepath here. This avoids
@@ -14,7 +15,11 @@
 --calibration_file=
 --output_reconstruction=
 
-# Feature extraction and two view matching.
+############### Multithreading ###############
+# Set to the number of threads you want to use.
+--num_threads=16
+
+############### Feature Extraction ###############
 --descriptor=SIFT
 # Sift blob detector parameters.
 --sift_num_octaves=-1
@@ -24,6 +29,8 @@
 --sift_peak_threshold=1.7
 # Disable if regular sift descriptor is desired.
 --root_sift=true
+
+############### Matching Options ###############
 --matching_strategy=CASCADE_HASHING
 --lowes_ratio=0.75
 --min_num_inliers_for_valid_match=30
@@ -31,30 +38,50 @@
 --bundle_adjust_two_view_geometry=true
 --keep_only_symmetric_matches=true
 
-# Building a reconstruction.
---reconstruction_estimator=NONLINEAR
+############### General SfM Options ###############
+--reconstruction_estimator=GLOBAL
 --max_track_length=50
 --reconstruct_largest_connected_component=false
+# If set to true, only views with known calibration are reconstructed.
 --only_calibrated_views=false
---constant_camera_intrinsics=true
---max_reprojection_error_pixels=4.0
---num_retriangulation_iterations=1
-# View graph filtering.
---post_rotation_filtering_degrees=5.0
-# NOTE: this refinement is very unstable for rotation-only motions.
---refine_relative_translations_after_rotation_estimation=false
 
-# Position estimation.
+############### Global SfM Options ###############
+--global_position_estimator=NONLINEAR
+--global_rotation_estimator=ROBUST_L1L2
+--post_rotation_filtering_degrees=15.0
+
+# This refinement is very unstable for rotation-only motions so
+# it is advised that this is set to false for these motions.
+--refine_relative_translations_after_rotation_estimation=true
+
+# Nonlinear position estimation options
 --position_estimation_min_num_tracks_per_view=0
+--position_estimation_robust_loss_width=0.1
 
-# Triangulation options.
+# After estimating camera poses, we perform trianguation, then BA,
+# then filter out bad points. This controls how many times we repeat
+# this process.
+--num_retriangulation_iterations=1
+
+############### Incremental SfM Options ###############
+--absolute_pose_reprojection_error_threshold=8
+--partial_bundle_adjustment_num_views=20
+--full_bundle_adjustment_growth_percent=5
+--min_num_absolute_pose_inliers=30
+
+############### Bundle Adjustment Options ###############
+# Set to true to hold camera intrinsics constant during BA.
+--constant_camera_intrinsics=true
+# After BA, remove any points that have a reprojection error greater
+# than this.
+--max_reprojection_error_pixels=4.0
+
+############### Triangulation Options ###############
 --min_triangulation_angle_degrees=4.0
 --triangulation_reprojection_error_pixels=15.0
 --bundle_adjust_tracks=true
 
-# Set to the number of threads you want to use.
---num_threads=1
-
+############### Logging Options ###############
 # Logging verbosity.
 --logtostderr
 # Increase this number to get more verbose logging.

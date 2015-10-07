@@ -35,18 +35,50 @@
 #ifndef THEIA_SFM_RECONSTRUCTION_ESTIMATOR_OPTIONS_H_
 #define THEIA_SFM_RECONSTRUCTION_ESTIMATOR_OPTIONS_H_
 
+#include "theia/sfm/global_pose_estimation/nonlinear_position_estimator.h"
+#include "theia/sfm/global_pose_estimation/linear_position_estimator.h"
+
 namespace theia {
 
+// Global SfM methods are considered to be more scalable while incremental SfM
+// is less scalable but often more robust.
 enum class ReconstructionEstimatorType {
-  NONLINEAR = 0,
+  GLOBAL = 0,
   INCREMENTAL = 1
+};
+
+// The recommended type of rotations solver is the Robust L1-L2 method. This
+// method is scalable, extremely accurate, and very efficient. See the
+// global_pose_estimation directory for more details.
+enum class GlobalRotationEstimatorType {
+  ROBUST_L1L2 = 0,
+  NONLINEAR = 1
+};
+
+// Global position estimation methods.
+//   NONLINEAR: This method minimizes the nonlinear pairwise translation
+//     constraint to solve for positions.
+//   LINEAR_TRIPLET: This linear method computes camera positions by
+//     minimizing an error for image triplets. Essentially, it tries to
+//     enforce a loop/triangle constraint for triplets.
+enum class GlobalPositionEstimatorType {
+  NONLINEAR = 0,
+  LINEAR_TRIPLET = 1,
 };
 
 // Options for the reconstruction estimation.
 struct ReconstructionEstimatorOptions {
   // Type of reconstruction estimation to use.
   ReconstructionEstimatorType reconstruction_estimator_type =
-      ReconstructionEstimatorType::NONLINEAR;
+      ReconstructionEstimatorType::GLOBAL;
+
+  // If Global SfM is desired, which type of rotation and position estimation
+  // methods are used.
+  GlobalRotationEstimatorType global_rotation_estimator_type =
+      GlobalRotationEstimatorType::ROBUST_L1L2;
+
+  GlobalPositionEstimatorType global_position_estimator_type =
+      GlobalPositionEstimatorType::NONLINEAR;
 
   // Number of threads to use.
   int num_threads = 1;
@@ -96,20 +128,14 @@ struct ReconstructionEstimatorOptions {
   int translation_filtering_num_iterations = 48;
   double translation_filtering_projection_tolerance = 0.1;
 
-  // --------------- Nonlinear Rotation Estimation Options --------------- //
+  // --------------- Global Rotation Estimation Options --------------- //
 
   // Robust loss function scales for nonlinear estimation.
   double rotation_estimation_robust_loss_scale = 0.1;
 
-  // --------------- Nonlinear Position Estimation Options --------------- //
-  double position_estimation_robust_loss_scale = 1.0;
-
-  // Number of point to camera correspondences used for nonlinear position
-  // estimation.
-  int position_estimation_min_num_tracks_per_view = 10;
-  // Weight of point to camera constraints with respect to camera to camera
-  // constraints.
-  double position_estimation_point_to_camera_weight = 0.5;
+  // --------------- Global Position Estimation Options --------------- //
+  NonlinearPositionEstimator::Options nonlinear_position_estimator_options;
+  LinearPositionEstimator::Options linear_triplet_position_estimator_options;
 
   // --------------------- Incremental SfM Options --------------------- //
 
