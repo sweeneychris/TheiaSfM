@@ -52,7 +52,7 @@ struct NonlinearPositionEstimatorOptions {
   // Options for Ceres nonlinear solver.
   int num_threads = 1;
   int max_num_iterations = 400;
-  double robust_loss_width = 1.0;
+  double robust_loss_width = 0.1;
 
   // Minimum number of 3D points to camera correspondences for each
   // camera. These points can help constrain the problem and add robustness to
