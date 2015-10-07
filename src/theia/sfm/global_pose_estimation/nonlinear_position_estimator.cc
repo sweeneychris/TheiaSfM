@@ -83,7 +83,7 @@ bool CompareViewsPerTrack(const std::pair<TrackId, int>& t1,
 }  // namespace
 
 NonlinearPositionEstimator::NonlinearPositionEstimator(
-    const NonlinearPositionEstimatorOptions& options,
+    const NonlinearPositionEstimator::Options& options,
     const Reconstruction& reconstruction)
     : options_(options), reconstruction_(reconstruction) {
   CHECK_GT(options_.num_threads, 0);

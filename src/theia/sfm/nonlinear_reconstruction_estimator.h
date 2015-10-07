@@ -95,7 +95,7 @@ class NonlinearReconstructionEstimator : public ReconstructionEstimator {
 
   ReconstructionEstimatorOptions options_;
   FilterViewPairsFromRelativeTranslationOptions translation_filter_options_;
-  NonlinearPositionEstimatorOptions position_estimator_options_;
+  NonlinearPositionEstimator::Options position_estimator_options_;
   BundleAdjustmentOptions bundle_adjustment_options_;
   RansacParameters ransac_params_;
 

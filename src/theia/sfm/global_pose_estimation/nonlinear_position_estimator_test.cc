@@ -249,7 +249,7 @@ class EstimatePositionsNonlinearTest : public ::testing::Test {
     return info;
   }
 
-  NonlinearPositionEstimatorOptions options_;
+  NonlinearPositionEstimator::Options options_;
   std::unordered_map<ViewId, Vector3d> positions_;
   std::unordered_map<ViewId, Vector3d> orientations_;
   std::unordered_map<ViewIdPair, TwoViewInfo> view_pairs_;
