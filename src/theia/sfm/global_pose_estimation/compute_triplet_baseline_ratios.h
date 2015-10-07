@@ -55,7 +55,7 @@ namespace theia {
 //
 // NOTE: The features must be normalized by the camera intrinsics (i.e.,
 // principal point and focal length must be removed).
-void ComputeTripletBaselineRatios(const ViewTriplet& triplet,
+bool ComputeTripletBaselineRatios(const ViewTriplet& triplet,
                                   const std::vector<Feature>& feature1,
                                   const std::vector<Feature>& feature2,
                                   const std::vector<Feature>& feature3,

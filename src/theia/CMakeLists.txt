@@ -64,7 +64,6 @@ set(THEIA_SRC
   math/closed_form_polynomial_solver.cc
   math/find_polynomial_roots_companion_matrix.cc
   math/find_polynomial_roots_jenkins_traub.cc
-  math/matrix/dominant_eigensolver.cc
   math/polynomial.cc
   math/probability/sequential_probability_ratio.cc
   sfm/bundle_adjustment/bundle_adjust_track.cc
@@ -202,7 +201,6 @@ if (BUILD_TESTING)
   gtest(math/graph/connected_components)
   gtest(math/graph/normalized_graph_cut)
   gtest(math/l1_solver)
-  gtest(math/matrix/dominant_eigensolver)
   gtest(math/matrix/gauss_jordan)
   gtest(math/matrix/rq_decomposition)
   gtest(math/polynomial)
