@@ -49,22 +49,6 @@
 
 namespace theia {
 
-struct NonlinearPositionEstimatorOptions {
-  // Options for Ceres nonlinear solver.
-  int num_threads = 1;
-  int max_num_iterations = 400;
-  double robust_loss_width = 0.1;
-
-  // Minimum number of 3D points to camera correspondences for each
-  // camera. These points can help constrain the problem and add robustness to
-  // collinear configurations, but are not necessary to compute the position.
-  int min_num_points_per_view = 0;
-
-  // The total weight of all point to camera correspondences compared to camera
-  // to camera correspondences.
-  double point_to_camera_weight = 0.5;
-};
-
 // Estimates the camera position of views given pairwise relative poses and the
 // absolute orientations of cameras. Positions are estimated using a nonlinear
 // solver with a robust cost function. This solution strategy closely follows
@@ -72,8 +56,24 @@ struct NonlinearPositionEstimatorOptions {
 // Snavely (ECCV 2014)
 class NonlinearPositionEstimator : public PositionEstimator {
  public:
+  struct Options {
+    // Options for Ceres nonlinear solver.
+    int num_threads = 1;
+    int max_num_iterations = 400;
+    double robust_loss_width = 0.1;
+
+    // Minimum number of 3D points to camera correspondences for each
+    // camera. These points can help constrain the problem and add robustness to
+    // collinear configurations, but are not necessary to compute the position.
+    int min_num_points_per_view = 0;
+
+    // The total weight of all point to camera correspondences compared to camera
+    // to camera correspondences.
+    double point_to_camera_weight = 0.5;
+  };
+
   NonlinearPositionEstimator(
-      const NonlinearPositionEstimatorOptions& options,
+      const NonlinearPositionEstimator::Options& options,
       const Reconstruction& reconstruction);
 
   // Returns true if the optimization was a success, false if there was a
@@ -127,7 +127,7 @@ class NonlinearPositionEstimator : public PositionEstimator {
   void AddCamerasAndPointsToParameterGroups(
       std::unordered_map<ViewId, Eigen::Vector3d>* positions);
 
-  const NonlinearPositionEstimatorOptions options_;
+  const NonlinearPositionEstimator::Options options_;
   const Reconstruction& reconstruction_;
   const std::unordered_map<ViewIdPair, TwoViewInfo>* view_pairs_;
 

@@ -86,9 +86,9 @@ SetRelativeTranslationFilteringOptions(
 
 // Sets the nonlinear position estimation options from the reconstruction
 // estimator options.
-NonlinearPositionEstimatorOptions SetNonlinearPositionEstimatorOptions(
+NonlinearPositionEstimator::Options SetNonlinearPositionEstimatorOptions(
     const ReconstructionEstimatorOptions& options) {
-  NonlinearPositionEstimatorOptions npe_options;
+  NonlinearPositionEstimator::Options npe_options;
   npe_options.num_threads = options.num_threads;
   npe_options.robust_loss_width =
       options.position_estimation_robust_loss_scale;
