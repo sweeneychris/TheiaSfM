@@ -47,7 +47,7 @@ BFGS<Scalar>::operator()(const ProblemLS<Scalar>& problem,
                          Matrix<Scalar, Dynamic, 1>* x,
                          Scalar* min_value) {
   if (!x || !min_value) return NOT_SOLVED;
-  uint iter = 0;
+  int iter = 0;
   const int n = x->rows();
   Matrix<Scalar, Dynamic, Dynamic> H(n, n);
   Matrix<Scalar, Dynamic, 1> gradient(n), past_gradient(n), y(n), s(n), p(n);

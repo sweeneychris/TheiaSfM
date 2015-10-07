@@ -37,7 +37,7 @@
 
 namespace optimo {
 namespace utils {
-template <typename Scalar, uint m, uint n>
+template <typename Scalar, int m, int n>
 inline bool isFinite(const Eigen::Matrix<Scalar, m, n>& x) {
   bool flag = true;
   const Scalar* data = x.data();
