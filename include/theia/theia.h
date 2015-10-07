@@ -127,6 +127,7 @@
 #include "theia/sfm/global_pose_estimation/estimate_rotations_robust.h"
 #include "theia/sfm/global_pose_estimation/pairwise_rotation_error.h"
 #include "theia/sfm/global_pose_estimation/pairwise_translation_error.h"
+#include "theia/sfm/global_pose_estimation/position_estimator.h"
 #include "theia/sfm/incremental_reconstruction_estimator.h"
 #include "theia/sfm/localize_view_to_reconstruction.h"
 #include "theia/sfm/match_and_verify_features.h"
