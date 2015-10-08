@@ -121,7 +121,7 @@ VectorXd MultiplyPolynomials(const VectorXd& poly1, const VectorXd& poly2) {
   VectorXd multiplied_poly = VectorXd::Zero(poly1.size() + poly2.size() - 1);;
   for (int i = 0; i < poly1.size(); i++) {
     for (int j = 0; j < poly2.size(); j++) {
-      multiplied_poly.reverse()(i + j) +=
+      multiplied_poly.reverse().operator()(i + j) +=
           poly1.reverse()(i) * poly2.reverse()(j);
     }
   }
@@ -148,7 +148,7 @@ void DividePolynomial(const VectorXd& polynomial,
     denominator.head(divisor.size()) = divisor;
 
     const double quotient_scalar = numerator(0) / denominator(0);
-    quotient->reverse()(numerator.size() - divisor.size()) =
+    quotient->reverse().operator()(numerator.size() - divisor.size()) =
         quotient_scalar;
     denominator = denominator * quotient_scalar;
     numerator = numerator - denominator;
