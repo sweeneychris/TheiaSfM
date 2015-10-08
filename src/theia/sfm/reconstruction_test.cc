@@ -73,8 +73,14 @@ TEST(Reconstruction, RemoveView) {
 
   EXPECT_TRUE(reconstruction.RemoveView(view_id1));
   EXPECT_EQ(reconstruction.NumViews(), 1);
+  EXPECT_EQ(reconstruction.ViewIdFromName(view_names[0]), kInvalidViewId);
+  EXPECT_EQ(reconstruction.View(view_id1), nullptr);
+
   EXPECT_TRUE(reconstruction.RemoveView(view_id2));
   EXPECT_EQ(reconstruction.NumViews(), 0);
+  EXPECT_EQ(reconstruction.ViewIdFromName(view_names[1]), kInvalidViewId);
+  EXPECT_EQ(reconstruction.View(view_id2), nullptr);
+
   EXPECT_FALSE(reconstruction.RemoveView(kInvalidViewId));
   EXPECT_FALSE(reconstruction.RemoveView(view_id1));
 }

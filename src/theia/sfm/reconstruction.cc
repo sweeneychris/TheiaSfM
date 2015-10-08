@@ -148,6 +148,11 @@ bool Reconstruction::RemoveView(const ViewId view_id) {
     }
   }
 
+  // Remove the view name.
+  const std::string& view_name = view->Name();
+  view_name_to_id_.erase(view_name);
+
+  // Remove the view.
   views_.erase(view_id);
   return true;
 }
