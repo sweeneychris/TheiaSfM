@@ -63,8 +63,11 @@ bool WriteMatchesAndGeometry(
     return false;
   }
 
-  cereal::PortableBinaryOutputArchive output_archive(matches_writer);
-  output_archive(view_names, camera_intrinsics_prior, matches);
+  // Make sure that Cereal is able to finish executing before returning.
+  {
+    cereal::PortableBinaryOutputArchive output_archive(matches_writer);
+    output_archive(view_names, camera_intrinsics_prior, matches);
+  }
 
   return true;
 }

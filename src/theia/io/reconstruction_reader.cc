@@ -66,8 +66,11 @@ bool ReadReconstruction(const std::string& input_file,
     return false;
   }
 
-  cereal::PortableBinaryInputArchive input_archive(input_reader);
-  input_archive(*reconstruction);
+  // Make sure that Cereal is able to finish executing before returning.
+  {
+    cereal::PortableBinaryInputArchive input_archive(input_reader);
+    input_archive(*reconstruction);
+  }
 
   return true;
 }

@@ -56,8 +56,11 @@ bool WriteReconstruction(const Reconstruction& reconstruction,
     return false;
   }
 
-  cereal::PortableBinaryOutputArchive output_archive(output_writer);
-  output_archive(reconstruction);
+  // Make sure that Cereal is able to finish executing before returning.
+  {
+    cereal::PortableBinaryOutputArchive output_archive(output_writer);
+    output_archive(reconstruction);
+  }
 
   return true;
 }

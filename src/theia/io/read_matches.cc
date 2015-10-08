@@ -66,8 +66,11 @@ bool ReadMatchesAndGeometry(
     return false;
   }
 
-  cereal::PortableBinaryInputArchive input_archive(matches_reader);
-  input_archive(*view_names, *camera_intrinsics_prior, *matches);
+  // Make sure that Cereal is able to finish executing before returning.
+  {
+    cereal::PortableBinaryInputArchive input_archive(matches_reader);
+    input_archive(*view_names, *camera_intrinsics_prior, *matches);
+  }
 
   return true;
 }
