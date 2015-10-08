@@ -44,6 +44,7 @@
 #include <iostream>  // NOLINT
 #include <string>
 
+#include "theia/sfm/reconstruction_estimator_utils.h"
 #include "theia/sfm/reconstruction.h"
 
 namespace theia {
@@ -56,10 +57,13 @@ bool WriteReconstruction(const Reconstruction& reconstruction,
     return false;
   }
 
+  Reconstruction estimated_reconstruction;
+  CreateEstimatedSubreconstruction(reconstruction, &estimated_reconstruction);
+
   // Make sure that Cereal is able to finish executing before returning.
   {
     cereal::PortableBinaryOutputArchive output_archive(output_writer);
-    output_archive(reconstruction);
+    output_archive(estimated_reconstruction);
   }
 
   return true;

@@ -44,6 +44,7 @@
 
 #include "theia/sfm/camera/camera.h"
 #include "theia/sfm/camera_intrinsics_prior.h"
+#include "theia/sfm/reconstruction_estimator_utils.h"
 #include "theia/sfm/reconstruction.h"
 #include "theia/sfm/types.h"
 #include "theia/sfm/track.h"
@@ -53,72 +54,28 @@
 namespace theia {
 namespace {
 
-Reconstruction* CreateEstimatedSubreconstruction(
-    const Reconstruction& input_reconstruction) {
-  std::unique_ptr<Reconstruction> subreconstruction(
-      new Reconstruction(input_reconstruction));
-  const auto& view_ids = subreconstruction->ViewIds();
-  for (const ViewId view_id : view_ids) {
-    const View* view = subreconstruction->View(view_id);
-    if (view == nullptr) {
-      continue;
-    }
-
-    if (!view->IsEstimated()) {
-      subreconstruction->RemoveView(view_id);
-    }
-  }
-
-  const auto& track_ids = subreconstruction->TrackIds();
-  for (const TrackId track_id : track_ids) {
-    const Track* track = subreconstruction->Track(track_id);
-    if (track == nullptr) {
-      continue;
-    }
-
-    if (!track->IsEstimated() || track->NumViews() < 2) {
-      subreconstruction->RemoveTrack(track_id);
-    }
-  }
-  return subreconstruction.release();
-}
-
-// Writes the lists file and EXIF focal length if available.
-bool WriteListsFile(const Reconstruction& reconstruction,
-                    const std::string& lists_file) {
-  std::ofstream ofs(lists_file);
-  if (!ofs.is_open()) {
-    LOG(ERROR) << "Cannot open the file: " << lists_file << " for writing.";
+bool WriteBundleFile(const Reconstruction& reconstruction,
+                     const std::string& bundle_file,
+                     const std::string& lists_file) {
+  // Output file stream for bundle file.
+  std::ofstream ofs_bundle(bundle_file);
+  if (!ofs_bundle.is_open()) {
+    LOG(ERROR) << "Cannot open the file: " << bundle_file << " for writing.";
     return false;
   }
 
-  const std::vector<ViewId>& view_ids = reconstruction.ViewIds();
-  for (int i = 0; i < view_ids.size(); i++) {
-    const View* view = reconstruction.View(view_ids[i]);
-    ofs << view->Name();
-    const auto& prior = view->CameraIntrinsicsPrior();
-    if (prior.focal_length.is_set) {
-      ofs << " 0 " << prior.focal_length.value;
-    }
-    ofs << std::endl;
-  }
-
-  return true;
-}
-
-bool WriteBundleFile(const Reconstruction& reconstruction,
-                     const std::string& bundle_file) {
-  std::ofstream ofs(bundle_file);
-  if (!ofs.is_open()) {
-    LOG(ERROR) << "Cannot open the file: " << bundle_file << " for writing.";
+  // Output file stream for list file.
+  std::ofstream ofs_lists(lists_file);
+  if (!ofs_lists.is_open()) {
+    LOG(ERROR) << "Cannot open the file: " << lists_file << " for writing.";
     return false;
   }
 
   const Eigen::Matrix3d theia_to_bundler =
       Eigen::Vector3d(1.0, -1.0, -1.0).asDiagonal();
 
-  ofs << "# Bundle file v0.3" << std::endl;
-  ofs << reconstruction.NumViews() << " " << reconstruction.NumTracks()
+  ofs_bundle << "# Bundle file v0.3" << std::endl;
+  ofs_bundle << reconstruction.NumViews() << " " << reconstruction.NumTracks()
       << std::endl;
 
   const Eigen::IOFormat unaligned(Eigen::FullPrecision, Eigen::DontAlignCols);
@@ -127,18 +84,29 @@ bool WriteBundleFile(const Reconstruction& reconstruction,
   const auto& view_ids = reconstruction.ViewIds();
   for (int i = 0; i < view_ids.size(); i++) {
     view_id_to_index[view_ids[i]] = i;
-    const Camera& camera = reconstruction.View(view_ids[i])->Camera();
-    ofs << camera.FocalLength() << " " << camera.RadialDistortion1() << " "
-        << camera.RadialDistortion2() << std::endl;
+    const View* view = reconstruction.View(view_ids[i]);
+
+    // Output the information to the list file.
+    ofs_lists << view->Name();
+    const auto& prior = view->CameraIntrinsicsPrior();
+    if (prior.focal_length.is_set) {
+      ofs_lists << " 0 " << prior.focal_length.value;
+    }
+    ofs_lists << std::endl;
+
+    // Output the camera information to the bundle file.
+    const Camera& camera = view->Camera();
+    ofs_bundle << camera.FocalLength() << " " << camera.RadialDistortion1()
+               << " " << camera.RadialDistortion2() << std::endl;
 
     const Eigen::Matrix3d rotation =
         theia_to_bundler * camera.GetOrientationAsRotationMatrix();
-    ofs << rotation.format(unaligned) << std::endl;
+    ofs_bundle << rotation.format(unaligned) << std::endl;
 
     const Eigen::Vector3d translation =
         theia_to_bundler *
         (-camera.GetOrientationAsRotationMatrix() * camera.GetPosition());
-    ofs << translation.transpose().format(unaligned) << std::endl;
+    ofs_bundle << translation.transpose().format(unaligned) << std::endl;
   }
 
   // Output all points
@@ -146,12 +114,12 @@ bool WriteBundleFile(const Reconstruction& reconstruction,
   for (const TrackId track_id : track_ids) {
     const Track* track = reconstruction.Track(track_id);
     const Eigen::Vector3d position = track->Point().hnormalized();
-    ofs << position.transpose().format(unaligned) << std::endl;
+    ofs_bundle << position.transpose().format(unaligned) << std::endl;
 
     // Output black since we do not current keep colors.
-    ofs << "255 255 255" << std::endl;
+    ofs_bundle << "255 255 255" << std::endl;
     const auto& views_in_track = track->ViewIds();
-    ofs << views_in_track.size();
+    ofs_bundle << views_in_track.size();
     for (const ViewId view_id : views_in_track) {
       const int index = FindOrDie(view_id_to_index, view_id);
       const View* view = reconstruction.View(view_id);
@@ -164,10 +132,10 @@ bool WriteBundleFile(const Reconstruction& reconstruction,
 
       // Note we give the keypoint index as 0 because we do not store SIFT
       // keyfiles.
-      ofs << " " << index << " 0 "
+      ofs_bundle << " " << index << " 0 "
           << adjusted_feature.transpose().format(unaligned);
     }
-    ofs << std::endl;
+    ofs_bundle << std::endl;
   }
   return true;
 }
@@ -177,14 +145,10 @@ bool WriteBundleFile(const Reconstruction& reconstruction,
 bool WriteBundlerFiles(const Reconstruction& reconstruction,
                        const std::string& lists_file,
                        const std::string& bundle_file) {
-  std::unique_ptr<Reconstruction> estimated_reconstruction(
-      CreateEstimatedSubreconstruction(reconstruction));
+  Reconstruction estimated_reconstruction;
+  CreateEstimatedSubreconstruction(reconstruction, &estimated_reconstruction);
 
-  if (!WriteListsFile(*estimated_reconstruction, lists_file)) {
-    return false;
-  }
-
-  return WriteBundleFile(*estimated_reconstruction, bundle_file);
+  return WriteBundleFile(estimated_reconstruction, bundle_file, lists_file);
 }
 
 }  // namespace theia

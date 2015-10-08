@@ -183,6 +183,35 @@ void SetReconstructionFromEstimatedPoses(
   }
 }
 
+void CreateEstimatedSubreconstruction(
+    const Reconstruction& input_reconstruction,
+    Reconstruction* estimated_reconstruction) {
+  *estimated_reconstruction = input_reconstruction;
+  const auto view_ids = estimated_reconstruction->ViewIds();
+  for (const ViewId view_id : view_ids) {
+    const View* view = estimated_reconstruction->View(view_id);
+    if (view == nullptr) {
+      continue;
+    }
+
+    if (!view->IsEstimated()) {
+      estimated_reconstruction->RemoveView(view_id);
+    }
+  }
+
+  const auto track_ids = estimated_reconstruction->TrackIds();
+  for (const TrackId track_id : track_ids) {
+    const Track* track = estimated_reconstruction->Track(track_id);
+    if (track == nullptr) {
+      continue;
+    }
+
+    if (!track->IsEstimated() || track->NumViews() < 2) {
+      estimated_reconstruction->RemoveTrack(track_id);
+    }
+  }
+}
+
 // Outputs the ViewId of all estimated views in the reconstruction.
 void GetEstimatedViewsFromReconstruction(const Reconstruction& reconstruction,
                                          std::unordered_set<ViewId>* views) {

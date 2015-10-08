@@ -68,6 +68,12 @@ void SetReconstructionFromEstimatedPoses(
     const std::unordered_map<ViewId, Eigen::Vector3d>& positions,
     Reconstruction* reconstruction);
 
+// Given a reconstruction, return a new reconstruction that contains only the
+// estimated views and tracks.
+void CreateEstimatedSubreconstruction(
+    const Reconstruction& input_reconstruction,
+    Reconstruction* estimated_reconstruction);
+
 // Outputs the ViewId of all estimated views in the reconstruction.
 void GetEstimatedViewsFromReconstruction(const Reconstruction& reconstruction,
                                 std::unordered_set<ViewId>* views);
