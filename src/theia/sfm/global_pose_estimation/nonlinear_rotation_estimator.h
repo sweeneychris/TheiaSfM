@@ -38,18 +38,30 @@
 #include <Eigen/Core>
 #include <unordered_map>
 
-#include "theia/util/hash.h"
+#include "theia/sfm/global_pose_estimation/rotation_estimator.h"
 #include "theia/sfm/types.h"
+#include "theia/util/hash.h"
 
 namespace theia {
 
 // Computes the global rotations given relative rotations and an initial guess
 // for the global orientations. Nonlinear optimization is performed with Ceres
 // using a SoftL1 loss function to be robust to outliers.
-bool EstimateRotationsNonlinear(
-    const std::unordered_map<ViewIdPair, Eigen::Vector3d>& relative_rotations,
-    const double robust_loss_width,
-    std::unordered_map<ViewId, Eigen::Vector3d>* global_orientations);
+class NonlinearRotationEstimator : public RotationEstimator {
+ public:
+  NonlinearRotationEstimator() : robust_loss_width_(0.1) {}
+  explicit NonlinearRotationEstimator(const double robust_loss_width)
+      : robust_loss_width_(robust_loss_width) {}
+
+  // Estimates the global orientations of all views based on an initial
+  // guess. Returns true on successful estimation and false otherwise.
+  bool EstimateRotations(
+      const std::unordered_map<ViewIdPair, TwoViewInfo>& view_pairs,
+      std::unordered_map<ViewId, Eigen::Vector3d>* global_orientations);
+
+ private:
+  const double robust_loss_width_;
+};
 
 }  // namespace theia
 

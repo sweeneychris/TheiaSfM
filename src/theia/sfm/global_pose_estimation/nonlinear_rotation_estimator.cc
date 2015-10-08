@@ -46,17 +46,16 @@
 
 namespace theia {
 
-bool EstimateRotationsNonlinear(
-    const std::unordered_map<ViewIdPair, Eigen::Vector3d>& relative_rotations,
-    const double robust_loss_width,
-    std::unordered_map<ViewId, Eigen::Vector3d>* global_orientations) {
+bool NonlinearRotationEstimator::EstimateRotations(
+      const std::unordered_map<ViewIdPair, TwoViewInfo>& view_pairs,
+      std::unordered_map<ViewId, Eigen::Vector3d>* global_orientations) {
   CHECK_NOTNULL(global_orientations);
   if (global_orientations->size() == 0) {
     LOG(INFO) << "Skipping nonlinear rotation optimization because no "
                  "initialization was provivded.";
     return false;
   }
-  if (relative_rotations.size() == 0) {
+  if (view_pairs.size() == 0) {
     LOG(INFO) << "Skipping nonlinear rotation optimization because no "
                  "relative rotation constraints were provivded.";
     return false;
@@ -65,10 +64,10 @@ bool EstimateRotationsNonlinear(
   // Set up the problem and loss function.
   std::unique_ptr<ceres::Problem> problem(new ceres::Problem());
   ceres::LossFunction* loss_function =
-      new ceres::SoftLOneLoss(robust_loss_width);
+      new ceres::SoftLOneLoss(robust_loss_width_);
 
-  for (const auto& relative_rotation : relative_rotations) {
-    const ViewIdPair& view_id_pair = relative_rotation.first;
+  for (const auto& view_pair : view_pairs) {
+    const ViewIdPair& view_id_pair = view_pair.first;
     Eigen::Vector3d* rotation1 =
         FindOrNull(*global_orientations, view_id_pair.first);
     Eigen::Vector3d* rotation2 =
@@ -81,7 +80,7 @@ bool EstimateRotationsNonlinear(
     }
 
     ceres::CostFunction* cost_function =
-        PairwiseRotationError::Create(relative_rotation.second, 1.0);
+        PairwiseRotationError::Create(view_pair.second.rotation_2, 1.0);
     problem->AddResidualBlock(cost_function,
                               loss_function,
                               rotation1->data(),
