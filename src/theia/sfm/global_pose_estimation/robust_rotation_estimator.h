@@ -41,6 +41,8 @@
 #include <unordered_map>
 
 #include "theia/util/hash.h"
+#include "theia/sfm/global_pose_estimation/rotation_estimator.h"
+#include "theia/sfm/twoview_info.h"
 #include "theia/sfm/types.h"
 
 namespace theia {
@@ -56,7 +58,7 @@ namespace theia {
 // squares. The L1 minimization is relatively slow, but provides excellent
 // robustness to outliers. Then the L2 minimization (which is much faster) can
 // refine the solution to be very accurate.
-class RobustRotationEstimator {
+class RobustRotationEstimator : public RotationEstimator {
  public:
   struct Options {
     // Maximum number of times to run L1 minimization. L1 is very slow (compared
@@ -69,14 +71,12 @@ class RobustRotationEstimator {
     int max_num_irls_iterations = 100;
   };
 
-  RobustRotationEstimator(
-      const Options& options,
-      const std::unordered_map<ViewIdPair, Eigen::Vector3d>& relative_rotations)
-      : options_(options), relative_rotations_(relative_rotations) {}
+  RobustRotationEstimator(const Options& options) : options_(options) {}
 
   // Estimates the global orientations of all views based on an initial
   // guess. Returns true on successful estimation and false otherwise.
   bool EstimateRotations(
+      const std::unordered_map<ViewIdPair, TwoViewInfo>& view_pairs,
       std::unordered_map<ViewId, Eigen::Vector3d>* global_orientations);
 
  protected:
@@ -106,7 +106,7 @@ class RobustRotationEstimator {
   const Options options_;
 
   // The pairwise relative rotations used to compute the global rotations.
-  const std::unordered_map<ViewIdPair, Eigen::Vector3d>& relative_rotations_;
+  const std::unordered_map<ViewIdPair, TwoViewInfo>* view_pairs_;
 
   // The global orientation estimates for each camera.
   std::unordered_map<ViewId, Eigen::Vector3d>* global_orientations_;

@@ -304,11 +304,10 @@ void GlobalReconstructionEstimator::CalibrateCameras() {
 void GlobalReconstructionEstimator::EstimateGlobalRotations() {
   const ViewId random_starting_view = RandomViewId(*view_graph_);
   OrientationsFromViewGraph(*view_graph_, random_starting_view, &orientations_);
-  const auto& relative_rotations = RelativeRotationsFromViewGraph(*view_graph_);
   RobustRotationEstimator::Options rotation_estimator_options;
-  RobustRotationEstimator rotation_estimator(rotation_estimator_options,
-                                             relative_rotations);
-  CHECK(rotation_estimator.EstimateRotations(&orientations_))
+  RobustRotationEstimator rotation_estimator(rotation_estimator_options);
+  const auto& view_pairs = view_graph_->GetAllEdges();
+  CHECK(rotation_estimator.EstimateRotations(view_pairs, &orientations_))
       << "Could not estimate rotations.";
 }
 

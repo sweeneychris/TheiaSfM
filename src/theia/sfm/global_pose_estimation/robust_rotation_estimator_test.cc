@@ -126,13 +126,14 @@ class EstimateRotationsRobustTest : public ::testing::Test {
 
     // Estimate the rotations.
     RobustRotationEstimator::Options options;
-    RobustRotationEstimator rotation_estimator(options, relative_orientations_);
+    RobustRotationEstimator rotation_estimator(options);
 
     // Set the initial rotation estimations.
     std::unordered_map<ViewId, Vector3d> estimated_rotations;
     InitializeRotationsFromSpanningTree(&estimated_rotations);
 
-    EXPECT_TRUE(rotation_estimator.EstimateRotations(&estimated_rotations));
+    EXPECT_TRUE(
+        rotation_estimator.EstimateRotations(view_pairs_, &estimated_rotations));
     EXPECT_EQ(estimated_rotations.size(), orientations_.size());
 
     // Align the rotations and measure the error.
@@ -167,7 +168,7 @@ class EstimateRotationsRobustTest : public ::testing::Test {
     // Create a set of view id pairs that will contain a spanning tree.
     for (int i = 1; i < orientations_.size(); i++) {
       const ViewIdPair view_id_pair(i - 1, i);
-      relative_orientations_[view_id_pair] = RelativeRotationFromTwoRotations(
+      view_pairs_[view_id_pair].rotation_2 = RelativeRotationFromTwoRotations(
           FindOrDie(orientations_, view_id_pair.first),
           FindOrDie(orientations_, view_id_pair.second),
           pose_noise);
@@ -175,7 +176,7 @@ class EstimateRotationsRobustTest : public ::testing::Test {
 
     // Add random edges.
     InitRandomGenerator();
-    while (relative_orientations_.size() < num_view_pairs) {
+    while (view_pairs_.size() < num_view_pairs) {
       ViewIdPair view_id_pair(RandInt(0, orientations_.size() - 1),
                               RandInt(0, orientations_.size() - 1));
       // Ensure the first id is smaller than the second id.
@@ -185,11 +186,11 @@ class EstimateRotationsRobustTest : public ::testing::Test {
 
       // Do not add the view pair if it already exists.
       if (view_id_pair.first == view_id_pair.second ||
-          ContainsKey(relative_orientations_, view_id_pair)) {
+          ContainsKey(view_pairs_, view_id_pair)) {
         continue;
       }
 
-      relative_orientations_[view_id_pair] = RelativeRotationFromTwoRotations(
+      view_pairs_[view_id_pair].rotation_2 = RelativeRotationFromTwoRotations(
           FindOrDie(orientations_, view_id_pair.first),
           FindOrDie(orientations_, view_id_pair.second),
           pose_noise);
@@ -204,12 +205,12 @@ class EstimateRotationsRobustTest : public ::testing::Test {
     for (int i = 1; i < orientations_.size(); i++) {
       (*initial_orientations)[i] = ApplyRelativeRotation(
           FindOrDie(*initial_orientations, i - 1),
-          FindOrDieNoPrint(relative_orientations_, ViewIdPair(i - 1, i)));
+          FindOrDieNoPrint(view_pairs_, ViewIdPair(i - 1, i)).rotation_2);
     }
   }
 
   std::unordered_map<ViewId, Vector3d> orientations_;
-  std::unordered_map<ViewIdPair, Vector3d> relative_orientations_;
+  std::unordered_map<ViewIdPair, TwoViewInfo> view_pairs_;
 };
 
 TEST_F(EstimateRotationsRobustTest, SmallTestNoNoise) {
