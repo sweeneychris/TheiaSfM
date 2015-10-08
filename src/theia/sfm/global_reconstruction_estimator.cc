@@ -43,7 +43,7 @@
 #include "theia/sfm/filter_view_graph_cycles_by_rotation.h"
 #include "theia/sfm/filter_view_pairs_from_orientation.h"
 #include "theia/sfm/filter_view_pairs_from_relative_translation.h"
-#include "theia/sfm/global_pose_estimation/estimate_rotations_robust.h"
+#include "theia/sfm/global_pose_estimation/robust_rotation_estimator.h"
 #include "theia/sfm/global_pose_estimation/linear_position_estimator.h"
 #include "theia/sfm/global_pose_estimation/nonlinear_position_estimator.h"
 #include "theia/sfm/global_pose_estimation/position_estimator.h"

@@ -32,8 +32,8 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#ifndef THEIA_SFM_GLOBAL_POSE_ESTIMATION_ESTIMATE_ROTATIONS_NONLINEAR_H_
-#define THEIA_SFM_GLOBAL_POSE_ESTIMATION_ESTIMATE_ROTATIONS_NONLINEAR_H_
+#ifndef THEIA_SFM_GLOBAL_POSE_ESTIMATION_NONLINEAR_ROTATION_ESTIMATOR_H_
+#define THEIA_SFM_GLOBAL_POSE_ESTIMATION_NONLINEAR_ROTATION_ESTIMATOR_H_
 
 #include <Eigen/Core>
 #include <unordered_map>
@@ -53,4 +53,4 @@ bool EstimateRotationsNonlinear(
 
 }  // namespace theia
 
-#endif  // THEIA_SFM_GLOBAL_POSE_ESTIMATION_ESTIMATE_ROTATIONS_NONLINEAR_H_
+#endif  // THEIA_SFM_GLOBAL_POSE_ESTIMATION_NONLINEAR_ROTATION_ESTIMATOR_H_

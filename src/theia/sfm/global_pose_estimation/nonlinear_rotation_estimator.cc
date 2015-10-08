@@ -32,7 +32,7 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#include "theia/sfm/global_pose_estimation/estimate_rotations_nonlinear.h"
+#include "theia/sfm/global_pose_estimation/nonlinear_rotation_estimator.h"
 
 #include <ceres/ceres.h>
 #include <Eigen/Core>

@@ -32,7 +32,7 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#include "theia/sfm/global_pose_estimation/estimate_rotations_robust.h"
+#include "theia/sfm/global_pose_estimation/robust_rotation_estimator.h"
 
 #include <ceres/rotation.h>
 #include <Eigen/Core>

@@ -41,7 +41,7 @@
 
 #include "gtest/gtest.h"
 #include "theia/math/util.h"
-#include "theia/sfm/global_pose_estimation/estimate_rotations_robust.h"
+#include "theia/sfm/global_pose_estimation/robust_rotation_estimator.h"
 #include "theia/sfm/transformation/align_rotations.h"
 #include "theia/sfm/types.h"
 #include "theia/util/map_util.h"
