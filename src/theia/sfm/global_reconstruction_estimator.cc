@@ -43,10 +43,11 @@
 #include "theia/sfm/filter_view_graph_cycles_by_rotation.h"
 #include "theia/sfm/filter_view_pairs_from_orientation.h"
 #include "theia/sfm/filter_view_pairs_from_relative_translation.h"
-#include "theia/sfm/global_pose_estimation/robust_rotation_estimator.h"
 #include "theia/sfm/global_pose_estimation/linear_position_estimator.h"
 #include "theia/sfm/global_pose_estimation/nonlinear_position_estimator.h"
+#include "theia/sfm/global_pose_estimation/nonlinear_rotation_estimator.h"
 #include "theia/sfm/global_pose_estimation/position_estimator.h"
+#include "theia/sfm/global_pose_estimation/robust_rotation_estimator.h"
 #include "theia/sfm/reconstruction.h"
 #include "theia/sfm/reconstruction_estimator_options.h"
 #include "theia/sfm/reconstruction_estimator_utils.h"
@@ -302,13 +303,34 @@ void GlobalReconstructionEstimator::CalibrateCameras() {
 }
 
 void GlobalReconstructionEstimator::EstimateGlobalRotations() {
+  // Initialize the orientation estimations by a random walk along the viewing
+  // graph.
   const ViewId random_starting_view = RandomViewId(*view_graph_);
   OrientationsFromViewGraph(*view_graph_, random_starting_view, &orientations_);
-  RobustRotationEstimator::Options rotation_estimator_options;
-  RobustRotationEstimator rotation_estimator(rotation_estimator_options);
+
   const auto& view_pairs = view_graph_->GetAllEdges();
-  CHECK(rotation_estimator.EstimateRotations(view_pairs, &orientations_))
-      << "Could not estimate rotations.";
+
+  // Choose the global rotation estimation type.
+  std::unique_ptr<RotationEstimator> rotation_estimator;
+  switch (options_.global_rotation_estimator_type) {
+    case GlobalRotationEstimatorType::ROBUST_L1L2: {
+      RobustRotationEstimator::Options robust_rotation_estimator_options;
+      rotation_estimator.reset(
+          new RobustRotationEstimator(robust_rotation_estimator_options));
+      break;
+    }
+    case GlobalRotationEstimatorType::NONLINEAR: {
+      rotation_estimator.reset(new NonlinearRotationEstimator());
+      break;
+    }
+    default: {
+      LOG(FATAL) << "Invalid type of global rotation estimation chosen.";
+      break;
+    }
+  };
+
+  CHECK(rotation_estimator->EstimateRotations(view_pairs, &orientations_))
+      << "Rotation estimation failed!";
 }
 
 void GlobalReconstructionEstimator::FilterRotations() {
@@ -344,17 +366,23 @@ void GlobalReconstructionEstimator::EstimatePosition() {
   std::unique_ptr<PositionEstimator> position_estimator;
 
   // Choose the global position estimation type.
-  if (options_.global_position_estimator_type ==
-      GlobalPositionEstimatorType::NONLINEAR) {
-    position_estimator.reset(new NonlinearPositionEstimator(
-        options_.nonlinear_position_estimator_options, *reconstruction_));
-  } else if (options_.global_position_estimator_type ==
-             GlobalPositionEstimatorType::LINEAR_TRIPLET) {
-    position_estimator.reset(new LinearPositionEstimator(
-        options_.linear_triplet_position_estimator_options, *reconstruction_));
-  } else {
-    LOG(FATAL) << "Invalid type of global position estimation chosen.";
-  }
+  switch (options_.global_position_estimator_type) {
+    case GlobalPositionEstimatorType::NONLINEAR: {
+      position_estimator.reset(new NonlinearPositionEstimator(
+          options_.nonlinear_position_estimator_options, *reconstruction_));
+      break;
+    }
+    case GlobalPositionEstimatorType::LINEAR_TRIPLET: {
+      position_estimator.reset(new LinearPositionEstimator(
+          options_.linear_triplet_position_estimator_options,
+          *reconstruction_));
+      break;
+    }
+    default: {
+      LOG(FATAL) << "Invalid type of global position estimation chosen.";
+      break;
+    }
+  };
 
   CHECK(position_estimator->EstimatePositions(view_pairs,
                                               orientations_,
