@@ -69,6 +69,8 @@ template <typename T> class Image {
   template <typename D>
   Image(const Image<D>& image_to_copy);
 
+  explicit Image(const cimg_library::CImg<T>& image);
+
   ~Image() {}
   // Image information
   int Rows() const;
@@ -120,8 +122,6 @@ template <typename T> class Image {
  protected:
   template<class AnyType> friend class Image;
   friend class ImageCanvas;
-
-  explicit Image(const cimg_library::CImg<T>& image);
 
   cimg_library::CImg<T> image_;
 };
