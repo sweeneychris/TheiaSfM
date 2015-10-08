@@ -60,10 +60,18 @@ using Eigen::Vector3d;
 namespace {
 
 struct CameraIntrinsics {
-  double focal_length = 1.0;
-  double principal_point[2] = {0.0, 0.0};
-  double aspect_ratio = 1.0;
-  double skew = 0.0;
+  CameraIntrinsics() {
+    focal_length = 1.0;
+    principal_point[0] = 0.0;
+    principal_point[1] = 0.0;
+    aspect_ratio = 1.0;
+    skew = 0.0;
+  }
+
+  double focal_length;
+  double principal_point[2];
+  double aspect_ratio;
+  double skew;
 };
 
 void SetCameraIntrinsics(const CameraIntrinsicsPrior& prior,
