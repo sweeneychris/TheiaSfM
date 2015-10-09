@@ -120,6 +120,7 @@
 #include "theia/sfm/find_common_views_by_name.h"
 #include "theia/sfm/global_pose_estimation/compute_triplet_baseline_ratios.h"
 #include "theia/sfm/global_pose_estimation/linear_position_estimator.h"
+#include "theia/sfm/global_pose_estimation/linear_rotation_estimator.h"
 #include "theia/sfm/global_pose_estimation/nonlinear_position_estimator.h"
 #include "theia/sfm/global_pose_estimation/nonlinear_rotation_estimator.h"
 #include "theia/sfm/global_pose_estimation/pairwise_rotation_error.h"
