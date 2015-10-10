@@ -52,7 +52,8 @@ enum class ReconstructionEstimatorType {
 // global_pose_estimation directory for more details.
 enum class GlobalRotationEstimatorType {
   ROBUST_L1L2 = 0,
-  NONLINEAR = 1
+  NONLINEAR = 1,
+  LINEAR = 2
 };
 
 // Global position estimation methods.

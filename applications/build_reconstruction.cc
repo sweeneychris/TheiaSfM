@@ -212,7 +212,9 @@ GlobalRotationEstimatorType GetRotationEstimatorType(
     return GlobalRotationEstimatorType::ROBUST_L1L2;
   } else if (rotation_estimator == "NONLINEAR") {
     return GlobalRotationEstimatorType::NONLINEAR;
-  }  else {
+  } else if (rotation_estimator == "LINEAR") {
+    return GlobalRotationEstimatorType::LINEAR;
+  } else {
     LOG(FATAL)
         << "Invalid rotation estimator type. Using ROBUST_L1L2 instead.";
     return GlobalRotationEstimatorType::ROBUST_L1L2;

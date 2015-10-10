@@ -44,6 +44,7 @@
 #include "theia/sfm/filter_view_pairs_from_orientation.h"
 #include "theia/sfm/filter_view_pairs_from_relative_translation.h"
 #include "theia/sfm/global_pose_estimation/linear_position_estimator.h"
+#include "theia/sfm/global_pose_estimation/linear_rotation_estimator.h"
 #include "theia/sfm/global_pose_estimation/nonlinear_position_estimator.h"
 #include "theia/sfm/global_pose_estimation/nonlinear_rotation_estimator.h"
 #include "theia/sfm/global_pose_estimation/position_estimator.h"
@@ -303,24 +304,39 @@ void GlobalReconstructionEstimator::CalibrateCameras() {
 }
 
 void GlobalReconstructionEstimator::EstimateGlobalRotations() {
-  // Initialize the orientation estimations by a random walk along the viewing
-  // graph.
-  const ViewId random_starting_view = RandomViewId(*view_graph_);
-  OrientationsFromViewGraph(*view_graph_, random_starting_view, &orientations_);
-
   const auto& view_pairs = view_graph_->GetAllEdges();
 
   // Choose the global rotation estimation type.
   std::unique_ptr<RotationEstimator> rotation_estimator;
   switch (options_.global_rotation_estimator_type) {
     case GlobalRotationEstimatorType::ROBUST_L1L2: {
+      // Initialize the orientation estimations by a random walk along the
+      // viewing graph.
+      //
+      // TODO(cmsweeney): We should use the linear method to initialize the
+      // rotation estimations from a spanning tree.
+      const ViewId random_starting_view = RandomViewId(*view_graph_);
+      OrientationsFromViewGraph(*view_graph_, random_starting_view, &orientations_);
       RobustRotationEstimator::Options robust_rotation_estimator_options;
       rotation_estimator.reset(
           new RobustRotationEstimator(robust_rotation_estimator_options));
       break;
     }
     case GlobalRotationEstimatorType::NONLINEAR: {
+      // Initialize the orientation estimations by a random walk along the
+      // viewing graph.
+      //
+      // TODO(cmsweeney): We should use the linear method to initialize the
+      // rotation estimations from a spanning tree.
+      const ViewId random_starting_view = RandomViewId(*view_graph_);
+      OrientationsFromViewGraph(*view_graph_, random_starting_view, &orientations_);
       rotation_estimator.reset(new NonlinearRotationEstimator());
+      break;
+    }
+    case GlobalRotationEstimatorType::LINEAR: {
+      // Set the constructor variable to true to weigh each term by the inlier
+      // count.
+      rotation_estimator.reset(new LinearRotationEstimator(false));
       break;
     }
     default: {
