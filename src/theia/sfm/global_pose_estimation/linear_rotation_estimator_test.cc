@@ -70,24 +70,6 @@ Vector3d RelativeRotationFromTwoRotations(const Vector3d& rotation1,
   return relative_rotation.angle() * relative_rotation.axis();
 }
 
-// return R_j = R_ij * R_i.
-Vector3d ApplyRelativeRotation(const Vector3d& rotation1,
-                               const Vector3d& relative_rotation) {
-  Vector3d rotation2;
-  Eigen::Matrix3d rotation1_matrix, relative_rotation_matrix;
-  ceres::AngleAxisToRotationMatrix(
-      rotation1.data(), ceres::ColumnMajorAdapter3x3(rotation1_matrix.data()));
-  ceres::AngleAxisToRotationMatrix(
-      relative_rotation.data(),
-      ceres::ColumnMajorAdapter3x3(relative_rotation_matrix.data()));
-
-  const Eigen::Matrix3d rotation2_matrix =
-      relative_rotation_matrix * rotation1_matrix;
-  ceres::RotationMatrixToAngleAxis(
-      ceres::ColumnMajorAdapter3x3(rotation2_matrix.data()), rotation2.data());
-  return rotation2;
-}
-
 // Aligns rotations to the ground truth rotations via a similarity
 // transformation.
 void AlignOrientations(const std::unordered_map<ViewId, Vector3d>& gt_rotations,
