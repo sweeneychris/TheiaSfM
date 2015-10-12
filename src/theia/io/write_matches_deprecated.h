@@ -40,7 +40,6 @@
 
 #include "theia/matching/feature_matcher.h"
 #include "theia/sfm/camera_intrinsics_prior.h"
-#include "theia/sfm/match_and_verify_features.h"
 
 namespace theia {
 
@@ -97,7 +96,7 @@ bool WriteMatchesAndGeometryDeprecated(
     const std::string& matches_file,
     const std::vector<std::string>& view_names,
     const std::vector<CameraIntrinsicsPrior>& camera_intrinsics_prior,
-    const std::vector<ImagePairMatch>& matches);
+    const std::vector<ImagePairMatchDeprecated>& matches);
 
 }  // namespace theia
 

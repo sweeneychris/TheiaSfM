@@ -51,12 +51,25 @@ int main(int argc, char* argv[]) {
   // Read in the deprecated matches file.
   std::vector<std::string> view_names;
   std::vector<theia::CameraIntrinsicsPrior> camera_intrinsics_prior;
-  std::vector<theia::ImagePairMatch> matches;
+  std::vector<theia::ImagePairMatchDeprecated> matches_deprecated;
   CHECK(theia::ReadMatchesAndGeometryDeprecated(FLAGS_deprecated_matches_file,
                                                 &view_names,
                                                 &camera_intrinsics_prior,
-                                                &matches))
+                                                &matches_deprecated))
       << "Could not read deprecated matches file.";
+
+  // Convert the old image pair matches to the new type.
+  std::vector<theia::ImagePairMatch> matches;
+  matches.reserve(matches_deprecated.size());
+  for (const theia::ImagePairMatchDeprecated& image_pair_match :
+       matches_deprecated) {
+    theia::ImagePairMatch match;
+    match.image1 = view_names[image_pair_match.image1_index];
+    match.image2 = view_names[image_pair_match.image2_index];
+    match.twoview_info = image_pair_match.twoview_info;
+    match.correspondences = image_pair_match.correspondences;
+    matches.emplace_back(match);
+  }
 
   CHECK(theia::WriteMatchesAndGeometry(FLAGS_matches_file,
                                        view_names,

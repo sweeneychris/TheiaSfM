@@ -85,15 +85,19 @@ template <class DistanceMetric> class FeatureMatcher {
 
   // Adds an image to the matcher with no known intrinsics for this image. The
   // caller still owns the keypoints and descriptors so they must remain valid
-  // objects throughout the matching.
-  virtual void AddImage(const std::vector<Keypoint>& keypoints,
+  // objects throughout the matching. The image name must be a unique identifier
+  // for the image.
+  virtual void AddImage(const std::string& image_name,
+                        const std::vector<Keypoint>& keypoints,
                         const std::vector<Eigen::VectorXf>& descriptors);
 
   // Adds an image to the matcher with the known camera intrinsics. The
   // intrinsics (if known) are useful for geometric verification. The caller
   // still owns the keypoints and descriptors so they must remain valid objects
-  // throughout the matching.
-  virtual void AddImage(const std::vector<Keypoint>& keypoints,
+  // throughout the matching. The image name must be a unique identifier for the
+  // image.
+  virtual void AddImage(const std::string& image_name,
+                        const std::vector<Keypoint>& keypoints,
                         const std::vector<Eigen::VectorXf>& descriptors,
                         const CameraIntrinsicsPrior& intrinsics);
 
@@ -137,6 +141,7 @@ template <class DistanceMetric> class FeatureMatcher {
   // Will be set to true if geometric verification is enabled.
   bool verify_image_pairs_;
 
+  std::vector<std::string> image_names_;
   std::vector<std::vector<Keypoint> > keypoints_;
   std::vector<std::vector<Eigen::VectorXf> > descriptors_;
   std::unordered_map<int, CameraIntrinsicsPrior> intrinsics_;
@@ -151,17 +156,21 @@ template <class DistanceMetric> class FeatureMatcher {
 
 template <class DistanceMetric>
 void FeatureMatcher<DistanceMetric>::AddImage(
+    const std::string& image_name,
     const std::vector<Keypoint>& keypoints,
     const std::vector<Eigen::VectorXf>& descriptors) {
+  image_names_.push_back(image_name);
   keypoints_.push_back(keypoints);
   descriptors_.push_back(descriptors);
 }
 
 template <class DistanceMetric>
 void FeatureMatcher<DistanceMetric>::AddImage(
+    const std::string& image_name,
     const std::vector<Keypoint>& keypoints,
     const std::vector<Eigen::VectorXf>& descriptors,
     const CameraIntrinsicsPrior& intrinsics) {
+  image_names_.push_back(image_name);
   keypoints_.push_back(keypoints);
   descriptors_.push_back(descriptors);
   const int image_index = keypoints_.size() - 1;
@@ -247,8 +256,8 @@ void FeatureMatcher<DistanceMetric>::MatchAndVerifyImagePairs(
     const int image1_index = pairs_to_match_[i].first;
     const int image2_index = pairs_to_match_[i].second;
 
-    image_pair_match.image1_index = image1_index;
-    image_pair_match.image2_index = image2_index;
+    image_pair_match.image1 = image_names_[image1_index];
+    image_pair_match.image2 = image_names_[image2_index];
     if (!MatchImagePair(image1_index,
                         image2_index,
                         &image_pair_match.correspondences)) {
@@ -267,7 +276,6 @@ void FeatureMatcher<DistanceMetric>::MatchAndVerifyImagePairs(
       matches->push_back(image_pair_match);
       continue;
     }
-
 
     const CameraIntrinsicsPrior intrinsics1 = FindWithDefault(
         intrinsics_, image1_index, CameraIntrinsicsPrior());

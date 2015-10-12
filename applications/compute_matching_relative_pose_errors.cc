@@ -93,8 +93,8 @@ void EvaluateRelativeError(
 
   theia::PoseError relative_pose_error(histogram_bins, histogram_bins);
   for (const auto& match : matches) {
-    const std::string view1_name = view_names[match.image1_index];
-    const std::string view2_name = view_names[match.image2_index];
+    const std::string view1_name = match.image1;
+    const std::string view2_name = match.image2;
 
     const ViewId view_id1 =
         gt_reconstruction.ViewIdFromName(view1_name);

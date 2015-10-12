@@ -49,6 +49,7 @@
 namespace theia {
 
 void CascadeHashingFeatureMatcher::AddImage(
+    const std::string& image,
     const std::vector<Keypoint>& keypoints,
     const std::vector<Eigen::VectorXf>& descriptors) {
   if (cascade_hasher_.get() == nullptr) {
@@ -57,16 +58,18 @@ void CascadeHashingFeatureMatcher::AddImage(
         << "Could not initialize the cascade hasher.";
   }
 
+  image_names_.push_back(image);
   keypoints_.push_back(keypoints);
   hashed_images_.emplace_back(
       cascade_hasher_->CreateHashedSiftDescriptors(descriptors));
 }
 
 void CascadeHashingFeatureMatcher::AddImage(
+    const std::string& image,
     const std::vector<Keypoint>& keypoints,
     const std::vector<Eigen::VectorXf>& descriptors,
     const CameraIntrinsicsPrior& intrinsics) {
-  AddImage(keypoints, descriptors);
+  AddImage(image, keypoints, descriptors);
   const int image_index = keypoints_.size() - 1;
   intrinsics_[image_index] = intrinsics;
 }

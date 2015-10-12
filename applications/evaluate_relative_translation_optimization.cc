@@ -135,9 +135,9 @@ void EvaluateTranslationOptimization(
   for (const auto& match : matches) {
     // Get the ViewIds from the names.
     const theia::ViewId view_id1 =
-        reconstruction.ViewIdFromName(view_names[match.image1_index]);
+        reconstruction.ViewIdFromName(match.image1);
     const theia::ViewId view_id2 =
-        reconstruction.ViewIdFromName(view_names[match.image2_index]);
+        reconstruction.ViewIdFromName(match.image2);
     const theia::View* view1 = reconstruction.View(view_id1);
     const theia::View* view2 = reconstruction.View(view_id2);
     if (view1 == nullptr || view2 == nullptr) {

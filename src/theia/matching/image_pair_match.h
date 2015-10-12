@@ -47,6 +47,29 @@ namespace theia {
 
 struct ImagePairMatch {
  public:
+  std::string image1;
+  std::string image2;
+
+  // If the matches are verified matches then the two view info contains the
+  // relative pose information between the images.
+  TwoViewInfo twoview_info;
+
+  // Feature locations in pixel coordinates. If the match is a verified match
+  // then this only contains inlier correspondences.
+  std::vector<FeatureCorrespondence> correspondences;
+
+ private:
+  // Templated method for disk I/O with cereal. This method tells cereal which
+  // data members should be used when reading/writing to/from disk.
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& ar) {  // NOLINT
+    ar(image1, image2, twoview_info, correspondences);
+  }
+};
+
+struct ImagePairMatchDeprecated {
+ public:
   // Indices of the matches image pair with respect to the input vectors.
   int image1_index;
   int image2_index;

@@ -79,17 +79,23 @@ theia::FeatureMatcher<DistanceMetric>* CreateMatcher(
   return nullptr;
 }
 
-template <class DistanceMetric, class DescriptorType>
+template <class DistanceMetric>
 void ExtractAndMatchFeatures(
     std::vector<theia::FloatImage*>* images,
+    std::vector<std::string>* image_names,
     std::vector<std::vector<theia::Keypoint> >* keypoints,
     std::vector<theia::ImagePairMatch>* matches) {
   // Get image filenames and read in images.
   std::vector<std::string> img_filepaths;
   CHECK(theia::GetFilepathsFromWildcard(FLAGS_input_imgs, &img_filepaths));
-  std::vector<std::vector<DescriptorType> > descriptors;
+  std::vector<std::vector<Eigen::VectorXf> > descriptors;
   for (int i = 0; i < img_filepaths.size(); i++) {
-    images->emplace_back(new theia::FloatImage(img_filepaths[i]));
+    std::string image_filename;
+    CHECK(theia::GetFilenameFromFilepath(img_filepaths[i],
+                                         true,
+                                         &image_filename));
+    image_names->push_back(image_filename);
+    images->push_back(new theia::FloatImage(img_filepaths[i]));
   }
 
   // Extract features.
@@ -115,7 +121,7 @@ void ExtractAndMatchFeatures(
   // Match features.
   start = std::chrono::system_clock::now();
   for (int i = 0; i < keypoints->size(); i++) {
-    matcher->AddImage(keypoints->at(i), descriptors[i]);
+    matcher->AddImage(image_names->at(i), keypoints->at(i), descriptors[i]);
   }
   theia::VerifyTwoViewMatchesOptions verification_options;
   matcher->MatchImagesWithGeometricVerification(options,
@@ -136,22 +142,29 @@ int main(int argc, char *argv[]) {
   google::InitGoogleLogging(argv[0]);
 
   std::vector<theia::FloatImage*> images;
+  std::vector<std::string> image_names;
   std::vector<std::vector<theia::Keypoint>> keypoints;
   std::vector<theia::ImagePairMatch> image_pair_matches;
-  ExtractAndMatchFeatures<theia::L2, Eigen::VectorXf>(&images,
-                                                      &keypoints,
-                                                      &image_pair_matches);
+  ExtractAndMatchFeatures<theia::L2>(&images,
+                                     &image_names,
+                                     &keypoints,
+                                     &image_pair_matches);
   for (int i = 0; i < image_pair_matches.size(); i++) {
     theia::ImageCanvas image_canvas;
-    const int img1_index = image_pair_matches[i].image1_index;
-    const int img2_index = image_pair_matches[i].image2_index;
+    const std::string img1 = image_pair_matches[i].image1;
+    const std::string img2 = image_pair_matches[i].image2;
+
+    const auto& it1 = std::find(image_names.begin(), image_names.end(), img1);
+    const auto& it2 = std::find(image_names.begin(), image_names.end(), img2);
+
+    const int img1_index = std::distance(image_names.begin(), it1);
+    const int img2_index = std::distance(image_names.begin(), it2);
+
     image_canvas.AddImage(*images[img1_index]);
     image_canvas.AddImage(*images[img2_index]);
     const std::string match_output = theia::StringPrintf(
-        "%s/matches_%i_%i.png",
-        FLAGS_img_output_dir.c_str(),
-        img1_index,
-        img2_index);
+        "%s/matches_%s_%s.png", FLAGS_img_output_dir.c_str(), img1.c_str(),
+        img2.c_str());
     image_canvas.DrawMatchedFeatures(0,
                                      1,
                                      image_pair_matches[i].correspondences,

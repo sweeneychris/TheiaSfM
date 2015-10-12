@@ -251,9 +251,7 @@ bool ReconstructionBuilder::ExtractAndMatchFeatures() {
 
   // Add the matches to the view graph and reconstruction.
   for (const auto& match : matches) {
-    AddTwoViewMatch(image_filenames[match.image1_index],
-                    image_filenames[match.image2_index],
-                    match);
+    AddTwoViewMatch(match.image1, match.image2, match);
   }
 
   return true;

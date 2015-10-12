@@ -38,54 +38,10 @@
 #include <string>
 #include <vector>
 
-#include "theia/matching/feature_matcher.h"
+#include "theia/matching/image_pair_match.h"
 #include "theia/sfm/camera_intrinsics_prior.h"
-#include "theia/sfm/match_and_verify_features.h"
 
 namespace theia {
-
-// Thi functions writes a Theia matches file. Matches files contain information
-// needed to recreate a view graph and initialize a model before camera pose and
-// structure estimation. This includes all two-view match information and
-// optionally the two-view geometry as well. The format is as follows (in binary
-// format with no newlines):
-//
-//   # views (uint32)
-//   <View 1>
-//   ...
-//   <View n>
-//   # image pair matches (uint64)
-//   <Image pair match 1>
-//   ...
-//   <Image pair match k>
-//
-// Each view is comprised of the view name and metdata:
-//   <Image name i> (uint32 for length of string, then the string)
-//   image width, image height (2 ints)
-//   <CameraIntrinsicsPrior focal length>
-//   <CameraIntrinsicsPrior principal point[2]>
-//
-// The CameraIntrinsicsPrior written as <bool, double> corresponding to the
-// is_set parameter and value parameter in //theia/sfm/camera_intrinsics_prior.h
-//
-// Each <Image pair match i> is formatted as follows:
-//   <Image Index 1, Image Index 2> (2 uint32s)
-//   <TwoViewInfo>
-//   # features (uint32)
-//   <Feature 1, Feature 2> (2 double[2])
-//
-// The <TwoViewInfo> is roughly the same format as the struct:
-//   focal length 1 (double)
-//   focal length 2 (double)
-//   position_2 (double[3])
-//   rotation_2 (double[3])
-//   # 3D points (int)
-//   # geometrically verified features (int)
-//
-// This file format is generic enough to allow for custom matching that can then
-// be supplied to Theia for geometry estimation. If the custom matching does not
-// produce two view geometry estimations then the TwoViewInfo can simply be
-// ignored and reestimated using Theia.
 
 // Writes the feature matches between view pairs as well as the two view
 // geometry (i.e., TwoViewInfo) that describes the relative pose between the two

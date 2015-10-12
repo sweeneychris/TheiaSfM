@@ -103,7 +103,6 @@ FeatureExtractorAndMatcher::FeatureExtractorAndMatcher(
     : options_(options) {
   // Create the feature matcher.
   matcher_ = CreateFeatureMatcher(options_.matching_strategy);
-  num_images_added_to_matcher_ = 0;
 }
 
 bool FeatureExtractorAndMatcher::AddImage(const std::string& image_filepath) {
@@ -132,10 +131,6 @@ void FeatureExtractorAndMatcher::ExtractAndMatchFeatures(
   CHECK_NOTNULL(intrinsics)->resize(image_filepaths_.size());
   CHECK_NOTNULL(matches);
   CHECK_NOTNULL(matcher_.get());
-
-  // Resize our helper index so we can directly access the indices in
-  // ProcessImage.
-  matcher_index_.resize(image_filepaths_.size());
 
   // For each image, process the features and add it to the matcher.
   const int num_threads =
@@ -166,27 +161,9 @@ void FeatureExtractorAndMatcher::ExtractAndMatchFeatures(
                                                  verification_options,
                                                  matches);
 
-  // Reorder the output from the matcher.
-  ReindexMatchingOutput(matches);
-
   // Add the intrinsics to the output.
   for (int i = 0; i < image_filepaths_.size(); i++) {
     (*intrinsics)[i] = FindOrDie(intrinsics_, image_filepaths_[i]);
-  }
-}
-
-void FeatureExtractorAndMatcher::ReindexMatchingOutput(
-    std::vector<ImagePairMatch>* matches) {
-  for (auto& match : *matches) {
-    // Update the indices to be correct.
-    //
-    // NOTE: We *do not* need to ensure that the first index is less than the
-    // second index because the reconstruction builder makes no assumption about
-    // the order of image pair matches.
-    const int local_image1_index = matcher_index_[match.image1_index];
-    const int local_image2_index = matcher_index_[match.image2_index];
-    match.image1_index = local_image1_index;
-    match.image2_index = local_image2_index;
   }
 }
 
@@ -229,11 +206,10 @@ void FeatureExtractorAndMatcher::ProcessImage(
   // the feature matcher to control fine-grained things like multi-threading and
   // caching. For instance, the matcher may choose to write the descriptors to
   // disk and read them back as needed.
+  std::string image_filename;
+  CHECK(GetFilenameFromFilepath(image_filepath, true, &image_filename));
   matcher_mutex_.lock();
-  // Store the lookup number.
-  matcher_index_[num_images_added_to_matcher_] = i;
-  ++num_images_added_to_matcher_;
-  matcher_->AddImage(keypoints, descriptors, intrinsics);
+  matcher_->AddImage(image_filename, keypoints, descriptors, intrinsics);
   matcher_mutex_.unlock();
 }
 

@@ -57,8 +57,8 @@ class FeatureExtractorAndMatcher {
     int num_threads = 1;
 
     // If true, only images that contain EXIF focal length values have features
-    // extracted and matched, and images that do not contain EXIF focal length are
-    // not considered for the feature extraction and matching.
+    // extracted and matched, and images that do not contain EXIF focal length
+    // are not considered for the feature extraction and matching.
     bool only_calibrated_views = false;
 
     // The type of feature to use for feature extraction.
@@ -108,12 +108,6 @@ class FeatureExtractorAndMatcher {
   // features and descriptors, and adding the image to the matcher.
   void ProcessImage(const int i);
 
-  // The indices of the match information can get out of order because of
-  // multi-threading. We need the indices in the ImagePairMatch output to match
-  // the order in which the AddImage function is called, so this function
-  // corrects the matches output variable.
-  void ReindexMatchingOutput(std::vector<ImagePairMatch>* matches);
-
   const Options options_;
 
   // Local copies of the images to be matches and any priors on the camera
@@ -129,16 +123,6 @@ class FeatureExtractorAndMatcher {
   // Feature matcher and mutex for thread-safe access.
   std::unique_ptr<FeatureMatcher<L2> > matcher_;
   std::mutex intrinsics_mutex_, matcher_mutex_;
-
-  // The indices of the match information can get out of order because of
-  // multi-threading. This index is used to keep track of the order of the
-  // images in the feature extractor and matcher such that:
-  //   matcher_index_[i] = j
-  // where i is the index of the image within the feature extractor and matcher
-  // and j is the local index (i.e. the index corresponding to
-  // image_filepaths_).
-  std::vector<int> matcher_index_;
-  int num_images_added_to_matcher_;
 };
 
 }  // namespace theia

@@ -42,7 +42,6 @@
 #include <string>
 
 #include "theia/matching/feature_matcher.h"
-#include "theia/sfm/match_and_verify_features.h"
 #include "theia/sfm/twoview_info.h"
 #include "theia/sfm/camera_intrinsics_prior.h"
 
@@ -144,7 +143,7 @@ bool WriteMatchesAndGeometryDeprecated(
     const std::string& matches_file,
     const std::vector<std::string>& view_names,
     const std::vector<CameraIntrinsicsPrior>& camera_intrinsics_prior,
-    const std::vector<ImagePairMatch>& matches) {
+    const std::vector<ImagePairMatchDeprecated>& matches) {
   LOG(WARNING) << "You are using a deprecated version of the matches "
                   "writer. Proceed with caution.";
 
@@ -172,7 +171,7 @@ bool WriteMatchesAndGeometryDeprecated(
                        sizeof(num_image_matches));
 
   // Write all image matches.
-  for (const ImagePairMatch& match : matches) {
+  for (const ImagePairMatchDeprecated& match : matches) {
     WriteImagePairIndices(match.image1_index,
                           match.image2_index,
                           &matches_writer);

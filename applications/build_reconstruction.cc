@@ -345,9 +345,9 @@ void AddMatchesToReconstructionBuilder(
 
   // Add the matches.
   for (const auto& match : image_matches) {
-    const std::string& image1 = image_files[match.image1_index];
-    const std::string& image2 = image_files[match.image2_index];
-    CHECK(reconstruction_builder->AddTwoViewMatch(image1, image2, match));
+    CHECK(reconstruction_builder->AddTwoViewMatch(match.image1,
+                                                  match.image2,
+                                                  match));
   }
 }
 
