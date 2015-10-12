@@ -190,6 +190,7 @@
 #include "theia/solvers/sampler.h"
 #include "theia/util/filesystem.h"
 #include "theia/util/hash.h"
+#include "theia/util/lru_cache.h"
 #include "theia/util/map_util.h"
 #include "theia/util/mutable_priority_queue.h"
 #include "theia/util/random.h"
