@@ -103,7 +103,6 @@ set(THEIA_SRC
   sfm/global_reconstruction_estimator.cc
   sfm/incremental_reconstruction_estimator.cc
   sfm/localize_view_to_reconstruction.cc
-  sfm/match_and_verify_features.cc
   sfm/pose/dls_impl.cc
   sfm/pose/dls_pnp.cc
   sfm/pose/eight_point_fundamental_matrix.cc

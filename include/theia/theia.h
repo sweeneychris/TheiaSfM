@@ -131,7 +131,6 @@
 #include "theia/sfm/global_reconstruction_estimator.h"
 #include "theia/sfm/incremental_reconstruction_estimator.h"
 #include "theia/sfm/localize_view_to_reconstruction.h"
-#include "theia/sfm/match_and_verify_features.h"
 #include "theia/sfm/pose/dls_impl.h"
 #include "theia/sfm/pose/dls_pnp.h"
 #include "theia/sfm/pose/eight_point_fundamental_matrix.h"
