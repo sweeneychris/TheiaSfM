@@ -54,7 +54,6 @@ template <class DistanceMetric>
 class BruteForceFeatureMatcher : public FeatureMatcher<DistanceMetric> {
  public:
   typedef typename DistanceMetric::DistanceType DistanceType;
-  typedef typename DistanceMetric::DescriptorType DescriptorType;
 
   BruteForceFeatureMatcher() {}
   ~BruteForceFeatureMatcher() {}
@@ -82,9 +81,9 @@ bool BruteForceFeatureMatcher<DistanceMetric>::MatchImagePair(
   const double sq_lowes_ratio =
       this->matcher_options_.lowes_ratio * this->matcher_options_.lowes_ratio;
 
-  const std::vector<DescriptorType>& descriptors1 =
+  const std::vector<Eigen::VectorXf>& descriptors1 =
       this->descriptors_[image1_index];
-  const std::vector<DescriptorType>& descriptors2 =
+  const std::vector<Eigen::VectorXf>& descriptors2 =
       this->descriptors_[image2_index];
 
   DistanceMetric distance;

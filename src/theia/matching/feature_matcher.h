@@ -79,7 +79,6 @@ namespace theia {
 template <class DistanceMetric> class FeatureMatcher {
  public:
   typedef typename DistanceMetric::DistanceType DistanceType;
-  typedef typename DistanceMetric::DescriptorType DescriptorType;
 
   FeatureMatcher() : verify_image_pairs_(true) {}
   virtual ~FeatureMatcher() {}
@@ -88,14 +87,14 @@ template <class DistanceMetric> class FeatureMatcher {
   // caller still owns the keypoints and descriptors so they must remain valid
   // objects throughout the matching.
   virtual void AddImage(const std::vector<Keypoint>& keypoints,
-                        const std::vector<DescriptorType>& descriptors);
+                        const std::vector<Eigen::VectorXf>& descriptors);
 
   // Adds an image to the matcher with the known camera intrinsics. The
   // intrinsics (if known) are useful for geometric verification. The caller
   // still owns the keypoints and descriptors so they must remain valid objects
   // throughout the matching.
   virtual void AddImage(const std::vector<Keypoint>& keypoints,
-                        const std::vector<DescriptorType>& descriptors,
+                        const std::vector<Eigen::VectorXf>& descriptors,
                         const CameraIntrinsicsPrior& intrinsics);
 
   // Matches features between all images. No geometric verification is
@@ -139,7 +138,7 @@ template <class DistanceMetric> class FeatureMatcher {
   bool verify_image_pairs_;
 
   std::vector<std::vector<Keypoint> > keypoints_;
-  std::vector<std::vector<DescriptorType> > descriptors_;
+  std::vector<std::vector<Eigen::VectorXf> > descriptors_;
   std::unordered_map<int, CameraIntrinsicsPrior> intrinsics_;
   std::vector<std::pair<int, int> > pairs_to_match_;
   std::mutex mutex_;
@@ -153,7 +152,7 @@ template <class DistanceMetric> class FeatureMatcher {
 template <class DistanceMetric>
 void FeatureMatcher<DistanceMetric>::AddImage(
     const std::vector<Keypoint>& keypoints,
-    const std::vector<DescriptorType>& descriptors) {
+    const std::vector<Eigen::VectorXf>& descriptors) {
   keypoints_.push_back(keypoints);
   descriptors_.push_back(descriptors);
 }
@@ -161,7 +160,7 @@ void FeatureMatcher<DistanceMetric>::AddImage(
 template <class DistanceMetric>
 void FeatureMatcher<DistanceMetric>::AddImage(
     const std::vector<Keypoint>& keypoints,
-    const std::vector<DescriptorType>& descriptors,
+    const std::vector<Eigen::VectorXf>& descriptors,
     const CameraIntrinsicsPrior& intrinsics) {
   keypoints_.push_back(keypoints);
   descriptors_.push_back(descriptors);
