@@ -45,6 +45,7 @@ set(THEIA_SRC
   io/read_1dsfm.cc
   io/read_bundler_files.cc
   io/read_calibration.cc
+  io/read_keypoints_and_descriptors.cc
   io/read_matches.cc
   io/read_matches_deprecated.cc
   io/reconstruction_reader.cc
@@ -54,6 +55,7 @@ set(THEIA_SRC
   io/sift_binary_file.cc
   io/sift_text_file.cc
   io/write_bundler_files.cc
+  io/write_keypoints_and_descriptors.cc
   io/write_matches.cc
   io/write_matches_deprecated.cc
   io/write_ply_file.cc
