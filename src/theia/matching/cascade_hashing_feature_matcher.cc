@@ -37,12 +37,14 @@
 #include <Eigen/Core>
 #include <glog/logging.h>
 
+#include <string>
 #include <vector>
 
 #include "theia/matching/cascade_hasher.h"
 #include "theia/matching/feature_matcher.h"
 #include "theia/matching/feature_matcher_utils.h"
 #include "theia/matching/indexed_feature_match.h"
+#include "theia/util/map_util.h"
 #include "theia/util/threadpool.h"
 #include "theia/util/util.h"
 
@@ -52,16 +54,21 @@ void CascadeHashingFeatureMatcher::AddImage(
     const std::string& image,
     const std::vector<Keypoint>& keypoints,
     const std::vector<Eigen::VectorXf>& descriptors) {
+  // This will save the descriptors and keypoints to disk and set up our LRU
+  // cache.
+  this->template FeatureMatcher<L2>::AddImage(image, keypoints, descriptors);
+
   if (cascade_hasher_.get() == nullptr) {
     cascade_hasher_.reset(new CascadeHasher());
     CHECK(cascade_hasher_->Initialize(descriptors[0].size()))
         << "Could not initialize the cascade hasher.";
   }
 
-  image_names_.push_back(image);
-  keypoints_.push_back(keypoints);
-  hashed_images_.emplace_back(
-      cascade_hasher_->CreateHashedSiftDescriptors(descriptors));
+  // Create the hashing information. NOTE: The HashedImage keeps a pointer to
+  // the descriptors. This will become invalidated immediately after this
+  // function exits so care must be taken going forward.
+  hashed_images_[image] =
+      cascade_hasher_->CreateHashedSiftDescriptors(descriptors);
 }
 
 void CascadeHashingFeatureMatcher::AddImage(
@@ -69,26 +76,52 @@ void CascadeHashingFeatureMatcher::AddImage(
     const std::vector<Keypoint>& keypoints,
     const std::vector<Eigen::VectorXf>& descriptors,
     const CameraIntrinsicsPrior& intrinsics) {
-  AddImage(image, keypoints, descriptors);
-  const int image_index = keypoints_.size() - 1;
-  intrinsics_[image_index] = intrinsics;
+  // This will save the descriptors and keypoints to disk and set up our LRU
+  // cache.
+  this->template FeatureMatcher<L2>::AddImage(image,
+                                              keypoints,
+                                              descriptors,
+                                              intrinsics);
+
+  if (cascade_hasher_.get() == nullptr) {
+    cascade_hasher_.reset(new CascadeHasher());
+    CHECK(cascade_hasher_->Initialize(descriptors[0].size()))
+        << "Could not initialize the cascade hasher.";
+  }
+
+  // Create the hashing information. NOTE: The HashedImage keeps a pointer to
+  // the descriptors. This will become invalidated immediately after this
+  // function exits so care must be taken going forward.
+  hashed_images_[image] =
+      cascade_hasher_->CreateHashedSiftDescriptors(descriptors);
 }
 
 bool CascadeHashingFeatureMatcher::MatchImagePair(
-    const int image1_index,
-    const int image2_index,
+    const KeypointsAndDescriptors& features1,
+    const KeypointsAndDescriptors& features2,
     std::vector<FeatureCorrespondence>* matched_features) {
+  // Get references to the hashed images for each set of features. NOTE: The
+  // HashedImages keep pointers to the original SIFT descriptors but because we
+  // use an LRUCache to load features, this pointer is very likely
+  // invalidated. We explicitly set it here to ensure the pointer is valid.
+  HashedImage& hashed_features1 =
+      FindOrDie(hashed_images_, features1.image_name);
+  hashed_features1.descriptors = &features1.descriptors;
+  HashedImage& hashed_features2 =
+      FindOrDie(hashed_images_, features2.image_name);
+  hashed_features2.descriptors = &features2.descriptors;
+
   std::vector<IndexedFeatureMatch> matches;
-  cascade_hasher_->MatchImages(hashed_images_[image1_index],
-                               hashed_images_[image2_index],
+  cascade_hasher_->MatchImages(hashed_features1,
+                               hashed_features2,
                                this->matcher_options_.lowes_ratio,
                                &matches);
   // Only do symmetric matching if enough matches exist to begin with.
   if (matches.size() >= this->matcher_options_.min_num_feature_matches &&
       this->matcher_options_.keep_only_symmetric_matches) {
     std::vector<IndexedFeatureMatch> backwards_matches;
-    cascade_hasher_->MatchImages(hashed_images_[image2_index],
-                                 hashed_images_[image1_index],
+    cascade_hasher_->MatchImages(hashed_features2,
+                                 hashed_features1,
                                  this->matcher_options_.lowes_ratio,
                                  &backwards_matches);
     IntersectMatches(backwards_matches, &matches);
@@ -99,8 +132,8 @@ bool CascadeHashingFeatureMatcher::MatchImagePair(
   }
 
   // Convert to FeatureCorrespondences and return true;
-  const std::vector<Keypoint>& keypoints1 = this->keypoints_[image1_index];
-  const std::vector<Keypoint>& keypoints2 = this->keypoints_[image2_index];
+  const std::vector<Keypoint>& keypoints1 = features1.keypoints;
+  const std::vector<Keypoint>& keypoints2 = features2.keypoints;
   matched_features->resize(matches.size());
   for (int i = 0; i < matches.size(); i++) {
     const Keypoint& keypoint1 = keypoints1[matches[i].feature1_ind];

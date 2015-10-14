@@ -102,7 +102,10 @@ FeatureExtractorAndMatcher::FeatureExtractorAndMatcher(
     const FeatureExtractorAndMatcher::Options& options)
     : options_(options) {
   // Create the feature matcher.
-  matcher_ = CreateFeatureMatcher(options_.matching_strategy);
+  FeatureMatcherOptions matcher_options = options_.feature_matcher_options;
+  matcher_options.num_threads = options_.num_threads;
+  matcher_options.min_num_feature_matches = options_.min_num_inlier_matches;
+  matcher_ = CreateFeatureMatcher(options_.matching_strategy, matcher_options);
 }
 
 bool FeatureExtractorAndMatcher::AddImage(const std::string& image_filepath) {
@@ -148,18 +151,13 @@ void FeatureExtractorAndMatcher::ExtractAndMatchFeatures(
   thread_pool.reset(nullptr);
 
   // After all threads complete feature extraction, perform matching.
-  FeatureMatcherOptions matcher_options = options_.feature_matcher_options;
-  matcher_options.num_threads = options_.num_threads;
-  matcher_options.min_num_feature_matches = options_.min_num_inlier_matches;
   VerifyTwoViewMatchesOptions verification_options =
       options_.geometric_verification_options;
   verification_options.min_num_inlier_matches = options_.min_num_inlier_matches;
 
   // Perform the matching.
   LOG(INFO) << "Matching images...";
-  matcher_->MatchImagesWithGeometricVerification(matcher_options,
-                                                 verification_options,
-                                                 matches);
+  matcher_->MatchImagesWithGeometricVerification(verification_options, matches);
 
   // Add the intrinsics to the output.
   for (int i = 0; i < image_filepaths_.size(); i++) {
