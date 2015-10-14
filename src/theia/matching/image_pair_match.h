@@ -37,6 +37,7 @@
 
 #include <cereal/access.hpp>
 #include <cereal/types/vector.hpp>
+#include <string>
 #include <vector>
 
 #include "theia/alignment/alignment.h"

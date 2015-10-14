@@ -45,12 +45,13 @@
 namespace theia {
 
 std::unique_ptr<FeatureMatcher<L2>> CreateFeatureMatcher(
-    const MatchingStrategy& matching_strategy) {
+    const MatchingStrategy& matching_strategy,
+    const FeatureMatcherOptions& options) {
   std::unique_ptr<FeatureMatcher<L2>> matcher;
   if (matching_strategy == MatchingStrategy::CASCADE_HASHING) {
-    matcher.reset(new CascadeHashingFeatureMatcher);
+    matcher.reset(new CascadeHashingFeatureMatcher(options));
   } else if (matching_strategy == MatchingStrategy::BRUTE_FORCE) {
-    matcher.reset(new BruteForceFeatureMatcher<L2>);
+    matcher.reset(new BruteForceFeatureMatcher<L2>(options));
   } else {
     LOG(FATAL) << "Invalid matching strategy specified.";
   }

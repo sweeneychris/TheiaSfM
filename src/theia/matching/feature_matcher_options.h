@@ -35,13 +35,24 @@
 #ifndef THEIA_MATCHING_FEATURE_MATCHER_OPTIONS_H_
 #define THEIA_MATCHING_FEATURE_MATCHER_OPTIONS_H_
 
-#include <limits>
+#include <string>
 
 namespace theia {
 
 // Options for matching image collections.
 struct FeatureMatcherOptions {
+  // Number of threads to use in parallel for matching.
   int num_threads = 1;
+
+  // Keypoints and descriptors are stored to disk as they are added to the
+  // FeatureMatcher. Features will be stored in this directory, which must be a
+  // valid writeable directory.
+  std::string keypoints_and_descriptors_output_dir = "";
+
+  // We store the descriptors of up to cache_capacity images in the cache at a
+  // given time. The higher the cache capacity, the more memory is required to
+  // perform image-to-image matching.
+  int cache_capacity = 128;
 
   // Only symmetric matches are kept.
   bool keep_only_symmetric_matches = true;

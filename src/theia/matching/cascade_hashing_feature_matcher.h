@@ -35,11 +35,14 @@
 #ifndef THEIA_MATCHING_CASCADE_HASHING_FEATURE_MATCHER_H_
 #define THEIA_MATCHING_CASCADE_HASHING_FEATURE_MATCHER_H_
 
+#include <string>
+#include <unordered_map>
 #include <vector>
 
 #include "theia/matching/cascade_hasher.h"
 #include "theia/matching/distance.h"
 #include "theia/matching/feature_matcher.h"
+#include "theia/util/hash.h"
 
 namespace theia {
 
@@ -48,7 +51,8 @@ namespace theia {
 // efficient but can only be used with float features like SIFT.
 class CascadeHashingFeatureMatcher : public FeatureMatcher<L2> {
  public:
-  CascadeHashingFeatureMatcher() {}
+  explicit CascadeHashingFeatureMatcher(const FeatureMatcherOptions& options)
+      : FeatureMatcher<L2>(options) {}
   ~CascadeHashingFeatureMatcher() {}
 
   // These methods are the same as the base class except that the HashedImage is
@@ -63,11 +67,11 @@ class CascadeHashingFeatureMatcher : public FeatureMatcher<L2> {
 
  private:
   bool MatchImagePair(
-      const int image1_index,
-      const int image2_index,
+      const KeypointsAndDescriptors& features1,
+      const KeypointsAndDescriptors& features2,
       std::vector<FeatureCorrespondence>* matched_features) override;
 
-  std::vector<HashedImage> hashed_images_;
+  std::unordered_map<std::string, HashedImage> hashed_images_;
   std::unique_ptr<CascadeHasher> cascade_hasher_;
 
   DISALLOW_COPY_AND_ASSIGN(CascadeHashingFeatureMatcher);
