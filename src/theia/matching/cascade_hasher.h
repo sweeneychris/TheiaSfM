@@ -64,10 +64,11 @@ struct HashedSiftDescriptor {
 
 struct HashedImage {
   explicit HashedImage(const std::vector<Eigen::VectorXf>& desc)
-      : descriptors(desc) {}
+      : descriptors(&desc) {}
+  HashedImage() {}
 
   // The original SIFT descriptors.
-  const std::vector<Eigen::VectorXf> descriptors;
+  const std::vector<Eigen::VectorXf>* descriptors;
 
   // The mean of all descriptors (used for hashing).
   Eigen::VectorXf mean_descriptor;

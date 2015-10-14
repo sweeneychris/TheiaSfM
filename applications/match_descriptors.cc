@@ -68,11 +68,11 @@ theia::DescriptorExtractorType GetDescriptorExtractorType(
 
 template <class DistanceMetric>
 theia::FeatureMatcher<DistanceMetric>* CreateMatcher(
-    const std::string& matcher) {
+    const std::string& matcher, const theia::FeatureMatcherOptions& options) {
   if (matcher == "cascade_hashing") {
-    return new theia::CascadeHashingFeatureMatcher;
+    return new theia::CascadeHashingFeatureMatcher(options);
   } else if (matcher == "brute_force") {
-    return new theia::BruteForceFeatureMatcher<DistanceMetric>;
+    return new theia::BruteForceFeatureMatcher<DistanceMetric>(options);
   }
 
   LOG(ERROR) << "Invalid matcher specified";
@@ -112,11 +112,11 @@ void ExtractAndMatchFeatures(
   const double time_to_extract_features = duration.count();
 
   // Create feature matcher and set up options.
-  std::unique_ptr<theia::FeatureMatcher<DistanceMetric> > matcher(
-      CHECK_NOTNULL(CreateMatcher<DistanceMetric>(FLAGS_matcher)));
   theia::FeatureMatcherOptions options;
   options.num_threads = FLAGS_num_threads;
   options.lowes_ratio = FLAGS_lowes_ratio;
+  std::unique_ptr<theia::FeatureMatcher<DistanceMetric> > matcher(
+      CHECK_NOTNULL(CreateMatcher<DistanceMetric>(FLAGS_matcher, options)));
 
   // Match features.
   start = std::chrono::system_clock::now();
@@ -124,9 +124,7 @@ void ExtractAndMatchFeatures(
     matcher->AddImage(image_names->at(i), keypoints->at(i), descriptors[i]);
   }
   theia::VerifyTwoViewMatchesOptions verification_options;
-  matcher->MatchImagesWithGeometricVerification(options,
-                                                verification_options,
-                                                matches);
+  matcher->MatchImagesWithGeometricVerification(verification_options, matches);
   duration = std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::system_clock::now() - start);
   const double time_to_match_features = duration.count();

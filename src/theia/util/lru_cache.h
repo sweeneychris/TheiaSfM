@@ -69,6 +69,7 @@ class LRUCache {
   // Fetch the entry and return the value. If the entry is in the cache then it
   // will be returned efficiently.
   virtual ValueType Fetch(const KeyType& key) {
+    std::lock_guard<std::mutex> lock(mutex_);
     const auto it = cache_entries_map_.find(key);
 
     // If the value is not currently in the cache then we must fetch it.
@@ -77,7 +78,6 @@ class LRUCache {
 
       // Fetch the value for this key since it is not in the cache.
       const ValueType value = FetchEntryNotInCache(key);
-      std::lock_guard<std::mutex> lock(mutex_);
       InsertIntoCache(key, value);
       return value;
     } else {
@@ -85,7 +85,6 @@ class LRUCache {
 
       // If the entry was in the cache, we need to update the access record by
       // moving it to the back of the list.
-      std::lock_guard<std::mutex> lock(mutex_);
       cache_entries_.splice(cache_entries_.end(),
                             cache_entries_,
                             it->second.second);
@@ -109,7 +108,7 @@ class LRUCache {
   // necessary.
   void InsertIntoCache(const KeyType& key, const ValueType& value) {
     // Ensure this method is only called on a cache miss.
-    CHECK(!ContainsKey(cache_entries_map_, key));
+    CHECK(!ContainsKey(cache_entries_map_, key)) << "Key = " << key;
 
     if (cache_entries_map_.size() == max_cache_entries_) {
       EvictOldestEntry();

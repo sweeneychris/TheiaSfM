@@ -45,6 +45,14 @@ DEFINE_string(images, "", "Wildcard of images to reconstruct.");
 DEFINE_string(matches_file, "", "Filename of the matches file.");
 DEFINE_string(calibration_file, "",
               "Calibration file containing image calibration data.");
+DEFINE_string(matching_working_directory, "",
+              "Directory used during matching to store features for "
+              "out-of-core matching.");
+DEFINE_int32(matching_max_num_images_in_cache, 128,
+             "Maximum number of images to store in the LRU cache during "
+             "feature matching. The higher this number is the more memory is "
+             "consumed during matching.");
+
 DEFINE_string(
     output_matches_file, "",
     "File to write the two-view matches to. This file can be used in "
@@ -254,6 +262,11 @@ ReconstructionBuilderOptions SetReconstructionBuilderOptions() {
     options.sift_parameters.peak_threshold = FLAGS_sift_peak_threshold;
     options.sift_parameters.root_sift = FLAGS_root_sift;
   }
+
+  options.matching_options.keypoints_and_descriptors_output_dir =
+      FLAGS_matching_working_directory;
+  options.matching_options.cache_capacity =
+      FLAGS_matching_max_num_images_in_cache;
   options.matching_strategy = GetMatchingStrategyType(FLAGS_matching_strategy);
   options.matching_options.lowes_ratio = FLAGS_lowes_ratio;
   options.matching_options.keep_only_symmetric_matches =

@@ -61,22 +61,23 @@ TEST(BruteForceFeatureMatcherTest, NoOptions) {
     descriptor2[i].normalize();
   }
 
-  // Add features.
-  std::vector<Keypoint> keypoints1(descriptor1.size());
-  std::vector<Keypoint> keypoints2(descriptor2.size());
-  BruteForceFeatureMatcher<L2> matcher;
-  matcher.AddImage("1", keypoints1, descriptor1);
-  matcher.AddImage("2", keypoints2, descriptor2);
-
   // Set options.
   FeatureMatcherOptions options;
+  options.keypoints_and_descriptors_output_dir = GTEST_TESTING_OUTPUT_DIRECTORY;
   options.min_num_feature_matches = 0;
   options.keep_only_symmetric_matches = false;
   options.use_lowes_ratio = false;
 
+  // Add features.
+  std::vector<Keypoint> keypoints1(descriptor1.size());
+  std::vector<Keypoint> keypoints2(descriptor2.size());
+  BruteForceFeatureMatcher<L2> matcher(options);
+  matcher.AddImage("1", keypoints1, descriptor1);
+  matcher.AddImage("2", keypoints2, descriptor2);
+
   // Match features
   std::vector<ImagePairMatch> matches;
-  matcher.MatchImages(options, &matches);
+  matcher.MatchImages(&matches);
 
   // Check that the results are valid.
   EXPECT_EQ(matches[0].correspondences.size(), kNumDescriptors);
@@ -97,22 +98,23 @@ TEST(BruteForceFeatureMatcherTest, RatioTest) {
   descriptor2[1](0) = 0.89;
   descriptor2[1].normalize();
 
-  // Add features.
-  std::vector<Keypoint> keypoints1(descriptor1.size());
-  std::vector<Keypoint> keypoints2(descriptor2.size());
-  BruteForceFeatureMatcher<L2> matcher;
-  matcher.AddImage("1", keypoints1, descriptor1);
-  matcher.AddImage("2", keypoints2, descriptor2);
-
   // Set options.
   FeatureMatcherOptions options;
+  options.keypoints_and_descriptors_output_dir = GTEST_TESTING_OUTPUT_DIRECTORY;
   options.min_num_feature_matches = 0;
   options.keep_only_symmetric_matches = false;
   options.use_lowes_ratio = true;
 
+  // Add features.
+  std::vector<Keypoint> keypoints1(descriptor1.size());
+  std::vector<Keypoint> keypoints2(descriptor2.size());
+  BruteForceFeatureMatcher<L2> matcher(options);
+  matcher.AddImage("1", keypoints1, descriptor1);
+  matcher.AddImage("2", keypoints2, descriptor2);
+
   // Match features.
   std::vector<ImagePairMatch> matches;
-  matcher.MatchImages(options, &matches);
+  matcher.MatchImages(&matches);
 
   // Check that the results are valid.
   EXPECT_EQ(matches[0].correspondences.size(), 0);
@@ -136,22 +138,23 @@ TEST(BruteForceFeatureMatcherTest, SymmetricMatches) {
   descriptor2[1](2) = 0;
   descriptor2[1].normalize();
 
-  // Add features.
-  std::vector<Keypoint> keypoints1(descriptor1.size());
-  std::vector<Keypoint> keypoints2(descriptor2.size());
-  BruteForceFeatureMatcher<L2> matcher;
-  matcher.AddImage("1", keypoints1, descriptor1);
-  matcher.AddImage("2", keypoints2, descriptor2);
-
   // Set options.
   FeatureMatcherOptions options;
+  options.keypoints_and_descriptors_output_dir = GTEST_TESTING_OUTPUT_DIRECTORY;
   options.min_num_feature_matches = 0;
   options.keep_only_symmetric_matches = true;
   options.use_lowes_ratio = false;
 
+  // Add features.
+  std::vector<Keypoint> keypoints1(descriptor1.size());
+  std::vector<Keypoint> keypoints2(descriptor2.size());
+  BruteForceFeatureMatcher<L2> matcher(options);
+  matcher.AddImage("1", keypoints1, descriptor1);
+  matcher.AddImage("2", keypoints2, descriptor2);
+
   // Match features.
   std::vector<ImagePairMatch> matches;
-  matcher.MatchImages(options, &matches);
+  matcher.MatchImages(&matches);
 
   // Check that the results are valid.
   EXPECT_EQ(matches[0].correspondences.size(), 1);
