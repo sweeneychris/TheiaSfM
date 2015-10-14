@@ -37,22 +37,35 @@
 
 #include <algorithm>
 #include <glog/logging.h>
+#include <memory>
 #include <mutex>
 #include <unordered_map>
 #include <utility>
 #include <vector>
 
+#include "theia/io/read_keypoints_and_descriptors.h"
+#include "theia/io/write_keypoints_and_descriptors.h"
 #include "theia/image/keypoint_detector/keypoint.h"
 #include "theia/matching/feature_correspondence.h"
 #include "theia/matching/feature_matcher_options.h"
 #include "theia/matching/image_pair_match.h"
 #include "theia/sfm/camera_intrinsics_prior.h"
 #include "theia/sfm/verify_two_view_matches.h"
+#include "theia/util/filesystem.h"
+#include "theia/util/lru_cache.h"
 #include "theia/util/map_util.h"
 #include "theia/util/threadpool.h"
 #include "theia/util/util.h"
 
 namespace theia {
+
+// This struct is used by the internal cache to hold keypoints and descriptors
+// when the are retrieved from the cache.
+struct KeypointsAndDescriptors {
+  std::string image_name;
+  std::vector<Keypoint> keypoints;
+  std::vector<Eigen::VectorXf> descriptors;
+};
 
 // Class for matching features between images. The intended use for these
 // classes is for matching photos in image collections, so all pairwise matches
@@ -60,10 +73,11 @@ namespace theia {
 // use case is:
 //   FeatureMatcher matcher;
 //   for (int i = 0; i < num_images_to_match; i++) {
-//     matcher.AddImage(keypoints[i], descriptors[i]);
+//     matcher.AddImage(image_names[i], keypoints[i], descriptors[i]);
 //     // Or, you could add the image with known intrinsics for use during
 //     // geometric verification.
-//     matcher.AddImage(keypoints[i], descriptors[i], intrinsics[i]);
+//     matcher.AddImage(image_names[i], keypoints[i],
+//                      descriptors[i], intrinsics[i]);
 //   }
 //   std::vector<ImagePairMatch> matches;
 //   FeatureMatcherOptions matcher_options;
@@ -80,7 +94,7 @@ template <class DistanceMetric> class FeatureMatcher {
  public:
   typedef typename DistanceMetric::DistanceType DistanceType;
 
-  FeatureMatcher() : verify_image_pairs_(true) {}
+  explicit FeatureMatcher(const FeatureMatcherOptions& matcher_options);
   virtual ~FeatureMatcher() {}
 
   // Adds an image to the matcher with no known intrinsics for this image. The
@@ -104,14 +118,12 @@ template <class DistanceMetric> class FeatureMatcher {
   // Matches features between all images. No geometric verification is
   // performed. Only the matches which pass the have greater than
   // min_num_feature_matches are returned.
-  virtual void MatchImages(const FeatureMatcherOptions& matcher_options,
-                           std::vector<ImagePairMatch>* matches);
+  virtual void MatchImages(std::vector<ImagePairMatch>* matches);
 
   // Matches features between all images. Only the matches that pass the
   // geometric verification are returned. Camera intrinsics are used for
   // geometric verification if the image was added with known intrinsics.
   virtual void MatchImagesWithGeometricVerification(
-      const FeatureMatcherOptions& matcher_options,
       const VerifyTwoViewMatchesOptions& verification_options,
       std::vector<ImagePairMatch>* matches);
 
@@ -119,8 +131,8 @@ template <class DistanceMetric> class FeatureMatcher {
   // NOTE: This method should be overridden in the subclass implementations!
   // Returns true if the image pair is a valid match.
   virtual bool MatchImagePair(
-      const int image1_index,
-      const int image2_index,
+      const KeypointsAndDescriptors& features1,
+      const KeypointsAndDescriptors& features2,
       std::vector<FeatureCorrespondence>* matched_features) = 0;
 
   // Performs matching and geometric verification (if desired) on the
@@ -129,6 +141,14 @@ template <class DistanceMetric> class FeatureMatcher {
   virtual void MatchAndVerifyImagePairs(const int start_index,
                                         const int end_index,
                                         std::vector<ImagePairMatch>* matches);
+
+  // Fetches keypoints and descriptors from disk. This function is utilized by
+  // the internal cache to preserve memory.
+  static std::shared_ptr<KeypointsAndDescriptors>
+  FetchKeypointsAndDescriptorsFromDisk(const std::string& features_file);
+
+  // Returns the filepath of the feature file given the image name.
+  std::string FeatureFilenameFromImage(const std::string& image);
 
   // Each Threadpool worker will perform matching on this many image pairs.  It
   // is more efficient to let each thread compute multiple matches at a time
@@ -141,11 +161,16 @@ template <class DistanceMetric> class FeatureMatcher {
   // Will be set to true if geometric verification is enabled.
   bool verify_image_pairs_;
 
+  // A container for the image names.
   std::vector<std::string> image_names_;
-  std::vector<std::vector<Keypoint> > keypoints_;
-  std::vector<std::vector<Eigen::VectorXf> > descriptors_;
-  std::unordered_map<int, CameraIntrinsicsPrior> intrinsics_;
-  std::vector<std::pair<int, int> > pairs_to_match_;
+
+  // An LRU cache that will manage the keypoints and descriptors of interest.
+  typedef LRUCache<std::string, std::shared_ptr<KeypointsAndDescriptors> >
+      KeypointAndDescriptorCache;
+  std::unique_ptr<KeypointAndDescriptorCache> keypoints_and_descriptors_cache_;
+
+  std::unordered_map<std::string, CameraIntrinsicsPrior> intrinsics_;
+  std::vector<std::pair<std::string, std::string> > pairs_to_match_;
   std::mutex mutex_;
 
  private:
@@ -155,13 +180,36 @@ template <class DistanceMetric> class FeatureMatcher {
 // ---------------------- Implementation ------------------------ //
 
 template <class DistanceMetric>
+FeatureMatcher<DistanceMetric>::FeatureMatcher(
+    const FeatureMatcherOptions& options)
+    : matcher_options_(options), verify_image_pairs_(true) {
+  keypoints_and_descriptors_cache_.reset(new KeypointAndDescriptorCache(
+      &FeatureMatcher<DistanceMetric>::FetchKeypointsAndDescriptorsFromDisk,
+      matcher_options_.cache_capacity));
+
+  // Determine if the directory for writing out feature exists. If not, try to
+  // create it.
+  if (!DirectoryExists(matcher_options_.keypoints_and_descriptors_output_dir)) {
+    CHECK(CreateDirectory(matcher_options_.keypoints_and_descriptors_output_dir))
+        << "Could not create the directory for storing features during "
+           "matching: " << matcher_options_.keypoints_and_descriptors_output_dir;
+  }
+}
+
+template <class DistanceMetric>
 void FeatureMatcher<DistanceMetric>::AddImage(
     const std::string& image_name,
     const std::vector<Keypoint>& keypoints,
     const std::vector<Eigen::VectorXf>& descriptors) {
   image_names_.push_back(image_name);
-  keypoints_.push_back(keypoints);
-  descriptors_.push_back(descriptors);
+
+  // Write the features file to disk.
+  const std::string features_file = FeatureFilenameFromImage(image_name);
+  CHECK(WriteKeypointsAndDescriptors(features_file,
+                                     keypoints,
+                                     descriptors))
+      << "Could not read features for image " << image_name << " from file "
+      << features_file;
 }
 
 template <class DistanceMetric>
@@ -170,53 +218,65 @@ void FeatureMatcher<DistanceMetric>::AddImage(
     const std::vector<Keypoint>& keypoints,
     const std::vector<Eigen::VectorXf>& descriptors,
     const CameraIntrinsicsPrior& intrinsics) {
-  image_names_.push_back(image_name);
-  keypoints_.push_back(keypoints);
-  descriptors_.push_back(descriptors);
-  const int image_index = keypoints_.size() - 1;
-  intrinsics_[image_index] = intrinsics;
+  AddImage(image_name, keypoints, descriptors);
+  intrinsics_[image_name] = intrinsics;
+}
+
+template <class DistanceMetric>
+std::string FeatureMatcher<DistanceMetric>::FeatureFilenameFromImage(
+    const std::string& image) {
+  std::string output_dir = matcher_options_.keypoints_and_descriptors_output_dir;
+  // Add a trailing slash if one does not exist.
+  if (output_dir.back() != '/') {
+    output_dir = output_dir + "/";
+  }
+  return output_dir + image + ".features";
+}
+
+template <class DistanceMetric>
+std::shared_ptr<KeypointsAndDescriptors>
+FeatureMatcher<DistanceMetric>::FetchKeypointsAndDescriptorsFromDisk(
+    const std::string& features_file) {
+  std::shared_ptr<KeypointsAndDescriptors> keypoints_and_descriptors(
+      new KeypointsAndDescriptors);
+
+  // Read in the features file from disk.
+  CHECK(ReadKeypointsAndDescriptors(features_file,
+                                    &keypoints_and_descriptors->keypoints,
+                                    &keypoints_and_descriptors->descriptors))
+      << "Could not read features from file " << features_file;
+  return keypoints_and_descriptors;
 }
 
 template <class DistanceMetric>
 void FeatureMatcher<DistanceMetric>::MatchImages(
-    const FeatureMatcherOptions& matcher_options,
     std::vector<ImagePairMatch>* matches) {
   // Set image verification to false so that it will be skipped.
   verify_image_pairs_ = false;
   VerifyTwoViewMatchesOptions verification_options;
-  MatchImagesWithGeometricVerification(matcher_options,
-                                       verification_options,
-                                       matches);
+  MatchImagesWithGeometricVerification(verification_options, matches);
   // Reset the value to true.
   verify_image_pairs_ = true;
 }
 
 template <class DistanceMetric>
 void FeatureMatcher<DistanceMetric>::MatchImagesWithGeometricVerification(
-      const FeatureMatcherOptions& matcher_options,
-      const VerifyTwoViewMatchesOptions& verification_options,
-      std::vector<ImagePairMatch>* matches) {
+    const VerifyTwoViewMatchesOptions& verification_options,
+    std::vector<ImagePairMatch>* matches) {
   pairs_to_match_.clear();
-  matcher_options_ = matcher_options;
   verification_options_ = verification_options;
 
   // Compute the total number of potential matches.
   const int num_pairs_to_match =
-      keypoints_.size() * (keypoints_.size() - 1) / 2;
+      image_names_.size() * (image_names_.size() - 1) / 2;
   matches->reserve(num_pairs_to_match);
 
   pairs_to_match_.reserve(num_pairs_to_match);
 
   // Create a list of all possible image pairs.
-  for (int i = 0; i < keypoints_.size(); i++) {
-    if (keypoints_[i].size() == 0) {
-      continue;
-    }
-    for (int j = i + 1; j < keypoints_.size(); j++) {
-      if (keypoints_[j].size() == 0) {
-        continue;
-      }
-      pairs_to_match_.emplace_back(i, j);
+  for (int i = 0; i < image_names_.size(); i++) {
+    for (int j = i + 1; j < image_names_.size(); j++) {
+      pairs_to_match_.emplace_back(image_names_[i], image_names_[j]);
     }
   }
 
@@ -250,38 +310,51 @@ void FeatureMatcher<DistanceMetric>::MatchAndVerifyImagePairs(
     const int end_index,
     std::vector<ImagePairMatch>* matches) {
   for (int i = start_index; i < end_index; i++) {
+    const std::string image1_name = pairs_to_match_[i].first;
+    const std::string image2_name = pairs_to_match_[i].second;
+
     // Match the image pair. If the pair fails to match then continue to the
     // next match.
     ImagePairMatch image_pair_match;
-    const int image1_index = pairs_to_match_[i].first;
-    const int image2_index = pairs_to_match_[i].second;
+    image_pair_match.image1 = image1_name;
+    image_pair_match.image2 = image2_name;
 
-    image_pair_match.image1 = image_names_[image1_index];
-    image_pair_match.image2 = image_names_[image2_index];
-    if (!MatchImagePair(image1_index,
-                        image2_index,
+    // Get the keypoints and descriptors from the cache. By using a shared_ptr
+    // here we ensure that keypoints and descriptors will live in the cache as
+    // long as they are currently being used in a matching thread, so the cache
+    // will never evict these entries while they are still being used.
+    std::shared_ptr<KeypointsAndDescriptors> features1 =
+        keypoints_and_descriptors_cache_->Fetch(
+            FeatureFilenameFromImage(image1_name));
+    features1->image_name = image1_name;
+    std::shared_ptr<KeypointsAndDescriptors> features2 =
+        keypoints_and_descriptors_cache_->Fetch(
+            FeatureFilenameFromImage(image2_name));
+    features2->image_name = image2_name;
+
+    if (!MatchImagePair(*features1,
+                        *features2,
                         &image_pair_match.correspondences)) {
       VLOG(2)
           << "Could not match a sufficient number of features between images "
-          << image1_index << " and " << image2_index;
+          << image1_name << " and " << image2_name;
       continue;
     }
 
     // Add images to the valid matches if no geometric verification is required.
     if (!verify_image_pairs_) {
       VLOG(1) << image_pair_match.correspondences.size()
-              << " putative matches between images " << image1_index << " and "
-              << image2_index;
+              << " putative matches between images " << image1_name << " and "
+              << image2_name;
       std::lock_guard<std::mutex> lock(mutex_);
       matches->push_back(image_pair_match);
       continue;
     }
 
-    const CameraIntrinsicsPrior intrinsics1 = FindWithDefault(
-        intrinsics_, image1_index, CameraIntrinsicsPrior());
-    const CameraIntrinsicsPrior intrinsics2 = FindWithDefault(
-        intrinsics_, image2_index, CameraIntrinsicsPrior());
-    // If the image pair passes two view verification then
+    const CameraIntrinsicsPrior intrinsics1 =
+        FindWithDefault(intrinsics_, image1_name, CameraIntrinsicsPrior());
+    const CameraIntrinsicsPrior intrinsics2 =
+        FindWithDefault(intrinsics_, image2_name, CameraIntrinsicsPrior());
     std::vector<int> inliers;
     // Do not add this image pair as a verified match if the verification does
     // not pass.
@@ -291,8 +364,8 @@ void FeatureMatcher<DistanceMetric>::MatchAndVerifyImagePairs(
                               image_pair_match.correspondences,
                               &image_pair_match.twoview_info,
                               &inliers)) {
-      VLOG(2) << "Geometric verification between images " << image1_index
-              << " and " << image2_index << " failed.";
+      VLOG(2) << "Geometric verification between images " << image1_name
+              << " and " << image2_name << " failed.";
       continue;
     }
 
@@ -305,7 +378,7 @@ void FeatureMatcher<DistanceMetric>::MatchAndVerifyImagePairs(
       image_pair_match.correspondences.emplace_back(
           old_correspondences[inliers[j]]);
     }
-    VLOG(1) << "Images " << image1_index << " and " << image2_index
+    VLOG(1) << "Images " << image1_name << " and " << image2_name
             << " were matched with " << inliers.size()
             << " verified matches out of " << old_correspondences.size()
             << " putative matches.";

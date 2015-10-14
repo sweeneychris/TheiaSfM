@@ -100,10 +100,10 @@ bool CascadeHasher::Initialize(const int num_dimensions_of_descriptor) {
 }
 
 void CascadeHasher::CreateHashedDescriptors(HashedImage* hashed_image) const {
-  for (int i = 0; i < hashed_image->descriptors.size(); i++) {
+  for (int i = 0; i < hashed_image->descriptors->size(); i++) {
     // Use the zero-mean shifted descriptor.
     const auto descriptor =
-        hashed_image->descriptors[i] - hashed_image->mean_descriptor;
+        hashed_image->descriptors->at(i) - hashed_image->mean_descriptor;
     auto& hash_code = hashed_image->hashed_desc[i].hash_code;
 
     // Compute hash code.
@@ -182,17 +182,17 @@ void CascadeHasher::MatchImages(
 
   // Reserve space for the matches.
   matches->reserve(static_cast<int>(std::min(
-      hashed_image1.descriptors.size(), hashed_image2.descriptors.size())));
+      hashed_image1.descriptors->size(), hashed_image2.descriptors->size())));
 
   // Preallocate the candidate descriptors container.
   std::vector<int> candidate_descriptors;
-  candidate_descriptors.reserve(hashed_image2.descriptors.size());
+  candidate_descriptors.reserve(hashed_image2.descriptors->size());
 
   // Preallocated hamming distances. Each column indicates the hamming distance
   // and the rows collect the descriptor ids with that
   // distance. num_descriptors_with_hamming_distance keeps track of how many
   // descriptors have that distance.
-  Eigen::MatrixXi candidate_hamming_distances(hashed_image2.descriptors.size(),
+  Eigen::MatrixXi candidate_hamming_distances(hashed_image2.descriptors->size(),
                                               kHashCodeSize + 1);
   Eigen::VectorXi num_descriptors_with_hamming_distance(kHashCodeSize + 1);
 
@@ -202,7 +202,7 @@ void CascadeHasher::MatchImages(
 
   // A preallocated vector to determine if we have already used a particular
   // feature for matching (i.e., prevents duplicates).
-  std::vector<bool> used_descriptor(hashed_image2.descriptors.size());
+  std::vector<bool> used_descriptor(hashed_image2.descriptors->size());
   for (int i = 0; i < hashed_image1.hashed_desc.size(); i++) {
     candidate_descriptors.clear();
     num_descriptors_with_hamming_distance.setZero();
@@ -248,8 +248,8 @@ void CascadeHasher::MatchImages(
       for (int k = 0; k < num_descriptors_with_hamming_distance(j); k++) {
         const int candidate_id = candidate_hamming_distances(k, j);
         const float distance =
-            l2_distance(hashed_image2.descriptors[candidate_id],
-                        hashed_image1.descriptors[i]);
+            l2_distance(hashed_image2.descriptors->at(candidate_id),
+                        hashed_image1.descriptors->at(i));
         candidate_euclidean_distances.emplace_back(distance, candidate_id);
         if (candidate_euclidean_distances.size() > kNumTopCandidates) {
           break;
