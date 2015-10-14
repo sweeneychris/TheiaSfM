@@ -39,6 +39,7 @@
 
 #include <limits>
 #include <list>
+#include <mutex>
 #include <unordered_map>
 #include <utility>
 
@@ -76,6 +77,7 @@ class LRUCache {
 
       // Fetch the value for this key since it is not in the cache.
       const ValueType value = FetchEntryNotInCache(key);
+      std::lock_guard<std::mutex> lock(mutex_);
       InsertIntoCache(key, value);
       return value;
     } else {
@@ -83,6 +85,7 @@ class LRUCache {
 
       // If the entry was in the cache, we need to update the access record by
       // moving it to the back of the list.
+      std::lock_guard<std::mutex> lock(mutex_);
       cache_entries_.splice(cache_entries_.end(),
                             cache_entries_,
                             it->second.second);
@@ -150,6 +153,8 @@ class LRUCache {
 
   // Some cache statistics.
   int cache_misses_, cache_hits_;
+
+  std::mutex mutex_;
 
   DISALLOW_COPY_AND_ASSIGN(LRUCache);
 };
