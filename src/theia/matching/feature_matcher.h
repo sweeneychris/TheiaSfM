@@ -183,18 +183,31 @@ template <class DistanceMetric>
 FeatureMatcher<DistanceMetric>::FeatureMatcher(
     const FeatureMatcherOptions& options)
     : matcher_options_(options), verify_image_pairs_(true) {
+  // Initialize the LRU cache. NOTE: even though the Fetch method will be set up
+  // to retreive files from disk, it will only do so if
+  // matcher_options_.match_out_of_core is set to true.
   keypoints_and_descriptors_cache_.reset(new KeypointAndDescriptorCache(
       &FeatureMatcher<DistanceMetric>::FetchKeypointsAndDescriptorsFromDisk,
       matcher_options_.cache_capacity));
 
-  // Determine if the directory for writing out feature exists. If not, try to
-  // create it.
-  if (!DirectoryExists(matcher_options_.keypoints_and_descriptors_output_dir)) {
-    CHECK(
-        CreateDirectory(matcher_options_.keypoints_and_descriptors_output_dir))
+  if (matcher_options_.match_out_of_core) {
+    CHECK_GT(matcher_options_.cache_capacity, 2)
+        << "The cache capacity must be greater than 2 in order to perform out "
+           "of core matching.";
+    // Determine if the directory for writing out feature exists. If not, try to
+    // create it.
+    if (!DirectoryExists(
+            matcher_options_.keypoints_and_descriptors_output_dir)) {
+      CHECK(
+          CreateDirectory(matcher_options_.keypoints_and_descriptors_output_dir))
         << "Could not create the directory for storing features during "
-           "matching: "
+        "matching: "
         << matcher_options_.keypoints_and_descriptors_output_dir;
+    }
+  } else {
+    // If we want to perform all-in-memory matching then set the cache size to
+    // the maximum.
+    matcher_options_.cache_capacity = std::numeric_limits<int>::max();
   }
 }
 
@@ -207,11 +220,22 @@ void FeatureMatcher<DistanceMetric>::AddImage(
 
   // Write the features file to disk.
   const std::string features_file = FeatureFilenameFromImage(image_name);
-  CHECK(WriteKeypointsAndDescriptors(features_file,
-                                     keypoints,
-                                     descriptors))
+  if (matcher_options_.match_out_of_core) {
+    CHECK(WriteKeypointsAndDescriptors(features_file,
+                                       keypoints,
+                                       descriptors))
       << "Could not read features for image " << image_name << " from file "
       << features_file;
+  }
+
+  // Insert the features into the cache.
+  std::shared_ptr<KeypointsAndDescriptors> keypoints_and_descriptors(
+      new KeypointsAndDescriptors);
+  keypoints_and_descriptors->image_name = image_name;
+  keypoints_and_descriptors->keypoints = keypoints;
+  keypoints_and_descriptors->descriptors = descriptors;
+  keypoints_and_descriptors_cache_->Insert(features_file,
+                                           keypoints_and_descriptors);
 }
 
 template <class DistanceMetric>

@@ -9,16 +9,6 @@
 # having to recompute all features and matches.
 --matches_file=
 
-# During feature matching, features are saved to disk so that out-of-core
-# matching may be performed. This directory specifies which directory those
-# features should be saved to.
---matching_working_directory=
-
-# During feature matching we utilize an LRU cache for out-of-core matching. The size
-# of that cache (in terms of number of images) is controlled by this parameter. The
-# higher this number the more memory is required.
---matching_max_num_images_in_cache=128
-
 # The calibration file indicates possibly known calibration e.g, from EXIF or
 # explicit calibration. Theia attempts to extract EXIF focal lengths if calibration
 # is not supplied for a given image.
@@ -40,7 +30,22 @@
 # Disable if regular sift descriptor is desired.
 --root_sift=true
 
-############### Matching Options ###############
+############### Matching Options ############### Perform matching
+# out-of-core. If set to true, the matching_working_directory must be set to a
+# valid, writable directory (the directory will be created if it does not exits)
+# Set to false to perform all-in-memory matching.
+--match_out_of_core=true
+
+# During feature matching, features are saved to disk so that out-of-core
+# matching may be performed. This directory specifies which directory those
+# features should be saved to.
+--matching_working_directory=
+
+# During feature matching we utilize an LRU cache for out-of-core matching. The size
+# of that cache (in terms of number of images) is controlled by this parameter. The
+# higher this number the more memory is required.
+--matching_max_num_images_in_cache=128
+
 --matching_strategy=CASCADE_HASHING
 --lowes_ratio=0.75
 --min_num_inliers_for_valid_match=30

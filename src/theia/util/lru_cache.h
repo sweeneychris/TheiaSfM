@@ -93,6 +93,15 @@ class LRUCache {
     }
   }
 
+  // Inserts a key-value pair into the cache, evicting the oldest entry if the
+  // cache is at the maximum capacity. This method assumes that the key is not
+  // already in the cache, and will CHECK-fail if the key already exists.
+  virtual void Insert(const KeyType& key, const ValueType& value) {
+    std::lock_guard<std::mutex> lock(mutex_);
+    InsertIntoCache(key, value);
+  }
+
+  // Return if the key exists in the cache.
   virtual bool ExistsInCache(const KeyType& key) {
     return ContainsKey(cache_entries_map_, key);
   }
@@ -106,6 +115,9 @@ class LRUCache {
  private:
   // Insert the key/value pair into the cache, evicting the oldest entry if
   // necessary.
+  //
+  // NOTE: This method is not thread-safe so any methods calling it must take
+  // proper thread safety precautions.
   void InsertIntoCache(const KeyType& key, const ValueType& value) {
     // Ensure this method is only called on a cache miss.
     CHECK(!ContainsKey(cache_entries_map_, key));
@@ -122,6 +134,10 @@ class LRUCache {
     cache_entries_map_.insert(std::make_pair(key, std::make_pair(value, it)));
   }
 
+  // Evicts the oldest entry from the cache.
+  //
+  // NOTE: This method is not thread-safe so any methods calling it must take
+  // proper thread safety precautions.
   void EvictOldestEntry() {
     // This method should never be called if the size of the cache is 0.
     CHECK_GT(cache_entries_.size(), 0);
