@@ -45,14 +45,6 @@ DEFINE_string(images, "", "Wildcard of images to reconstruct.");
 DEFINE_string(matches_file, "", "Filename of the matches file.");
 DEFINE_string(calibration_file, "",
               "Calibration file containing image calibration data.");
-DEFINE_string(matching_working_directory, "",
-              "Directory used during matching to store features for "
-              "out-of-core matching.");
-DEFINE_int32(matching_max_num_images_in_cache, 128,
-             "Maximum number of images to store in the LRU cache during "
-             "feature matching. The higher this number is the more memory is "
-             "consumed during matching.");
-
 DEFINE_string(
     output_matches_file, "",
     "File to write the two-view matches to. This file can be used in "
@@ -75,6 +67,17 @@ DEFINE_string(
 DEFINE_string(matching_strategy, "BRUTE_FORCE",
               "Strategy used to match features. Must be BRUTE_FORCE "
               " or CASCADE_HASHING");
+DEFINE_bool(match_out_of_core, true,
+            "Perform matching out of core by saving features to disk and "
+            "reading them as needed. Set to false to perform matching all in "
+            "memory.");
+DEFINE_string(matching_working_directory, "",
+              "Directory used during matching to store features for "
+              "out-of-core matching.");
+DEFINE_int32(matching_max_num_images_in_cache, 128,
+             "Maximum number of images to store in the LRU cache during "
+             "feature matching. The higher this number is the more memory is "
+             "consumed during matching.");
 DEFINE_double(lowes_ratio, 0.8, "Lowes ratio used for feature matching.");
 DEFINE_double(
     max_sampson_error_for_verified_match, 4.0,
@@ -263,6 +266,7 @@ ReconstructionBuilderOptions SetReconstructionBuilderOptions() {
     options.sift_parameters.root_sift = FLAGS_root_sift;
   }
 
+  options.matching_options.match_out_of_core = FLAGS_match_out_of_core;
   options.matching_options.keypoints_and_descriptors_output_dir =
       FLAGS_matching_working_directory;
   options.matching_options.cache_capacity =
