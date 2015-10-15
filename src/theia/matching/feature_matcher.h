@@ -127,6 +127,14 @@ template <class DistanceMetric> class FeatureMatcher {
       const VerifyTwoViewMatchesOptions& verification_options,
       std::vector<ImagePairMatch>* matches);
 
+  // Set the image pairs that will be matched when MatchImages or
+  // MatchImagesWithGeometricVerification is called. This is an optional method;
+  // if it is not called, then all possible image-to-image pairs will be
+  // matched. The vector should contain unique pairs of image names that should
+  // be matched.
+  virtual void SetImagePairsToMatch(
+      const std::vector<std::pair<std::string, std::string> >& pairs_to_match);
+
  protected:
   // NOTE: This method should be overridden in the subclass implementations!
   // Returns true if the image pair is a valid match.
@@ -276,6 +284,12 @@ FeatureMatcher<DistanceMetric>::FetchKeypointsAndDescriptorsFromDisk(
 }
 
 template <class DistanceMetric>
+void FeatureMatcher<DistanceMetric>::SetImagePairsToMatch(
+    const std::vector<std::pair<std::string, std::string> >& pairs_to_match) {
+  pairs_to_match_ = pairs_to_match;
+}
+
+template <class DistanceMetric>
 void FeatureMatcher<DistanceMetric>::MatchImages(
     std::vector<ImagePairMatch>* matches) {
   // Set image verification to false so that it will be skipped.
@@ -290,7 +304,6 @@ template <class DistanceMetric>
 void FeatureMatcher<DistanceMetric>::MatchImagesWithGeometricVerification(
     const VerifyTwoViewMatchesOptions& verification_options,
     std::vector<ImagePairMatch>* matches) {
-  pairs_to_match_.clear();
   verification_options_ = verification_options;
 
   // Compute the total number of potential matches.
@@ -298,16 +311,18 @@ void FeatureMatcher<DistanceMetric>::MatchImagesWithGeometricVerification(
       image_names_.size() * (image_names_.size() - 1) / 2;
   matches->reserve(num_pairs_to_match);
 
-  pairs_to_match_.reserve(num_pairs_to_match);
-
-  // Create a list of all possible image pairs.
-  for (int i = 0; i < image_names_.size(); i++) {
-    for (int j = i + 1; j < image_names_.size(); j++) {
-      pairs_to_match_.emplace_back(image_names_[i], image_names_[j]);
+  // If SetImagePairsToMatch has not been called, match all image-to-image pairs.
+  if (pairs_to_match_.size() == 0) {
+    pairs_to_match_.reserve(num_pairs_to_match);
+    // Create a list of all possible image pairs.
+    for (int i = 0; i < image_names_.size(); i++) {
+      for (int j = i + 1; j < image_names_.size(); j++) {
+        pairs_to_match_.emplace_back(image_names_[i], image_names_[j]);
+      }
     }
   }
 
-  // Add workers for matchine. It is more efficient to let each thread compute
+  // Add workers for matching. It is more efficient to let each thread compute
   // multiple matches at a time than add each matching task to the pool. This is
   // sort of like OpenMP's dynamic schedule in that it is able to balance
   // threads fairly efficiently.
