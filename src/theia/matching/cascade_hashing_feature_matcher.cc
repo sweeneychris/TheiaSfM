@@ -100,6 +100,10 @@ bool CascadeHashingFeatureMatcher::MatchImagePair(
     const KeypointsAndDescriptors& features1,
     const KeypointsAndDescriptors& features2,
     std::vector<FeatureCorrespondence>* matched_features) {
+  const double lowes_ratio = (this->matcher_options_.use_lowes_ratio)
+                                 ? this->matcher_options_.lowes_ratio
+                                 : 1.0;
+
   // Get references to the hashed images for each set of features. NOTE: The
   // HashedImages keep pointers to the original SIFT descriptors but because we
   // use an LRUCache to load features, this pointer is very likely
@@ -112,17 +116,15 @@ bool CascadeHashingFeatureMatcher::MatchImagePair(
   hashed_features2.descriptors = &features2.descriptors;
 
   std::vector<IndexedFeatureMatch> matches;
-  cascade_hasher_->MatchImages(hashed_features1,
-                               hashed_features2,
-                               this->matcher_options_.lowes_ratio,
-                               &matches);
+  cascade_hasher_->MatchImages(
+      hashed_features1, hashed_features2, lowes_ratio, &matches);
   // Only do symmetric matching if enough matches exist to begin with.
   if (matches.size() >= this->matcher_options_.min_num_feature_matches &&
       this->matcher_options_.keep_only_symmetric_matches) {
     std::vector<IndexedFeatureMatch> backwards_matches;
     cascade_hasher_->MatchImages(hashed_features2,
                                  hashed_features1,
-                                 this->matcher_options_.lowes_ratio,
+                                 lowes_ratio,
                                  &backwards_matches);
     IntersectMatches(backwards_matches, &matches);
   }
