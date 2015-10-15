@@ -126,6 +126,7 @@
 #include "theia/sfm/global_pose_estimation/nonlinear_position_estimator.h"
 #include "theia/sfm/global_pose_estimation/nonlinear_rotation_estimator.h"
 #include "theia/sfm/global_pose_estimation/pairwise_rotation_error.h"
+#include "theia/sfm/global_pose_estimation/pairwise_translation_and_scale_error.h"
 #include "theia/sfm/global_pose_estimation/pairwise_translation_error.h"
 #include "theia/sfm/global_pose_estimation/position_estimator.h"
 #include "theia/sfm/global_pose_estimation/robust_rotation_estimator.h"

@@ -100,6 +100,7 @@ set(THEIA_SRC
   sfm/global_pose_estimation/nonlinear_position_estimator.cc
   sfm/global_pose_estimation/nonlinear_rotation_estimator.cc
   sfm/global_pose_estimation/pairwise_rotation_error.cc
+  sfm/global_pose_estimation/pairwise_translation_and_scale_error.cc
   sfm/global_pose_estimation/pairwise_translation_error.cc
   sfm/global_pose_estimation/robust_rotation_estimator.cc
   sfm/global_reconstruction_estimator.cc
@@ -231,6 +232,7 @@ if (BUILD_TESTING)
   gtest(sfm/global_pose_estimation/linear_rotation_estimator)
   gtest(sfm/global_pose_estimation/nonlinear_position_estimator)
   gtest(sfm/global_pose_estimation/pairwise_rotation_error)
+  gtest(sfm/global_pose_estimation/pairwise_translation_and_scale_error)
   gtest(sfm/global_pose_estimation/pairwise_translation_error)
   gtest(sfm/global_pose_estimation/robust_rotation_estimator)
   gtest(sfm/pose/dls_pnp)
