@@ -55,7 +55,7 @@ namespace theia {
 class LinearRotationEstimator : public RotationEstimator {
  public:
   LinearRotationEstimator() : weight_terms_by_inliers_(false) {}
-  LinearRotationEstimator(const bool weight_terms_by_inliers)
+  explicit LinearRotationEstimator(const bool weight_terms_by_inliers)
       : weight_terms_by_inliers_(weight_terms_by_inliers) {}
 
   // Estimates the global orientations of all views based on an initial
