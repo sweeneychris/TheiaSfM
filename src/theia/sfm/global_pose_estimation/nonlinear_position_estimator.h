@@ -67,8 +67,8 @@ class NonlinearPositionEstimator : public PositionEstimator {
     // collinear configurations, but are not necessary to compute the position.
     int min_num_points_per_view = 0;
 
-    // The total weight of all point to camera correspondences compared to camera
-    // to camera correspondences.
+    // The total weight of all point to camera correspondences compared to
+    // camera to camera correspondences.
     double point_to_camera_weight = 0.5;
   };
 

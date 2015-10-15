@@ -71,7 +71,7 @@ class RobustRotationEstimator : public RotationEstimator {
     int max_num_irls_iterations = 100;
   };
 
-  RobustRotationEstimator(const Options& options) : options_(options) {}
+  expicit RobustRotationEstimator(const Options& options) : options_(options) {}
 
   // Estimates the global orientations of all views based on an initial
   // guess. Returns true on successful estimation and false otherwise.

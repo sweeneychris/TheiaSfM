@@ -132,8 +132,8 @@ class EstimateRotationsRobustTest : public ::testing::Test {
     std::unordered_map<ViewId, Vector3d> estimated_rotations;
     InitializeRotationsFromSpanningTree(&estimated_rotations);
 
-    EXPECT_TRUE(
-        rotation_estimator.EstimateRotations(view_pairs_, &estimated_rotations));
+    EXPECT_TRUE(rotation_estimator.EstimateRotations(view_pairs_,
+                                                     &estimated_rotations));
     EXPECT_EQ(estimated_rotations.size(), orientations_.size());
 
     // Align the rotations and measure the error.

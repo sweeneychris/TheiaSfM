@@ -39,6 +39,7 @@
 #include <Eigen/SparseCore>
 #include <Eigen/SparseQR>
 #include <unordered_map>
+#include <vector>
 
 #include "theia/sfm/pose/util.h"
 #include "theia/sfm/twoview_info.h"
