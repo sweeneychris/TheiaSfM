@@ -44,6 +44,13 @@ struct FeatureMatcherOptions {
   // Number of threads to use in parallel for matching.
   int num_threads = 1;
 
+  // Matching may be performed in core (i.e. all in memory) or out-of-core. For
+  // the latter, features are written and read to/from disk as needed (utilizing
+  // an LRU cache). The out-of-core strategy is more scalable since the memory
+  // footprint is limited. Set this value to false to perform all-in-memory
+  // matching.
+  bool match_out_of_core = true;
+
   // Keypoints and descriptors are stored to disk as they are added to the
   // FeatureMatcher. Features will be stored in this directory, which must be a
   // valid writeable directory.
