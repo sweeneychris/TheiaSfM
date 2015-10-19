@@ -59,11 +59,9 @@ void PairwiseTranslationAndScaleErrorTest(const Vector3d& known_translation,
   // Initialize error function and compute rotation error.
   const PairwiseTranslationAndScaleError translation_error(known_translation);
   Vector4d error = Vector4d::Zero();
-  double l1_weight = 1.0;
   translation_error(position_1.data(),
                     position_2.data(),
                     &scale,
-                    &l1_weight,
                     error.data());
 
   EXPECT_DOUBLE_EQ(error(0), expected_error(0));
