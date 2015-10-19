@@ -49,7 +49,7 @@ struct FeatureMatcherOptions {
   // an LRU cache). The out-of-core strategy is more scalable since the memory
   // footprint is limited. Set this value to false to perform all-in-memory
   // matching.
-  bool match_out_of_core = true;
+  bool match_out_of_core = false;
 
   // Keypoints and descriptors are stored to disk as they are added to the
   // FeatureMatcher. Features will be stored in this directory, which must be a
@@ -62,7 +62,7 @@ struct FeatureMatcherOptions {
   int cache_capacity = 128;
 
   // Only symmetric matches are kept.
-  bool keep_only_symmetric_matches = false;
+  bool keep_only_symmetric_matches = true;
 
   // Only keep the matches that pass the lowes ratio test such that the distance
   // of the best best match is less than lowes_ratio of the distance of the
