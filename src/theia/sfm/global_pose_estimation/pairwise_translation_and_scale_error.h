@@ -38,10 +38,14 @@
 #include <ceres/ceres.h>
 #include <Eigen/Core>
 
+#include <limits>
+
 namespace theia {
 
 // Computes the error between a translation direction and the direction formed
-// from two positions such that (c_j - c_i) - scalar * t_ij is minimized.
+// from two positions such that (c_j - c_i) - scalar * t_ij is
+// minimized. Additionally, there is a penalty on the scale to ensure it is
+// greater than 1.0.
 struct PairwiseTranslationAndScaleError {
   PairwiseTranslationAndScaleError(
       const Eigen::Vector3d& translation_direction);
@@ -51,7 +55,6 @@ struct PairwiseTranslationAndScaleError {
   bool operator()(const T* position1,
                   const T* position2,
                   const T* scale,
-                  const T* l1_weight,
                   T* residuals) const;
 
   static ceres::CostFunction* Create(
@@ -64,20 +67,21 @@ template <typename T>
 bool PairwiseTranslationAndScaleError::operator() (const T* position1,
                                                    const T* position2,
                                                    const T* scale,
-                                                   const T* l1_weight,
                                                    T* residuals) const {
-  T translation_error[3];
-  translation_error[0] =
-      position2[0] - position1[0] - scale[0] * T(translation_direction_[0]);
-  translation_error[1] =
-      position2[1] - position1[1] - scale[0] * T(translation_direction_[1]);
-  translation_error[2] =
-      position2[2] - position1[2] - scale[0] * T(translation_direction_[2]);
+  static const T kVeryLargeNumber = T(1e24);
 
-  residuals[0] = l1_weight[0] * translation_error[0];
-  residuals[1] = l1_weight[0] * translation_error[1];
-  residuals[2] = l1_weight[0] * translation_error[2];
-  residuals[3] = T(1.0) / l1_weight[0];
+  residuals[0] =
+      position2[0] - position1[0] - scale[0] * T(translation_direction_[0]);
+  residuals[1] =
+      position2[1] - position1[1] - scale[0] * T(translation_direction_[1]);
+  residuals[2] =
+      position2[2] - position1[2] - scale[0] * T(translation_direction_[2]);
+  // Penalize the scale as it approaches 1.0.
+  if (scale[0] <= T(1.0)) {
+    residuals[3] = kVeryLargeNumber;
+  } else {
+    residuals[3] = T(1.0) / (scale[0] - T(1.0));
+  }
   return true;
 }
 
