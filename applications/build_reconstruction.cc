@@ -238,7 +238,9 @@ GlobalPositionEstimatorType GetPositionEstimatorType(
     return GlobalPositionEstimatorType::NONLINEAR;
   } else if (position_estimator == "LINEAR") {
     return GlobalPositionEstimatorType::LINEAR_TRIPLET;
-  }  else {
+  } else if (position_estimator == "LEAST_UNSQUARED_DEVIATION") {
+    return GlobalPositionEstimatorType::LEAST_UNSQUARED_DEVIATION;
+  } else {
     LOG(FATAL)
         << "Invalid position estimator type. Using NONLINEAR instead.";
     return GlobalPositionEstimatorType::NONLINEAR;

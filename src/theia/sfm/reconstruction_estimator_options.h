@@ -35,8 +35,9 @@
 #ifndef THEIA_SFM_RECONSTRUCTION_ESTIMATOR_OPTIONS_H_
 #define THEIA_SFM_RECONSTRUCTION_ESTIMATOR_OPTIONS_H_
 
-#include "theia/sfm/global_pose_estimation/nonlinear_position_estimator.h"
+#include "theia/sfm/global_pose_estimation/least_unsquared_deviation_position_estimator.h"
 #include "theia/sfm/global_pose_estimation/linear_position_estimator.h"
+#include "theia/sfm/global_pose_estimation/nonlinear_position_estimator.h"
 
 namespace theia {
 
@@ -62,9 +63,12 @@ enum class GlobalRotationEstimatorType {
 //   LINEAR_TRIPLET: This linear method computes camera positions by
 //     minimizing an error for image triplets. Essentially, it tries to
 //     enforce a loop/triangle constraint for triplets.
+//   LEAST_UNSQUARED_DEVIATION: This robust method uses the least unsquared
+//     deviation instead of least squares. It is essentially an L1 solver.
 enum class GlobalPositionEstimatorType {
   NONLINEAR = 0,
   LINEAR_TRIPLET = 1,
+  LEAST_UNSQUARED_DEVIATION = 2,
 };
 
 // Options for the reconstruction estimation.
@@ -137,6 +141,8 @@ struct ReconstructionEstimatorOptions {
   // --------------- Global Position Estimation Options --------------- //
   NonlinearPositionEstimator::Options nonlinear_position_estimator_options;
   LinearPositionEstimator::Options linear_triplet_position_estimator_options;
+  LeastUnsquaredDeviationPositionEstimator::Options
+      least_unsquared_deviation_position_estimator_options;
 
   // --------------------- Incremental SfM Options --------------------- //
 

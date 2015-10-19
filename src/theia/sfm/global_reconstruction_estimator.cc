@@ -43,6 +43,7 @@
 #include "theia/sfm/filter_view_graph_cycles_by_rotation.h"
 #include "theia/sfm/filter_view_pairs_from_orientation.h"
 #include "theia/sfm/filter_view_pairs_from_relative_translation.h"
+#include "theia/sfm/global_pose_estimation/least_unsquared_deviation_position_estimator.h"
 #include "theia/sfm/global_pose_estimation/linear_position_estimator.h"
 #include "theia/sfm/global_pose_estimation/linear_rotation_estimator.h"
 #include "theia/sfm/global_pose_estimation/nonlinear_position_estimator.h"
@@ -128,6 +129,8 @@ GlobalReconstructionEstimator::GlobalReconstructionEstimator(
   options_.nonlinear_position_estimator_options.num_threads =
       options_.num_threads;
   options_.linear_triplet_position_estimator_options.num_threads =
+      options_.num_threads;
+  options_.least_unsquared_deviation_position_estimator_options.num_threads =
       options_.num_threads;
   ransac_params_ = SetRansacParameters(options);
 }
@@ -392,6 +395,11 @@ void GlobalReconstructionEstimator::EstimatePosition() {
       position_estimator.reset(new LinearPositionEstimator(
           options_.linear_triplet_position_estimator_options,
           *reconstruction_));
+      break;
+    }
+    case GlobalPositionEstimatorType::LEAST_UNSQUARED_DEVIATION: {
+      position_estimator.reset(new LeastUnsquaredDeviationPositionEstimator(
+          options_.least_unsquared_deviation_position_estimator_options));
       break;
     }
     default: {

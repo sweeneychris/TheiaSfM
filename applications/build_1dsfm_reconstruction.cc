@@ -163,7 +163,9 @@ GlobalPositionEstimatorType GetPositionEstimatorType(
     return GlobalPositionEstimatorType::NONLINEAR;
   } else if (position_estimator == "LINEAR") {
     return GlobalPositionEstimatorType::LINEAR_TRIPLET;
-  }  else {
+  } else if (position_estimator == "LEAST_UNSQUARED_DEVIATION") {
+    return GlobalPositionEstimatorType::LEAST_UNSQUARED_DEVIATION;
+  }   else {
     LOG(FATAL)
         << "Invalid position estimator type. Using NONLINEAR instead.";
     return GlobalPositionEstimatorType::NONLINEAR;
@@ -254,7 +256,6 @@ int main(int argc, char *argv[]) {
 
   CHECK_GT(FLAGS_output_reconstruction.size(), 0)
       << "Must specify a filepath to output the reconstruction.";
-
   const ReconstructionBuilderOptions options =
       SetReconstructionBuilderOptions();
 
@@ -266,7 +267,6 @@ int main(int argc, char *argv[]) {
   }
 
   InitializeFrom1DSFM(&reconstruction_builder);
-
   std::vector<Reconstruction*> reconstructions;
   CHECK(reconstruction_builder.BuildReconstruction(&reconstructions))
       << "Could not create a reconstruction.";
