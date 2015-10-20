@@ -366,12 +366,21 @@ bool IncrementalReconstructionEstimator::ChooseInitialViewPair() {
     // Estimate 3D structure of the scene.
     EstimateStructure();
 
+    // If we did not triangulate enough tracks then skip this view and try
+    // another.
+    std::unordered_set<TrackId> estimated_tracks;
+    GetEstimatedTracksFromReconstruction(*reconstruction_, &estimated_tracks);
+
+    if (estimated_tracks.size() < kMinNumInitialTracks) {
+      continue;
+    }
+
     // Bundle adjustment on the 2-view reconstruction.
     BundleAdjustment();
 
     // If we triangulated enough 3D points then return.  Otherwise, try the next
     // view pair as the seed for the initial reconstruction.
-    std::unordered_set<TrackId> estimated_tracks;
+    estimated_tracks.clear();
     GetEstimatedTracksFromReconstruction(*reconstruction_, &estimated_tracks);
 
     if (estimated_tracks.size() > kMinNumInitialTracks) {
@@ -506,10 +515,14 @@ void IncrementalReconstructionEstimator::BundleAdjustment() {
   if (reconstructed_views_.size() >= num_optimized_views_ * ba_growth_ratio) {
     // Full bundle adjustment.
     LOG(INFO) << "Running full bundle adjustment on the entire reconstruction.";
+
     ba_summary =
         BundleAdjustReconstruction(bundle_adjustment_options_, reconstruction_);
     num_optimized_views_ = reconstructed_views_.size();
   } else {
+    // For a small and fixed number of views, it is better to just use
+    // DENSE_SCHUR.
+    bundle_adjustment_options_.linear_solver_type = ceres::DENSE_SCHUR;
     bundle_adjustment_options_.verbose = VLOG_IS_ON(2);
     // Partial bundle adjustment only only the k most recently added views that
     // have not been optimized by full BA.
