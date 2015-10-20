@@ -56,7 +56,7 @@ struct FilterViewPairsFromRelativeTranslationOptions {
   // The parameter translation_projection_tolerance determines which
   // translations are considered "bad" after analyzing their projections over
   // many iterations (it corresponds to tau in the paper).
-  double translation_projection_tolerance = 0.1;
+  double translation_projection_tolerance = 0.08;
 };
 
 // Filters view pairs based on the relative translation estimations according to
