@@ -49,10 +49,12 @@
 namespace theia {
 
 // Estimates the camera position of views given pairwise relative poses and the
-// absolute orientations of cameras. Positions are estimated using a nonlinear
-// solver with a robust cost function. This solution strategy closely follows
-// the method outlined in "Robust Global Translations with 1DSfM" by Wilson and
-// Snavely (ECCV 2014)
+// absolute orientations of cameras. Positions are estimated using a least
+// unsquared deviations solver -- essentially an L1 solver that is wrapped in an
+// Iteratively Reweighted Least Squares (IRLS) formulation. This method was
+// proposed in "Robust Camera Location Estimation by Convex Programming" by
+// Ozyesil and Singer (CVPR 2015). Please cite this paper when using this
+// method.
 class LeastUnsquaredDeviationPositionEstimator : public PositionEstimator {
  public:
   struct Options {
