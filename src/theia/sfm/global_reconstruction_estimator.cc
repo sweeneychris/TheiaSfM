@@ -143,12 +143,11 @@ GlobalReconstructionEstimator::GlobalReconstructionEstimator(
 //   4) Remove any pairwise geometries where the relative rotation is not
 //      consistent with the global rotation.
 //   5) Optimize the relative translation given the known rotations.
-//   6) Filter potentially bad relative translations with 1D SfM.
+//   6) Filter potentially bad relative translations.
 //   7) Estimate positions.
 //   8) Estimate structure.
 //   9) Bundle adjustment.
-//   10) TODO: localize any unestimated cameras, retriangulate, and bundle
-//      adjust.
+//   10) Retriangulate, and bundle adjust.
 //
 // After each filtering step we remove any views which are no longer connected
 // to the largest connected component in the view graph.
@@ -185,7 +184,11 @@ ReconstructionEstimatorSummary GlobalReconstructionEstimator::Estimate(
   // Step 3. Estimate global rotations.
   LOG(INFO) << "Estimating the global rotations of all cameras.";
   timer.Reset();
-  EstimateGlobalRotations();
+  if (!EstimateGlobalRotations()) {
+    LOG(WARNING) << "Rotation estimation failed!";
+    summary.success = false;
+    return summary;
+  }
   global_estimator_timings.rotation_estimation_time =
       timer.ElapsedTimeInSeconds();
 
@@ -213,7 +216,11 @@ ReconstructionEstimatorSummary GlobalReconstructionEstimator::Estimate(
   // Step 7. Estimate global positions.
   LOG(INFO) << "Estimating the positions of all cameras.";
   timer.Reset();
-  EstimatePosition();
+  if (!EstimatePosition()) {
+    LOG(WARNING) << "Position estimation failed!";
+    summary.success = false;
+    return summary;
+  }
   global_estimator_timings.position_estimation_time =
       timer.ElapsedTimeInSeconds();
   summary.pose_estimation_time =
@@ -240,9 +247,13 @@ ReconstructionEstimatorSummary GlobalReconstructionEstimator::Estimate(
     SetUnderconstrainedAsUnestimated(reconstruction_);
 
     // Step 9. Bundle Adjustment.
-    LOG(INFO) << "Performing bundle adjustment again.";
+    LOG(INFO) << "Performing bundle adjustment.";
     timer.Reset();
-    BundleAdjustment();
+    if (!BundleAdjustment()) {
+      summary.success = false;
+      LOG(WARNING) << "Bundle adjustment failed!";
+      return summary;
+    }
     summary.bundle_adjustment_time += timer.ElapsedTimeInSeconds();
 
     int num_points_removed = RemoveOutlierFeatures(
@@ -306,7 +317,7 @@ void GlobalReconstructionEstimator::CalibrateCameras() {
   SetCameraIntrinsicsFromPriors(reconstruction_);
 }
 
-void GlobalReconstructionEstimator::EstimateGlobalRotations() {
+bool GlobalReconstructionEstimator::EstimateGlobalRotations() {
   const auto& view_pairs = view_graph_->GetAllEdges();
 
   // Choose the global rotation estimation type.
@@ -348,8 +359,7 @@ void GlobalReconstructionEstimator::EstimateGlobalRotations() {
     }
   };
 
-  CHECK(rotation_estimator->EstimateRotations(view_pairs, &orientations_))
-      << "Rotation estimation failed!";
+  return rotation_estimator->EstimateRotations(view_pairs, &orientations_);
 }
 
 void GlobalReconstructionEstimator::FilterRotations() {
@@ -379,7 +389,7 @@ void GlobalReconstructionEstimator::FilterRelativeTranslation() {
   RemoveDisconnectedViewPairs(view_graph_);
 }
 
-void GlobalReconstructionEstimator::EstimatePosition() {
+bool GlobalReconstructionEstimator::EstimatePosition() {
   // Estimate position.
   const auto& view_pairs = view_graph_->GetAllEdges();
   std::unique_ptr<PositionEstimator> position_estimator;
@@ -408,12 +418,11 @@ void GlobalReconstructionEstimator::EstimatePosition() {
     }
   };
 
-  CHECK(position_estimator->EstimatePositions(view_pairs,
-                                              orientations_,
-                                              &positions_))
-      << "Position estimation failed!";
   LOG(INFO) << positions_.size()
             << " camera positions were estimated successfully.";
+  return position_estimator->EstimatePositions(view_pairs,
+                                               orientations_,
+                                               &positions_);
 }
 
 void GlobalReconstructionEstimator::EstimateStructure() {
@@ -429,13 +438,13 @@ void GlobalReconstructionEstimator::EstimateStructure() {
                     reconstruction_);
 }
 
-void GlobalReconstructionEstimator::BundleAdjustment() {
+bool GlobalReconstructionEstimator::BundleAdjustment() {
   // Bundle adjustment.
   bundle_adjustment_options_ =
       SetBundleAdjustmentOptions(options_, positions_.size());
   const auto& bundle_adjustment_summary =
       BundleAdjustReconstruction(bundle_adjustment_options_, reconstruction_);
-  CHECK(bundle_adjustment_summary.success) << "Could not perform BA.";
+  return bundle_adjustment_summary.success;
 }
 
 }  // namespace theia

@@ -106,7 +106,7 @@ class IncrementalReconstructionEstimator : public ReconstructionEstimator {
   // Performs bundle adjustment on the model. Depending on the state of the
   // reconstruction either partial BA is run on the k cameras that were most
   // recently added or on the full model.
-  void BundleAdjustment();
+  bool BundleAdjustment();
 
   // Chooses the next cameras to be localized according to which camera observes
   // the highest number of 3D points in the scene. This view is then localized

@@ -301,7 +301,11 @@ ReconstructionEstimatorSummary IncrementalReconstructionEstimator::Estimate(
 
       // Step 6: Bundle Adjustment.
       timer.Reset();
-      BundleAdjustment();
+      if (!BundleAdjustment()) {
+        LOG(WARNING) << "Bundle adjustment failed!";
+        summary_.success = false;
+        return summary_;
+      }
       summary_.bundle_adjustment_time += timer.ElapsedTimeInSeconds();
     }
   }
@@ -376,7 +380,11 @@ bool IncrementalReconstructionEstimator::ChooseInitialViewPair() {
     }
 
     // Bundle adjustment on the 2-view reconstruction.
-    BundleAdjustment();
+    if (!BundleAdjustment()) {
+      // Set all values as unestimated and try to use the next candidate pair.
+      SetReconstructionAsUnestimated(reconstruction_);
+      continue;
+    }
 
     // If we triangulated enough 3D points then return.  Otherwise, try the next
     // view pair as the seed for the initial reconstruction.
@@ -539,9 +547,8 @@ void IncrementalReconstructionEstimator::BundleAdjustment() {
         bundle_adjustment_options_, views_to_optimize, reconstruction_);
   }
 
-  CHECK(ba_summary.success) << "Could not perform full bundle adjustment.";
-
   RemoveOutlierTracks(options_.max_reprojection_error_in_pixels);
+  return ba_summary.success;
 }
 
 void IncrementalReconstructionEstimator::RemoveOutlierTracks(

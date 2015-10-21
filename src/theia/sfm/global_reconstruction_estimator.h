@@ -61,12 +61,11 @@ class ViewGraph;
 //   4) Remove any pairwise geometries where the relative rotation is not
 //      consistent with the global rotation.
 //   5) Optimize the relative translation given the known rotations.
-//   6) Filter potentially bad relative translations with 1D SfM.
+//   6) Filter potentially bad relative translations.
 //   7) Estimate positions.
 //   8) Estimate structure.
 //   9) Bundle adjustment.
-//   10) TODO: localize any unestimated cameras, retriangulate, and bundle
-//      adjust.
+//   10) Retriangulate, and bundle adjust.
 //
 // After each filtering step we remove any views which are no longer connected
 // to the largest connected component in the view graph.
@@ -81,13 +80,13 @@ class GlobalReconstructionEstimator : public ReconstructionEstimator {
  private:
   bool FilterInitialViewGraph();
   void CalibrateCameras();
-  void EstimateGlobalRotations();
+  bool EstimateGlobalRotations();
   void FilterRotations();
   void OptimizePairwiseTranslations();
   void FilterRelativeTranslation();
-  void EstimatePosition();
+  bool EstimatePosition();
   void EstimateStructure();
-  void BundleAdjustment();
+  bool BundleAdjustment();
 
   ViewGraph* view_graph_;
   Reconstruction* reconstruction_;
