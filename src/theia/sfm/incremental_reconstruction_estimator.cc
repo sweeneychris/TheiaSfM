@@ -504,7 +504,7 @@ void IncrementalReconstructionEstimator::EstimateStructure() {
                     reconstruction_);
 }
 
-void IncrementalReconstructionEstimator::BundleAdjustment() {
+bool IncrementalReconstructionEstimator::BundleAdjustment() {
   const double ba_growth_ratio =
       1.0 + options_.full_bundle_adjustment_growth_percent / 100.0;
 
