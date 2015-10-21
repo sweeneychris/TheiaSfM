@@ -110,17 +110,26 @@ BundleAdjustmentSummary BundleAdjustPartialReconstruction(
     const std::vector<ViewId>& view_ids,
     Reconstruction* reconstruction) {
   CHECK_NOTNULL(reconstruction);
+  BundleAdjustmentSummary summary;
 
   const int num_estimated_views = NumEstimatedViews(*reconstruction);
   const int num_estimated_tracks = NumEstimatedTracks(*reconstruction);
-  CHECK_GE(num_estimated_views, 2)
-      << "There are only " << num_estimated_views
-      << " estimated views but at least 2 estimated views are required for "
-         "bundle adjustment.";
-  CHECK_GE(num_estimated_tracks, 1)
-      << "There are only " << num_estimated_tracks
-      << " estimated tracks but at least 1 estimated 3d point is required for "
-         "bundle adjustment.";
+  if (num_estimated_views < 2) {
+    LOG(WARNING) << "There are only " << num_estimated_views
+                 << " estimated views but at least 2 estimated views are required for "
+      "bundle adjustment.";
+    summary.success = false;
+    return summary;
+  }
+
+  if (num_estimated_tracks < 1) {
+    LOG(WARNING) << "There are only " << num_estimated_tracks
+                 << " estimated tracks but at least 1 estimated 3d point is "
+                    "required for "
+                    "bundle adjustment.";
+    summary.success = false;
+    return summary;
+  }
 
   // Start setup timer.
   Timer timer;
@@ -218,7 +227,6 @@ BundleAdjustmentSummary BundleAdjustPartialReconstruction(
   }
 
   // End setup time.
-  BundleAdjustmentSummary summary;
   summary.setup_time_in_seconds = timer.ElapsedTimeInSeconds();
 
   // Solve the problem.
