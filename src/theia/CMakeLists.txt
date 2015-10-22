@@ -87,6 +87,7 @@ set(THEIA_SRC
   sfm/estimators/estimate_uncalibrated_absolute_pose.cc
   sfm/estimators/estimate_uncalibrated_relative_pose.cc
   sfm/exif_reader.cc
+  sfm/extract_maximally_parallel_rigid_subgraph.cc
   sfm/feature_extractor.cc
   sfm/feature_extractor_and_matcher.cc
   sfm/filter_view_graph_cycles_by_rotation.cc
@@ -223,6 +224,7 @@ if (BUILD_TESTING)
   gtest(sfm/estimators/estimate_uncalibrated_absolute_pose)
   gtest(sfm/estimators/estimate_uncalibrated_relative_pose)
   gtest(sfm/exif_reader)
+  gtest(sfm/extract_maximally_parallel_rigid_subgraph)
   gtest(sfm/filter_view_graph_cycles_by_rotation)
   gtest(sfm/filter_view_pairs_from_orientation)
   gtest(sfm/filter_view_pairs_from_relative_translation)
