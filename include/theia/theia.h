@@ -112,6 +112,7 @@
 #include "theia/sfm/estimators/estimate_uncalibrated_absolute_pose.h"
 #include "theia/sfm/estimators/estimate_uncalibrated_relative_pose.h"
 #include "theia/sfm/exif_reader.h"
+#include "theia/sfm/extract_maximally_parallel_rigid_subgraph.h"
 #include "theia/sfm/feature.h"
 #include "theia/sfm/feature_extractor.h"
 #include "theia/sfm/feature_extractor_and_matcher.h"
