@@ -56,7 +56,7 @@ namespace Spectra {
 /// default template parameter for SymEigsSolver.
 ///
 /// If the users need to define their own matrix-vector multiplication operation
-/// class, it should impelement all the public member functions as in DenseGenMatProd.
+/// class, it should implement all the public member functions as in DenseGenMatProd.
 ///
 /// \tparam Scalar        The element type of the matrix.
 ///                       Currently supported types are `float`, `double` and `long double`.
@@ -305,7 +305,7 @@ private:
     // Retrieve and sort ritz values and ritz vectors
     void retrieve_ritzpair()
     {
-        TridiagEigen<double> decomp(fac_H);
+        TridiagEigen<Scalar> decomp(fac_H);
         Vector evals = decomp.eigenvalues();
         Matrix evecs = decomp.eigenvectors();
 
