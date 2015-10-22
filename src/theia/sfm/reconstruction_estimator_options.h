@@ -127,6 +127,20 @@ struct ReconstructionEstimatorOptions {
   // estimation.
   bool refine_relative_translations_after_rotation_estimation = true;
 
+  // If true, the maximal rigid component of the viewing graph will be
+  // extracted. This means that only the cameras that are well-constrained for
+  // position estimation will be used. This method is somewhat slow, so enabling
+  // it will cause a performance hit in terms of efficiency.
+  //
+  // NOTE: This method does not attempt to remove outlier 2-view geometries, it
+  // only determines which cameras are well-conditioned for position estimation.
+  bool extract_maximal_rigid_subgraph = false;
+
+  // If true, filter the pairwise translation estimates to remove potentially
+  // bad relative poses. Removing potential outliers can increase the
+  // performance of position estimation.
+  bool filter_relative_translations_with_1dsfm = true;
+
   // Before the camera positions are estimated, it is wise to remove any
   // relative translations estimates that are low quality. See
   // theia/sfm/filter_view_pairs_from_relative_translation.h

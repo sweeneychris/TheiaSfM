@@ -87,6 +87,13 @@ DEFINE_bool(refine_relative_translations_after_rotation_estimation, true,
 DEFINE_double(post_rotation_filtering_degrees, 5.0,
               "Max degrees difference in relative rotation and rotation "
               "estimates for rotation filtering.");
+DEFINE_bool(extract_maximal_rigid_subgraph, false,
+            "If true, only cameras that are well-conditioned for position "
+            "estimation will be used for global position estimation.");
+DEFINE_bool(filter_relative_translations_with_1dsfm, true,
+            "Filter relative translation estimations with the 1DSfM algorithm "
+            "to potentially remove outlier relativep oses for position "
+            "estimation.");
 DEFINE_int32(num_retriangulation_iterations, 1,
              "Number of times to retriangulate any unestimated tracks. Bundle "
              "adjustment is performed after retriangulation.");
@@ -208,6 +215,10 @@ ReconstructionBuilderOptions SetReconstructionBuilderOptions() {
   reconstruction_estimator_options
       .refine_relative_translations_after_rotation_estimation =
       FLAGS_refine_relative_translations_after_rotation_estimation;
+  reconstruction_estimator_options.extract_maximal_rigid_subgraph =
+      FLAGS_extract_maximal_rigid_subgraph;
+  reconstruction_estimator_options.filter_relative_translations_with_1dsfm =
+      FLAGS_filter_relative_translations_with_1dsfm;
   reconstruction_estimator_options
       .rotation_filtering_max_difference_degrees =
       FLAGS_post_rotation_filtering_degrees;
