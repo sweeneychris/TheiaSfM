@@ -92,7 +92,7 @@ double ComputeCosineDistance(const Eigen::MatrixXd& mat1,
                              const Eigen::MatrixXd& mat2) {
   Eigen::Vector3d cos_distance;
   for (int i =0; i < 3; i++) {
-    cos_distance(i) = 1.0 - std::abs(mat1.row(0).dot(mat2.row(0)));
+    cos_distance(i) = 1.0 - std::abs(mat1.row(i).dot(mat2.row(i)));
   }
   return cos_distance.maxCoeff();
 }
