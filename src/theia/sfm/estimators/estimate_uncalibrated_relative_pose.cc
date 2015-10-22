@@ -103,10 +103,11 @@ class UncalibratedRelativePoseEstimator
     // Compose the essential matrix from the fundamental matrix and focal
     // lengths.
     Matrix3d essential_matrix;
-    EssentialMatrixFromFundamentalMatrix(relative_pose.fundamental_matrix.data(),
-                                         relative_pose.focal_length1,
-                                         relative_pose.focal_length2,
-                                         essential_matrix.data());
+    EssentialMatrixFromFundamentalMatrix(
+        relative_pose.fundamental_matrix.data(),
+        relative_pose.focal_length1,
+        relative_pose.focal_length2,
+        essential_matrix.data());
 
     // Normalize the centered_correspondences.
     std::vector<FeatureCorrespondence> normalized_correspondences(

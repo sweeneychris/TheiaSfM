@@ -33,7 +33,6 @@
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
 #include <math.h>
-#include <chrono>
 #include <vector>
 
 #include "gtest/gtest.h"

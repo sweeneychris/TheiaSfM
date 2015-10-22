@@ -38,6 +38,7 @@
 #include <glog/logging.h>
 
 #include <algorithm>
+#include <limits>
 #include <memory>
 #include <mutex>  // NOLINT
 #include <string>
@@ -206,11 +207,11 @@ FeatureMatcher<DistanceMetric>::FeatureMatcher(
     // create it.
     if (!DirectoryExists(
             matcher_options_.keypoints_and_descriptors_output_dir)) {
-      CHECK(
-          CreateDirectory(matcher_options_.keypoints_and_descriptors_output_dir))
-        << "Could not create the directory for storing features during "
-        "matching: "
-        << matcher_options_.keypoints_and_descriptors_output_dir;
+      CHECK(CreateDirectory(
+          matcher_options_.keypoints_and_descriptors_output_dir))
+          << "Could not create the directory for storing features during "
+             "matching: "
+          << matcher_options_.keypoints_and_descriptors_output_dir;
     }
   } else {
     // If we want to perform all-in-memory matching then set the cache size to
@@ -306,7 +307,8 @@ void FeatureMatcher<DistanceMetric>::MatchImagesWithGeometricVerification(
     std::vector<ImagePairMatch>* matches) {
   verification_options_ = verification_options;
 
-  // If SetImagePairsToMatch has not been called, match all image-to-image pairs.
+  // If SetImagePairsToMatch has not been called, match all image-to-image
+  // pairs.
   if (pairs_to_match_.size() == 0) {
     // Compute the total number of potential matches.
     const int num_pairs_to_match =

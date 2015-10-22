@@ -35,6 +35,7 @@
 #include "theia/sfm/localize_view_to_reconstruction.h"
 
 #include <glog/logging.h>
+#include <vector>
 
 #include "theia/sfm/bundle_adjustment/bundle_adjust_view.h"
 #include "theia/sfm/estimators/feature_correspondence_2d_3d.h"

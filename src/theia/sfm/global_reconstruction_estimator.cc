@@ -334,7 +334,9 @@ bool GlobalReconstructionEstimator::EstimateGlobalRotations() {
       // TODO(cmsweeney): We should use the linear method to initialize the
       // rotation estimations from a spanning tree.
       const ViewId random_starting_view = RandomViewId(*view_graph_);
-      OrientationsFromViewGraph(*view_graph_, random_starting_view, &orientations_);
+      OrientationsFromViewGraph(*view_graph_,
+                                random_starting_view,
+                                &orientations_);
       RobustRotationEstimator::Options robust_rotation_estimator_options;
       rotation_estimator.reset(
           new RobustRotationEstimator(robust_rotation_estimator_options));
@@ -347,7 +349,9 @@ bool GlobalReconstructionEstimator::EstimateGlobalRotations() {
       // TODO(cmsweeney): We should use the linear method to initialize the
       // rotation estimations from a spanning tree.
       const ViewId random_starting_view = RandomViewId(*view_graph_);
-      OrientationsFromViewGraph(*view_graph_, random_starting_view, &orientations_);
+      OrientationsFromViewGraph(*view_graph_,
+                                random_starting_view,
+                                &orientations_);
       rotation_estimator.reset(new NonlinearRotationEstimator());
       break;
     }
@@ -361,7 +365,7 @@ bool GlobalReconstructionEstimator::EstimateGlobalRotations() {
       LOG(FATAL) << "Invalid type of global rotation estimation chosen.";
       break;
     }
-  };
+  }
 
   return rotation_estimator->EstimateRotations(view_pairs, &orientations_);
 }
@@ -430,7 +434,7 @@ bool GlobalReconstructionEstimator::EstimatePosition() {
       LOG(FATAL) << "Invalid type of global position estimation chosen.";
       break;
     }
-  };
+  }
 
   return position_estimator->EstimatePositions(view_pairs,
                                                orientations_,

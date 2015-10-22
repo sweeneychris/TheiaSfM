@@ -151,7 +151,6 @@ class ReconstructionBuilder {
   bool BuildReconstruction(std::vector<Reconstruction*>* reconstructions);
 
  private:
-
   // Adds the given matches as edges in the view graph.
   void AddMatchToViewGraph(const ViewId view_id1,
                            const ViewId view_id2,

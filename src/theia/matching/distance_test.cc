@@ -72,7 +72,6 @@ TEST(L2Distance, KnownDistance) {
     const float dist =
         static_cast<float>(2.0 - 2.0 * descriptor1.dot(descriptor2));
     ASSERT_DOUBLE_EQ(l2_dist(descriptor1, descriptor2), dist);
-
   }
 }
 

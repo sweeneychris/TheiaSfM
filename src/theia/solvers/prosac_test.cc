@@ -33,7 +33,6 @@
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
 #include <math.h>
-#include <chrono>
 #include <random>
 
 #include "gtest/gtest.h"
@@ -87,9 +86,7 @@ class LineEstimator : public Estimator<Point, Line> {
 
 TEST(ProsacTest, LineFitting) {
   // Create a set of points along y=x with a small random pertubation.
-  // construct a trivial random generator engine from a time-based seed:
-  unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
-  std::default_random_engine generator(seed);
+  std::default_random_engine generator(90);
   std::normal_distribution<double> gauss_distribution(0.0, 0.5);
   std::normal_distribution<double> small_distribution(0.0, 0.05);
   const int num_points = 10000;

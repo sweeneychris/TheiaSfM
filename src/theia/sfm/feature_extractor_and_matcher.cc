@@ -36,8 +36,9 @@
 
 #include <Eigen/Core>
 #include <glog/logging.h>
+#include <algorithm>
 #include <string>
-#include <thread>
+#include <thread>  // NOLINT
 #include <vector>
 
 #include "theia/image/image.h"

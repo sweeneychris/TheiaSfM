@@ -115,9 +115,10 @@ BundleAdjustmentSummary BundleAdjustPartialReconstruction(
   const int num_estimated_views = NumEstimatedViews(*reconstruction);
   const int num_estimated_tracks = NumEstimatedTracks(*reconstruction);
   if (num_estimated_views < 2) {
-    LOG(WARNING) << "There are only " << num_estimated_views
-                 << " estimated views but at least 2 estimated views are required for "
-      "bundle adjustment.";
+    LOG(WARNING)
+        << "There are only " << num_estimated_views
+        << " estimated views but at least 2 estimated views are required for "
+           "bundle adjustment.";
     summary.success = false;
     return summary;
   }

@@ -36,8 +36,10 @@
 #define THEIA_SFM_POSE_ERROR_H_
 
 #include <glog/logging.h>
+#include <algorithm>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "theia/math/histogram.h"
 #include "theia/util/stringprintf.h"

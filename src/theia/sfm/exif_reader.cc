@@ -34,9 +34,10 @@
 
 #include "theia/sfm/exif_reader.h"
 
-#include <algorithm>
 #include <easyexif/exif.h>
 #include <glog/logging.h>
+
+#include <algorithm>
 #include <fstream>  // NOLINT
 #include <iostream>  // NOLINT
 #include <sstream>

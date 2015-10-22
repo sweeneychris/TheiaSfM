@@ -36,7 +36,7 @@
 #define THEIA_SFM_FEATURE_EXTRACTOR_AND_MATCHER_H_
 
 #include <string>
-#include <thread>
+#include <thread>  // NOLINT
 #include <vector>
 
 #include "theia/image/descriptor/create_descriptor_extractor.h"
