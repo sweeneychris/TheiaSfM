@@ -69,6 +69,14 @@
 # it is advised that this is set to false for these motions.
 --refine_relative_translations_after_rotation_estimation=true
 
+# If true, only cameras that are well-conditioned for position estimation will
+# be used for global position estimation
+--extract_maximal_rigid_subgraph=false
+
+# Filter the relative translations with the 1DSfM filter to remove potential
+# outliers in the relative pose measurements.
+--filter_relative_translations_with_1dsfm=true
+
 # Nonlinear position estimation options
 --position_estimation_min_num_tracks_per_view=0
 --position_estimation_robust_loss_width=0.1

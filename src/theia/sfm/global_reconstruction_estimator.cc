@@ -40,6 +40,7 @@
 
 #include "theia/sfm/bundle_adjustment/bundle_adjustment.h"
 #include "theia/sfm/estimate_track.h"
+#include "theia/sfm/extract_maximally_parallel_rigid_subgraph.h"
 #include "theia/sfm/filter_view_graph_cycles_by_rotation.h"
 #include "theia/sfm/filter_view_pairs_from_orientation.h"
 #include "theia/sfm/filter_view_pairs_from_relative_translation.h"
@@ -221,8 +222,11 @@ ReconstructionEstimatorSummary GlobalReconstructionEstimator::Estimate(
     summary.success = false;
     return summary;
   }
+  LOG(INFO) << positions_.size()
+            << " camera positions were estimated successfully.";
   global_estimator_timings.position_estimation_time =
       timer.ElapsedTimeInSeconds();
+
   summary.pose_estimation_time =
       global_estimator_timings.rotation_estimation_time +
       global_estimator_timings.rotation_filtering_time +
@@ -382,10 +386,20 @@ void GlobalReconstructionEstimator::OptimizePairwiseTranslations() {
 }
 
 void GlobalReconstructionEstimator::FilterRelativeTranslation() {
+  if (options_.extract_maximal_rigid_subgraph) {
+    LOG(INFO) << "Extracting maximal rigid component of viewing graph to "
+                 "determine which cameras are well-constrained for position "
+                 "estimation.";
+    ExtractMaximallyParallelRigidSubgraph(orientations_, view_graph_);
+  }
+
   // Filter potentially bad relative translations.
-  FilterViewPairsFromRelativeTranslation(translation_filter_options_,
-                                         orientations_,
-                                         view_graph_);
+  if (options_.filter_relative_translations_with_1dsfm) {
+    LOG(INFO) << "Filtering relative translations with 1DSfM filter.";
+    FilterViewPairsFromRelativeTranslation(translation_filter_options_,
+                                           orientations_,
+                                           view_graph_);
+  }
   RemoveDisconnectedViewPairs(view_graph_);
 }
 
@@ -418,8 +432,6 @@ bool GlobalReconstructionEstimator::EstimatePosition() {
     }
   };
 
-  LOG(INFO) << positions_.size()
-            << " camera positions were estimated successfully.";
   return position_estimator->EstimatePositions(view_pairs,
                                                orientations_,
                                                &positions_);
