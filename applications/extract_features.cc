@@ -40,6 +40,8 @@
 #include <string>
 #include <vector>
 
+#include "applications/command_line_helpers.h"
+
 DEFINE_string(
     input_imgs, "",
     "Filepath of the images you want to extract features and compute matches "
@@ -54,16 +56,6 @@ DEFINE_string(
     "Type of feature descriptor to use. Must be one of the following: "
     "SIFT");
 
-theia::DescriptorExtractorType GetDescriptorExtractorType(
-    const std::string& descriptor) {
-  if (descriptor == "SIFT") {
-    return theia::DescriptorExtractorType::SIFT;
-  } else {
-    LOG(ERROR) << "Invalid DescriptorExtractor specified. Using SIFT instead.";
-    return theia::DescriptorExtractorType::SIFT;
-  }
-}
-
 int main(int argc, char *argv[]) {
   THEIA_GFLAGS_NAMESPACE::ParseCommandLineFlags(&argc, &argv, true);
   google::InitGoogleLogging(argv[0]);
@@ -77,7 +69,7 @@ int main(int argc, char *argv[]) {
   // Set up the feature extractor.
   theia::FeatureExtractorOptions feature_extractor_options;
   feature_extractor_options.descriptor_extractor_type =
-      GetDescriptorExtractorType(FLAGS_descriptor);
+      StringToDescriptorExtractorType(FLAGS_descriptor);
   feature_extractor_options.num_threads = FLAGS_num_threads;
   theia::FeatureExtractor feature_extractor(feature_extractor_options);
 

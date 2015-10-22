@@ -40,6 +40,8 @@
 #include <string>
 #include <vector>
 
+#include "applications/command_line_helpers.h"
+
 // Input/output files.
 DEFINE_string(images, "", "Wildcard of images to reconstruct.");
 DEFINE_string(matches_file, "", "Filename of the matches file.");
@@ -179,80 +181,9 @@ DEFINE_double(sift_peak_threshold, 1.7f,
               "keypoints");
 DEFINE_bool(root_sift, true, "Enables the usage of Root SIFT.");
 
-using theia::DescriptorExtractorType;
-using theia::GlobalPositionEstimatorType;
-using theia::GlobalRotationEstimatorType;
-using theia::MatchingStrategy;
 using theia::Reconstruction;
 using theia::ReconstructionBuilder;
 using theia::ReconstructionBuilderOptions;
-using theia::ReconstructionEstimatorType;
-
-DescriptorExtractorType GetDescriptorExtractorType(
-    const std::string& descriptor) {
-  if (descriptor == "SIFT") {
-    return DescriptorExtractorType::SIFT;
-  } else {
-    LOG(FATAL) << "Invalid DescriptorExtractor specified. Using SIFT instead.";
-    return DescriptorExtractorType::SIFT;
-  }
-}
-
-MatchingStrategy GetMatchingStrategyType(
-    const std::string& matching_strategy) {
-  if (matching_strategy == "BRUTE_FORCE") {
-    return MatchingStrategy::BRUTE_FORCE;
-  } else if (matching_strategy == "CASCADE_HASHING") {
-    return MatchingStrategy::CASCADE_HASHING;
-  } else {
-    LOG(FATAL)
-        << "Invalid matching strategy specified. Using BRUTE_FORCE instead.";
-    return MatchingStrategy::BRUTE_FORCE;
-  }
-}
-
-ReconstructionEstimatorType GetReconstructionEstimatorType(
-    const std::string& reconstruction_estimator) {
-  if (reconstruction_estimator == "GLOBAL") {
-    return ReconstructionEstimatorType::GLOBAL;
-  } else if (reconstruction_estimator == "INCREMENTAL") {
-    return ReconstructionEstimatorType::INCREMENTAL;
-  } else {
-    LOG(FATAL)
-        << "Invalid reconstruction estimator type. Using GLOBAL instead.";
-    return ReconstructionEstimatorType::GLOBAL;
-  }
-}
-
-GlobalRotationEstimatorType GetRotationEstimatorType(
-    const std::string& rotation_estimator) {
-  if (rotation_estimator == "ROBUST_L1L2") {
-    return GlobalRotationEstimatorType::ROBUST_L1L2;
-  } else if (rotation_estimator == "NONLINEAR") {
-    return GlobalRotationEstimatorType::NONLINEAR;
-  } else if (rotation_estimator == "LINEAR") {
-    return GlobalRotationEstimatorType::LINEAR;
-  } else {
-    LOG(FATAL)
-        << "Invalid rotation estimator type. Using ROBUST_L1L2 instead.";
-    return GlobalRotationEstimatorType::ROBUST_L1L2;
-  }
-}
-
-GlobalPositionEstimatorType GetPositionEstimatorType(
-    const std::string& position_estimator) {
-  if (position_estimator == "NONLINEAR") {
-    return GlobalPositionEstimatorType::NONLINEAR;
-  } else if (position_estimator == "LINEAR") {
-    return GlobalPositionEstimatorType::LINEAR_TRIPLET;
-  } else if (position_estimator == "LEAST_UNSQUARED_DEVIATION") {
-    return GlobalPositionEstimatorType::LEAST_UNSQUARED_DEVIATION;
-  } else {
-    LOG(FATAL)
-        << "Invalid position estimator type. Using NONLINEAR instead.";
-    return GlobalPositionEstimatorType::NONLINEAR;
-  }
-}
 
 // Sets the feature extraction, matching, and reconstruction options based on
 // the command line flags. There are many more options beside just these located
@@ -262,7 +193,7 @@ ReconstructionBuilderOptions SetReconstructionBuilderOptions() {
   options.num_threads = FLAGS_num_threads;
   options.output_matches_file = FLAGS_output_matches_file;
 
-  options.descriptor_type = GetDescriptorExtractorType(FLAGS_descriptor);
+  options.descriptor_type = StringToDescriptorExtractorType(FLAGS_descriptor);
   // Setting sift parameters.
   if (options.descriptor_type == DescriptorExtractorType::SIFT) {
     options.sift_parameters.num_octaves = FLAGS_sift_num_octaves;
@@ -280,7 +211,8 @@ ReconstructionBuilderOptions SetReconstructionBuilderOptions() {
       FLAGS_matching_working_directory;
   options.matching_options.cache_capacity =
       FLAGS_matching_max_num_images_in_cache;
-  options.matching_strategy = GetMatchingStrategyType(FLAGS_matching_strategy);
+  options.matching_strategy =
+      StringToMatchingStrategyType(FLAGS_matching_strategy);
   options.matching_options.lowes_ratio = FLAGS_lowes_ratio;
   options.matching_options.keep_only_symmetric_matches =
       FLAGS_keep_only_symmetric_matches;
@@ -308,13 +240,13 @@ ReconstructionBuilderOptions SetReconstructionBuilderOptions() {
 
   // Which type of SfM pipeline to use (e.g., incremental, global, etc.);
   reconstruction_estimator_options.reconstruction_estimator_type =
-      GetReconstructionEstimatorType(FLAGS_reconstruction_estimator);
+      StringToReconstructionEstimatorType(FLAGS_reconstruction_estimator);
 
   // Global SfM Options.
   reconstruction_estimator_options.global_rotation_estimator_type =
-      GetRotationEstimatorType(FLAGS_global_rotation_estimator);
+      StringToRotationEstimatorType(FLAGS_global_rotation_estimator);
   reconstruction_estimator_options.global_position_estimator_type =
-      GetPositionEstimatorType(FLAGS_global_position_estimator);
+      StringToPositionEstimatorType(FLAGS_global_position_estimator);
   reconstruction_estimator_options.num_retriangulation_iterations =
       FLAGS_num_retriangulation_iterations;
   reconstruction_estimator_options

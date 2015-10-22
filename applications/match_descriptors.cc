@@ -40,6 +40,8 @@
 #include <string>
 #include <vector>
 
+#include "applications/command_line_helpers.h"
+
 DEFINE_string(
     input_imgs, "",
     "Filepath of the images you want to extract features and compute matches "
@@ -55,16 +57,6 @@ DEFINE_double(lowes_ratio, 0.8, "Lowes ratio used to filter feature matching.");
 DEFINE_int32(num_threads, 1,
              "Number of threads to use for feature extraction and matching.");
 DEFINE_string(img_output_dir, ".", "Name of output image file.");
-
-theia::DescriptorExtractorType GetDescriptorExtractorType(
-    const std::string& descriptor) {
-  if (descriptor == "SIFT") {
-    return theia::DescriptorExtractorType::SIFT;
-  } else {
-    LOG(ERROR) << "Invalid DescriptorExtractor specified. Using SIFT instead.";
-    return theia::DescriptorExtractorType::SIFT;
-  }
-}
 
 template <class DistanceMetric>
 theia::FeatureMatcher<DistanceMetric>* CreateMatcher(
@@ -101,7 +93,7 @@ void ExtractAndMatchFeatures(
   // Extract features.
   theia::FeatureExtractorOptions feature_extractor_options;
   feature_extractor_options.descriptor_extractor_type =
-      GetDescriptorExtractorType(FLAGS_descriptor);
+      StringToDescriptorExtractorType(FLAGS_descriptor);
   feature_extractor_options.num_threads = FLAGS_num_threads;
   theia::FeatureExtractor feature_extractor(feature_extractor_options);
   auto start = std::chrono::system_clock::now();

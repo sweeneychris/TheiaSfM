@@ -40,6 +40,8 @@
 #include <string>
 #include <vector>
 
+#include "applications/command_line_helpers.h"
+
 // Input/output files.
 DEFINE_string(images, "", "Wildcard of images to reconstruct.");
 DEFINE_string(calibration_file, "",
@@ -77,29 +79,6 @@ using theia::Reconstruction;
 using theia::ReconstructionBuilder;
 using theia::ReconstructionBuilderOptions;
 
-DescriptorExtractorType GetDescriptorExtractorType(
-    const std::string& descriptor) {
-  if (descriptor == "SIFT") {
-    return DescriptorExtractorType::SIFT;
-  } else {
-    LOG(ERROR) << "Invalid DescriptorExtractor specified. Using SIFT instead.";
-    return DescriptorExtractorType::SIFT;
-  }
-}
-
-MatchingStrategy GetMatchingStrategyType(
-    const std::string& matching_strategy) {
-  if (matching_strategy == "BRUTE_FORCE") {
-    return MatchingStrategy::BRUTE_FORCE;
-  } else if (matching_strategy == "CASCADE_HASHING") {
-    return MatchingStrategy::CASCADE_HASHING;
-  } else {
-    LOG(ERROR)
-        << "Invalid matching strategy specified. Using BRUTE_FORCE instead.";
-    return MatchingStrategy::BRUTE_FORCE;
-  }
-}
-
 // Sets the feature extraction, matching, and reconstruction options based on
 // the command line flags. There are many more options beside just these located
 // in //theia/vision/sfm/reconstruction_builder.h
@@ -109,8 +88,9 @@ ReconstructionBuilderOptions SetReconstructionBuilderOptions() {
   options.reconstruction_estimator_options.num_threads = FLAGS_num_threads;
   options.output_matches_file = FLAGS_output_matches_file;
 
-  options.descriptor_type = GetDescriptorExtractorType(FLAGS_descriptor);
-  options.matching_strategy = GetMatchingStrategyType(FLAGS_matching_strategy);
+  options.descriptor_type = StringToDescriptorExtractorType(FLAGS_descriptor);
+  options.matching_strategy =
+      StringToMatchingStrategyType(FLAGS_matching_strategy);
   options.matching_options.lowes_ratio = FLAGS_lowes_ratio;
   options.min_num_inlier_matches = FLAGS_min_num_inliers_for_valid_match;
   options.geometric_verification_options.estimate_twoview_info_options
