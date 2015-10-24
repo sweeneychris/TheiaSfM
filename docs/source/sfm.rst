@@ -12,146 +12,41 @@ Theia has a full Structure-from-Motion pipeline that is extremely efficient. Our
 overall pipeline consists of several steps. First, we extract features (SIFT is
 the default). Then, we perform two-view matching and geometric verification to
 obtain relative poses between image pairs and create a :class:`ViewGraph`. Next,
-we perform either incremental or global SfM. Incremental SfM is the standard
-approach that adds on one image at a time to grow the reconstruction. While this
-method is robust, it is not scalable because it requires repeated operations of
-expensive bundle adjustment. Global SfM is different from incremental SfM in
-that it considers the entire view graph at the same time instead of
-incrementally adding more and more images to the :class:`Reconstruction`. Global
-SfM methods have been proven to be very fast with comparable or better accuracy
-to incremental SfM approaches (See [JiangICCV]_, [MoulonICCV]_,
-[WilsonECCV2014]_), and they are much more readily parallelized. After we have
-obtained camera poses, we perform triangulation and :class:`BundleAdjustment` to
-obtain a valid 3D reconstruction consisting of cameras and 3D points.
-
-The first step towards creating a reconstruction is to determine images which
-view the same objects. To do this, we must create a :class:`ViewGraph`.
+we perform either incremental or global SfM.
 
   #. Extract features in images.
   #. Match features to obtain image correspondences.
-  #. Estimate camera poses from two-view matches and geometries.
+  #. Estimate camera poses from two-view matches and geometries using
+     incremental or global SfM.
 
-#1. and #2. have been covered in other sections, so we will focus on creating a
-reconstruction from two-view matches and geometry. First, we will describe the
-fundamental elements of our reconstruction.
+Incremental SfM is the standard approach that adds on one image at a time to
+grow the reconstruction. While this method is robust, it is not scalable because
+it requires repeated operations of expensive bundle adjustment. Global SfM is
+different from incremental SfM in that it considers the entire view graph at the
+same time instead of incrementally adding more and more images to the
+:class:`Reconstruction`. Global SfM methods have been proven to be very fast
+with comparable or better accuracy to incremental SfM approaches (See
+[JiangICCV]_, [MoulonICCV]_, [WilsonECCV2014]_), and they are much more readily
+parallelized. After we have obtained camera poses, we perform triangulation and
+:class:`BundleAdjustment` to obtain a valid 3D reconstruction consisting of
+cameras and 3D points.
 
-Reconstruction
-==============
+First, we will describe the fundamental classes of our SfM pipeline:
 
-.. class:: Reconstruction
+  * :class:`View`, the main class encapsulating an image, its pose, and which features it observes
+  * :class:`Camera`, a member of the :class:`View` class containing pose information
+  * :class:`Track`, a 3D point and information about which cameras observe it
+  * :class:`Reconstruction`, the core SfM class containing a set of :class:`View` and :class:`Track` object
+  * :class:`ViewGraph` containing matching information and relative pose information between :class:`View` objects
+  * :class:`TwoViewInfo`, containing relative pose information between two views.
 
-.. image:: pisa.png
+Then, we will describe the various SfM pipelines in Theia.
 
-At the core of our SfM pipeline is an SfM :class:`Reconstruction`. A
-:class:`Reconstruction` is the representation of a 3D reconstuction consisting
-of a set of unique :class:`Views` and :class:`Tracks`. More importantly, the
-:class:`Reconstruction` class contains visibility information relating all of
-the Views and Tracks to each other. We identify each :class:`View` uniquely
-based on the name (a string). A good name for the view is the filename of the
-image that corresponds to the :class:`View`
-
-When creating an SfM reconstruction, you should add each :class:`View` and
-:class:`Track` through the :class:`Reconstruction` object. This will ensure that
-visibility information (such as which Tracks are observed a given View and which
-Views see a given Track) stays accurate. Views and Tracks are given a unique ID
-when added to the :class:`Reconstruction` to help make use of these structures
-lightweight and efficient.
-
-.. function:: ViewId Reconstruction::AddView(const std::string& view_name)
-
-    Adds a view to the reconstruction with the default initialization. The ViewId
-    returned is guaranteed to be unique or will be kInvalidViewId if the method
-    fails. Each view is uniquely identified by the view name (a good view name could
-    be the filename of the image).
-
-.. function:: bool Reconstruction::RemoveView(const ViewId view_id)
-
-    Removes the view from the reconstruction and removes all references to the view in
-    the tracks.
-
-    .. NOTE:: Any tracks that have length 0 after the view is removed will also be removed.
-
-.. function:: int Reconstruction::NumViews() const
-.. function:: int Reconstruction::NumTracks() const
-
-.. function:: const View* Reconstruction::View(const ViewId view_id) const
-.. function:: View* Reconstruction::MutableView(const ViewId view_id)
-
-    Returns the View or a nullptr if the track does not exist.
-
-.. function:: std::vector<ViewId> Reconstruction::ViewIds() const
-
-    Return all ViewIds in the reconstruction.
-
-.. function:: ViewId Reconstruction::ViewIdFromName(const std::string& view_name) const
-
-    Returns to ViewId of the view name, or kInvalidViewId if the view does not
-    exist.
-
-.. function:: TrackId Reconstruction::AddTrack(const std::vector<std::pair<ViewId, Feature> >& track)
-
-    Add a track to the reconstruction with all of its features across views that observe
-    this track. Each pair contains a feature and the corresponding View name
-    (i.e., the string) that observes the feature. A new View will be created if
-    a View with the view name does not already exist. This method will not
-    estimate the position of the track. The TrackId returned will be unique or
-    will be kInvalidTrackId if the method fails.
-
-.. function:: bool Reconstruction::RemoveTrack(const TrackId track_id)
-
-    Removes the track from the reconstruction and from any Views that observe this
-    track. Returns true on success and false on failure (e.g., the track does
-    not exist).
-
-.. function:: const Track* Reconstruction::Track(const TrackId track_id) const
-.. function:: Track* Reconstruction::MutableTrack(const TrackId track_id)
-
-    Returns the Track or a nullptr if the track does not exist.
-
-.. function:: std::vector<TrackId> Reconstruction::TrackIds() const
-
-    Return all TrackIds in the reconstruction.
-
-ViewGraph
-=========
-
-.. class:: ViewGraph
-
-A :class:`ViewGraph` is a basic SfM construct that is created from two-view
-matching information. Any pair of views that have a view correlation form an
-edge in the :class:`ViewGraph` such that the nodes in the graph are
-:class:`View` that are connected by :class:`TwoViewInfo` objects that contain
-information about the relative pose between the Views as well as matching
-information.
-
-Once you have a set of views and match information, you can add them to the view graph:
-
-.. code:: c++
-
-  std::vector<View> views;
-  // Match all views in the set.
-  std::vector<ViewIdPair, TwoViewInfo> view_pair_matches;
-
-  ViewGraph view_graph;
-  for (const auto& view_pair : view_pair_matches) {
-    const ViewIdPair& view_id_pair = view_pair.first;
-    const TwoViewInfo& two_view_info = view_pair.second;
-    // Only add view pairs to the view graph if they have strong visual coherence.
-    if (two_view_info.num_matched_features > min_num_matched_features) {
-      view_graph.AddEdge(views[view_id_pair.first],
-                         views[view_id_pair.second],
-                         two_view_info);
-    }
-  }
-
-  // Process and/or manipulate the view graph.
-
-The edge values are especially useful for one-shot SfM where the relative poses
-are heavily exploited for computing the final poses. Without a proper
-:class:`ViewGraph`, one-shot SfM would not be possible.
+Core Classes and Data Structures
+================================
 
 Views and Tracks
-================
+----------------
 
 .. class:: View
 
@@ -169,35 +64,9 @@ the features correspond to the same 3D point. These 3D points are useful
 constraints in SfM reconstruction, as they represent the "structure" in
 "Structure-from-Motion" and help to build a point cloud for our reconstruction.
 
-TwoViewInfo
-===========
-
-.. class:: TwoViewInfo
-
-After image matching is performed we can create a :class:`ViewGraph` that
-explains the relative pose information between two images that have been
-matched. The :class:`TwoViewInfo` struct is specified as:
-
-.. code:: c++
-
-  struct TwoViewInfo {
-    double focal_length_1;
-    double focal_length_2;
-
-    Eigen::Vector3d position_2;
-    Eigen::Vector3d rotation_2;
-
-    // Number of features that were matched and geometrically verified betwen the
-    // images.
-    int num_verified_matches;
-  };
-
-This information serves the purpose of an edge in the view graph that describes
-visibility information between all views. The relative poses here are used to
-estimate global poses for the cameras.
 
 Camera
-======
+------
 
 .. class:: Camera
 
@@ -294,126 +163,381 @@ In addition to typical getter/setter methods for the camera parameters, the
     according to the camera orientation in 3D space. The returned vector is not
     unit length.
 
-Incremental SfM Pipeline
-========================
+Reconstruction
+--------------
 
-.. image:: incremental_sfm.png
+.. class:: Reconstruction
 
-The incremental SfM pipeline follows very closely the pipelines of `Bundler
-<http://www.cs.cornell.edu/~snavely/bundler/>`_ [PhotoTourism]_ and `VisualSfM
-<http://ccwu.me/vsfm/>`_ [VisualSfM]_. The method begins by first estimating the
-3D structure and camera poses of 2 cameras based on their relative pose. Then
-additional cameras are added on sequentially and new 3D structure is estimated
-as new parts of the scene are observed. Bundle adjustment is repeatedly
-performed as more cameras are added to ensure high quality reconstructions and
-to avoid drift.
+.. image:: pisa.png
 
-The incremental SfM pipeline is as follows:
-  #. Choose an initial camera pair to reconstruct.
-  #. Estimate 3D structure of the scene.
-  #. Bundle adjustment on the 2-view reconstruction.
-  #. Localize a new camera to the current 3D points. Choose the camera that
-     observes the most 3D points currently in the scene.
-  #. Estimate new 3D structure.
-  #. Bundle adjustment if the model has grown by more than 5% since the last
-     bundle adjustment.
-  #. Repeat steps 4-6 until all cameras have been added.
+At the core of our SfM pipeline is an SfM :class:`Reconstruction`. A
+:class:`Reconstruction` is the representation of a 3D reconstuction consisting
+of a set of unique :class:`Views` and :class:`Tracks`. More importantly, the
+:class:`Reconstruction` class contains visibility information relating all of
+the Views and Tracks to each other. We identify each :class:`View` uniquely
+based on the name (a string). A good name for the view is the filename of the
+image that corresponds to the :class:`View`
 
-Incremental SfM is generally considered to be more robust than global SfM
-methods; hwoever, it requires many more instances of bundle adjustment (which
-is very costly) and so incremental SfM is not as efficient or scalable.
+When creating an SfM reconstruction, you should add each :class:`View` and
+:class:`Track` through the :class:`Reconstruction` object. This will ensure that
+visibility information (such as which Tracks are observed a given View and which
+Views see a given Track) stays accurate. Views and Tracks are given a unique ID
+when added to the :class:`Reconstruction` to help make use of these structures
+lightweight and efficient.
 
-.. member:: double ReconstructorEstimatorOptions::multiple_view_localization_ratio
+.. function:: ViewId Reconstruction::AddView(const std::string& view_name)
 
-  DEFAULT: ``0.8``
+    Adds a view to the reconstruction with the default initialization. The ViewId
+    returned is guaranteed to be unique or will be kInvalidViewId if the method
+    fails. Each view is uniquely identified by the view name (a good view name could
+    be the filename of the image).
 
-  If M is the maximum number of 3D points observed by any view, we want to
-  localize all views that observe > M * multiple_view_localization_ratio 3D
-  points. This allows for multiple well-conditioned views to be added to the
-  reconstruction before needing bundle adjustment.
+.. function:: bool Reconstruction::RemoveView(const ViewId view_id)
 
-.. member::  double ReconstructionEstimatorOptions::absolute_pose_reprojection_error_threshold
+    Removes the view from the reconstruction and removes all references to the view in
+    the tracks.
 
-  DEFAULT: ``8.0``
+    .. NOTE:: Any tracks that have length 0 after the view is removed will also be removed.
 
-  When adding a new view to the current reconstruction, this is the
-  reprojection error that determines whether a 2D-3D correspondence is an
-  inlier during localization.
+.. function:: int Reconstruction::NumViews() const
+.. function:: int Reconstruction::NumTracks() const
 
-.. member:: int ReconstructionEstimatorOptions::min_num_absolute_pose_inliers
+.. function:: const View* Reconstruction::View(const ViewId view_id) const
+.. function:: View* Reconstruction::MutableView(const ViewId view_id)
 
-  DEFAULT: ``30``
+    Returns the View or a nullptr if the track does not exist.
 
-  Minimum number of inliers for absolute pose estimation to be considered
-  successful.
+.. function:: std::vector<ViewId> Reconstruction::ViewIds() const
 
-.. member:: double ReconstructionEstimatorOptions::full_bundle_adjustment_growth_percent
+    Return all ViewIds in the reconstruction.
 
-  DEFAULT: ``5.0``
+.. function:: ViewId Reconstruction::ViewIdFromName(const std::string& view_name) const
 
-  Bundle adjustment of the entire reconstruction is triggered when the
-  reconstruction has grown by more than this percent. That is, if we last ran
-  BA when there were K views in the reconstruction and there are now N views,
-  then G = (N - K) / K is the percent that the model has grown. We run bundle
-  adjustment only if G is greater than this variable. This variable is
-  indicated in percent so e.g., 5.0 = 5%.
+    Returns to ViewId of the view name, or kInvalidViewId if the view does not
+    exist.
 
-.. member:: int ReconstructionEstimatorOptions::partial_bundle_adjustment_num_views
+.. function:: TrackId Reconstruction::AddTrack(const std::vector<std::pair<ViewId, Feature> >& track)
+
+    Add a track to the reconstruction with all of its features across views that observe
+    this track. Each pair contains a feature and the corresponding View name
+    (i.e., the string) that observes the feature. A new View will be created if
+    a View with the view name does not already exist. This method will not
+    estimate the position of the track. The TrackId returned will be unique or
+    will be kInvalidTrackId if the method fails.
+
+.. function:: bool Reconstruction::RemoveTrack(const TrackId track_id)
+
+    Removes the track from the reconstruction and from any Views that observe this
+    track. Returns true on success and false on failure (e.g., the track does
+    not exist).
+
+.. function:: const Track* Reconstruction::Track(const TrackId track_id) const
+.. function:: Track* Reconstruction::MutableTrack(const TrackId track_id)
+
+    Returns the Track or a nullptr if the track does not exist.
+
+.. function:: std::vector<TrackId> Reconstruction::TrackIds() const
+
+    Return all TrackIds in the reconstruction.
+
+ViewGraph
+---------
+
+.. class:: ViewGraph
+
+A :class:`ViewGraph` is a basic SfM construct that is created from two-view
+matching information. Any pair of views that have a view correlation form an
+edge in the :class:`ViewGraph` such that the nodes in the graph are
+:class:`View` that are connected by :class:`TwoViewInfo` objects that contain
+information about the relative pose between the Views as well as matching
+information.
+
+Once you have a set of views and match information, you can add them to the view graph:
+
+.. code:: c++
+
+  std::vector<View> views;
+  // Match all views in the set.
+  std::vector<ViewIdPair, TwoViewInfo> view_pair_matches;
+
+  ViewGraph view_graph;
+  for (const auto& view_pair : view_pair_matches) {
+    const ViewIdPair& view_id_pair = view_pair.first;
+    const TwoViewInfo& two_view_info = view_pair.second;
+    // Only add view pairs to the view graph if they have strong visual coherence.
+    if (two_view_info.num_matched_features > min_num_matched_features) {
+      view_graph.AddEdge(views[view_id_pair.first],
+                         views[view_id_pair.second],
+                         two_view_info);
+    }
+  }
+
+  // Process and/or manipulate the view graph.
+
+The edge values are especially useful for one-shot SfM where the relative poses
+are heavily exploited for computing the final poses. Without a proper
+:class:`ViewGraph`, one-shot SfM would not be possible.
+
+TwoViewInfo
+-----------
+
+.. class:: TwoViewInfo
+
+After image matching is performed we can create a :class:`ViewGraph` that
+explains the relative pose information between two images that have been
+matched. The :class:`TwoViewInfo` struct is specified as:
+
+.. code:: c++
+
+  struct TwoViewInfo {
+    double focal_length_1;
+    double focal_length_2;
+
+    Eigen::Vector3d position_2;
+    Eigen::Vector3d rotation_2;
+
+    // Number of features that were matched and geometrically verified betwen the
+    // images.
+    int num_verified_matches;
+  };
+
+This information serves the purpose of an edge in the view graph that describes
+visibility information between all views. The relative poses here are used to
+estimate global poses for the cameras.
+
+Building a Reconstruction
+=========================
+
+Theia implements a generic interface for estimating a :class:`Reconstruction`
+with the :class:`ReconstructionEstimator`. This class take in as input a
+:class:`ViewingGraph` with connectivity and relative pose information, and a
+:class:`Reconstruction` with view and track information and unestimated poses
+and 3d points. All SfM pipelines are derived directly from the
+:class:`ReconstructionEstimator` class. This allows for a consistent interface
+and also the ability to choose the reconstruction pipeline at run-time.
+
+However, the most common use case for SfM pipelines is to input images and
+output SfM reconstructions. As such, Theia implements a
+:class:`ReconstructionBuilder` utility class. The high-level responsibilities of
+these classes are:
+
+  * :class:`ReconstructionBuilder` takes as input either images or a set of
+    pre-computed matches (computed with Theia or any other technique). If images
+    are passed in, users may choose the type of feature, feature matching
+    strategy, and more. After matches are computed, the
+    :class:`ReconstructionBuilder` can call a :class:`ReconstructionEstimator`
+    to compute an SfM Reconstruction
+  * :class:`ReconstructionEstimator` is the abstract interface for classes that
+    estimate SfM reconstructions. Derived classes implement techniques such as
+    incremental SfM or global SfM, and may be easily extended for new type of
+    SfM pipelines. This class is called by the :class:`ReconstructionBuilder`
+    (see below) to estimate an SfM reconstruction from images and/or feature
+    matches.
+
+.. class:: ReconstructionBuilder
+
+.. function:: ReconstructionBuilder::ReconstructionBuilder(const ReconstructionBuilderOptions& options)
+
+.. function:: bool ReconstructionBuilder::AddImage(const std::string& image_filepath)
+
+  Add an image to the reconstruction.
+
+.. function:: bool ReconstructionBuilder::AddImageWithCameraIntrinsicsPrior(const std::string& image_filepath, const CameraIntrinsicsPrior& camera_intrinsics_prior)
+
+   Same as above, but with the camera priors manually specified. This is useful
+   when calibration or EXIF information is known ahead of time. Note, if the
+   CameraIntrinsicsPrior is not explicitly set, Theia will attempt to extract
+   EXIF information for camera intrinsics.
+
+.. function:: bool ReconstructionBuilder::AddTwoViewMatch(const std::string& image1, const std::string& image2, const ImagePairMatch& matches)
+
+  Add a match to the view graph. Either this method is repeatedly called or
+  ExtractAndMatchFeatures must be called. You may obtain a vector of
+  ImagePairMatch from a Theia match file or from another custom form of
+  matching.
+
+.. function:: bool ReconstructionBuilder::ExtractAndMatchFeatures()
+
+  Extracts features and performs matching with geometric verification. Images
+  must have been previously added with the ``AddImage`` or
+  ``AddImageWithCameraIntrinsicsPrior``.
+
+.. function:: void ReconstructionBuilder::InitializeReconstructionAndViewGraph(Reconstruction* reconstruction, ViewGraph* view_graph)
+
+  Initializes the reconstruction and view graph explicitly. This method
+  should be used as an alternative to the Add* methods.
+
+  .. NOTE:: The ReconstructionBuilder takses ownership of the reconstruction and view graph.
+
+.. function:: bool ReconstructionBuilder::BuildReconstruction(std::vector<Reconstruction*>* reconstructions)
+
+  Estimates a Structure-from-Motion reconstruction using the specified
+  ReconstructionEstimator that was set in the
+  ``reconstruction_estimator_options`` field (see below). Once a reconstruction
+  has been estimated, all views that have been successfully estimated are added
+  to the output vector and we estimate a reconstruction from the remaining
+  unestimated views. We repeat this process until no more views can be
+  successfully estimated, so each :class:`Reconstruction` object in the output
+  vector is an independent reconstruction of the scene.
+
+Setting the ReconstructionBuilder Options
+-----------------------------------------
+
+.. class:: ReconstructionBuilderOptions
+
+The :class:`ReconstructionBuilder` has many customizable options that can easily
+be set to modify the functionality, strategies, and performance of the SfM
+reconstruction process. This includes options for feature description
+extractionn, feature matching, which SfM pipeline to use, and more.
+
+.. member:: int ReconstructionBuilderOptions::num_threads
+
+  DEFAULT: ``1``
+
+  Number of threads used. Each stage of the pipeline (feature extraction,
+  matching, estimation, etc.) will use this number of threads.
+
+.. member:: bool ReconstructionBuilderOptions::reconstruct_largest_connected_component
+
+  DEFAULT: ``false``
+
+  By default, the ReconstructionBuilder will attempt to reconstruct as many
+  models as possible from the input data. If set to true, only the largest
+  connected component is reconstructed.
+
+.. member:: bool ReconstructionBuilderOptions::only_calibrated_views
+
+  DEFAULT: ``false``
+
+  Set to true to only accept calibrated views (from EXIF or elsewhere) as
+  valid inputs to the reconstruction process. When uncalibrated views are
+  added to the reconstruction builder they are ignored with a LOG warning.
+
+.. member:: int ReconstructionBuilderOptions::max_track_length
 
   DEFAULT: ``20``
 
-  During incremental SfM we run "partial" bundle adjustment on the most
-  recent views that have been added to the 3D reconstruction. This parameter
-  controls how many views should be part of the partial BA.
+  Maximum allowable track length. Tracks that are too long are exceedingly
+  likely to contain outliers. Any tracks that are longer than this will be split
+  into multiple tracks.
 
-Global SfM Pipeline
-===================
+.. member:: int ReconstructionBuilderOptions::min_num_inlier_matches
 
-.. image:: global_sfm.png
+  DEFAULT: ``30``
 
-The global SfM pipelines in Theia follow a general procedure of filtering
-outliers and estimating camera poses or structure. Removing outliers can help
-increase performance dramatically for global SfM, though robust estimation
-methods are still required to obtain good results. The general pipeline is as
-follows:
+  Minimum number of geometrically verified inliers that a view pair must have
+  in order to be considered a good match.
 
-  #. Create the intial view graph from 2-view matches and :class:`TwoViewInfo`
-     that describes the relative pose between matched images.
-  #. Filter initial view graph and remove outlier 2-view matches.
-  #. Calibrate internal parameters of all cameras (either from EXIF or another
-     calibration method).
-  #. Estimate global orientations of each camera.
-  #. Filter the view graph: remove any TwoViewInfos where the relative rotation
-     does not agree with the estimated global rotations.
-  #. Refine the relative translation estimation to account for the estimated
-     global rotations.
-  #. Filter any bad :class:`TwoViewInfo` based on the relative translations.
-  #. Estimate the global positions of all cameras from the estimated rotations
-     and :class:`TwoViewInfo`.
-  #. Estimate 3D points.
-  #. Bundle adjust the reconstruction.
-  #. (Optional) Attempt to estimate any remaining 3D points and bundle adjust again.
+.. member:: DescriptorExtractorType ReconstructionBuilderOptions::descriptor_type
+
+  DEFAULT: ``DescriptorExtractorType::SIFT``
+
+  Descriptor type for extracting features.
+  See //theia/image/descriptor/create_descriptor_extractor.h
+
+.. member:: SiftParameters ReconstructionBuilderOptions::sift_parameters
+
+  If the desired descriptor type is SIFT then these are the ift parameters
+  controlling keypoint detection and description options. See
+  //theia/image/keypoint_detector/sift_parameters.h
+
+.. member:: MatchingStrategy ReconstructionBuilderOptions::matching_strategy
+
+  DEFAULT: ``MatchingStrategy::BRUTE_FORCE``
+
+  Matching strategy type. Current the options are ``BRUTE_FORCE`` or ``CASCADE_HASHING``
+  See //theia/matching/create_feature_matcher.h
+
+.. member:: FeatureMatcherOptions ReconstructionBuilderOptions::matching_options
+
+  Options for computing matches between images. See
+  :class:`FeatureMatcherOptions` for more details.
+
+.. member:: VerifyTwoViewMatchesOptions ReconstructionBuilderOptions::geometric_verification_options
+
+  Settings for estimating the relative pose between two images to perform
+  geometric verification.  See //theia/sfm/verify_two_view_matches.h
+
+.. member:: ReconstructionEstimatorOptions ReconstructionBuilderOptions::reconstruction_estimator_options
+
+   Setting for the SfM estimation. The full list of
+   :class:`ReconstructionEstimatorOptions` may be found below.
+
+.. member:: std::string ReconstructionBuilderOptions::output_matches_file
+
+  If you want the matches to be saved, set this variable to the filename that
+  you want the matches to be written to. Image names, inlier matches, and
+  view metadata so that the view graph and tracks may be exactly
+  recreated.
+
+
+The Reconstruction Estimator
+============================
 
 .. class:: ReconstructionEstimator
 
-  This is the base class for which all SfM reconstruction pipelines derive
-  from. The reconstruction estimation type can be specified at runtime
-  (currently ``NONLINEAR`` and ``INCREMENTAL`` are implemented).
+This is the base class for which all SfM reconstruction pipelines derive
+from. Whereas the :class:`ReconstructionBuilder` focuses on providing an
+end-to-end interface for SfM, the :class:`ReconstructionEstimator` focuses
+solely on the SfM estimation. That is, it takes a viewing graph with matching
+and visibility information as input and outputs a fully estimated 3D model.
+
+The :class:`ReconstructionEstimator` is an abstract interface, and each of the
+various SfM pipelines derive directly from this class. This allows us to easily
+implement e.g., incremental or global SfM pipelines with a clean, consistent
+interface while also allowing polymorphism so that type of SfM pipeline desired
+may easily be chosen at run-time.
 
 .. function:: ReconstructionEstimator::ReconstructionEstimator(const ReconstructorEstimatorOptions& options)
 
-.. function:: ReconstructionEstimator::ReconstructionEstimatorSummary Estimate(const ViewGraph& view_graph, Reconstruction* reconstruction)
+.. function:: ReconstructionEstimatorSummary ReconstructionEstimator::Estimate(const ViewGraph& view_graph, Reconstruction* reconstruction)
 
-  Estimates the cameras poses and 3D points from a view graph. The details of
-  each step in the estimation process are described below.
+  Estimates the cameras poses and 3D points from a view graph. The derived
+  classes must implement this method to estimate a 3D reconstruction.
+
+.. function:: static ReconstructionEstimator* ReconstructionEstimator::Create(const ReconstructionEstimatorOptions& options)
+
+   Creates a derived :class:`ReconstructionEstimator` class from the options
+   passed in. For instance, an :class:`IncrementalReconstructionEstimator` will
+   be returned if incremental SfM is desired.
+
+Setting Reconstruction Estimator Options
+----------------------------------------
 
 .. class:: ReconstructorEstimatorOptions
 
+There are many, many parameters and options to choose from and tune while
+performing SfM. All of the available parameters may be set as part of the
+:class:`ReconstructionEstimatorOptions` that are required in the
+:class:`ReconstructionEstimator` constructor. The documentation here attempts to
+provide the high-level summary of these options; however, you should look at the
+header //theia/sfm/reconstruction_estimator_options.h file for a fully detailed
+description of these options.
+
 .. member:: ReconstructionEstimatorType ReconstructorEstimatorOptions::reconstruction_estimator_type
 
-  DEFAULT: ``ReconstructionEstimatorType::NONLINEAR``
+  DEFAULT: ``ReconstructionEstimatorType::GLOBAL``
 
-  Type of reconstruction estimation to use.
+  Type of reconstruction estimation to use. Options are
+  ``ReconstructionEstimatorType::GLOBAL`` or
+  ``ReconstructionEstimatorType::INCREMENTAL``. Incremental SfM is the standard
+  sequential SfM (see below) that adds on one image at a time to gradually grow
+  the reconstruction. This method is robust but not scalable. Global SfM, on the
+  other hand, is very scalable but is considered to be not as robust as
+  incremental SfM. This is not a limitation of the Theia implementations, but a
+  currently fundamental limitation of Global SfM pipelines in general.
+
+.. member:: GlobalRotationEstimationType ReconstructorEstimatorOptions::global_rotation_estimator_type
+
+   DEFAULT: ``GlobalRotationEstimatorType::ROBUST_L1L2``
+
+   If the Global SfM pipeline is used, this parameter determines which type of global rotations solver is used. Options are ``GlobalRotationEstimatorType::ROBUST_L1L2``, ``GlobalRotationEstimatorType::NONLINEAR`` and ``GlobalRotationEstimatorType::LINEAR``. See below for more details on the various global rotations solvers.
+
+   .. member:: GlobalPositionEstimationType ReconstructorEstimatorOptions::global_position_estimator_type
+
+   DEFAULT: ``GlobalPositionEstimatorType::NONLINEAR``
+
+   If the Global SfM pipeline is used, this parameter determines which type of global position solver is used. Options are ``GlobalPositionEstimatorType::NONLINEAR``, ``GlobalPositionEstimatorType::LINEAR_TRIPLET`` and ``GlobalPositionEstimatorType::LEAST_UNSQUARED_DEVIATION``. See below for more details on the various global positions solvers.
 
 .. member:: int ReconstructorEstimatorOptions::num_threads
 
@@ -429,6 +553,14 @@ follows:
   for absolute pose estimation. Additionally, this is the threshold used for
   filtering outliers after bundle adjustment.
 
+.. member:: int ReconstructorEstimatorOptions::min_num_two_view_inliers
+
+  DEFAULT: ``30``
+
+  Any edges in the view graph with fewer than this many inliers will be removed
+  prior to any SfM estimation.
+
+
 .. member:: int ReconstructorEstimatorOptions::num_retriangulation_iterations
 
   DEFAULT: ``1``
@@ -441,18 +573,6 @@ follows:
   #. Remove features that are above max_reprojection_error_in_pixels.
   #. Triangulate all unestimated tracks.
   #. Perform full bundle adjustment.
-
-.. member:: bool ReconstructorEstimatorOptions::initialize_focal_lengths_from_median_estimate
-
-  DEFAULT: ``false``
-
-  By default, focal lengths for uncalibrated cameras are initialized by setting
-  the focal length to a value that corresponds to a reasonable field of view. If
-  this is true, then we initialize the focal length of all uncalibrated cameras
-  to the median value obtained from decomposing the fundamental matrix of all
-  view pairs connected to that camera. Cameras with calibration or EXIF
-  information are always calibrated using that information regardless of this
-  parameter.
 
 .. member:: double ReconstructorEstimatorOptions::ransac_confidence
 
@@ -512,18 +632,39 @@ follows:
   rotation estimations. This can improve the quality of the translation
   estimation.
 
+.. member:: bool ReconstructorEstimatorOptions::extract_maximal_rigid_subgraph
+
+  DEFAULT: ``false``
+
+  If true, the maximal rigid component of the viewing graph will be extracted
+  using the method of [KennedyIROS2012]_. This means that only the cameras that
+  are well-constrained for position estimation will be used. This method is
+  somewhat slow, so enabling it will cause a performance hit in terms of
+  efficiency.
+
+
+.. member:: bool ReconstructorEstimatorOptions::filter_relative_translations_with_1dsfm
+
+  DEFAULT: ``true``
+
+  If true, filter the pairwise translation estimates to remove potentially bad
+  relative poses with the 1DSfM filter of [WilsonECCV2012]_. Removing potential
+  outliers can increase the performance of position estimation.
+
 .. member:: int ReconstructorEstimatorOptions::translation_filtering_num_iterations
 
   DEFAULT: ``48``
+
+  The number of iterations that the 1DSfM filter runs for.
 
 .. member:: double ReconstructorEstimatorOptions::translation_filtering_projection_tolerance
 
   DEFAULT: ``0.1``
 
-  Before the camera positions are estimated, it is wise to remove any relative
-  translations estimates that are low quality. We perform filtering using the
-  1dSfM technique of [WilsonECCV2014]_. See
-  theia/sfm/filter_view_pairs_from_relative_translation.h for more information.
+  A tolerance for the 1DSfM filter. Each relative translation is assigned a cost
+  where the higher the cost, the more likely a relative translation is to be an
+  outlier. Increasing this threshold makes the filtering more leniant, and
+  decreasing it makes it more strict.
 
 .. member:: double ReconstructorEstimatorOptions::rotation_estimation_robust_loss_scale
 
@@ -531,26 +672,65 @@ follows:
 
   Robust loss function width for nonlinear rotation estimation.
 
+.. member:: NonlinearPositionEstimator::Options nonlinear_position_estimator_options
 
-.. member:: double ReconstructorEstimatorOptions::position_estimation_robust_loss_scale
+   The position estimation options used for the nonlinear position estimation
+   method. See below for more details.
 
-  DEFAULT: ``1.0``
+.. member:: LinearPositionEstimator::Options linear_triplet_position_estimator_options
 
-  Robust loss function width to use for the first iteration of nonlinear position estimation.
+   The position estimation options used for the linear position estimation
+   method. See below for more details.
 
-.. member:: int ReconstructorEstimatorOptions::position_estimation_min_num_tracks_per_view
+.. member:: LeastUnsquaredDeviationPositionEstimator::Options least_unsquared_deviation_position_estimator_options
 
-  DEFAULT: ``10``
+   The position estimation options used for the robust least unsquare deviation
+   position estimation method. See below for more details.
 
-  Number of point to camera correspondences used for nonlinear position
-  estimation.
+.. member:: double ReconstructorEstimatorOptions::multiple_view_localization_ratio
 
-.. member:: double ReconstructorEstimatorOptions::position_estimation_point_to_camera_weight
+  DEFAULT: ``0.8``
 
-  DEFAULT: ``0.5``
+  **Used for incremental SfM only.** If M is the maximum number of 3D points observed
+  by any view, we want to localize all views that observe > M *
+  multiple_view_localization_ratio 3D points. This allows for multiple
+  well-conditioned views to be added to the reconstruction before needing bundle
+  adjustment.
 
-  Weight of point to camera constraints with respect to camera to camera
-  constraints.
+.. member::  double ReconstructionEstimatorOptions::absolute_pose_reprojection_error_threshold
+
+  DEFAULT: ``8.0``
+
+  **Used for incremental SfM only.** When adding a new view to the current
+  reconstruction, this is the reprojection error that determines whether a 2D-3D
+  correspondence is an inlier during localization.
+
+.. member:: int ReconstructionEstimatorOptions::min_num_absolute_pose_inliers
+
+  DEFAULT: ``30``
+
+  **Used for incremental SfM only.** Minimum number of inliers for absolute pose
+  estimation to be considered successful.
+
+.. member:: double ReconstructionEstimatorOptions::full_bundle_adjustment_growth_percent
+
+  DEFAULT: ``5.0``
+
+  **Used for incremental SfM only.** Bundle adjustment of the entire
+  reconstruction is triggered when the reconstruction has grown by more than
+  this percent. That is, if we last ran BA when there were K views in the
+  reconstruction and there are now N views, then G = (N - K) / K is the percent
+  that the model has grown. We run bundle adjustment only if G is greater than
+  this variable. This variable is indicated in percent so e.g., 5.0 = 5%.
+
+.. member:: int ReconstructionEstimatorOptions::partial_bundle_adjustment_num_views
+
+  DEFAULT: ``20``
+
+  **Used for incremental SfM only.** During incremental SfM we run "partial"
+  bundle adjustment on the most recent views that have been added to the 3D
+  reconstruction. This parameter controls how many views should be part of the
+  partial BA.
 
 .. member:: double ReconstructorEstimatorOptions::min_triangulation_angle_degrees
 
@@ -587,43 +767,134 @@ follows:
 
   DEFAULT: ``false``
 
-  If accurate calibration is known ahead of time then it is recommended to
-  set the camera intrinsics constant during bundle adjustment.
+  If true, the camera intrinsic parameters (i.e., focal length, principal point,
+  radial distortion, etc.) will not be modified during SfM. If accurate
+  calibration is known ahead of time then it is recommended to set the camera
+  intrinsics constant.
+
+Incremental SfM Pipeline
+========================
+
+.. image:: incremental_sfm.png
+
+The incremental SfM pipeline follows very closely the pipelines of `Bundler
+<http://www.cs.cornell.edu/~snavely/bundler/>`_ [PhotoTourism]_ and `VisualSfM
+<http://ccwu.me/vsfm/>`_ [VisualSfM]_. The method begins by first estimating the
+3D structure and camera poses of 2 cameras based on their relative pose. Then
+additional cameras are added on sequentially and new 3D structure is estimated
+as new parts of the scene are observed. Bundle adjustment is repeatedly
+performed as more cameras are added to ensure high quality reconstructions and
+to avoid drift.
+
+The incremental SfM pipeline is as follows:
+  #. Choose an initial camera pair to reconstruct.
+  #. Estimate 3D structure of the scene.
+  #. Bundle adjustment on the 2-view reconstruction.
+  #. Localize a new camera to the current 3D points. Choose the camera that
+     observes the most 3D points currently in the scene.
+  #. Estimate new 3D structure.
+  #. Bundle adjustment if the model has grown by more than 5% since the last
+     bundle adjustment.
+  #. Repeat steps 4-6 until all cameras have been added.
+
+Incremental SfM is generally considered to be more robust than global SfM
+methods; however, it requires many more instances of bundle adjustment (which
+is very costly) and so incremental SfM is not as efficient or scalable.
+
+To use the Incremental SfM pipeline, simple set the
+``reconstruction_estimator_type`` to
+``ReconstructionEstimatorType::INCREMENTAL``. There are many more options that
+may be set to tune the incremental SfM pipeline that can be found in the
+:class:`ReconstructionEstimatorOptions`.
+
+Global SfM Pipeline
+===================
+
+.. image:: global_sfm.png
+
+The global SfM pipelines in Theia follow a general procedure of filtering
+outliers and estimating camera poses or structure. Removing outliers can help
+increase performance dramatically for global SfM, though robust estimation
+methods are still required to obtain good results. The general pipeline is as
+follows:
+
+  #. Create the intial view graph from 2-view matches and :class:`TwoViewInfo`
+     that describes the relative pose between matched images.
+  #. Filter initial view graph and remove outlier 2-view matches.
+  #. Calibrate internal parameters of all cameras (either from EXIF or another
+     calibration method).
+  #. Estimate global orientations of each camera with a :class:`RotationsEstimator`
+  #. Filter the view graph: remove any TwoViewInfos where the relative rotation
+     does not agree with the estimated global rotations.
+  #. Refine the relative translation estimation to account for the estimated
+     global rotations.
+  #. Filter any bad :class:`TwoViewInfo` based on the relative translations.
+  #. Estimate the global positions of all cameras from the estimated rotations
+     and :class:`TwoViewInfo` using a :class:`PositionEstimator`
+  #. Estimate 3D points.
+  #. Bundle adjust the reconstruction.
+  #. (Optional) Attempt to estimate any remaining 3D points and bundle adjust again.
+
+
+The steps above describe the general framework for global SfM, but there are
+many possible ways to, for instance, estimate rotations or estimate
+positions. Much work has been put into developing robust and efficient
+algorithms to solve these problems and, in theory, each algorithm should be
+easily inter-changable.
+
+
+Since Theia is built to be modular and extendible, we make it extremely easy to
+implement and integrate new rotations solvers or positions solvers into the
+global SfM framework. Theia implements a generic Global SfM interface
+:class:`GlobalReconstructionEstimator` that easily encapsulates all global SfM
+pipelines. The :class:`GlobalReconstructionEstimator` class makes calls to a
+abstract :class:`RotationEstimator` class and abstract
+:class:`PositionEstimator` class to estimate rotations and positions
+respectively. Because these classes are abstract, this means we can easily
+instantiate which type of solvers we want to use and are guaranteed to have the
+same interface. This allows us to choose the rotation and position solvers at
+run-time, making experiments with global SfM painless!
 
 Estimating Global Rotations
-===========================
+---------------------------
 
-Theia estimates the global rotations of cameras robustly using a nonlinear
-optimization. Using the relative rotations obtained from all
-:class:`TwoViewInfo`, we enforce the constraint that
+Theia estimates the global rotations of cameras using an abstract interface
+class :class:`RotationEstimator`.
 
-.. math:: :label: rotation_constraint
+.. function:: bool RotationEstimator::EstimateRotations(const std::unordered_map<ViewIdPair, TwoViewInfo>& view_pairs, std::unordered_map<ViewId, Eigen::Vector3d>* global_orientations)
 
-  R_{i,j} = R_j * R_i^T`
+  Using the relative poses as input, this function will estimate the global
+  orientations for each camera. Generally speaking, this method will attempt to
+  minimize the relative pose error:
 
-We use the angle-axis representation of rotations to ensure that proper
-rotations are formed. All pairwise constraints are put into a nonlinear
-optimization with a robust loss function and the global orienations are
-computed. The optimization usually converges within just a few iterations and
-provides a very accurate result. The nonlinear optimization is initialized by
-forming a random spanning tree of the view graph and walking along the
-edges. There are two potential methods that may be used.
+  .. math:: :label: rotation_constraint
 
-.. function:: bool EstimateRotationsNonlinear(const std::unordered_map<ViewIdPair, Eigen::Vector3d>& relative_rotations, const double robust_loss_width, std::unordered_map<ViewId, Eigen::Vector3d>* global_orientations)
+    R_{i,j} = R_j * R_i^T`
 
-  Using the relative rotations and an initial guess for the global rotations,
-  minimize the error between the relative rotations and the global
-  orientations. We use as SoftL1Loss for robustness to outliers.
 
+  .. NOTE:: This function does require an initial estimate of camera orientations. Initialization may be performed by walking a minimal spanning tree on the viewing graph, or another trivial method.
+
+Implementing a new rotations solver is extremely easy. Simply derive from the
+:class:`RotationEstimator` class and implement the ``EstimateRotations`` method
+and your new rotations solver will seamlessly plug into Theia's global SfM
+pipeline.
+
+There are several types of rotation estimators that Theia implements natively:
+
+  * A Robust L1-L2 :class:`RobustRotationEstimator`
+  * A nonlinear :class:`NonlinearRotationEstimator`
+  * A linear :class:`LinearRotationEstimator`
+
+:class:`RobustRotationEstimator`
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. class:: RobustRotationEstimator
 
-The nonlinear method above is very sensitive to initialization. We recommend to use
-the :class:`RobustRotationEstimator` of [ChatterjeeICCV13]_. This rotation
-estimator is similar in spirit to :func:`EstimateRotationsNonlinear`, however,
-it utilizes L1 minimization to maintain efficiency to outliers. After several
-iterations of L1 minimization, an iteratively reweighted least squares approach
-is used to refine the solution.
+  We recommend to use the :class:`RobustRotationEstimator` of
+  [ChatterjeeICCV13]_. This rotation estimator utilizes L1 minimization to
+  maintain efficiency to outliers. After several iterations of L1 minimization,
+  an iteratively reweighted least squares approach is used to refine the
+  solution.
 
 .. member:: int RobustRotationEstimator::Options::max_num_l1_iterations
 
@@ -640,62 +911,119 @@ is used to refine the solution.
    Maximum number of reweighted least squares iterations to perform. These steps
    are much faster than the L2 iterations.
 
-.. function:: RobustRotationEstimator::RobustRotationEstimator(const RobustRotationEstimator::Options& options, const std::unordered_map<ViewIdPair, Eigen::Vector3d>& relative_rotations)
+:class:`NonlinearRotationEstimator`
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-  The options and the relative rotations remain constant throughout the rotation
-  estimation and are passed in the constructor.
+.. class:: NonlinearRotationEstimator
 
-.. function:: bool RobustRotationEstimator::EstimateRotations(std::unordered_map<ViewId, Eigen::Vector3d>* global_orientations)
+   This class minimizes equation :eq:`rotation_constraint` using nonlinear
+   optimization with the Ceres Solver. The angle-axis rotation parameterization
+   is used so that rotations always remain on the SO(3) rotation manifold during
+   the optimizatin.
 
-  Estimates the global orientation using the robust method described above. An
-  initial estimation for the rotations is required. [ChatterjeeICCV13]_ suggests
-  to use a random spanning tree to initialize the rotations.
+.. function:: NonlinearRotationEstimator::NonlinearRotationEstimator(const double robust_loss_width)
+
+   We utilize a Huber-like cost function during the optimization to remain
+   robust to outliers. This robust_loss_width determines where the robustness
+   kicks in.
+
+:class:`LinearRotationEstimator`
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. class:: LinearRotationEstimator
+
+   This class minimizes :eq:`rotation_constraint` using a linear
+   formulation. The constraints are set up in a linear system using rotation
+   matrices and the optimal rotations are solved for using a linear least
+   squares minimization described by [Martinec2007]_. This minimization does not
+   guarantee that the solution set will be valid rotation matrices (since it is
+   finding any type of 3x3 matrices that minimize the linear system), so the
+   solution is projected into the nearest SO(3) rotation matrix. As a result,
+   this method is fast but may not always be the most accurate.
+
+.. function:: LinearRotationEstimator::LinearRotationEstimator(bool weight_terms_by_inliers)
+
+   If true, each term in the linear system will be weighted by the number of
+   inliers such that two-view matches with many inliers are weighted higher in
+   the linear system.
 
 Estimating Global Positions
-===========================
+---------------------------
 
 Positions of cameras may be estimated simultaneously after the rotations are
-known. We use either a linear or a nonlinear optimization to estimate camera
-positions based.
+known. Since positions encapsulate direction and scale information, the problem
+of estimating camera positions is fundamentally more difficult than estimating
+camera rotations. As such, there has been much work that has gone into
+estimating camera positions robustly and efficiently.
 
-Given pairwise relative translations from :class:`TwoViewInfo`
-and the estimated rotation, the constraint
+.. class:: PositionEstimator
 
-  .. math:: R_i * (c_j - c_i) = \alpha_{i,j} * t_{i,j}
+Similar to the :class:`RotationEstimator` class, Theia utilizes an abstract
+:class:`PositionEstimator` class to perform position estimation. This class
+defines the interface that all derived classes will use for estimating camera
+positions. Like with the :class:`RotationEstimator`, this abstract class helps
+to keep the interface clean and allows for a simple way to change between
+position estimation methods at runtime thanks to polymorphism.
 
-is used to determine the global camera positions, where :math:`\alpha_{i,j} =
-||c_j - c_i||^2`. This ensures that we optimize for positions that agree with
-the relative positions computed in two-view estimation.
+.. function::  bool PositionEstimator::EstimatePositions(const std::unordered_map<ViewIdPair, TwoViewInfo>& view_pairs, const std::unordered_map<ViewId, Eigen::Vector3d>& orientation, std::unordered_map<ViewId, Eigen::Vector3d>* positions)
 
-.. class:: NonlinearPositionEstimatorOptions
+  Input the view pairs containing relative poses between matched geometrically
+  verified views, as well as the global (absolute) orientations of the camera
+  that were previously estimated. Camera positions are estimated from this
+  information, with the specific strategies and implementation determined by the
+  derived classes.
 
-.. member:: int NonlinearPositionEstimatorOptions::num_threads
+  Returns true if the position estimation was a success, false if there was a
+  failure. If false is returned, the contents of positions are undefined.
+
+  Generally, the position estimation methods attempt to minimize the deviation
+  from the relative translations:
+
+  .. math:: :label: position_constraint
+
+     R_i * (c_j - c_i) = \alpha_{i,j} * t_{i,j}
+
+  This equation is used to determine the global camera positions, where
+  :math:`\alpha_{i,j} = ||c_j - c_i||^2`. This ensures that we optimize for
+  positions that agree with the relative positions computed in two-view
+  estimation.
+
+:class:`NonlinearPositionEstimator`
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. class:: NonlinearPositionEstimator
+
+This class attempts to minimze the position constraint of
+:eq:`position_constraint` with a nonlinear solver that minimzes the chordal
+distance [WilsonECCV2012]_. A robust cost function is utilized to remain robust
+to outliers.
+
+.. function:: NonlinearPositionEstimator(const NonlinearPositionEstimator::Options& options, const Reconstruction& reconstruction)
+
+   The constructor takes the options for the nonlinear position estimator, as
+   well as const references to the reconstruction (which contains camera and
+   track information) and the two view geometry information that will be use to
+   recover the positions.
+
+.. member:: int NonlinearPositionEstimator::Options::num_threads
 
    DEFAULT: ``1``
 
    Number of threads to use with Ceres for nonlinear optimization.
 
-.. member:: bool NonlinearPositionEstimatorOptions::verbose
-
-   DEFAULT: ``false``
-
-   Set to true for verbose logging.
-
-.. member:: int NonlinearPositionEstimatorOptions::max_num_iterations
+.. member:: int NonlinearPositionEstimator::Options::max_num_iterations
 
    DEFAULT: ``400``
 
-   The maximum number of iterations for each minimization (i.e., for a single
-   IRLS iteration).
+   The maximum number of iterations for the minimization.
 
-.. member:: double NonlinearPositionEstimatorOptions::robust_loss_width
+.. member:: double NonlinearPositionEstimator::Options::robust_loss_width
 
-   DEFAULT: ``1.0``
+   DEFAULT: ``0.1``
 
-   The width of the robust Huber loss function used in the first minimization
-   iteration.
+   The width of the robust Huber loss function used.
 
-.. member:: int NonlinearPositionEstimatorOptions::min_num_points_per_view
+.. member:: int NonlinearPositionEstimator::Options::min_num_points_per_view
 
    DEFAULT: ``0``
 
@@ -705,28 +1033,15 @@ the relative positions computed in two-view estimation.
    that the minimum number of points is used such that each view has at least
    ``min_num_points_per_view`` point-to-camera constraints.
 
-.. member:: double NonlinearPositionEstimatorOptions::point_to_camera_weight
+.. member:: double NonlinearPositionEstimator::Options::point_to_camera_weight
 
    DEFAULT: ``0.5``
 
    Each point-to-camera constraint (if any) is weighted by
    ``point_to_camera_weight`` compared to the camera-to-camera weights.
 
-.. class:: NonlinearPositionEstimator
-
-  .. function:: NonlinearPositionEstimator(const NonlinearPositionEstimatorOptions& options, const Reconstruction& reconstruction, const std::unordered_map<ViewIdPair, TwoViewInfo>& view_pairs)
-
-      The constructor takes the options for the nonlinear position estimator, as
-      well as const references to the reconstruction (which contains camera and
-      track information) and the two view geometry information that will be use
-      to recover the positions.
-
-  .. function:: bool EstimatePositions(const std::unordered_map<ViewId, Eigen::Vector3d>& orientation, std::unordered_map<ViewId, Eigen::Vector3d>* positions)
-
-    Estimates the positions of cameras given the global orientation estimates by
-    using the nonlinear algorithm described above. Only positions that have an
-    orientation set are estimated. Returns true upons success and false on failure.
-
+:class:`LinearPositionEstimator`
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. class:: LinearPositionEstimator
 
@@ -738,9 +1053,9 @@ For the linear position estimator of [JiangICCV]_, we utilize an approximate geo
 
   .. math:: f(i, j, k) = c_k - \dfrac{1}{2} (c_i + ||c_k - c_i|| c_{ik}) + c_j + ||c_k - c_j|| c_{jk})
 
-This can be formed as a linear constraint in the unknown camera positions :math:`c_i`. Tthe solution that minimizes this cost lies in the null-space of the resultant linear system. Instead of extracting the entire null-space as [JiangICCV]_ does, we instead hold one camera constant at the origin and use the Inverse-Iteration Power Method to efficiently determine the null vector that best solves our minimization. This results in a dramatic speedup without sacrificing efficiency.
+This can be formed as a linear constraint in the unknown camera positions :math:`c_i`. The solution that minimizes this cost lies in the null-space of the resultant linear system. Instead of extracting the entire null-space as [JiangICCV]_ does, we instead hold one camera constant at the origin and use the Inverse-Iteration Power Method to efficiently determine the null vector that best solves our minimization. This results in a dramatic speedup without sacrificing efficiency.
 
-.. NOTE:: Currently this position estimation method is not integrated into the Theia global SfM pipeline. More testing needs to be done with this method before it can be reliably integrated.
+.. function:: LinearPositionEstimator::LinearPositionEstimator(const LinearPositionEstimator::Options& options, const Reconstruction& reconstruction)
 
 .. member:: int LinearPositionEstimator::Options::num_threads
 
@@ -760,6 +1075,57 @@ This can be formed as a linear constraint in the unknown camera positions :math:
 
   This number determines the convergence of the power iteration method. The
   lower the threshold the longer it will take to converge.
+
+
+:class:`LeastUnsquareDeviationPositionEstimator`
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. class:: LeastUnsquaredDeviationPositionEstimator
+
+Estimates the camera position of views given pairwise relative poses and the
+absolute orientations of cameras. Positions are estimated using a least
+unsquared deviations solver -- essentially an L1 solver that is wrapped in an
+Iteratively Reweighted Least Squares (IRLS) formulation. This method was
+proposed in [OzyesilCVPR2015]_.
+
+.. function:: LeastUnsquaredDeviationPositionEstimator(const LeastUnsquaredDeviationPositionEstimator::Options& options, const Reconstruction& reconstruction)
+
+   The constructor takes the options for the nonlinear position estimator, as
+   well as const references to the reconstruction (which contains camera and
+   track information) and the two view geometry information that will be use to
+   recover the positions.
+
+.. member:: int LeastUnsquaredDeviationPositionEstimator::Options::num_threads
+
+   DEFAULT: ``1``
+
+   Number of threads to use with Ceres for nonlinear optimization.
+
+.. member:: int LeastUnsquaredDeviationPositionEstimator::Options::max_num_iterations
+
+   DEFAULT: ``400``
+
+   The maximum number of iterations for the minimization.
+
+.. member:: int LeastUnsquaredDeviationPositionEstimator::Options::initialize_random_positions
+
+   DEFAULT: ``true``
+
+   If true, positions will be initialized to be random. If false, the position values that were passed into ``EstimatePositions`` will be used for initialization.
+
+.. member:: int LeastUnsquaredDeviationPositionEstimator::Options::max_num_reweighted_iterations
+
+   DEFAULT: ``10``
+
+   The maximum number of reweighted iterations in the IRLS scheme.
+
+.. member:: int LeastUnsquaredDeviationPositionEstimator::Options::convergence_criterion
+
+   DEFAULT: ``1e-4``
+
+   A measurement for determining the convergence of the IRLS scheme. Increasing
+   the value will make the IRLS scheme converge earlier.
+
 
 Triangulation
 =============

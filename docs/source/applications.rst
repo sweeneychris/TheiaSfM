@@ -44,15 +44,17 @@ Build Reconstruction
 This application will build a 3D reconstruction from a set of images or a set of
 image matches. Detailed documentation for the structure-from-motion pipeline can
 be found at :ref:`chapter-sfm`. Many parameters can be set at runtime (too many
-to list here), and we provide an example of the possible settings in
-applications/build_reconstruction_flags.txt. This flags file may be run by
-executing the command:
+to list here).
+
+.. NOTE:: We provide an example of the possible command line flags for ``build_reconstructions`` in applications/build_reconstruction_flags.txt. We highly recommend that you copy this file then adjust the parameters for your own dataset and settings.
+
+Once you have your flags file, you may create a 3D reconstruction by executing the command:
 
 .. code-block:: bash
 
-  ./bin/build_reconstruction --flagfile=/path/to/build_reconstructions_flags.txt
+  ./bin/build_reconstruction --flagfile=/path/to/build_reconstruction_flags.txt
 
-The reconstruction parameters may need to be tuned a bit
+The reconstruction parameters may need to be tuned a bit for the individual datasets.
 
 If images are supplied as input, then features are extracted and matched between
 images before the reconstruction process begins. It is advised that you save
@@ -62,6 +64,57 @@ geometry. This allows you to tune the reconstruction parameters without having
 to wait for image matching which is typically the slowest part of
 structure-from-motion. Alternatively, you could first generate the two view
 geometry and save the information using the program below.
+
+1DSfM Dataset
+-------------
+
+The `1DSfM dataset <http://www.cs.cornell.edu/projects/1dsfm/>`_ is an excellent
+dataset for SfM reconstructions from internet photo collections and is a
+benchmark dataset for medium to large-scale SfM reconstructions. Since Theia is
+aimed to make research and experimentation simple, we have provided an interface
+to directly utilize the 1DSfM datasets without having to worry about processing
+the data yourself.
+
+.. NOTE:: We provide an example of the possible command line flags for ``build_1dsfm_reconstructions`` in applications/build_1dsfm_reconstruction_flags.txt. We highly recommend that you copy this file then adjust the parameters for your own dataset and settings.
+
+By running the following command, you can utilize Theia's reconstruction
+pipeline directly on the 1DSfM dataset:
+
+.. code-block:: bash
+
+   ./bin/build_1dsfm_reconstruction --flagfile=/path/to/build_1dsfm_reconstruction_flags.txt
+
+Comparing Reconstructions
+-------------------------
+
+After computing SfM reconstructions, it can be useful to compare them. For
+example, two reconstructions may be created with different parameters then
+compared to determine how the various parameters affect reconstruction
+quality. Running this program will output statistics such as rotation different,
+positions difference, and the difference between camera intrinsic parameters.
+
+.. code-block:: bash
+
+   ./bin/compare_reconstructions --reconstruction1=ground_truth_reconstruction --reconstruction2=your_reconstruction --logtostderr
+
+Note that reconstruction1 is considered the "ground truth" reconstruction for
+this application. The reconstruction in reconstruction2 is aligned to
+reconstruction1 with a similarity transformation (aligning the cameras with the
+same name in both reconstructions) then the errors are measured.
+
+For the 1DSfM dataset, you can use the ``compare_reconstructions`` application
+to determine the ground truth errors. First, use the ``convert_bundle_file``
+application to convert the ground truth Bundler files that come with the 1DSfM
+dataset of interest. Then compare the reconstruction computed with Theia to the
+ground truth reconstruction using the command line above. Since the ground truth
+1DSfM bundler files are roughly metric-scale, the positions errors will be
+approximately in meters.
+
+Similarly, for the Strecha Dataset, you can first create a ground truth
+reconstruction with the ``create_reconstruction_from_strecha_dataset``
+program. Then use this as the ground truth reconstruction for
+``compare_reconstructions``. Similar to the 1DSfM datasets, the ground truth
+Strecha reconstructions are metric-scale and so are the position errors.
 
 Compute Two View Geometry
 -------------------------
@@ -80,6 +133,24 @@ Compute Reconstruction Statistics
 Computes some basic information about reconstructions such as reprojection
 error, number of cameras, 3D points, and the average number of observations per
 3D point.
+
+.. code-block:: bash
+
+   ./bin/compute_reconstruction_statistics --reconstruction=my_reconstruction --logtostderr
+
+Compute Matching Relative Pose Errors
+-------------------------------------
+
+Two-view matches are the input to SfM, so the quality of the matches is
+important to the final quality of the SfM reconstruction. To evaluate the
+accuracy of various matching strategies (e.g., brute force vs cascade hashing,
+or whether to perform two-view bundle adjustment), you can compare the input
+two-view matches and geometry to the final reconstruction.
+
+.. code-block:: bash
+
+   ./bin/compute_matching_relative_pose_errors --matches=matches_file --reconstruction=ground_truth_reconstruction --logtostderr
+
 
 View Reconstruction
 -------------------

@@ -27,8 +27,6 @@ The base :class:`Keypoint` class is a glorified struct that holds information ab
 	          INVALID = -1,
 		  OTHER = 0,
 		  SIFT,
-		  AGAST,
-		  BRISK
 		  };
 
 	      Keypoint(double x, double y, KeypointType type);
@@ -109,31 +107,10 @@ The following keypoint detectors have been implemented in Theia (class construct
     to values -1 (i.e., as many octaves as can be generated), 3, and 0 (i.e., the
     source image)
 
-.. function:: AgastDetector::AgastDetector(AstPattern pattern, int threshold, bool nonmax_suppression)
-
-    The improved FAST detection scheme of [Mair]_ et al.
-
-    ``enum AstPattern`` specifies one of 4 types of sampling patterns for the
-    AGAST corner detect: ``AGAST5_8`` is the AGAST pattern with an 8 pixel mask,
-    ``AGAST7_12D`` is the AGAST diamond pattern with a 12 pixel mask,
-    ``AGAST7_12S`` is the square configuration, and ``OAST9_16`` is the 16 pixel
-    mask. By default, we the detector uses ``AGAST5_8`` with a threshold of 30 and
-    nonmaximum suppression turn on. More details on the configurations can be
-    found at the `AGAST Project website
-    <http://www6.in.tum.de/Main/ResearchAgast>`_
-
-.. function:: BriskDetector::BriskDetector(int threshold, int num_octaves)
-
-  The "Binary Robust Invariant Scalable Keypoints" algorithm of [Leutenegger]_
-  et al.
-
-  Specify the threshold for keypoint scores (default is 30) and the number of
-  octaves to downsample the image (default is 3).
-
 Descriptors
 ===========
 
-Theia uses a semi-generic interface for all descriptor types, namely, floating point and binary descriptors. For floating point descriptors (e.g., SIFT) we use Eigen::VectorXf and set the number of entries to equal the dimension of the descriptor. This way, we can utilize Eigen's speed and optimizations to get the most efficient and accurate representation of the descriptors. For binary descriptors, we define a new type in the Eigen namespace: ``Eigen::BinaryVectorX``. This vector is a custom type (defined in theia/alignment/alignment.h) that holds binary descriptors such that each bit corresponds to the descriptor dimension. This allows for the same interface between float and binary descriptors, while still utilizing the efficiency of SSE instructions when available.
+Theia uses a semi-generic interface for all descriptor types. For floating point descriptors (e.g., SIFT) we use Eigen::VectorXf and set the number of entries to equal the dimension of the descriptor. This way, we can utilize Eigen's speed and optimizations to get the most efficient and accurate representation of the descriptors.
 
 DescriptorExtractor
 ===================
@@ -154,7 +131,6 @@ DescriptorExtractor
   extractor.
 
 .. function:: bool DescriptorExtractor::ComputeDescriptor(const FloatImage& input_image, const Keypoint& keypoint, Eigen::VectorXf* float_descriptor)
-.. function:: bool DescriptorExtractor::ComputeDescriptor(const FloatImage& input_image, const Keypoint& keypoint, Eigen::BinaryVectorXf* binary_descriptor)
 
   This method computes the descriptor of a single keypoint.
 
@@ -162,13 +138,12 @@ DescriptorExtractor
 
   ``keypoint``: The keypoint that the descriptor will be computed from.
 
-  ``float_descriptor or binary_descriptor``: The descriptor computed for the
+  ``float_descriptor``: The descriptor computed for the
   given keypoint.
 
   ``returns``: True on if the descriptor was extracted, false otherwise.
 
 .. function:: bool DescriptorExtractor::ComputeDescriptors(const FloatImage& input_image, std::vector<Keypoint>* keypoints, std::vector<Eigen::VectorXf>* float_descriptors)
-.. function:: bool DescriptorExtractor::ComputeDescriptors(const FloatImage& input_image, std::vector<Keypoint>* keypoints, std::vector<Eigen::BinaryVectorXf>* binary_descriptors)
 
     Compute many descriptors from the input keypoints. Note that not all
     keypoints are guaranteed to result in a descriptor. Only valid descriptors
@@ -180,17 +155,14 @@ DescriptorExtractor
     descriptors extracted. Keypoints that were not able to have a descriptor
     extracted are removed.
 
-    ``float_descriptors or binary_descriptors``: A container for the descriptors
+    ``float_descriptors``: A container for the descriptors
     that have been created based on the type of descriptor that is being
-    extracted. Eigen::VectorXf is used for extracting float descriptors (e.g.,
-    SIFT) while Eigen::BinaryVectorX is used for float descriptors.
+    extracted.
 
 .. function:: bool DescriptorExtractor::DetectAndExtractDescriptors(const FloatImage& input_image, std::vector<Keypoint>* keypoints, std::vector<Eigen::VectorXf>* float_descriptors)
-.. function:: bool DescriptorExtractor::DetectAndExtractDescriptors(const FloatImage& input_image, std::vector<Keypoint>* keypoints, std::vector<Eigen::BinaryVectorXf>* binary_descriptors)
 
     Detects keypoints and extracts descriptors using the default keypoint
     detector for the corresponding descriptor. For SIFT, this is the SIFT
-    keypoint detector, and for BRIEF, BRISK, and FREAK this is the BRISK
     keypoint detector. This has the potential to be faster because it may avoid
     recomputing certain member variables.
 
@@ -199,10 +171,10 @@ DescriptorExtractor
     ``keypoints``: An output vector of the keypoint points that have been
     detected and successfully had descriptors extracted.
 
-    ``float_descriptors or binary_descriptors``: A container for the descriptors
+    ``float_descriptors``: A container for the descriptors
     that have been created based on the type of descriptor that is being
     extracted. Eigen::VectorXf is used for extracting float descriptors (e.g.,
-    SIFT) while Eigen::BinaryVectorX is used for float descriptors.
+    SIFT).
 
   .. code-block:: c++
 
@@ -250,50 +222,6 @@ in Theia (constructors are given).
 
 .. NOTE:: This algorithm is patented and commercial use requires a license.
 
-.. class:: BriefDescriptorExtractor
-
-.. function:: BriefDescriptorExtractor::BriefDescriptorExtractor(int patch_sample_size, const int num_bytes)
-
-   The [BRIEF]_ algorithm is a binary algorithm that operates on local image
-   patches around a keypoint or a point of interest. The binary values are set
-   by randomly choosing two pixels to compare within the patch. The same random
-   pattern must be used in order to compare BRIEF descriptors (each
-   :class:`BriefDescriptorExtractor` object creates exactly one pattern that
-   may be used repeatedly).
-
-
-.. class:: FreakDescriptorExtractor
-
-.. NOTE:: This algorithm is currently unstable. Further testing is required.
-
-.. function:: FreakDescriptorExtractor::FreakDescriptorExtractor(bool rotation_invariant, bool scale_invariant, int num_octaves)
-
-  The "Fast Retina Keypoint" algorithm for binary descriptors proposed by [Alahi]_ et al.
-
-  ``rotation_invariant``: Set to true if you want to normalize the orientation of the keypoints before computing the descriptor.
-
-  ``scale_invariant``: Set to true if you want to normalize the scale of keypoints before computing the descriptor.
-
-  ``num_octaves``: The number of octaves that the keypoints span.
-
-  The :class:`FreakDescriptorExtractor` is typically used with the
-  :class:`BriskDetector` to detect keypoints.
-
-.. class:: BriskDescriptorExtractor
-
-.. NOTE:: This algorithm is currently unstable. Further testing is required.
-
-.. function:: BriskDescriptorExtractor::BriskDescriptorExtractor(bool rotation_invariant, bool scale_invariant, float pattern_scale)
-
-  The "Binary Robust Invariant Scalable Keypoints" algorithm for binary descriptors of [Leutenegger]_
-  et al.
-
-  ``rotation_invariant``: Set to true if you want to normalize the orientation of the keypoints before computing the descriptor.
-
-  ``scale_invariant``: Set to true if you want to normalize the scale of keypoints before computing the descriptor.
-
-  ``pattern_scale``: Scale of the BRISK pattern to use.
-
 
 Feature Matching
 ================
@@ -304,64 +232,58 @@ images. As such, feature matching is a very critical process in the context of
 multi-view geometry. We provide a generic interface for feature matching that
 works with binary descriptors or float descriptors.
 
+For feature matching, we implement an abstract :class:`FeatureMatcher` class that
+serves as an abstract class for various feature-matching methods. The
+:class:`FeatureMatcher` class takes keypoints, descriptors, and optionally
+camera intrinsics (if known) and performs all-pairs feature matching between images.
+
 .. class:: FeatureMatcher
 
 The :class:`FeatureMatcher` is templated on a :class:`DistanceMetric` that
 describes how to compute the distance between two matches (we provide L2 and
-Hamming). The matcher is intended for all-to-all matching for SfM reconstruction.
+Hamming). The matcher is intended for all-pairs image matching for SfM
+reconstruction.
 
-.. function:: void FeatureMatcher::AddImage(const std::vector<Keypoint>* keypoints, const std::vector<DescriptorType>* descriptors)
+.. function:: FeatureMatcher::FeatureMatcher(const FeatureMatcherOptions& options)
+
+   Initializes a feature matcher based on the options.
+
+.. function:: void FeatureMatcher::AddImage(const std::string& image_name, const std::vector<Keypoint>& keypoints, const std::vector<DescriptorType>& descriptors)
 
   Adds an image to the matcher with no known intrinsics for this image. The
-  caller still owns the keypoints and descriptors so they must remain valid
-  objects throughout the matching.
+  image name must be a unique identifier.
 
-.. function:: void FeatureMatcherAddImage(const std::vector<Keypoint>* keypoints, const std::vector<DescriptorType>* descriptors, const CameraIntrinsics& intrinsics)
+.. function:: void FeatureMatcherAddImage(const std::string& image_name, const std::vector<Keypoint>& keypoints, const std::vector<DescriptorType>& descriptors, const CameraIntrinsics& intrinsics)
 
-  Adds an image to the matcher with the known camera intrinsics. The
-  intrinsics (if known) are useful for geometric verification. The caller
-  still owns the keypoints and descriptors so they must remain valid objects
-  throughout the matching.
+  Adds an image to the matcher with the known camera intrinsics. The intrinsics
+  (if known) are used for geometric verification. The image name must be a
+  unique identifier.
 
-.. function:: void FeatureMatcher::MatchImages(const FeatureMatcherOptions& matcher_options, std::vector<ImagePairMatch>* matches)
+.. function:: void FeatureMatcher::MatchImages(std::vector<ImagePairMatch>* matches)
 
   Matches features between all images. No geometric verification is
-  performed. Only the matches which pass the have greater than
-  min_num_feature_matches are returned.
+  performed. Only successful image matches will be returned.
 
-.. function:: void FeatureMatcher::MatchImagesWithGeometricVerification(const FeatureMatcherOptions& matcher_options, const VerifyTwoViewMatchesOptions& verification_options, std::vector<ImagePairMatch>* matches)
+.. function:: void FeatureMatcher::MatchImagesWithGeometricVerification(const VerifyTwoViewMatchesOptions& verification_options, std::vector<ImagePairMatch>* matches)
 
   Matches features between all images. Only the matches that pass the
   geometric verification are returned. Camera intrinsics are used for
   geometric verification if the image was added with known intrinsics.
 
-.. NOTE:: This method is tuned specifically for image to image matching and is only
-   applicable to float descriptors such as SIFT.
+.. function:: void FeatureMatcher::SetImagePairsToMatch(const std::vector<std::pair<std::string, std::string> >& pairs_to_match)
 
-.. class:: ImagePairMatch
+  Set the image pairs that will be matched when MatchImages or
+  MatchImagesWithGeometricVerification is called. This is an optional method; if
+  it is not called, then all possible image-to-image pairs will be matched. The
+  vector should contain unique pairs of image names that should be matched.
 
-Matches are defined as feature coordinates between two image. If geometric
-verification is performed then the two-view geometry is also specified and the
-returned matches are only the inlier matches after geometric verification.
 
-.. member:: int ImagePairMatch::image1_index
-.. member:: int ImagePairMatch::image2_index
+Feature Matching Options
+------------------------
 
-  The index of the current image pair that has been matched. This index is
-  relative to the order that images were input with the
-  :func:`FeatureMatcher::AddImage` method.
-
-.. member:: TwoViewInfo FeatureMatcher::twoview_info
-
-  If geometric verification is performed, then the ``twoview_info`` describes
-  the two-view geometry (i.e., relative pose) between the two images.
-
-.. member:: std::vector<:class:`FeatureCorrespondence`> FeatureMatcher::correspondences
-
-  A :class:`FeatureCorrespondence` contains two Eigen::Vector2d's named
-  feature1, and feature2. These represent the image coordinates of the matched
-  features. If geometric verification is performed then these features are the
-  inlier features.
+Theia allows for a variety of parameters to be tuned for feature
+matching. Setting these parameters will have an effect on things such as
+matching performance, efficiency, memory, and more.
 
 .. class:: FeatureMatcherOptions
 
@@ -374,6 +296,30 @@ returned matches are only the inlier matches after geometric verification.
 
   The number of threads to use for image-to-image matching. The more threads
   used, the faster the matching will be.
+
+.. member:: bool FeatureMatcherOptions::match_out_of_core
+
+  DEFAULT: ``false``
+
+  Matching can be performed out-of-core or all in memory. For large datasets, it
+  is advisable to utilize the out-of-core matching. This strategy will save
+  features to disk and utilize an LRU cache to minimize disk IO and take
+  advantage of cache-locality.
+
+.. member:: std::string FeatureMatcherOptions::keypoints_and_descriptors_output_dir
+
+  DEFAULT: ``""``
+
+  If out-of-core matching is enabled, this is the directory where features will
+  be written to and read from disk.
+
+.. member:: int FeatureMatcherOptions::cache_capacity
+
+  DEFAULT: ``128``
+
+  If out-of-core matching is enabled, this is the maximum number of images to
+  store in the cache at a given time. The larger this number, the more memory is
+  required for matching.
 
 .. member:: bool FeatureMatcherOptions::keep_only_symmetric_matches
 
@@ -412,46 +358,113 @@ returned matches are only the inlier matches after geometric verification.
   exist between two images in order to consider the matches as valid. All other
   matches are considered failed matches and are not added to the output.
 
-Matching Strategies
--------------------
 
-We have implemented two types of :class:`FeatureMatcher` with the interface described above.
+Output of Feature Matching
+--------------------------
 
-.. class:: BruteForceFeatureMatcher
+ The output of the matching process is a vector of :class:`ImagePairMatch`. Each
+ :class:`ImagePairMatch` contains matching information for feature matches
+ between two views.
 
-Matches are computed using an exhausitve brute force search through all
-matches. The search is the slowest but has the highest accuracy.
+.. class:: ImagePairMatch
 
-.. class:: CascadeHashingFeatureMatcher
+Matches are defined as feature coordinates between two image. If geometric
+verification is performed then the two-view geometry is also specified and the
+returned matches are only the inlier matches after geometric verification.
 
-Features are matched through a cascade hashing approach as described by
-[Cheng]_. Hash tables with extremely fast lookups are created without needing to
-train the data, resulting in an extremely fast and accurate matcher. This is the
-recommended approach for matching image sets.
+.. member:: std::string ImagePairMatch::image1
+.. member:: std::string ImagePairMatch::image2
+
+  The unique names of the current image pair that have been matched.
+
+.. member:: TwoViewInfo ImagePairMatch::twoview_info
+
+  If geometric verification is performed, then the ``twoview_info`` describes
+  the two-view geometry (i.e., relative pose) between the two images.
+
+.. member:: std::vector<FeatureCorrespondence> ImagePairMatch::correspondences
+
+  A :class:`FeatureCorrespondence` contains two feature locations named
+  feature1, and feature2. These represent the image coordinates of the matched
+  features. If geometric verification is performed then these features are the
+  inlier features.
 
 
 Using the feature matcher
 -------------------------
 
-The intended use for these classes is for matching photos in image collections,
-so all pairwise matches are computed. Matching with geometric verification is
-also possible. Typical use case is:
+We have implemented two types of :class:`FeatureMatcher` with the interface described above.
+
+.. class:: BruteForceFeatureMatcher
+
+  Matches are computed using an exhausitve brute force search through all
+  matches. The search is the slowest but has the highest accuracy.
+
+.. class:: CascadeHashingFeatureMatcher
+
+  Features are matched through a cascade hashing approach as described by
+  [Cheng]_. Hash tables with extremely fast lookups are created without needing to
+  train the data, resulting in an extremely fast and accurate matcher. This is the
+  recommended approach for matching image sets.
+
+
+The intended use for the :class:`FeatureMatcher` is for matching photos in image collections,
+so all pairwise matches are computed. Typical use case is:
+
 
 .. code-block:: c++
 
-      FeatureMatcher matcher;
+      FeatureMatcherOptions matcher_options;
+      BruteForceFeatureMatcher matcher(matcher_options);
+      // Or to instantiate the cascade hashing matcher:
+      CascadeHashingFeatureMatcher matcher(matcher_options);
+
+      // Add image features to the matcher.
       for (int i = 0; i < num_images_to_match; i++) {
-        matcher.AddImage(keypoints[i], descriptors[i]);
+        matcher.AddImage(image_name[i], keypoints[i], descriptors[i]);
 
        // Or, you could add the image with known intrinsics for use during
        // geometric verification.
-        matcher.AddImage(keypoints[i], descriptors[i], intrinsics[i]);
+        matcher.AddImage(image_name[i], keypoints[i], descriptors[i], intrinsics[i]);
       }
       std::vector<ImagePairMatch> matches;
-      FeatureMatcherOptions matcher_options;
-      matcher.MatchImages(matcher_options, &matches);
-          Or, with geometric verification:
+      matcher.MatchImages(&matches);
+
+      // Or, with geometric verification:
       VerifyTwoViewMatchesOptions geometric_verification_options;
-      matcher.MatchImages(match_options,
-                          geometric_verification_options,
-                          &matches);
+      matcher.MatchImages(geometric_verification_options, &matches);
+
+By adjusting the :class:`FeatureMatcherOptions` (described above) you can
+control various setting such as multithreading, in-core vs out-of-core, etc. The
+outpute of the matching process is a vector of :class:`ImagePairMatch`. Each
+:class:`ImagePairMatch` contains matching information for feature matches
+between two views.
+
+
+Implementing a New Matching Strategy
+------------------------------------
+
+Given that the :class:`FeatureMatcher` class is an abstract interface,
+implementing a new matching strategy is extremely simple. The simplest way to do
+this is to derive a new class from the :class:`FeatureMatcher` class and
+implement the protected method :func:`MatchImagePair`
+
+.. function:: bool FeatureMatcher::MatchImagePair(const KeypointsAndDescriptors& features1, const KeypointsAndDescriptors& features2, std::vector<FeatureCorrespondence>* matched_features)
+
+   This protected function takes in two sets of features and outputs the feature
+   matches between them. This is a pure virual function in the
+   :class:`FeatureMatcher` class and must be implemented by any derived
+   classes. For instance, the :class:`BruteForceFeatureMatcher` implements this
+   method by computing the pairwise distance between all features and choosing
+   the correspondences as the features with the smallest distance between them.
+
+   When implementing this method in a derived class you will automatically get
+   all of the great benefits of the abstract :class:`FeatureMatcher` class
+   without having to explicitly write code to handle them. These benefits include:
+
+   * Multithreaded matching
+   * Ability to utilize out-of-core matching
+   * Optional geometric verification
+
+For examples on how to implemente new matchers as derived classes, check out the
+:class:`BruteForceFeatureMatcher` implementation.

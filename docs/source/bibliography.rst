@@ -54,6 +54,9 @@ Bibliography
    Camera Pose Registration**, *International Conference on Computer Vision
    (ICCV)*, 2013.
 
+.. [KennedyIROS2012] Kennedy, R. and Daniilidis, K. and Naroditsky, O. and Taylor,
+   C.J. **Identifying maximal rigid components in bearing-based localization**, IROS 2012
+
 .. [Kneip] L. Kneip, D. Scaramuzza, R. Siegwart, **A Novel Parametrization of the
    Perspective-Three-Point Problem for a Direct Computation of Absolute Camera
    Position and Orientation**, *In Proceedings of The IEEE Conference on Computer Vision
@@ -84,6 +87,10 @@ Bibliography
    *In Proceedings of the European Conference on Computer Vision (ECCV'10)*,
    September 2010.
 
+.. [Martinec2007] Martinec, D. and Pajdla, T. **Robust Rotation and Translation
+   Estimation in Multiview Geometry**, *In Proceedings of the IEEE Conference
+   on Computer Vision and Pattern Recognition*, 2010.
+
 .. [MoulonICCV] Moulon, P. and Monasse, P. and Marlet, R. **Global Fusion of
    Relative Motions for Robust, Accurate and Scalable Structure from Motion**
    *International Conference on Computer Vision (ICCV)*, 2013.
@@ -91,6 +98,10 @@ Bibliography
 .. [Nister] David Nistér. 2004. **An Efficient Solution to the Five-Point Relative
    Pose Problem**. *IEEE Trans. Pattern Anal. Mach. Intell*. 26, 6 (June 2004),
    756-777.
+
+.. [OzyesilCVPR2015] O. Ozyesil and Singer, A. **Robust Camera Location
+   Estimation by Convex Programming** *In Proceedings of the IEEE Conference
+   on Computer Vision and Pattern Recognition*, 2015.
 
 .. [Raguram] R. Raguram, J.M. Frahm, and M. Pollefeys. 2008. **A
    Comparative Analysis of RANSAC Techniques Leading to Adaptive Real-Time
