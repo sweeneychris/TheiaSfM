@@ -59,7 +59,7 @@ using Eigen::Vector3d;
 // errors of the returned solutions and ensuring that at least one of the
 // candidate solutions corresponds to the essential matrix we used to construct
 // the problem.
-void TestFivePointResultWithNoise(const Vector3d points_3d[5],
+void TestFivePointResultWithNoise(const std::vector<Vector3d> points_3d,
                                   const double projection_noise_std_dev,
                                   const Matrix3d& expected_rotation,
                                   const Vector3d& expected_translation,
@@ -67,18 +67,18 @@ void TestFivePointResultWithNoise(const Vector3d points_3d[5],
   InitRandomGenerator();
 
   // Calculates the image points in both views.
-  Vector2d view_one_points[5];
-  Vector2d view_two_points[5];
-  for (int i = 0; i < 5; ++i) {
+  std::vector<Vector2d> view_one_points;
+  std::vector<Vector2d> view_two_points;
+  for (int i = 0; i < points_3d.size(); ++i) {
     const Vector3d proj_3d =
         expected_rotation * points_3d[i] + expected_translation;
-    view_one_points[i] = points_3d[i].hnormalized();
-    view_two_points[i] = proj_3d.hnormalized();
+    view_one_points.emplace_back(points_3d[i].hnormalized());
+    view_two_points.emplace_back(proj_3d.hnormalized());
   }
 
   if (projection_noise_std_dev) {
     // Adds noise to both of the points.
-    for (int i = 0; i < 5; ++i) {
+    for (int i = 0; i < view_one_points.size(); ++i) {
       AddNoiseToProjection(projection_noise_std_dev, &view_one_points[i]);
       AddNoiseToProjection(projection_noise_std_dev, &view_two_points[i]);
     }
@@ -95,10 +95,10 @@ void TestFivePointResultWithNoise(const Vector3d points_3d[5],
   // Among the returned solutions verify that at least one is close to the
   // expected translation and rotation.
   bool matched_transform = false;
-  const double kEpipolarTolerance = 1e-8;
+  const double kEpipolarTolerance = points_3d.size() == 5 ? 1e-8 : 1e-3;
   for (int n = 0; n < soln_ematrices.size(); ++n) {
     // All solutions should have valid epipolar constraints.
-    for (int i = 0; i < 5; i++) {
+    for (int i = 0; i < view_one_points.size(); i++) {
       EXPECT_LT(SquaredSampsonDistance(soln_ematrices[n],
                                        view_one_points[i],
                                        view_two_points[i]),
@@ -112,14 +112,13 @@ void TestFivePointResultWithNoise(const Vector3d points_3d[5],
   EXPECT_TRUE(matched_transform);
 }
 
-
-void BasicTest() {
+TEST(FivePointRelativePose, BasicMinimal) {
   // Ground truth essential matrix.
-  const Vector3d points_3d[5] = { Vector3d(-1.0, 3.0, 3.0),
-                                  Vector3d(1.0, -1.0, 2.0),
-                                  Vector3d(3.0, 1.0, 2.5),
-                                  Vector3d(-1.0, 1.0, 2.0),
-                                  Vector3d(2.0, 1.0, 3.0) };
+  const std::vector<Vector3d> points_3d = { Vector3d(-1.0, 3.0, 3.0),
+                                            Vector3d(1.0, -1.0, 2.0),
+                                            Vector3d(3.0, 1.0, 2.5),
+                                            Vector3d(-1.0, 1.0, 2.0),
+                                            Vector3d(2.0, 1.0, 3.0) };
   const Matrix3d soln_rotation = Quaterniond(
       AngleAxisd(DegToRad(13.0), Vector3d(0.0, 0.0, 1.0))).toRotationMatrix();
   const Vector3d soln_translation(1.0, 1.0, 1.0);
@@ -132,17 +131,13 @@ void BasicTest() {
                                kEMatrixTolerance);
 }
 
-TEST(FivePointRelativePose, Basic) {
-  BasicTest();
-}
-
-TEST(FivePointRelativePose, NoiseTest) {
+TEST(FivePointRelativePose, NoiseTestMinimal) {
   // Ground truth essential matrix.
-  const Vector3d points_3d[5] = {Vector3d(-1.0, 3.0, 3.0),
-                                 Vector3d(1.0, -1.0, 2.0),
-                                 Vector3d(3.0, 1.0, 2.5),
-                                 Vector3d(-1.0, 1.0, 2.0),
-                                 Vector3d(2.0, 1.0, 3.0)};
+  const std::vector<Vector3d> points_3d = {Vector3d(-1.0, 3.0, 3.0),
+                                           Vector3d(1.0, -1.0, 2.0),
+                                           Vector3d(3.0, 1.0, 2.5),
+                                           Vector3d(-1.0, 1.0, 2.0),
+                                           Vector3d(2.0, 1.0, 3.0)};
   const Matrix3d soln_rotation = Quaterniond(
       AngleAxisd(DegToRad(13.0), Vector3d(0.0, 0.0, 1.0))).toRotationMatrix();
 
@@ -156,13 +151,13 @@ TEST(FivePointRelativePose, NoiseTest) {
                                kEMatrixTolerance);
 }
 
-TEST(FivePointRelativePose, ForwardMotion) {
+TEST(FivePointRelativePose, ForwardMotionMinimal) {
   // Ground truth essential matrix.
-  const Vector3d points_3d[5] = {Vector3d(-1.0, 3.0, 3.0),
-                                 Vector3d(1.0, -1.0, 2.0),
-                                 Vector3d(3.0, 1.0, 2.0),
-                                 Vector3d(-1.0, 1.0, 2.0),
-                                 Vector3d(2.0, 1.0, 3.0)};
+  const std::vector<Vector3d> points_3d = {Vector3d(-1.0, 3.0, 3.0),
+                                           Vector3d(1.0, -1.0, 2.0),
+                                           Vector3d(3.0, 1.0, 2.0),
+                                           Vector3d(-1.0, 1.0, 2.0),
+                                           Vector3d(2.0, 1.0, 3.0)};
   const Matrix3d soln_rotation = Quaterniond(
       AngleAxisd(DegToRad(13.0), Vector3d(0.0, 0.0, 1.0))).toRotationMatrix();
 
@@ -176,13 +171,95 @@ TEST(FivePointRelativePose, ForwardMotion) {
                                kEMatrixTolerance);
 }
 
-TEST(FivePointRelativePose, NoRotation) {
+TEST(FivePointRelativePose, NoRotationMinimal) {
   // Ground truth essential matrix.
-  const Vector3d points_3d[5] = {Vector3d(-1.0, 3.0, 3.0),
-                                 Vector3d(1.0, -1.0, 2.0),
-                                 Vector3d(3.0, 1.0, 2.0),
-                                 Vector3d(-1.0, 1.0, 2.0),
-                                 Vector3d(2.0, 1.0, 3.0)};
+  const std::vector<Vector3d> points_3d = {Vector3d(-1.0, 3.0, 3.0),
+                                           Vector3d(1.0, -1.0, 2.0),
+                                           Vector3d(3.0, 1.0, 2.0),
+                                           Vector3d(-1.0, 1.0, 2.0),
+                                           Vector3d(2.0, 1.0, 3.0)};
+  const Matrix3d soln_rotation = Matrix3d::Identity();
+
+  const Vector3d soln_translation(1.0, 1.0, 1.0);
+  const double kNoise = 1.0 / 512.0;
+  const double kEMatrixTolerance = 0.01;
+  TestFivePointResultWithNoise(points_3d,
+                               kNoise,
+                               soln_rotation,
+                               soln_translation,
+                               kEMatrixTolerance);
+}
+
+TEST(FivePointRelativePose, BasicNonminimal) {
+  // Ground truth essential matrix.
+  const std::vector<Vector3d> points_3d = { Vector3d(-1.0, 3.0, 3.0),
+                                            Vector3d(1.0, -1.0, 2.0),
+                                            Vector3d(3.0, 1.0, 2.5),
+                                            Vector3d(-1.0, 1.0, 2.0),
+                                            Vector3d(2.0, 1.0, 3.0),
+                                            Vector3d(1.7, 2.1, 3.2) };
+  const Matrix3d soln_rotation = Quaterniond(
+      AngleAxisd(DegToRad(13.0), Vector3d(0.0, 0.0, 1.0))).toRotationMatrix();
+  const Vector3d soln_translation(1.0, 1.0, 1.0);
+  const double kNoise = 0.0 / 512.0;
+  const double kEMatrixTolerance = 1e-4;
+  TestFivePointResultWithNoise(points_3d,
+                               kNoise,
+                               soln_rotation,
+                               soln_translation,
+                               kEMatrixTolerance);
+}
+
+TEST(FivePointRelativePose, NoiseTestNonminimal) {
+  // Ground truth essential matrix.
+  const std::vector<Vector3d> points_3d = {Vector3d(-1.0, 3.0, 3.0),
+                                           Vector3d(1.0, -1.0, 2.0),
+                                           Vector3d(3.0, 1.0, 2.5),
+                                           Vector3d(-1.0, 1.0, 2.0),
+                                           Vector3d(2.0, 1.0, 3.0),
+                                           Vector3d(1.7, 2.1, 3.2) };
+  const Matrix3d soln_rotation = Quaterniond(
+      AngleAxisd(DegToRad(13.0), Vector3d(0.0, 0.0, 1.0))).toRotationMatrix();
+
+  const Vector3d soln_translation(1.0, 1.0, 1.0);
+  const double kNoise = 1.0 / 512.0;
+  const double kEMatrixTolerance = 1e-2;
+  TestFivePointResultWithNoise(points_3d,
+                               kNoise,
+                               soln_rotation,
+                               soln_translation,
+                               kEMatrixTolerance);
+}
+
+TEST(FivePointRelativePose, ForwardMotionNonminimal) {
+  // Ground truth essential matrix.
+  const std::vector<Vector3d> points_3d = {Vector3d(-1.0, 3.0, 3.0),
+                                           Vector3d(1.0, -1.0, 2.0),
+                                           Vector3d(3.0, 1.0, 2.0),
+                                           Vector3d(-1.0, 1.0, 2.0),
+                                           Vector3d(2.0, 1.0, 3.0),
+                                           Vector3d(1.7, 2.1, 3.2) };
+  const Matrix3d soln_rotation = Quaterniond(
+      AngleAxisd(DegToRad(13.0), Vector3d(0.0, 0.0, 1.0))).toRotationMatrix();
+
+  const Vector3d soln_translation(0.0, 0.0, 1.0);
+  const double kNoise = 1.0 / 512.0;
+  const double kEMatrixTolerance = 0.15;
+  TestFivePointResultWithNoise(points_3d,
+                               kNoise,
+                               soln_rotation,
+                               soln_translation,
+                               kEMatrixTolerance);
+}
+
+TEST(FivePointRelativePose, NoRotationNonminimal) {
+  // Ground truth essential matrix.
+  const std::vector<Vector3d> points_3d = {Vector3d(-1.0, 3.0, 3.0),
+                                           Vector3d(1.0, -1.0, 2.0),
+                                           Vector3d(3.0, 1.0, 2.0),
+                                           Vector3d(-1.0, 1.0, 2.0),
+                                           Vector3d(2.0, 1.0, 3.0),
+                                           Vector3d(1.7, 2.1, 3.2) };
   const Matrix3d soln_rotation = Matrix3d::Identity();
 
   const Vector3d soln_translation(1.0, 1.0, 1.0);

@@ -37,6 +37,7 @@
 #include <Eigen/Core>
 #include <vector>
 
+#include "theia/alignment/alignment.h"
 #include "theia/solvers/estimator.h"
 #include "theia/matching/feature_correspondence.h"
 #include "theia/sfm/pose/five_point_relative_pose.h"
@@ -60,10 +61,12 @@ class EssentialMatrixEstimator
   // Estimates candidate essential matrices from correspondences.
   bool EstimateModel(const std::vector<FeatureCorrespondence>& correspondences,
                      std::vector<Eigen::Matrix3d>* essential_matrices) const {
-    Eigen::Vector2d image1_points[5], image2_points[5];
-    for (int i = 0; i < 5; i++) {
-      image1_points[i] = correspondences[i].feature1;
-      image2_points[i] = correspondences[i].feature2;
+    std::vector<Eigen::Vector2d> image1_points, image2_points;
+    image1_points.reserve(correspondences.size());
+    image2_points.reserve(correspondences.size());
+    for (int i = 0; i < correspondences.size(); i++) {
+      image1_points.emplace_back(correspondences[i].feature1);
+      image2_points.emplace_back(correspondences[i].feature2);
     }
 
     return FivePointRelativePose(image1_points,

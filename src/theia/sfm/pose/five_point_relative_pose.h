@@ -38,6 +38,8 @@
 #include <Eigen/Core>
 #include <vector>
 
+#include "theia/alignment/alignment.h"
+
 namespace theia {
 
 // Computes the relative pose between two cameras using 5 corresponding
@@ -52,8 +54,11 @@ namespace theia {
 //   image1_points: Location of features on the image plane of image 1.
 //   image2_points: Location of features on the image plane of image 2.
 // Return: true if a valid solution was found.
-bool FivePointRelativePose(const Eigen::Vector2d image1_points[5],
-                           const Eigen::Vector2d image2_points[5],
+//
+// NOTE: At least 5 points must be supplied, but a non-minimal estimate will be
+// computed if more than five are supplied.
+bool FivePointRelativePose(const std::vector<Eigen::Vector2d>& image1_points,
+                           const std::vector<Eigen::Vector2d>& image2_points,
                            std::vector<Eigen::Matrix3d>* essential_matrices);
 }  // namespace theia
 

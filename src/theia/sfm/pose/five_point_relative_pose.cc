@@ -50,6 +50,7 @@ using Eigen::Map;
 using Eigen::Matrix3d;
 using Eigen::Matrix4d;
 using Eigen::Matrix;
+using Eigen::MatrixXd;
 using Eigen::RowVector3d;
 using Eigen::RowVector4d;
 using Eigen::Vector2d;
@@ -208,14 +209,19 @@ Matrix<double, 10, 20> BuildConstraintMatrix(
 
 // Implementation of Nister from "An Efficient Solution to the Five-Point
 // Relative Pose Problem"
-bool FivePointRelativePose(const Vector2d image1_points[5],
-                           const Vector2d image2_points[5],
+bool FivePointRelativePose(const std::vector<Vector2d>& image1_points,
+                           const std::vector<Vector2d>& image2_points,
                            std::vector<Matrix3d>* essential_matrices) {
-  // Step 1. Create the 5x9 matrix containing epipolar constraints.
+  CHECK_EQ(image1_points.size(), image2_points.size());
+  CHECK_GE(image1_points.size(), 5) << "You must supply at least 5 "
+                                       "correspondences for the 5 point "
+                                       "essential matrix algorithm.";
+
+  // Step 1. Create the nx9 matrix containing epipolar constraints.
   //   Essential matrix is a linear combination of the 4 vectors spanning the
   //   null space of this matrix.
-  Matrix<double, 5, 9> epipolar_constraint;
-  for (int i = 0; i < 5; i++) {
+  MatrixXd epipolar_constraint(image1_points.size(), 9);
+  for (int i = 0; i < image1_points.size(); i++) {
     // Fill matrix with the epipolar constraint from q'_t*E*q = 0. Where q is
     // from the first image, and q' is from the second.
     epipolar_constraint.row(i) <<
@@ -230,11 +236,21 @@ bool FivePointRelativePose(const Vector2d image1_points[5],
         1.0;
   }
 
-  const Eigen::FullPivLU<Matrix<double, 5, 9> > lu(epipolar_constraint);
-  if (lu.dimensionOfKernel() != 4) {
-    return false;
+  Matrix<double, 9, 4> null_space;
+
+  // Extract the null space from a minimal sampling (using LU) or non-minimal
+  // sampling (using SVD).
+  if (image1_points.size() == 5) {
+    const Eigen::FullPivLU<MatrixXd> lu(epipolar_constraint);
+    if (lu.dimensionOfKernel() != 4) {
+      return false;
+    }
+    null_space = lu.kernel();
+  } else {
+    const Eigen::JacobiSVD<MatrixXd> svd(epipolar_constraint,
+                                         Eigen::ComputeFullV);
+    null_space = svd.matrixV().rightCols<4>();
   }
-  const Matrix<double, 9, 4>& null_space = lu.kernel();
 
   const Matrix<double, 1, 4> null_space_matrix[3][3] = {
     { null_space.row(0), null_space.row(3), null_space.row(6) },

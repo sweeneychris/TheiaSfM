@@ -71,10 +71,12 @@ class RelativePoseEstimator
   // Estimates candidate relative poses from correspondences.
   bool EstimateModel(const std::vector<FeatureCorrespondence>& correspondences,
                      std::vector<RelativePose>* relative_poses) const {
-    Eigen::Vector2d image1_points[5], image2_points[5];
-    for (int i = 0; i < 5; i++) {
-      image1_points[i] = correspondences[i].feature1;
-      image2_points[i] = correspondences[i].feature2;
+    std::vector<Eigen::Vector2d> image1_points, image2_points;
+    image1_points.reserve(correspondences.size());
+    image2_points.reserve(correspondences.size());
+    for (int i = 0; i < correspondences.size(); i++) {
+      image1_points.emplace_back(correspondences[i].feature1);
+      image2_points.emplace_back(correspondences[i].feature2);
     }
 
     std::vector<Matrix3d> essential_matrices;
