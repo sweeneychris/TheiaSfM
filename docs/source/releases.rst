@@ -4,21 +4,37 @@
 Releases
 ========
 
-HEAD
-====
+`0.5.0  <https://github.com/sweeneychris/TheiaSfM/archive/v0.5.tar.gz>`_
+========================================================================
 
 New Features
 ------------
 * Jenkins Traub polynomial root-finding algorithm.
+* Cereal library is now used for all I/O.
+* Feature matching can now be done in-core or out-of-core.
+* Global SfM was completely refactored to be split into RotationEstimator and PositionEstimator classes. This makes implementing new algs straightforward with automatic integration.
+* Least unsquared deviations position estimator.
+* Linear rotation estimator.
+* Extract maximal parallel subgraphs to determine well-constrained positions for estimation.
+* Two point algorithm for absolute pose with known vertical direction.
+* LMeds (vfragoso).
+* Normalized graph cuts (to be used in the future for hiearchical SfM).
+* Massively updated flags files for building reconstructions.
+* Ability to specify which image pairs to match.
 
 Bug Fixes
 ---------
 * Disable the unit tests for Optimo (thanks to bvanavery).
+* Tons of Windows compilation fixes.
+* Bundler file I/O fixes (thanks rajvi).
+* Fix potential divide by zeros in the RANSAC interface (thanks to klemmster).
 
 Misc.
 -----
 * Refactoring of the polynomial root-finding algorithms to make the files easier to follow.
-
+* Improved CMake files (thanks to Ceres authors).
+* Removed all binary descriptors. This makes the descriptor interfaces much less of a headache.
+* Updated VLFeat to the latest version.
 
 `0.4.0 <https://github.com/sweeneychris/TheiaSfM/archive/v0.4.tar.gz>`_
 =======================================================================
