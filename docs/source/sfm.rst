@@ -58,7 +58,7 @@ part of the SfM pipeline.
 
 .. class:: Track
 
-A :class:`Track` represents a feature that has been matached over potentially
+A :class:`Track` represents a feature that has been matched over potentially
 many images. When a feature appears in multiple images it typically means that
 the features correspond to the same 3D point. These 3D points are useful
 constraints in SfM reconstruction, as they represent the "structure" in
@@ -84,7 +84,7 @@ that the calibration matrix is:
 where :math:`f` is the focal length (in pixels), :math:`s` is the skew,
 :math:`a` is the aspect ratio and :math:`p` is the principle point of the
 camera. All of these intrinsics may be accessed with getter and setter methods,
-e.g., :code:`double GetFocalLenth()` or :code:`void SetFocalLength(const double
+e.g., :code:`double GetFocalLength()` or :code:`void SetFocalLength(const double
 focal_length)`. Note that we do additionally allow for up to two radial
 distortion parameters, but these are not part of the calibration matrix so they
 must be set or retrieved separately from the corresponding getter/setter
@@ -437,7 +437,7 @@ extractionn, feature matching, which SfM pipeline to use, and more.
 
 .. member:: SiftParameters ReconstructionBuilderOptions::sift_parameters
 
-  If the desired descriptor type is SIFT then these are the ift parameters
+  If the desired descriptor type is SIFT then these are the sift parameters
   controlling keypoint detection and description options. See
   //theia/image/keypoint_detector/sift_parameters.h
 
