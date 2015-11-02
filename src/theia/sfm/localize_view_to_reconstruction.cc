@@ -37,7 +37,7 @@
 #include <glog/logging.h>
 #include <vector>
 
-#include "theia/sfm/bundle_adjustment/bundle_adjust_view.h"
+#include "theia/sfm/bundle_adjustment/bundle_adjustment.h"
 #include "theia/sfm/estimators/feature_correspondence_2d_3d.h"
 #include "theia/sfm/estimators/estimate_calibrated_absolute_pose.h"
 #include "theia/sfm/estimators/estimate_uncalibrated_absolute_pose.h"
@@ -159,13 +159,23 @@ bool LocalizeViewToReconstruction(
   // Bundle adjust the view if desired.
   view->SetEstimated(true);
   if (options.bundle_adjust_view) {
-    BundleAdjustView(view_to_localize, known_focal_length, reconstruction);
+    BundleAdjustmentOptions ba_options;
+    // NOTE: If the focal length is unknown, we only optimize the focal length
+    // and hold all other intrinsics parameters constant. Since this is local BA
+    // it helps avoid a distorted model. Later, we can choose to optimize all
+    // intrinsic parameters if desired.
+    ba_options.intrinsics_to_optimize =
+        known_focal_length ? OptimizeIntrinsicsType::NONE
+                           : OptimizeIntrinsicsType::FOCAL_LENGTH;
+    const BundleAdjustmentSummary summary =
+        BundleAdjustView(ba_options, view_to_localize, reconstruction);
+    success = summary.success;
   }
 
   VLOG(2) << "Estimated the camera pose for view " << view_to_localize
           << " with " << summary->inliers.size() << " inliers out of "
           << matches.size() << " 2D-3D matches.";
-  return true;
+  return success;
 }
 
 }  // namespace theia

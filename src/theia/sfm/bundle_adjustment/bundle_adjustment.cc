@@ -77,17 +77,60 @@ void SetSolverOptions(const BundleAdjustmentOptions& options,
       new ceres::ParameterBlockOrdering);
 }
 
-void AddCameraParametersToProblem(const bool constant_camera_intrinsics,
+std::vector<int> GetIntrinsicsToOptimize(
+    const OptimizeIntrinsicsType& intrinsics_to_optimize) {
+  std::vector<int> constant_intrinsics;
+  switch (intrinsics_to_optimize) {
+    case OptimizeIntrinsicsType::NONE:
+      for (int i = 0; i < Camera::kIntrinsicsSize; i++) {
+        constant_intrinsics.push_back(Camera::kExtrinsicsSize + i);
+      }
+      break;
+    case OptimizeIntrinsicsType::FOCAL_LENGTH:
+      constant_intrinsics = {
+          Camera::kExtrinsicsSize + Camera::ASPECT_RATIO,
+          Camera::kExtrinsicsSize + Camera::SKEW,
+          Camera::kExtrinsicsSize + Camera::PRINCIPAL_POINT_X,
+          Camera::kExtrinsicsSize + Camera::PRINCIPAL_POINT_Y,
+          Camera::kExtrinsicsSize + Camera::RADIAL_DISTORTION_1,
+          Camera::kExtrinsicsSize + Camera::RADIAL_DISTORTION_2};
+      break;
+    case OptimizeIntrinsicsType::FOCAL_LENGTH_AND_PRINCIPAL_POINTS:
+      constant_intrinsics = {
+          Camera::kExtrinsicsSize + Camera::ASPECT_RATIO,
+          Camera::kExtrinsicsSize + Camera::SKEW,
+          Camera::kExtrinsicsSize + Camera::RADIAL_DISTORTION_1,
+          Camera::kExtrinsicsSize + Camera::RADIAL_DISTORTION_2};
+      break;
+    case OptimizeIntrinsicsType::FOCAL_LENGTH_AND_RADIAL_DISTORTION:
+      constant_intrinsics = {
+          Camera::kExtrinsicsSize + Camera::ASPECT_RATIO,
+          Camera::kExtrinsicsSize + Camera::SKEW,
+          Camera::kExtrinsicsSize + Camera::PRINCIPAL_POINT_X,
+          Camera::kExtrinsicsSize + Camera::PRINCIPAL_POINT_Y};
+      break;
+    case OptimizeIntrinsicsType::
+        FOCAL_LENGTH_PRINCIPAL_POINTS_AND_RADIAL_DISTORTION:
+      constant_intrinsics = {Camera::kExtrinsicsSize + Camera::ASPECT_RATIO,
+                             Camera::kExtrinsicsSize + Camera::SKEW};
+      break;
+    case OptimizeIntrinsicsType::ALL:
+      break;
+    default:
+      break;
+  };
+  return constant_intrinsics;
+}
+
+// Adds camera parameters to the problem while optionally holding some
+// intrinsics parameters constant.
+void AddCameraParametersToProblem(const std::vector<int>& constant_intrinsics,
                                   double* camera_parameters,
                                   ceres::Problem* problem) {
-  if (constant_camera_intrinsics) {
-    std::vector<int> constant_intrinsics;
-    for (int i = 0; i < Camera::kIntrinsicsSize; i++) {
-      constant_intrinsics.push_back(Camera::kExtrinsicsSize + i);
-    }
+  if (constant_intrinsics.size() > 0) {
     ceres::SubsetParameterization* subset_parameterization =
-        new ceres::SubsetParameterization(Camera::kParameterSize,
-                                          constant_intrinsics);
+      new ceres::SubsetParameterization(Camera::kParameterSize,
+                                        constant_intrinsics);
     problem->AddParameterBlock(camera_parameters,
                                Camera::kParameterSize,
                                subset_parameterization);
@@ -108,9 +151,11 @@ void AddCameraParametersToProblem(const bool constant_camera_intrinsics,
 BundleAdjustmentSummary BundleAdjustPartialReconstruction(
     const BundleAdjustmentOptions& options,
     const std::vector<ViewId>& view_ids,
+    const std::vector<TrackId>& track_ids,
     Reconstruction* reconstruction) {
   CHECK_NOTNULL(reconstruction);
   BundleAdjustmentSummary summary;
+  static const int kTrackSize = 4;
 
   const int num_estimated_views = NumEstimatedViews(*reconstruction);
   const int num_estimated_tracks = NumEstimatedTracks(*reconstruction);
@@ -143,10 +188,13 @@ BundleAdjustmentSummary BundleAdjustPartialReconstruction(
   ceres::ParameterBlockOrdering* parameter_ordering =
       solver_options.linear_solver_ordering.get();
 
+  // Obtain which params will be constant during optimization.
+  const std::vector<int> constant_intrinsics =
+      GetIntrinsicsToOptimize(options.intrinsics_to_optimize);
+
   // Per recommendation of Ceres documentation we group the parameters by points
   // (group 0) and camera parameters (group 1) so that the points are eliminated
   // first then the cameras.
-  std::vector<TrackId> tracks_to_optimize;
   for (const ViewId view_id : view_ids) {
     View* view = CHECK_NOTNULL(reconstruction->MutableView(view_id));
     // Only optimize estimated views.
@@ -157,7 +205,7 @@ BundleAdjustmentSummary BundleAdjustPartialReconstruction(
     Camera* camera = view->MutableCamera();
     // This function will add all camera parameters to the problem and will keep
     // the intrinsic params constant if desired.
-    AddCameraParametersToProblem(options.constant_camera_intrinsics,
+    AddCameraParametersToProblem(constant_intrinsics,
                                  camera->mutable_parameters(),
                                  &problem);
 
@@ -180,7 +228,7 @@ BundleAdjustmentSummary BundleAdjustPartialReconstruction(
           track->MutablePoint()->data());
       // Add the point to group 0.
       parameter_ordering->AddElementToGroup(track->MutablePoint()->data(), 0);
-      tracks_to_optimize.push_back(track_id);
+      problem.SetParameterBlockConstant(track->MutablePoint()->data());
     }
   }
 
@@ -192,8 +240,16 @@ BundleAdjustmentSummary BundleAdjustPartialReconstruction(
   // *all* views that observe it, not just the ones we want to optimize. Here,
   // we add in any views that were not part of the first loop and we keep them
   // constant during the optimization.
-  for (const TrackId track_id : tracks_to_optimize) {
+  for (const TrackId track_id : track_ids) {
     Track* track = CHECK_NOTNULL(reconstruction->MutableTrack(track_id));
+    if (!track->IsEstimated()) {
+      continue;
+    }
+
+    problem.AddParameterBlock(track->MutablePoint()->data(), kTrackSize);
+    parameter_ordering->AddElementToGroup(track->MutablePoint()->data(), 0);
+    problem.SetParameterBlockVariable(track->MutablePoint()->data());
+
     const auto& view_ids = track->ViewIds();
     for (const ViewId view_id : view_ids) {
       View* view = CHECK_NOTNULL(reconstruction->MutableView(view_id));
@@ -251,7 +307,42 @@ BundleAdjustmentSummary BundleAdjustReconstruction(
     const BundleAdjustmentOptions& options,
     Reconstruction* reconstruction) {
   const auto& view_ids = reconstruction->ViewIds();
-  return BundleAdjustPartialReconstruction(options, view_ids, reconstruction);
+  const auto& track_ids = reconstruction->TrackIds();
+  return BundleAdjustPartialReconstruction(options,
+                                           view_ids,
+                                           track_ids,
+                                           reconstruction);
+}
+
+// Bundle adjust a single view.
+BundleAdjustmentSummary BundleAdjustView(const BundleAdjustmentOptions& options,
+                                         const ViewId view_id,
+                                         Reconstruction* reconstruction){
+  std::vector<ViewId> view_ids = {view_id};
+  std::vector<TrackId> track_ids;
+  BundleAdjustmentOptions ba_options = options;
+  ba_options.linear_solver_type = ceres::DENSE_QR;
+  ba_options.use_inner_iterations = false;
+  return BundleAdjustPartialReconstruction(ba_options,
+                                           view_ids,
+                                           track_ids,
+                                           reconstruction);
+}
+
+// Bundle adjust a single track.
+BundleAdjustmentSummary BundleAdjustTrack(const BundleAdjustmentOptions& options,
+                                          const TrackId track_id,
+                                          Reconstruction* reconstruction) {
+  std::vector<ViewId> view_ids;
+  std::vector<TrackId> track_ids = {track_id};
+  BundleAdjustmentOptions ba_options = options;
+  ba_options.linear_solver_type = ceres::DENSE_QR;
+  ba_options.use_inner_iterations = false;
+  //  ba_options.verbose = true;
+  return BundleAdjustPartialReconstruction(ba_options,
+                                           view_ids,
+                                           track_ids,
+                                           reconstruction);
 }
 
 }  // namespace theia

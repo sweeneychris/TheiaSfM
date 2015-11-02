@@ -583,12 +583,31 @@ follows:
   Use SPARSE_SCHUR for problems smaller than this size and ITERATIVE_SCHUR
   for problems larger than this size.
 
-.. member:: bool ReconstructorEstimatorOptions::constant_camera_intrinsics
+.. member:: OptimizeIntrinsicsType ReconstructorEstimatorOptions::intrinsics_to_optimize
 
-  DEFAULT: ``false``
+  DEFAULT: ``FOCAL_LENGTH_PRINCIPAL_POINT_AND_RADIAL_DISTORTION``
 
-  If accurate calibration is known ahead of time then it is recommended to
-  set the camera intrinsics constant during bundle adjustment.
+  During bundle adjustment we can optionally optimize camera intrinsics
+  parameters. You can choose to optimize no intrinsics (i.e., keep them
+  constant), all intrinsics, or a subset of intrinsics. This is often useful
+  because some parameters like skew and aspect ratio are often constant and do
+  not need to be optimized. The options are:
+
+    ``NONE``: All intrinsic parameters are held constant. This is useful when
+    calibration is known.
+
+    ``ALL``: Optimize all intrinsic parameters.
+
+    ``FOCAL_LENGTH``: Only optimize the focal length.
+
+    ``FOCAL_LENGTH_AND_PRINCIPAL_POINTS``: Optimize focal length and principal
+    points.
+
+    ``FOCAL_LENGTH_AND_RADIAL_DISTORTION``: Optimize focal length and radial
+    distortion.
+
+    ``FOCAL_LENGTH_PRINCIPAL_POINTS_AND_RADIAL_DISTORTION``: Optimize focal
+    length, principal points, and radial distortion.
 
 Estimating Global Rotations
 ===========================
@@ -893,13 +912,31 @@ the reprojection error.
 
   Set to true for verbose logging.
 
-.. member:: bool BundleAdjustmentOptions::constant_camera_intrinsics
+.. member:: OptimizeIntrinsicsType BundleAdjustmentOptions::intrinsics_to_optimize
 
-  DEFAULT: ``false``
+  DEFAULT: ``FOCAL_LENGTH_PRINCIPAL_POINT_AND_RADIAL_DISTORTION``
 
-  If set to true, the camera intrinsics are held constant during
-  optimization. This is useful if the calibration is precisely known ahead of
-  time.
+  During bundle adjustment we can optionally optimize camera intrinsics
+  parameters. You can choose to optimize no intrinsics (i.e., keep them
+  constant), all intrinsics, or a subset of intrinsics. This is often useful
+  because some parameters like skew and aspect ratio are often constant and do
+  not need to be optimized. The options are:
+
+    ``NONE``: All intrinsic parameters are held constant. This is useful when
+    calibration is known.
+
+    ``ALL``: Optimize all intrinsic parameters.
+
+    ``FOCAL_LENGTH``: Only optimize the focal length.
+
+    ``FOCAL_LENGTH_AND_PRINCIPAL_POINTS``: Optimize focal length and principal
+    points.
+
+    ``FOCAL_LENGTH_AND_RADIAL_DISTORTION``: Optimize focal length and radial
+    distortion.
+
+    ``FOCAL_LENGTH_PRINCIPAL_POINTS_AND_RADIAL_DISTORTION``: Optimize focal
+    length, principal points, and radial distortion.
 
 .. member:: int BundleAdjustmentOptions::num_threads
 

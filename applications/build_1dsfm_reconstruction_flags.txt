@@ -50,8 +50,8 @@
 --min_num_absolute_pose_inliers=30
 
 ############### Bundle Adjustment Options ###############
-# Set to true to hold camera intrinsics constant during BA.
---constant_camera_intrinsics=true
+# Set this parameter to change which camera intrinsics should be optimized.
+--intrinsics_to_optimize=NONE
 # After BA, remove any points that have a reprojection error greater
 # than this.
 --max_reprojection_error_pixels=4.0

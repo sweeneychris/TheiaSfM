@@ -114,7 +114,7 @@ BundleAdjustmentOptions SetBundleAdjustmentOptions(
   BundleAdjustmentOptions ba_options;
   ba_options.num_threads = options.num_threads;
   ba_options.use_inner_iterations = true;
-  ba_options.constant_camera_intrinsics = options.constant_camera_intrinsics;
+  ba_options.intrinsics_to_optimize = options.intrinsics_to_optimize;
 
   if (num_views >= options.min_cameras_for_iterative_solver) {
     ba_options.linear_solver_type = ceres::ITERATIVE_SCHUR;

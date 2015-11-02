@@ -540,11 +540,28 @@ bool IncrementalReconstructionEstimator::BundleAdjustment() {
     LOG(INFO) << "Running partial bundle adjustment on " << partial_ba_size
               << " views.";
 
+    // Get the views to optimize for partial BA.
     std::vector<ViewId> views_to_optimize(
         reconstructed_views_.end() - partial_ba_size,
         reconstructed_views_.end());
-    ba_summary = BundleAdjustPartialReconstruction(
-        bundle_adjustment_options_, views_to_optimize, reconstruction_);
+    // Get the tracks observed in these views.
+    std::vector<TrackId> tracks_to_optimize;
+    for (const ViewId view_to_optimize : views_to_optimize) {
+      const View* view = reconstruction_->View(view_to_optimize);
+      const auto& tracks_in_view = view->TrackIds();
+      tracks_to_optimize.insert(tracks_to_optimize.end(),
+                                tracks_in_view.begin(),
+                                tracks_in_view.end());
+    }
+    // Remove duplicate entries in the track list.
+    std::sort(tracks_to_optimize.begin(), tracks_to_optimize.end());
+    auto it = std::unique(tracks_to_optimize.begin(), tracks_to_optimize.end());
+    tracks_to_optimize.erase(it, tracks_to_optimize.end());
+
+    ba_summary = BundleAdjustPartialReconstruction(bundle_adjustment_options_,
+                                                   views_to_optimize,
+                                                   tracks_to_optimize,
+                                                   reconstruction_);
   }
 
   RemoveOutlierTracks(options_.max_reprojection_error_in_pixels);

@@ -39,7 +39,7 @@
 #include <vector>
 
 #include "theia/math/util.h"
-#include "theia/sfm/bundle_adjustment/bundle_adjust_track.h"
+#include "theia/sfm/bundle_adjustment/bundle_adjustment.h"
 #include "theia/sfm/estimators/estimate_triangulation.h"
 #include "theia/sfm/feature.h"
 #include "theia/sfm/reconstruction.h"
@@ -164,9 +164,11 @@ bool EstimateTrack(const EstimateTrackOptions& options,
   // do not need to run BA for that case.
   if (options.bundle_adjustment) {
     track->SetEstimated(true);
-    const bool ba_success = BundleAdjustTrack(track_id, reconstruction);
+    BundleAdjustmentOptions ba_options;
+    const BundleAdjustmentSummary summary =
+        BundleAdjustTrack(ba_options, track_id, reconstruction);
     track->SetEstimated(false);
-    if (!ba_success) {
+    if (!summary.success) {
       return false;
     }
   }
@@ -192,7 +194,7 @@ void EstimateAllTracks(const EstimateTrackOptions& options,
   int num_triangulation_attempts = 0;
   std::unique_ptr<ThreadPool> pool(new ThreadPool(num_threads));
 
-  const auto& track_ids = reconstruction->TrackIds();
+  const auto track_ids = reconstruction->TrackIds();
   int num_estimated_tracks_before = 0;
   for (const TrackId track_id : track_ids) {
     Track* track = reconstruction->MutableTrack(track_id);
