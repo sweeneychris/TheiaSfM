@@ -97,8 +97,11 @@ class TrackEstimator {
   // Attempts to estimate all unestimated tracks.
   Summary EstimateAllTracks();
 
+  // Estimate only the tracks supplied by the user.
+  Summary EstimateTracks(const std::unordered_set<TrackId>& track_ids);
+
  private:
-  void EstimateTracks(const int start, const int stop);
+  void EstimateTrackSet(const int start, const int stop);
   bool EstimateTrack(const TrackId track_id);
 
   const Options options_;

@@ -123,14 +123,21 @@ int NumEstimatedViewsObservingTrack(const Reconstruction& reconstruction,
 
 }  // namespace
 
+// Estimate only the tracks supplied by the user.
 TrackEstimator::Summary TrackEstimator::EstimateAllTracks() {
+  const auto& track_ids = reconstruction_->TrackIds();
+  std::unordered_set<TrackId> tracks(track_ids.begin(), track_ids.end());
+  return EstimateTracks(tracks);
+}
+
+TrackEstimator::Summary TrackEstimator::EstimateTracks(
+    const std::unordered_set<TrackId>& track_ids) {
   tracks_to_estimate_.clear();
   successfully_estimated_tracks_.clear();
 
   TrackEstimator::Summary summary;
 
   // Get all unestimated track ids.
-  const auto& track_ids = reconstruction_->TrackIds();
   tracks_to_estimate_.reserve(track_ids.size());
   for (const TrackId track_id : track_ids) {
     Track* track = reconstruction_->MutableTrack(track_id);
@@ -149,6 +156,11 @@ TrackEstimator::Summary TrackEstimator::EstimateAllTracks() {
   }
   summary.num_triangulation_attempts = tracks_to_estimate_.size();
 
+  // Exit early if there are no tracks to estimate.
+  if (tracks_to_estimate_.size() == 0) {
+    retunr summary;
+  }
+
   // Estimate the tracks in parallel. Instead of 1 threadpool worker per track,
   // we let each worker estimate a fixed number of tracks at a time (e.g. 20
   // tracks). Since estimating the tracks is so fast, this strategy is better
@@ -164,7 +176,7 @@ TrackEstimator::Summary TrackEstimator::EstimateAllTracks() {
   for (int i = 0; i < tracks_to_estimate_.size(); i += interval_step) {
     const int end_interval = std::min(
         static_cast<int>(tracks_to_estimate_.size()), i + interval_step);
-    pool->Add(&TrackEstimator::EstimateTracks, this, i, end_interval);
+    pool->Add(&TrackEstimator::EstimateTrackSet, this, i, end_interval);
   }
 
   // Wait for all tracks to be estimated.
@@ -183,7 +195,7 @@ TrackEstimator::Summary TrackEstimator::EstimateAllTracks() {
   return summary;
 }
 
-void TrackEstimator::EstimateTracks(const int start, const int end) {
+void TrackEstimator::EstimateTrackSet(const int start, const int end) {
   for (int i = start; i < end; i++) {
     EstimateTrack(tracks_to_estimate_[i]);
   }
