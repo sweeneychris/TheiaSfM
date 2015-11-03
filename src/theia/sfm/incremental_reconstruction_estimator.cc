@@ -46,7 +46,6 @@
 
 #include "theia/matching/feature_correspondence.h"
 #include "theia/math/util.h"
-#include "theia/sfm/bundle_adjustment/bundle_adjust_view.h"
 #include "theia/sfm/bundle_adjustment/bundle_adjustment.h"
 #include "theia/sfm/create_and_initialize_ransac_variant.h"
 #include "theia/sfm/find_common_tracks_in_views.h"
