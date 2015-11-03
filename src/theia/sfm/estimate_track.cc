@@ -123,10 +123,74 @@ int NumEstimatedViewsObservingTrack(const Reconstruction& reconstruction,
 
 }  // namespace
 
-bool EstimateTrack(const EstimateTrackOptions& options,
-                   const TrackId track_id,
-                   Reconstruction* reconstruction) {
-  Track* track = reconstruction->MutableTrack(track_id);
+TrackEstimator::Summary TrackEstimator::EstimateAllTracks() {
+  tracks_to_estimate_.clear();
+  successfully_estimated_tracks_.clear();
+
+  TrackEstimator::Summary summary;
+
+  // Get all unestimated track ids.
+  const auto& track_ids = reconstruction_->TrackIds();
+  tracks_to_estimate_.reserve(track_ids.size());
+  for (const TrackId track_id : track_ids) {
+    Track* track = reconstruction_->MutableTrack(track_id);
+    if (track->IsEstimated()) {
+      ++summary.input_num_estimated_tracks;
+      continue;
+    }
+
+    const int num_views_observing_track =
+        NumEstimatedViewsObservingTrack(*reconstruction_, *track);
+    // Skip tracks that do not have enough observations.
+    if (num_views_observing_track < 2) {
+      continue;
+    }
+    tracks_to_estimate_.emplace_back(track_id);
+  }
+  summary.num_triangulation_attempts = tracks_to_estimate_.size();
+
+  // Estimate the tracks in parallel. Instead of 1 threadpool worker per track,
+  // we let each worker estimate a fixed number of tracks at a time (e.g. 20
+  // tracks). Since estimating the tracks is so fast, this strategy is better
+  // helps speed up multithreaded estimation by reducing the overhead of
+  // starting/stopping threads.
+  const int num_threads = std::min(
+      options_.num_threads, static_cast<int>(tracks_to_estimate_.size()));
+  const int interval_step =
+      std::min(options_.multithreaded_step_size,
+               static_cast<int>(tracks_to_estimate_.size()) / num_threads);
+
+  std::unique_ptr<ThreadPool> pool(new ThreadPool(num_threads));
+  for (int i = 0; i < tracks_to_estimate_.size(); i += interval_step) {
+    const int end_interval = std::min(
+        static_cast<int>(tracks_to_estimate_.size()), i + interval_step);
+    pool->Add(&TrackEstimator::EstimateTracks, this, i, end_interval);
+  }
+
+  // Wait for all tracks to be estimated.
+  pool.reset(nullptr);
+
+  // Find the tracks that were newly estimated.
+  for (const TrackId track_id : tracks_to_estimate_) {
+    Track* track = reconstruction_->MutableTrack(track_id);
+    if (track->IsEstimated()) {
+      summary.estimated_tracks.insert(track_id);
+    }
+  }
+
+  LOG(INFO) << summary.estimated_tracks.size() << " tracks were estimated of "
+            << summary.num_triangulation_attempts << " possible tracks.";
+  return summary;
+}
+
+void TrackEstimator::EstimateTracks(const int start, const int end) {
+  for (int i = start; i < end; i++) {
+    EstimateTrack(tracks_to_estimate_[i]);
+  }
+}
+
+bool TrackEstimator::EstimateTrack(const TrackId track_id) {
+  Track* track = reconstruction_->MutableTrack(track_id);
   CHECK(!track->IsEstimated()) << "Track " << track_id
                                << " is already estimated.";
 
@@ -134,24 +198,14 @@ bool EstimateTrack(const EstimateTrackOptions& options,
   std::vector<ViewId> view_ids;
   std::vector<Eigen::Vector3d> origins, ray_directions;
   GetObservationsFromTrackViews(track_id,
-                                *reconstruction,
+                                *reconstruction_,
                                 &view_ids,
                                 &origins,
                                 &ray_directions);
 
-  // Triangulate with 2 or n views.
-  if (origins.size() < 2) {
-    VLOG(3) << "Triangulation of track " << track_id
-            << " requires at least 2 observations from estimated views.";
-    return false;
-  }
-
   // Check the angle between views.
   if (!SufficientTriangulationAngle(ray_directions,
-                                    options.min_triangulation_angle_degrees)) {
-    VLOG(3)
-        << "Track " << track_id
-        << " has an insufficient triangulation angle and cannot be estimated.";
+                                    options_.min_triangulation_angle_degrees)) {
     return false;
   }
 
@@ -162,11 +216,11 @@ bool EstimateTrack(const EstimateTrackOptions& options,
 
   // Bundle adjust the track. The 2-view triangulation method is optimal so we
   // do not need to run BA for that case.
-  if (options.bundle_adjustment) {
+  if (options_.bundle_adjustment) {
     track->SetEstimated(true);
     BundleAdjustmentOptions ba_options;
     const BundleAdjustmentSummary summary =
-        BundleAdjustTrack(ba_options, track_id, reconstruction);
+        BundleAdjustTrack(ba_options, track_id, reconstruction_);
     track->SetEstimated(false);
     if (!summary.success) {
       return false;
@@ -175,10 +229,10 @@ bool EstimateTrack(const EstimateTrackOptions& options,
 
   // Ensure the reprojection errors are acceptable.
   const double sq_max_reprojection_error_pixels =
-      options.max_acceptable_reprojection_error_pixels *
-      options.max_acceptable_reprojection_error_pixels;
+      options_.max_acceptable_reprojection_error_pixels *
+      options_.max_acceptable_reprojection_error_pixels;
 
-  if (!AcceptableReprojectionError(*reconstruction,
+  if (!AcceptableReprojectionError(*reconstruction_,
                                    track_id,
                                    sq_max_reprojection_error_pixels)) {
     return false;
@@ -186,39 +240,6 @@ bool EstimateTrack(const EstimateTrackOptions& options,
 
   track->SetEstimated(true);
   return true;
-}
-
-void EstimateAllTracks(const EstimateTrackOptions& options,
-                       const int num_threads,
-                       Reconstruction* reconstruction) {
-  int num_triangulation_attempts = 0;
-  std::unique_ptr<ThreadPool> pool(new ThreadPool(num_threads));
-
-  const auto track_ids = reconstruction->TrackIds();
-  int num_estimated_tracks_before = 0;
-  for (const TrackId track_id : track_ids) {
-    Track* track = reconstruction->MutableTrack(track_id);
-    if (track->IsEstimated()) {
-      ++num_estimated_tracks_before;
-      continue;
-    }
-
-    const int num_views_observing_track =
-        NumEstimatedViewsObservingTrack(*reconstruction, *track);
-    // Skip tracks that do not have enough observations.
-    if (num_views_observing_track < 2) {
-      continue;
-    }
-
-    ++num_triangulation_attempts;
-    pool->Add(EstimateTrack, options, track_id, reconstruction);
-  }
-  pool.reset(nullptr);
-
-  const int num_estimated_tracks =
-      NumEstimatedTracks(*reconstruction) - num_estimated_tracks_before;
-  LOG(INFO) << num_estimated_tracks << " tracks were estimated of "
-            << num_triangulation_attempts << " possible tracks.";
 }
 
 }  // namespace theia

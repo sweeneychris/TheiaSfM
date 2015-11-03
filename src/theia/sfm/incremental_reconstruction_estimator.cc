@@ -187,6 +187,7 @@ IncrementalReconstructionEstimator::IncrementalReconstructionEstimator(
   triangulation_options_.min_triangulation_angle_degrees =
       options_.min_triangulation_angle_degrees;
   triangulation_options_.bundle_adjustment = options_.bundle_adjust_tracks;
+  triangulation_options_.num_threads = options_.num_threads;
 
   // Localization options.
   localization_options_.reprojection_error_threshold_pixels =
@@ -499,9 +500,8 @@ void IncrementalReconstructionEstimator::FindViewsToLocalize(
 
 void IncrementalReconstructionEstimator::EstimateStructure() {
   // Estimate all tracks.
-  EstimateAllTracks(triangulation_options_,
-                    options_.num_threads,
-                    reconstruction_);
+  TrackEstimator track_estimator(triangulation_options_, reconstruction_);
+  const TrackEstimator::Summary summary = track_estimator.EstimateAllTracks();
 }
 
 bool IncrementalReconstructionEstimator::BundleAdjustment() {
@@ -541,22 +541,18 @@ bool IncrementalReconstructionEstimator::BundleAdjustment() {
               << " views.";
 
     // Get the views to optimize for partial BA.
-    std::vector<ViewId> views_to_optimize(
+    std::unordered_set<ViewId> views_to_optimize(
         reconstructed_views_.end() - partial_ba_size,
         reconstructed_views_.end());
     // Get the tracks observed in these views.
-    std::vector<TrackId> tracks_to_optimize;
+    std::unordered_set<TrackId> tracks_to_optimize;
     for (const ViewId view_to_optimize : views_to_optimize) {
       const View* view = reconstruction_->View(view_to_optimize);
       const auto& tracks_in_view = view->TrackIds();
-      tracks_to_optimize.insert(tracks_to_optimize.end(),
-                                tracks_in_view.begin(),
-                                tracks_in_view.end());
+      for (const TrackId track_in_view : tracks_in_view) {
+        tracks_to_optimize.insert(track_in_view);
+      }
     }
-    // Remove duplicate entries in the track list.
-    std::sort(tracks_to_optimize.begin(), tracks_to_optimize.end());
-    auto it = std::unique(tracks_to_optimize.begin(), tracks_to_optimize.end());
-    tracks_to_optimize.erase(it, tracks_to_optimize.end());
 
     ba_summary = BundleAdjustPartialReconstruction(bundle_adjustment_options_,
                                                    views_to_optimize,

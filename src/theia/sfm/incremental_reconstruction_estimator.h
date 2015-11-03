@@ -128,7 +128,7 @@ class IncrementalReconstructionEstimator : public ReconstructionEstimator {
   ReconstructionEstimatorOptions options_;
   BundleAdjustmentOptions bundle_adjustment_options_;
   RansacParameters ransac_params_;
-  EstimateTrackOptions triangulation_options_;
+  TrackEstimator::Options triangulation_options_;
   LocalizeViewToReconstructionOptions localization_options_;
 
   ReconstructionEstimatorSummary summary_;

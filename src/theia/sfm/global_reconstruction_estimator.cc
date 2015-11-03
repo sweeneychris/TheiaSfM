@@ -443,15 +443,15 @@ bool GlobalReconstructionEstimator::EstimatePosition() {
 
 void GlobalReconstructionEstimator::EstimateStructure() {
   // Estimate all tracks.
-  EstimateTrackOptions triangulation_options;
+  TrackEstimator::Options triangulation_options;
   triangulation_options.max_acceptable_reprojection_error_pixels =
       options_.triangulation_max_reprojection_error_in_pixels;
   triangulation_options.min_triangulation_angle_degrees =
       options_.min_triangulation_angle_degrees;
   triangulation_options.bundle_adjustment = options_.bundle_adjust_tracks;
-  EstimateAllTracks(triangulation_options,
-                    options_.num_threads,
-                    reconstruction_);
+  triangulation_options.num_threads = options_.num_threads;
+  TrackEstimator track_estimator(triangulation_options, reconstruction_);
+  const TrackEstimator::Summary summary = track_estimator.EstimateAllTracks();
 }
 
 bool GlobalReconstructionEstimator::BundleAdjustment() {

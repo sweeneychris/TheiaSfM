@@ -53,7 +53,6 @@ namespace {
 
 void SetSolverOptions(const BundleAdjustmentOptions& options,
                       ceres::Solver::Options* solver_options) {
-  CHECK_NOTNULL(solver_options);
   solver_options->linear_solver_type = options.linear_solver_type;
   solver_options->preconditioner_type = options.preconditioner_type;
   solver_options->visibility_clustering_type =
@@ -150,36 +149,15 @@ void AddCameraParametersToProblem(const std::vector<int>& constant_intrinsics,
 // Bundle adjust the entire model.
 BundleAdjustmentSummary BundleAdjustPartialReconstruction(
     const BundleAdjustmentOptions& options,
-    const std::vector<ViewId>& view_ids,
-    const std::vector<TrackId>& track_ids,
+    const std::unordered_set<ViewId>& view_ids,
+    const std::unordered_set<TrackId>& track_ids,
     Reconstruction* reconstruction) {
   CHECK_NOTNULL(reconstruction);
   BundleAdjustmentSummary summary;
   static const int kTrackSize = 4;
 
-  const int num_estimated_views = NumEstimatedViews(*reconstruction);
-  const int num_estimated_tracks = NumEstimatedTracks(*reconstruction);
-  if (num_estimated_views < 2) {
-    LOG(WARNING)
-        << "There are only " << num_estimated_views
-        << " estimated views but at least 2 estimated views are required for "
-           "bundle adjustment.";
-    summary.success = false;
-    return summary;
-  }
-
-  if (num_estimated_tracks < 1) {
-    LOG(WARNING) << "There are only " << num_estimated_tracks
-                 << " estimated tracks but at least 1 estimated 3d point is "
-                    "required for "
-                    "bundle adjustment.";
-    summary.success = false;
-    return summary;
-  }
-
   // Start setup timer.
   Timer timer;
-
   ceres::Problem problem;
 
   // Set solver options.
@@ -232,9 +210,6 @@ BundleAdjustmentSummary BundleAdjustPartialReconstruction(
     }
   }
 
-  // Keep a map of the views to optimize for convenience;
-  const std::unordered_set<ViewId> views_to_optimize(view_ids.begin(),
-                                                     view_ids.end());
   // The previous loop gives us residuals for all tracks in all the views that
   // we want to optimize. However, the tracks should still be constrained by
   // *all* views that observe it, not just the ones we want to optimize. Here,
@@ -250,11 +225,11 @@ BundleAdjustmentSummary BundleAdjustPartialReconstruction(
     parameter_ordering->AddElementToGroup(track->MutablePoint()->data(), 0);
     problem.SetParameterBlockVariable(track->MutablePoint()->data());
 
-    const auto& view_ids = track->ViewIds();
-    for (const ViewId view_id : view_ids) {
+    const auto& observed_view_ids = track->ViewIds();
+    for (const ViewId view_id : observed_view_ids) {
       View* view = CHECK_NOTNULL(reconstruction->MutableView(view_id));
       // Only optimize estimated views that have not already been added.
-      if (ContainsKey(views_to_optimize, view_id) || !view->IsEstimated()) {
+      if (ContainsKey(view_ids, view_id) || !view->IsEstimated()) {
         continue;
       }
 
@@ -283,15 +258,15 @@ BundleAdjustmentSummary BundleAdjustPartialReconstruction(
     solver_options.inner_iteration_ordering->Reverse();
   }
 
-  // End setup time.
-  summary.setup_time_in_seconds = timer.ElapsedTimeInSeconds();
-
   // Solve the problem.
+  const double internal_setup_time = timer.ElapsedTimeInSeconds();
   ceres::Solver::Summary solver_summary;
   ceres::Solve(solver_options, &problem, &solver_summary);
   LOG_IF(INFO, options.verbose) << solver_summary.FullReport();
 
   // Set the BundleAdjustmentSummary.
+  summary.setup_time_in_seconds =
+      internal_setup_time + solver_summary.preprocessor_time_in_seconds;
   summary.solve_time_in_seconds = solver_summary.total_time_in_seconds;
   summary.initial_cost = solver_summary.initial_cost;
   summary.final_cost = solver_summary.final_cost;
@@ -308,9 +283,13 @@ BundleAdjustmentSummary BundleAdjustReconstruction(
     Reconstruction* reconstruction) {
   const auto& view_ids = reconstruction->ViewIds();
   const auto& track_ids = reconstruction->TrackIds();
+  const std::unordered_set<ViewId> view_ids_set(view_ids.begin(),
+                                                view_ids.end());
+  const std::unordered_set<TrackId> track_ids_set(track_ids.begin(),
+                                                  track_ids.end());
   return BundleAdjustPartialReconstruction(options,
-                                           view_ids,
-                                           track_ids,
+                                           view_ids_set,
+                                           track_ids_set,
                                            reconstruction);
 }
 
@@ -318,8 +297,9 @@ BundleAdjustmentSummary BundleAdjustReconstruction(
 BundleAdjustmentSummary BundleAdjustView(const BundleAdjustmentOptions& options,
                                          const ViewId view_id,
                                          Reconstruction* reconstruction){
-  std::vector<ViewId> view_ids = {view_id};
-  std::vector<TrackId> track_ids;
+  std::unordered_set<ViewId> view_ids;
+  view_ids.insert(view_id);
+  std::unordered_set<TrackId> track_ids;
   BundleAdjustmentOptions ba_options = options;
   ba_options.linear_solver_type = ceres::DENSE_QR;
   ba_options.use_inner_iterations = false;
@@ -331,14 +311,14 @@ BundleAdjustmentSummary BundleAdjustView(const BundleAdjustmentOptions& options,
 
 // Bundle adjust a single track.
 BundleAdjustmentSummary BundleAdjustTrack(const BundleAdjustmentOptions& options,
-                                          const TrackId track_id,
+                                          const TrackId my_track_id,
                                           Reconstruction* reconstruction) {
-  std::vector<ViewId> view_ids;
-  std::vector<TrackId> track_ids = {track_id};
+  std::unordered_set<ViewId> view_ids;
+  std::unordered_set<TrackId> track_ids;
+  track_ids.insert(my_track_id);
   BundleAdjustmentOptions ba_options = options;
   ba_options.linear_solver_type = ceres::DENSE_QR;
   ba_options.use_inner_iterations = false;
-  //  ba_options.verbose = true;
   return BundleAdjustPartialReconstruction(ba_options,
                                            view_ids,
                                            track_ids,
