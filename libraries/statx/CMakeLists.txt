@@ -43,18 +43,20 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/libraries/statx/
 
 # C++11
 # Compiler-specific C++11 activation.
-if ("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
-    execute_process(
-        COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
-    if (NOT (GCC_VERSION VERSION_GREATER 4.7 OR GCC_VERSION VERSION_EQUAL 4.7))
-        message(FATAL_ERROR "${PROJECT_NAME} requires g++ 4.7 or greater.")
-    endif ()
-    set(CMAKE_CXX_FLAGS "-std=c++11")
-elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
-    set(CMAKE_CXX_FLAGS "-std=c++11 -stdlib=libc++")
-else ()
-    message(FATAL_ERROR "Your C++ compiler does not support C++11.")
-endif ()
+include(CheckCXXCompilerFlag)
+check_cxx_compiler_flag("-std=c++11" COMPILER_HAS_CXX11_FLAG)
+if (COMPILER_HAS_CXX11_FLAG)
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    # Mac OS X before Mavericks uses libstdc++ by default but does not support
+    # c++11. Force it to use libc++.
+    if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
+      set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+    endif (CMAKE_SYSTEM_NAME MATCHES "Darwin")
+  endif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+else (COMPILER_HAS_CXX11_FLAG)
+  message(FATAL_ERROR "A compiler with C++11 support is required for Theia.")
+endif (COMPILER_HAS_CXX11_FLAG)
 message("-- CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
