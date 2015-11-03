@@ -35,6 +35,7 @@
 #ifndef THEIA_SFM_RECONSTRUCTION_ESTIMATOR_OPTIONS_H_
 #define THEIA_SFM_RECONSTRUCTION_ESTIMATOR_OPTIONS_H_
 
+#include "theia/sfm/bundle_adjustment/bundle_adjustment.h"
 #include "theia/sfm/global_pose_estimation/least_unsquared_deviation_position_estimator.h"
 #include "theia/sfm/global_pose_estimation/linear_position_estimator.h"
 #include "theia/sfm/global_pose_estimation/nonlinear_position_estimator.h"
@@ -206,8 +207,11 @@ struct ReconstructionEstimatorOptions {
   int min_cameras_for_iterative_solver = 1000;
 
   // If accurate calibration is known ahead of time then it is recommended to
-  // set the camera intrinsics constant during bundle adjustment.
-  bool constant_camera_intrinsics = false;
+  // set the camera intrinsics constant during bundle adjustment. Othewise, you
+  // can choose which intrinsics to optimize. See
+  // //theia/sfm/bundle_adjustment_options.h for full details.
+  OptimizeIntrinsicsType intrinsics_to_optimize = OptimizeIntrinsicsType::
+      FOCAL_LENGTH_PRINCIPAL_POINTS_AND_RADIAL_DISTORTION;
 };
 
 }  // namespace theia

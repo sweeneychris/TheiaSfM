@@ -70,9 +70,10 @@ DEFINE_bool(only_calibrated_views, false,
             "Set to true to only reconstruct the views where calibration is "
             "provided or can be extracted from EXIF");
 DEFINE_int32(max_track_length, 20, "Maximum length of a track.");
-DEFINE_bool(constant_camera_intrinsics, false,
-            "Set to true to keep camera intrinsic parameters constant during "
-            "bundle adjustment.");
+DEFINE_string(intrinsics_to_optimize,
+              "FOCAL_LENGTH_PRINCIPAL_POINT_AND_RADIAL_DISTORTION",
+              "Set to control which intrinsics parameters are optimized during "
+              "bundle adjustment.");
 DEFINE_double(max_reprojection_error_pixels, 4.0,
               "Maximum reprojection error for a correspondence to be "
               "considered an inlier after bundle adjustment.");
@@ -149,8 +150,8 @@ ReconstructionBuilderOptions SetReconstructionBuilderOptions() {
   reconstruction_estimator_options.min_num_two_view_inliers =
       FLAGS_min_num_inliers_for_valid_match;
   reconstruction_estimator_options.num_threads = FLAGS_num_threads;
-  reconstruction_estimator_options.constant_camera_intrinsics =
-      FLAGS_constant_camera_intrinsics;
+  reconstruction_estimator_options.intrinsics_to_optimize =
+    StringToOptimizeIntrinsicsType(FLAGS_intrinsics_to_optimize);
   options.reconstruct_largest_connected_component =
       FLAGS_reconstruct_largest_connected_component;
   options.only_calibrated_views = FLAGS_only_calibrated_views;

@@ -45,6 +45,7 @@ using theia::DescriptorExtractorType;
 using theia::GlobalPositionEstimatorType;
 using theia::GlobalRotationEstimatorType;
 using theia::MatchingStrategy;
+using theia::OptimizeIntrinsicsType;
 using theia::ReconstructionEstimatorType;
 
 inline DescriptorExtractorType StringToDescriptorExtractorType(
@@ -106,10 +107,31 @@ inline GlobalPositionEstimatorType StringToPositionEstimatorType(
     return GlobalPositionEstimatorType::LINEAR_TRIPLET;
   } else if (position_estimator == "LEAST_UNSQUARED_DEVIATION") {
     return GlobalPositionEstimatorType::LEAST_UNSQUARED_DEVIATION;
-  }   else {
+  } else {
     LOG(FATAL)
         << "Invalid position estimator type. Using NONLINEAR instead.";
     return GlobalPositionEstimatorType::NONLINEAR;
+  }
+}
+
+inline OptimizeIntrinsicsType StringToOptimizeIntrinsicsType(
+    const std::string& intrinsics_to_optimize) {
+  if (intrinsics_to_optimize == "NONE") {
+    return OptimizeIntrinsicsType::NONE;
+  } else if (intrinsics_to_optimize == "ALL") {
+    return OptimizeIntrinsicsType::ALL;
+  } else if (intrinsics_to_optimize == "FOCAL_LENGTH") {
+    return OptimizeIntrinsicsType::FOCAL_LENGTH;
+  } else if (intrinsics_to_optimize == "FOCAL_LENGTH_AND_PRINCIPAL_POINTS") {
+    return OptimizeIntrinsicsType::FOCAL_LENGTH_AND_PRINCIPAL_POINTS;
+  } else if (intrinsics_to_optimize == "FOCAL_LENGTH_AND_RADIAL_DISTORTION") {
+    return OptimizeIntrinsicsType::FOCAL_LENGTH_AND_RADIAL_DISTORTION;
+  } else if (intrinsics_to_optimize ==
+             "FOCAL_LENGTH_PRINCIPAL_POINTS_AND_RADIAL_DISTORTION") {
+    return OptimizeIntrinsicsType::
+        FOCAL_LENGTH_PRINCIPAL_POINTS_AND_RADIAL_DISTORTION;
+  } else {
+    LOG(FATAL) << "Invalid option for intrinsics_to_optimize";
   }
 }
 

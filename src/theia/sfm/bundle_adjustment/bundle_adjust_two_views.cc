@@ -58,7 +58,7 @@ void SetSolverOptions(const BundleAdjustmentOptions& options,
                       ceres::Solver::Options* solver_options) {
   CHECK_NOTNULL(solver_options);
   solver_options->linear_solver_type = ceres::DENSE_SCHUR;
-  solver_options->visibility_clustering_type = ceres::SINGLE_LINKAGE;
+  solver_options->visibility_clustering_type = ceres::CANONICAL_VIEWS;
   solver_options->logging_type = ceres::SILENT;
   solver_options->num_threads = options.num_threads;
   solver_options->num_linear_solver_threads = options.num_threads;
@@ -69,25 +69,29 @@ void SetSolverOptions(const BundleAdjustmentOptions& options,
       new ceres::ParameterBlockOrdering);
 }
 
+// The only intrinsic parameter we want to optimize is the focal length, so we
+// keep all intrinsics constant except for focal length by default.
 void AddCameraParametersToProblem(const bool constant_extrinsic_parameters,
                                   const bool constant_intrinsic_parameters,
                                   double* camera_parameters,
                                   ceres::Problem* problem) {
-  // Keep the intrinsic parameters constant.
   std::vector<int> constant_intrinsics;
+  // Keep focal length constant if desired.
   if (constant_intrinsic_parameters) {
-    for (int i = 0; i < Camera::kIntrinsicsSize; i++) {
-      constant_intrinsics.push_back(Camera::kExtrinsicsSize + i);
-    }
-    ceres::SubsetParameterization* subset_parameterization =
-        new ceres::SubsetParameterization(Camera::kParameterSize,
-                                          constant_intrinsics);
-    problem->AddParameterBlock(camera_parameters,
-                               Camera::kParameterSize,
-                               subset_parameterization);
-  } else {
-    problem->AddParameterBlock(camera_parameters, Camera::kParameterSize);
+    constant_intrinsics.push_back(Camera::kExtrinsicsSize +
+                                  Camera::FOCAL_LENGTH);
   }
+
+  // NOTE: We start at index 1 because the focal length was handled previously.
+  for (int i = 1; i < Camera::kIntrinsicsSize; i++) {
+    constant_intrinsics.push_back(Camera::kExtrinsicsSize + i);
+  }
+  ceres::SubsetParameterization* subset_parameterization =
+      new ceres::SubsetParameterization(Camera::kParameterSize,
+                                        constant_intrinsics);
+  problem->AddParameterBlock(camera_parameters,
+                             Camera::kParameterSize,
+                             subset_parameterization);
 
   if (constant_extrinsic_parameters) {
     problem->SetParameterBlockConstant(camera_parameters);
