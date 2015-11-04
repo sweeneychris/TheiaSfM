@@ -290,23 +290,49 @@ ReconstructionEstimatorSummary IncrementalReconstructionEstimator::Estimate(
       // new view has been merged. This can happen when a new observation of a
       // 3D point has a very high reprojection error in the newly localized
       // view.
+      const auto& tracks_in_new_view_vec =
+          reconstruction_->View(reconstructed_views_.back())->TrackIds();
+      const std::unordered_set<TrackId> tracks_in_new_view(
+          tracks_in_new_view_vec.begin(), tracks_in_new_view_vec.end());
       RemoveOutlierTracks(
+          tracks_in_new_view,
           triangulation_options_.max_acceptable_reprojection_error_pixels);
 
-      // Step 5: Estimate new 3D points.
-      timer.Reset();
-      EstimateStructure();
-      summary_.triangulation_time += timer.ElapsedTimeInSeconds();
+      // Step 5: Estimate new 3D points. and Step 6: Bundle adjustment.
+      bool ba_success = false;
+      if (UnoptimizedGrowthPercentage() <
+          options_.full_bundle_adjustment_growth_percent) {
+        // Step 5: Perform triangulation on the most recent view.
+        timer.Reset();
+        EstimateStructure(reconstructed_views_.back());
+        summary_.triangulation_time += timer.ElapsedTimeInSeconds();
+
+        // Step 6: Then perform partial Bundle Adjustment.
+        timer.Reset();
+        ba_success = PartialBundleAdjustment();
+        summary_.bundle_adjustment_time += timer.ElapsedTimeInSeconds();
+      } else {
+        // Step 5: Perform triangulation on all views.
+        timer.Reset();
+        TrackEstimator track_estimator(triangulation_options_, reconstruction_);
+        const TrackEstimator::Summary triangulation_summary =
+            track_estimator.EstimateAllTracks();
+        summary_.triangulation_time += timer.ElapsedTimeInSeconds();
+
+        // Step 6: Full Bundle Adjustment.
+        timer.Reset();
+        ba_success = FullBundleAdjustment();
+        summary_.bundle_adjustment_time += timer.ElapsedTimeInSeconds();
+      }
+
       SetUnderconstrainedAsUnestimated();
 
-      // Step 6: Bundle Adjustment.
-      timer.Reset();
-      if (!BundleAdjustment()) {
+      if (!ba_success) {
         LOG(WARNING) << "Bundle adjustment failed!";
         summary_.success = false;
         return summary_;
       }
-      summary_.bundle_adjustment_time += timer.ElapsedTimeInSeconds();
+
     }
   }
 
@@ -368,7 +394,7 @@ bool IncrementalReconstructionEstimator::ChooseInitialViewPair() {
     InitializeCamerasFromTwoViewInfo(view_id_pair);
 
     // Estimate 3D structure of the scene.
-    EstimateStructure();
+    EstimateStructure(view_id_pair.first);
 
     // If we did not triangulate enough tracks then skip this view and try
     // another.
@@ -380,7 +406,7 @@ bool IncrementalReconstructionEstimator::ChooseInitialViewPair() {
     }
 
     // Bundle adjustment on the 2-view reconstruction.
-    if (!BundleAdjustment()) {
+    if (!FullBundleAdjustment()) {
       // Set all values as unestimated and try to use the next candidate pair.
       SetReconstructionAsUnestimated(reconstruction_);
       continue;
@@ -497,15 +523,26 @@ void IncrementalReconstructionEstimator::FindViewsToLocalize(
   }
 }
 
-void IncrementalReconstructionEstimator::EstimateStructure() {
+void IncrementalReconstructionEstimator::EstimateStructure(
+    const ViewId view_id) {
   // Estimate all tracks.
   TrackEstimator track_estimator(triangulation_options_, reconstruction_);
-  const TrackEstimator::Summary summary = track_estimator.EstimateAllTracks();
+  const std::vector<TrackId>& tracks_in_view =
+      reconstruction_->View(view_id)->TrackIds();
+  const std::unordered_set<TrackId> tracks_to_triangulate(
+      tracks_in_view.begin(), tracks_in_view.end());
+  const TrackEstimator::Summary summary =
+      track_estimator.EstimateTracks(tracks_to_triangulate);
 }
 
-bool IncrementalReconstructionEstimator::BundleAdjustment() {
-  const double ba_growth_ratio =
-      1.0 + options_.full_bundle_adjustment_growth_percent / 100.0;
+double IncrementalReconstructionEstimator::UnoptimizedGrowthPercentage() {
+  return 100.0 * (reconstructed_views_.size() - num_optimized_views_) /
+         static_cast<double>(num_optimized_views_);
+}
+
+bool IncrementalReconstructionEstimator::FullBundleAdjustment() {
+  // Full bundle adjustment.
+  LOG(INFO) << "Running full bundle adjustment on the entire reconstruction.";
 
   // Set up the BA options.
   bundle_adjustment_options_ =
@@ -516,58 +553,72 @@ bool IncrementalReconstructionEstimator::BundleAdjustment() {
   // disabled because they slow down BA a lot.
   bundle_adjustment_options_.use_inner_iterations = false;
 
+  const BundleAdjustmentSummary ba_summary =
+    BundleAdjustReconstruction(bundle_adjustment_options_, reconstruction_);
+  num_optimized_views_ = reconstructed_views_.size();
+
+  const auto& track_ids = reconstruction_->TrackIds();
+  const std::unordered_set<TrackId> all_tracks(track_ids.begin(),
+                                               track_ids.end());
+  RemoveOutlierTracks(all_tracks, options_.max_reprojection_error_in_pixels);
+
+  return ba_summary.success;
+}
+
+bool IncrementalReconstructionEstimator::PartialBundleAdjustment() {
+// Partial bundle adjustment only only the k most recently added views that
+  // have not been optimized by full BA.
+  const int partial_ba_size =
+    std::min(static_cast<int>(reconstructed_views_.size()),
+             options_.partial_bundle_adjustment_num_views);
+  LOG(INFO) << "Running partial bundle adjustment on " << partial_ba_size
+            << " views.";
+
+  // Set up the BA options.
+  bundle_adjustment_options_ =
+      SetBundleAdjustmentOptions(options_, partial_ba_size);
+
+  // Inner iterations are not really needed for incremental SfM because we are
+  // *hopefully* already starting at a good local minima. Inner iterations are
+  // disabled because they slow down BA a lot.
+  bundle_adjustment_options_.use_inner_iterations = false;
+  bundle_adjustment_options_.verbose = VLOG_IS_ON(2);
+
   // If the model has grown sufficiently then run BA on the entire
   // model. Otherwise, run partial BA.
   BundleAdjustmentSummary ba_summary;
-  if (reconstructed_views_.size() >= num_optimized_views_ * ba_growth_ratio) {
-    // Full bundle adjustment.
-    LOG(INFO) << "Running full bundle adjustment on the entire reconstruction.";
 
-    ba_summary =
-        BundleAdjustReconstruction(bundle_adjustment_options_, reconstruction_);
-    num_optimized_views_ = reconstructed_views_.size();
-  } else {
-    // For a small and fixed number of views, it is better to just use
-    // DENSE_SCHUR.
-    bundle_adjustment_options_.linear_solver_type = ceres::DENSE_SCHUR;
-    bundle_adjustment_options_.verbose = VLOG_IS_ON(2);
-    // Partial bundle adjustment only only the k most recently added views that
-    // have not been optimized by full BA.
-    const int partial_ba_size =
-        std::min(static_cast<int>(reconstructed_views_.size()),
-                 options_.partial_bundle_adjustment_num_views);
-    LOG(INFO) << "Running partial bundle adjustment on " << partial_ba_size
-              << " views.";
-
-    // Get the views to optimize for partial BA.
-    std::unordered_set<ViewId> views_to_optimize(
-        reconstructed_views_.end() - partial_ba_size,
-        reconstructed_views_.end());
-    // Get the tracks observed in these views.
-    std::unordered_set<TrackId> tracks_to_optimize;
-    for (const ViewId view_to_optimize : views_to_optimize) {
-      const View* view = reconstruction_->View(view_to_optimize);
-      const auto& tracks_in_view = view->TrackIds();
-      for (const TrackId track_in_view : tracks_in_view) {
-        tracks_to_optimize.insert(track_in_view);
-      }
+  // Get the views to optimize for partial BA.
+  std::unordered_set<ViewId> views_to_optimize(
+      reconstructed_views_.end() - partial_ba_size,
+      reconstructed_views_.end());
+  // Get the tracks observed in these views.
+  std::unordered_set<TrackId> tracks_to_optimize;
+  for (const ViewId view_to_optimize : views_to_optimize) {
+    const View* view = reconstruction_->View(view_to_optimize);
+    const auto& tracks_in_view = view->TrackIds();
+    for (const TrackId track_in_view : tracks_in_view) {
+      tracks_to_optimize.insert(track_in_view);
     }
-
-    ba_summary = BundleAdjustPartialReconstruction(bundle_adjustment_options_,
-                                                   views_to_optimize,
-                                                   tracks_to_optimize,
-                                                   reconstruction_);
   }
 
-  RemoveOutlierTracks(options_.max_reprojection_error_in_pixels);
+  ba_summary = BundleAdjustPartialReconstruction(bundle_adjustment_options_,
+                                                 views_to_optimize,
+                                                 tracks_to_optimize,
+                                                 reconstruction_);
+
+  RemoveOutlierTracks(tracks_to_optimize,
+                      options_.max_reprojection_error_in_pixels);
   return ba_summary.success;
 }
 
 void IncrementalReconstructionEstimator::RemoveOutlierTracks(
+    const std::unordered_set<TrackId>& tracks_to_check,
     const double max_reprojection_error_in_pixels) {
   // Remove the outlier points based on the reprojection error and how
   // well-constrained the 3D points are.
   int num_points_removed = RemoveOutlierFeatures(
+      tracks_to_check,
       max_reprojection_error_in_pixels,
       options_.min_triangulation_angle_degrees,
       reconstruction_);

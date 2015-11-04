@@ -267,6 +267,19 @@ void RefineRelativeTranslationsWithKnownRotations(
 int RemoveOutlierFeatures(const double max_inlier_reprojection_error,
                           const double min_triangulation_angle_degrees,
                           Reconstruction* reconstruction) {
+  const auto& track_ids = reconstruction->TrackIds();
+  const std::unordered_set<TrackId> all_tracks(track_ids.begin(),
+                                               track_ids.end());
+  return RemoveOutlierFeatures(all_tracks,
+                               max_inlier_reprojection_error,
+                               min_triangulation_angle_degrees,
+                               reconstruction);
+}
+
+int RemoveOutlierFeatures(const std::unordered_set<TrackId>& track_ids,
+                          const double max_inlier_reprojection_error,
+                          const double min_triangulation_angle_degrees,
+                          Reconstruction* reconstruction) {
   const double max_sq_reprojection_error =
       max_inlier_reprojection_error * max_inlier_reprojection_error;
 
@@ -274,7 +287,6 @@ int RemoveOutlierFeatures(const double max_inlier_reprojection_error,
   int num_bad_reprojections = 0;
   int num_insufficient_viewing_angles = 0;
 
-  const auto& track_ids = reconstruction->TrackIds();
   for (const TrackId track_id : track_ids) {
     Track* track = reconstruction->MutableTrack(track_id);
     if (!track->IsEstimated()) {

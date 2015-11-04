@@ -158,7 +158,7 @@ TrackEstimator::Summary TrackEstimator::EstimateTracks(
 
   // Exit early if there are no tracks to estimate.
   if (tracks_to_estimate_.size() == 0) {
-    retunr summary;
+    return summary;
   }
 
   // Estimate the tracks in parallel. Instead of 1 threadpool worker per track,

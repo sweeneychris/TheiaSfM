@@ -100,13 +100,20 @@ class IncrementalReconstructionEstimator : public ReconstructionEstimator {
   // views as estimated.
   void InitializeCamerasFromTwoViewInfo(const ViewIdPair& view_ids);
 
-  // Estimates the 3D structure of all possible unestimated 3D points.
-  void EstimateStructure();
+  // Estimates all possible 3D points in the view. This is useful during
+  // incremental SfM because we only need to triangulate points that were added
+  // with new views.
+  void EstimateStructure(const ViewId view_id);
 
-  // Performs bundle adjustment on the model. Depending on the state of the
-  // reconstruction either partial BA is run on the k cameras that were most
-  // recently added or on the full model.
-  bool BundleAdjustment();
+  // The current percentage of cameras that have not been optimized by full BA.
+  double UnoptimizedGrowthPercentage();
+
+  // Performs partial bundle adjustment on the model. Only the k most recent
+  // cameras (and the tracks observed in those views) are optimized.
+  bool PartialBundleAdjustment();
+
+  // Performs full bundle adjustment on the model.
+  bool FullBundleAdjustment();
 
   // Chooses the next cameras to be localized according to which camera observes
   // the highest number of 3D points in the scene. This view is then localized
@@ -114,8 +121,9 @@ class IncrementalReconstructionEstimator : public ReconstructionEstimator {
   void FindViewsToLocalize(std::vector<ViewId>* views_to_localize);
 
   // Remove any features that have too high of reprojection errors or are not
-  // well-constrained
-  void RemoveOutlierTracks(const double max_reprojection_error_in_pixels);
+  // well-constrained. Only the input features are checked for outliers.
+  void RemoveOutlierTracks(const std::unordered_set<TrackId>& tracks_to_check,
+                           const double max_reprojection_error_in_pixels);
 
   // Set any views that do not observe enough 3D points to unestimated, and
   // similarly set and tracks that are not observed by enough views to
