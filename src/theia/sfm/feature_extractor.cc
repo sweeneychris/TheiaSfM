@@ -42,6 +42,7 @@
 
 #include "theia/image/descriptor/create_descriptor_extractor.h"
 #include "theia/image/descriptor/descriptor_extractor.h"
+#include "theia/io/write_keypoints_and_descriptors.h"
 #include "theia/image/image.h"
 #include "theia/util/filesystem.h"
 #include "theia/util/threadpool.h"
@@ -79,6 +80,22 @@ bool FeatureExtractor::Extract(
   return true;
 }
 
+bool FeatureExtractor::ExtractToDisk(
+    const std::vector<std::string>& filenames) {
+  write_features_to_disk_ = true;
+  // Determine if the directory for writing out feature exists. If not, try to
+  // create it.
+  if (!DirectoryExists(options_.output_directory)) {
+    CHECK(CreateDirectory(options_.output_directory))
+        << "Could not create the directory for storing features: "
+        << options_.output_directory;
+  }
+
+  std::vector<std::vector<Keypoint> > keypoints;
+  std::vector<std::vector<Eigen::VectorXf> > descriptors;
+  return Extract(filenames, &keypoints, &descriptors);
+}
+
 bool FeatureExtractor::ExtractFeatures(
     const std::string& filename,
     std::vector<Keypoint>* keypoints,
@@ -114,6 +131,29 @@ bool FeatureExtractor::ExtractFeatures(
 
   VLOG(1) << "Successfully extracted " << descriptors->size()
           << " features from image " << filename;
+
+  if (write_features_to_disk_) {
+    std::string output_dir = options_.output_directory;
+    // Add a trailing slash if one does not exist.
+    if (output_dir.back() != '/') {
+      output_dir = output_dir + "/";
+    }
+
+    // Create the features filepath.
+    std::string image_filename;
+    CHECK(GetFilenameFromFilepath(filename, true, &image_filename));
+    std::string features_file = output_dir + image_filename + ".features";
+
+    // Write the features to disk.
+    CHECK(WriteKeypointsAndDescriptors(features_file, *keypoints, *descriptors))
+        << "Could not write features for image " << image_filename
+        << " from file " << features_file;
+
+    // Remove the features from memory.
+    keypoints->clear();
+    descriptors->clear();
+  }
+
   return true;
 }
 

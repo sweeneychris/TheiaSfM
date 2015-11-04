@@ -47,28 +47,37 @@
 
 namespace theia {
 
-struct FeatureExtractorOptions {
-  int num_threads = 1;
-  DescriptorExtractorType descriptor_extractor_type =
-      DescriptorExtractorType::SIFT;
-  // Sift parameters.
-  SiftParameters sift_parameters;
-  // The features returned will be no larger than this size.
-  int max_num_features = 16384;
-};
-
 // Reads in the set of images provided then extracts descriptors using the
 // desired descriptor type. This method can be run with multiple threads.
 class FeatureExtractor {
  public:
-  explicit FeatureExtractor(const FeatureExtractorOptions& options)
-      : options_(options) {}
+  struct Options {
+    int num_threads = 1;
+    DescriptorExtractorType descriptor_extractor_type =
+        DescriptorExtractorType::SIFT;
+    // Sift parameters.
+    SiftParameters sift_parameters;
+    // The features returned will be no larger than this size.
+    int max_num_features = 16384;
+
+    // If we wish to write the features to disk, they will be output in this
+    // directory with the same name as the input image and a ".features"
+    // appended.
+    std::string output_directory = "";
+  };
+
+  explicit FeatureExtractor(const Options& options)
+      : options_(options), write_features_to_disk_(false) {}
   ~FeatureExtractor() {}
 
   // Method to extract descriptors.
   bool Extract(const std::vector<std::string>& filenames,
                std::vector<std::vector<Keypoint> >* keypoints,
                std::vector<std::vector<Eigen::VectorXf> >* descriptors);
+
+  // Extracts descriptors and writes them to disk. The features from each image
+  // are written to individual files in the directory specified in the options.
+  bool ExtractToDisk(const std::vector<std::string>& filenames);
 
  private:
   // Extracts the features and metadata for a single image. This function is
@@ -77,7 +86,8 @@ class FeatureExtractor {
                        std::vector<Keypoint>* keypoints,
                        std::vector<Eigen::VectorXf>* descriptors);
 
-  const FeatureExtractorOptions options_;
+  const Options options_;
+  bool write_features_to_disk_;
 
   DISALLOW_COPY_AND_ASSIGN(FeatureExtractor);
 };

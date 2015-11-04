@@ -91,7 +91,7 @@ void ExtractAndMatchFeatures(
   }
 
   // Extract features.
-  theia::FeatureExtractorOptions feature_extractor_options;
+  theia::FeatureExtractor::Options feature_extractor_options;
   feature_extractor_options.descriptor_extractor_type =
       StringToDescriptorExtractorType(FLAGS_descriptor);
   feature_extractor_options.num_threads = FLAGS_num_threads;
