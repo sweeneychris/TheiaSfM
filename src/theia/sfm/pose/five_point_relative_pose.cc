@@ -247,8 +247,9 @@ bool FivePointRelativePose(const std::vector<Vector2d>& image1_points,
     }
     null_space = lu.kernel();
   } else {
-    const Eigen::JacobiSVD<MatrixXd> svd(epipolar_constraint,
-                                         Eigen::ComputeFullV);
+    const Eigen::JacobiSVD<MatrixXd> svd(
+        epipolar_constraint.transpose() * epipolar_constraint,
+        Eigen::ComputeFullV);
     null_space = svd.matrixV().rightCols<4>();
   }
 
