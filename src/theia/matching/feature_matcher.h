@@ -116,6 +116,17 @@ template <class DistanceMetric> class FeatureMatcher {
                         const std::vector<Eigen::VectorXf>& descriptors,
                         const CameraIntrinsicsPrior& intrinsics);
 
+  // If features have been written to disk, the matcher can directly work with
+  // them from the feature files so that you do not have to "add" them to the
+  // matcher. This assumes that feature files have been written in the format:
+  //
+  //     //keypoints_and_descriptors_output_dir/image_name.features
+  //
+  // Care must be taken to ensure that the filenames are formatted correctly.
+  virtual void AddImage(const std::string& image_name);
+  virtual void AddImage(const std::string& image_name,
+                        const CameraIntrinsicsPrior& intrinsics);
+
   // Matches features between all images. No geometric verification is
   // performed. Only the matches which pass the have greater than
   // min_num_feature_matches are returned.
@@ -254,6 +265,18 @@ void FeatureMatcher<DistanceMetric>::AddImage(
     const std::vector<Eigen::VectorXf>& descriptors,
     const CameraIntrinsicsPrior& intrinsics) {
   AddImage(image_name, keypoints, descriptors);
+  intrinsics_[image_name] = intrinsics;
+}
+
+template <class DistanceMetric>
+void FeatureMatcher<DistanceMetric>::AddImage(const std::string& image_name) {
+  image_names_.push_back(image_name);
+}
+
+template <class DistanceMetric>
+void FeatureMatcher<DistanceMetric>::AddImage(const std::string& image_name,
+                                              const CameraIntrinsicsPrior& intrinsics) {
+  image_names_.push_back(image_name);
   intrinsics_[image_name] = intrinsics;
 }
 
