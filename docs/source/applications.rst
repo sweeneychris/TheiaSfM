@@ -16,24 +16,24 @@ Features
 Extract Features
 ----------------
 
-Extract any type of feature that is implemented in Theia (SIFT, BRIEF, BRISK,
-FREAK) and display the feature matches by outputting the images and
-features. The feature type and number of threads can be set at runtime.
+Extract any type of feature that is implemented in Theia (e.g., SIFT) and write
+them to disk.
 
 .. code-block:: bash
 
-  ./bin/extract_features --input_imgs=/path/to/images/*.jpg --img_output_dir=/path/to/output --num_threads=4 --descriptor=SIFT
+  ./bin/extract_features --input_images=/path/to/images/*.jpg --features_output_director=/path/to/output --num_threads=4 --descriptor=SIFT --logtostderr
 
-Match Descriptors
------------------
+Match Features
+--------------
 
-Given an input set of images, this program will match descriptors between all
-images. Many parameters can be set at runtime, and the matched images are
-written to a specified output directory.
+Given an input set of features (created with the extract_features program
+above), this program will match descriptors between all images and optionally
+perform geometric verification. Many parameters can be set at runtime, and the
+match file is written out. This is useful for when you want to tune the matching parameters for performance without having to recompute all of the descriptors.
 
 .. code-block:: bash
 
-  ./bin/match_descriptors --input_imgs=/path/to/images/*.jpg --img_output_dir=/path/to/output --num_threads=4 --descriptor=SIFT --matcher=brute_force --lowes_ratio=0.8
+  ./bin/match_features --input_features=/path/to/features/*.features --output_matches_file=/path/to/output --num_threads=4 --matcher=CASCADE_HASHING --lowes_ratio=0.8 --logtostderr --v=1
 
 Reconstructions
 ===============

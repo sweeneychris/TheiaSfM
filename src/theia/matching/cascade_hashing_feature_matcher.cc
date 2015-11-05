@@ -69,6 +69,7 @@ void CascadeHashingFeatureMatcher::AddImage(
   // function exits so care must be taken going forward.
   hashed_images_[image] =
       cascade_hasher_->CreateHashedSiftDescriptors(descriptors);
+  VLOG(1) << "Created the hashed descriptors for image: " << image;
 }
 
 void CascadeHashingFeatureMatcher::AddImage(
@@ -94,6 +95,54 @@ void CascadeHashingFeatureMatcher::AddImage(
   // function exits so care must be taken going forward.
   hashed_images_[image] =
       cascade_hasher_->CreateHashedSiftDescriptors(descriptors);
+  VLOG(1) << "Created the hashed descriptors for image: " << image;
+}
+
+void CascadeHashingFeatureMatcher::AddImage(const std::string& image_name) {
+  image_names_.push_back(image_name);
+
+  // Get the features from the cache and create hashed descriptors.
+  std::shared_ptr<KeypointsAndDescriptors> features =
+      this->keypoints_and_descriptors_cache_->Fetch(
+          FeatureFilenameFromImage(image_name));
+
+  // Initialize the cascade hasher if needed.
+  if (cascade_hasher_.get() == nullptr) {
+    cascade_hasher_.reset(new CascadeHasher());
+    CHECK(cascade_hasher_->Initialize(features->descriptors[0].size()))
+        << "Could not initialize the cascade hasher.";
+  }
+
+  // Create the hashing information. NOTE: The HashedImage keeps a pointer to
+  // the descriptors. This will become invalidated immediately after this
+  // function exits so care must be taken going forward.
+  hashed_images_[image_name] =
+      cascade_hasher_->CreateHashedSiftDescriptors(features->descriptors);
+  VLOG(1) << "Created the hashed descriptors for image: " << image_name;
+}
+
+void CascadeHashingFeatureMatcher::AddImage(
+    const std::string& image_name, const CameraIntrinsicsPrior& intrinsics) {
+  image_names_.push_back(image_name);
+  intrinsics_[image_name] = intrinsics;
+  // Get the features from the cache and create hashed descriptors.
+  std::shared_ptr<KeypointsAndDescriptors> features =
+      this->keypoints_and_descriptors_cache_->Fetch(
+          FeatureFilenameFromImage(image_name));
+
+  // Initialize the cascade hasher if needed.
+  if (cascade_hasher_.get() == nullptr) {
+    cascade_hasher_.reset(new CascadeHasher());
+    CHECK(cascade_hasher_->Initialize(features->descriptors[0].size()))
+        << "Could not initialize the cascade hasher.";
+  }
+
+  // Create the hashing information. NOTE: The HashedImage keeps a pointer to
+  // the descriptors. This will become invalidated immediately after this
+  // function exits so care must be taken going forward.
+  hashed_images_[image_name] =
+      cascade_hasher_->CreateHashedSiftDescriptors(features->descriptors);
+  VLOG(1) << "Created the hashed descriptors for image: " << image_name;
 }
 
 bool CascadeHashingFeatureMatcher::MatchImagePair(
@@ -111,6 +160,7 @@ bool CascadeHashingFeatureMatcher::MatchImagePair(
   HashedImage& hashed_features1 =
       FindOrDie(hashed_images_, features1.image_name);
   hashed_features1.descriptors = &features1.descriptors;
+
   HashedImage& hashed_features2 =
       FindOrDie(hashed_images_, features2.image_name);
   hashed_features2.descriptors = &features2.descriptors;

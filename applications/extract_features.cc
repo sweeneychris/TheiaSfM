@@ -43,7 +43,8 @@
 DEFINE_string(
     input_images, "",
     "Filepath of the images you want to extract features and compute matches "
-    "for. The filepath should be a wildcard to match multiple images.");
+    "for. The filepath should be a wildcard to extract features from multiple "
+    "images.");
 DEFINE_string(features_output_directory, ".",
               "Name of output directory to write the features files.");
 DEFINE_int32(num_threads, 1,

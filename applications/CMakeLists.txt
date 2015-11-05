@@ -1,6 +1,6 @@
 # Basic programs
-ADD_EXECUTABLE(match_descriptors match_descriptors.cc)
-TARGET_LINK_LIBRARIES(match_descriptors theia ${GFLAGS_LIBRARIES})
+ADD_EXECUTABLE(match_features match_features.cc)
+TARGET_LINK_LIBRARIES(match_features theia ${GFLAGS_LIBRARIES})
 
 ADD_EXECUTABLE(extract_features extract_features.cc)
 TARGET_LINK_LIBRARIES(extract_features theia ${GFLAGS_LIBRARIES})

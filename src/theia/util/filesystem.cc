@@ -86,6 +86,13 @@ bool GetFilenameFromFilepath(const std::string& filepath,
   return filename->length() > 0;
 }
 
+bool GetDirectoryFromFilepath(const std::string& filepath,
+                              std::string* directory) {
+  CHECK_NOTNULL(directory)->clear();
+  *directory = stlplus::folder_part(filepath);
+  return directory->length() > 0;
+}
+
 bool FileExists(const std::string& filename) {
   return stlplus::file_exists(filename);
 }
