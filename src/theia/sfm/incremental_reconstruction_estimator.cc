@@ -379,6 +379,10 @@ bool IncrementalReconstructionEstimator::ChooseInitialViewPair() {
                                      kMinNumInitialTracks,
                                      &candidate_initial_view_pairs);
 
+  if (candidate_initial_view_pairs.size() == 0) {
+    return false;
+  }
+
   // Find the k view pairs that contain the highest number of verified matches
   // and contain a sufficient baseline between them.
   OrderViewPairsByBaseline(kNumCandidateViewPairs,
