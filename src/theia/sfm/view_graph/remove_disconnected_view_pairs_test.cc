@@ -33,6 +33,7 @@
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
 #include <glog/logging.h>
+#include <unordered_set>
 
 #include "gtest/gtest.h"
 
@@ -41,6 +42,7 @@
 #include "theia/sfm/types.h"
 #include "theia/sfm/view_graph/remove_disconnected_view_pairs.h"
 #include "theia/sfm/view_graph/view_graph.h"
+#include "theia/util/map_util.h"
 
 namespace theia {
 
@@ -51,8 +53,10 @@ TEST(RemoveDisconnectedViewPairs, SingleConnectedComponent) {
   view_graph.AddEdge(1, 2, info);
   view_graph.AddEdge(2, 3, info);
 
-  RemoveDisconnectedViewPairs(&view_graph);
+  const std::unordered_set<ViewId> removed_views =
+      RemoveDisconnectedViewPairs(&view_graph);
   EXPECT_EQ(view_graph.NumEdges(), 3);
+  EXPECT_EQ(removed_views.size(), 0);
 }
 
 TEST(RemoveDisconnectedViewPairs, TwoConnectedComponents) {
@@ -64,8 +68,13 @@ TEST(RemoveDisconnectedViewPairs, TwoConnectedComponents) {
   view_graph.AddEdge(5, 6, info);
   view_graph.AddEdge(6, 7, info);
 
-  RemoveDisconnectedViewPairs(&view_graph);
+  const std::unordered_set<ViewId> removed_views =
+      RemoveDisconnectedViewPairs(&view_graph);
   EXPECT_EQ(view_graph.NumEdges(), 3);
+  EXPECT_EQ(removed_views.size(), 3);
+  EXPECT_TRUE(ContainsKey(removed_views, 5));
+  EXPECT_TRUE(ContainsKey(removed_views, 6));
+  EXPECT_TRUE(ContainsKey(removed_views, 7));
 }
 
 TEST(RemoveDisconnectedViewPairs, ThreeConnectedComponents) {
@@ -77,8 +86,14 @@ TEST(RemoveDisconnectedViewPairs, ThreeConnectedComponents) {
   view_graph.AddEdge(5, 6, info);
   view_graph.AddEdge(7, 8, info);
 
-  RemoveDisconnectedViewPairs(&view_graph);
+  const std::unordered_set<ViewId> removed_views =
+      RemoveDisconnectedViewPairs(&view_graph);
   EXPECT_EQ(view_graph.NumEdges(), 3);
+  EXPECT_EQ(removed_views.size(), 4);
+  EXPECT_TRUE(ContainsKey(removed_views, 5));
+  EXPECT_TRUE(ContainsKey(removed_views, 6));
+  EXPECT_TRUE(ContainsKey(removed_views, 7));
+  EXPECT_TRUE(ContainsKey(removed_views, 8));
 }
 
 }  // namespace theia

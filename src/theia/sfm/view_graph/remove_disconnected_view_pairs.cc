@@ -45,8 +45,9 @@
 namespace theia {
 
 // Removes all view pairs that are not part of the largest connected component.
-void RemoveDisconnectedViewPairs(ViewGraph* view_graph) {
+std::unordered_set<ViewId> RemoveDisconnectedViewPairs(ViewGraph* view_graph) {
   CHECK_NOTNULL(view_graph);
+  std::unordered_set<ViewId> removed_views;
 
   // Extract all connected components.
   ConnectedComponents<ViewId> cc_extractor;
@@ -80,6 +81,7 @@ void RemoveDisconnectedViewPairs(ViewGraph* view_graph) {
     // exist in connected_components.second
     for (const ViewId view_id2 : connected_component.second) {
       view_graph->RemoveView(view_id2);
+      removed_views.insert(view_id2);
     }
   }
 
@@ -89,6 +91,7 @@ void RemoveDisconnectedViewPairs(ViewGraph* view_graph) {
       << num_removed_view_pairs
       << " view pairs were disconnected from the largest connected component "
          "of the view graph and were removed.";
+  return removed_views;
 }
 
 }  // namespace theia

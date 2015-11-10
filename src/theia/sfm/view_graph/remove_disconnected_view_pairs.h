@@ -35,12 +35,17 @@
 #ifndef THEIA_SFM_VIEW_GRAPH_REMOVE_DISCONNECTED_VIEW_PAIRS_H_
 #define THEIA_SFM_VIEW_GRAPH_REMOVE_DISCONNECTED_VIEW_PAIRS_H_
 
+#include <unordered_set>
+
+#include "theia/sfm/types.h"
+
 namespace theia {
 
 class ViewGraph;
 
-// Removes all view pairs that are not part of the largest connected component.
-void RemoveDisconnectedViewPairs(ViewGraph* view_graph);
+// Removes all view pairs that are not part of the largest connected component
+// and returns the ViewIds of the views that were removed.
+std::unordered_set<ViewId> RemoveDisconnectedViewPairs(ViewGraph* view_graph);
 
 }  // namespace theia
 
