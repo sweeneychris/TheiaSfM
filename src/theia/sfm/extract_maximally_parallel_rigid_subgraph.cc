@@ -176,6 +176,9 @@ void ExtractMaximallyParallelRigidSubgraph(
   std::unordered_map<ViewId, int> view_ids_to_index;
   view_ids_to_index.reserve(orientations.size());
   for (const auto& orientation : orientations) {
+    if (!view_graph->HasView(orientation.first)) {
+      continue;
+    }
     const int current_index = view_ids_to_index.size();
     InsertIfNotPresent(&view_ids_to_index, orientation.first, current_index);
   }
@@ -215,7 +218,8 @@ void ExtractMaximallyParallelRigidSubgraph(
     const int index = FindOrDie(view_ids_to_index, orientation.first);
     // If the view is not in the maximal rigid component then remove it from the
     // view graph.
-    if (!ContainsKey(maximal_rigid_component, index)) {
+    if (!ContainsKey(maximal_rigid_component, index) &&
+        view_graph->HasView(orientation.first)) {
       CHECK(view_graph->RemoveView(orientation.first))
           << "Could not remove view id " << orientation.first
           << " from the view graph because it does not exist.";
