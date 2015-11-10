@@ -377,7 +377,12 @@ void GlobalReconstructionEstimator::FilterRotations() {
       orientations_,
       options_.rotation_filtering_max_difference_degrees,
       view_graph_);
-  RemoveDisconnectedViewPairs(view_graph_);
+  // Remove any disconnected views from the estimation.
+  const std::unordered_set<ViewId> removed_views =
+      RemoveDisconnectedViewPairs(view_graph_);
+  for (const ViewId removed_view : removed_views) {
+    orientations_.erase(removed_view);
+  }
 }
 
 void GlobalReconstructionEstimator::OptimizePairwiseTranslations() {
@@ -404,7 +409,12 @@ void GlobalReconstructionEstimator::FilterRelativeTranslation() {
                                            orientations_,
                                            view_graph_);
   }
-  RemoveDisconnectedViewPairs(view_graph_);
+  // Remove any disconnected views from the estimation.
+  const std::unordered_set<ViewId> removed_views =
+      RemoveDisconnectedViewPairs(view_graph_);
+  for (const ViewId removed_view : removed_views) {
+    orientations_.erase(removed_view);
+  }
 }
 
 bool GlobalReconstructionEstimator::EstimatePosition() {
