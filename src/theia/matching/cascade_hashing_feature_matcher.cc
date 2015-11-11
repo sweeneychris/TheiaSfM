@@ -67,9 +67,11 @@ void CascadeHashingFeatureMatcher::AddImage(
   // Create the hashing information. NOTE: The HashedImage keeps a pointer to
   // the descriptors. This will become invalidated immediately after this
   // function exits so care must be taken going forward.
-  hashed_images_[image] =
+  if (!ContainsKey(hashed_images_, image)) {
+    hashed_images_[image] =
       cascade_hasher_->CreateHashedSiftDescriptors(descriptors);
-  VLOG(1) << "Created the hashed descriptors for image: " << image;
+    VLOG(1) << "Created the hashed descriptors for image: " << image;
+  }
 }
 
 void CascadeHashingFeatureMatcher::AddImage(
@@ -93,9 +95,11 @@ void CascadeHashingFeatureMatcher::AddImage(
   // Create the hashing information. NOTE: The HashedImage keeps a pointer to
   // the descriptors. This will become invalidated immediately after this
   // function exits so care must be taken going forward.
-  hashed_images_[image] =
+  if (!ContainsKey(hashed_images_, image)) {
+    hashed_images_[image] =
       cascade_hasher_->CreateHashedSiftDescriptors(descriptors);
-  VLOG(1) << "Created the hashed descriptors for image: " << image;
+    VLOG(1) << "Created the hashed descriptors for image: " << image;
+  }
 }
 
 void CascadeHashingFeatureMatcher::AddImage(const std::string& image_name) {
