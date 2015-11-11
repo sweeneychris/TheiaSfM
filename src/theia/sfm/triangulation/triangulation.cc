@@ -212,7 +212,7 @@ bool TriangulateNView(const std::vector<Matrix3x4d>& poses,
 
   Eigen::SelfAdjointEigenSolver<Matrix4d> eigen_solver(design_matrix);
   *triangulated_point = eigen_solver.eigenvectors().col(0);
-  return true;
+  return eigen_solver.info() == Eigen::Success;
 }
 
 bool IsTriangulatedPointInFrontOfCameras(
