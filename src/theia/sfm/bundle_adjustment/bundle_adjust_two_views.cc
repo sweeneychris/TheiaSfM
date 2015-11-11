@@ -98,43 +98,6 @@ void AddCameraParametersToProblem(const bool constant_extrinsic_parameters,
   }
 }
 
-void TriangulatePoints(
-    const Camera& camera1,
-    const Camera& camera2,
-    const std::vector<FeatureCorrespondence>& correspondences,
-    std::vector<FeatureCorrespondence>* triangulated_matches,
-    std::vector<Eigen::Vector4d>* tracks) {
-  static const double kNormTolerance = 1e-6;
-
-  Matrix3x4d projection_matrix1, projection_matrix2;
-  camera1.GetProjectionMatrix(&projection_matrix1);
-  camera2.GetProjectionMatrix(&projection_matrix2);
-
-  triangulated_matches->reserve(correspondences.size());
-  tracks->reserve(correspondences.size());
-  for (int i = 0; i < correspondences.size(); i++) {
-    if (!IsTriangulatedPointInFrontOfCameras(
-            correspondences[i],
-            camera2.GetOrientationAsRotationMatrix(),
-            camera2.GetPosition())) {
-      continue;
-    }
-
-    Eigen::Vector4d point;
-    if (Triangulate(projection_matrix1,
-                    projection_matrix2,
-                    correspondences[i].feature1,
-                    correspondences[i].feature2,
-                    &point)) {
-      // Sometimes we get points very close to the image.
-      if (point.hnormalized().squaredNorm() > kNormTolerance) {
-        tracks->emplace_back(point);
-        triangulated_matches->emplace_back(correspondences[i]);
-      }
-    }
-  }
-}
-
 }  // namespace
 
 // Triangulates all 3d points and performs standard bundle adjustment on the
@@ -143,9 +106,12 @@ BundleAdjustmentSummary BundleAdjustTwoViews(
     const TwoViewBundleAdjustmentOptions& options,
     const std::vector<FeatureCorrespondence>& correspondences,
     Camera* camera1,
-    Camera* camera2) {
+    Camera* camera2,
+    std::vector<Eigen::Vector4d>* points3d) {
   CHECK_NOTNULL(camera1);
   CHECK_NOTNULL(camera2);
+  CHECK_NOTNULL(points3d);
+  CHECK_EQ(points3d->size(), correspondences.size());
 
   BundleAdjustmentSummary summary;
 
@@ -174,30 +140,20 @@ BundleAdjustmentSummary BundleAdjustTwoViews(
   parameter_ordering->AddElementToGroup(camera1->mutable_parameters(), 1);
   parameter_ordering->AddElementToGroup(camera2->mutable_parameters(), 1);
 
-  // Triangulate all features.
-  std::vector<FeatureCorrespondence> triangulated_matches;
-  std::vector<Eigen::Vector4d> tracks;
-  TriangulatePoints(*camera1,
-                    *camera2,
-                    correspondences,
-                    &triangulated_matches,
-                    &tracks);
-
   // Add triangulated points to the problem.
-  for (int i = 0; i < triangulated_matches.size(); i++) {
-    const FeatureCorrespondence& match = triangulated_matches[i];
+  for (int i = 0; i < points3d->size(); i++) {
     problem.AddResidualBlock(
-        ReprojectionError::Create(match.feature1),
+        ReprojectionError::Create(correspondences[i].feature1),
         NULL,
         camera1->mutable_parameters(),
-        tracks[i].data());
+        points3d->at(i).data());
     problem.AddResidualBlock(
-        ReprojectionError::Create(match.feature2),
+        ReprojectionError::Create(correspondences[i].feature2),
         NULL,
         camera2->mutable_parameters(),
-        tracks[i].data());
+        points3d->at(i).data());
 
-    parameter_ordering->AddElementToGroup(tracks[i].data(), 0);
+    parameter_ordering->AddElementToGroup(points3d->at(i).data(), 0);
   }
 
   // End setup time.

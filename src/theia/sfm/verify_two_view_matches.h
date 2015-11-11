@@ -53,6 +53,15 @@ struct VerifyTwoViewMatchesOptions {
 
   // Bundle adjust the two view geometry using inliers.
   bool bundle_adjustment = true;
+
+  // If performing bundle adjustment, the 3D points are only considered inliers
+  // if the initial triangulation error is less than this. This value is in
+  // pixels.
+  double triangulation_sq_max_reprojection_error = 15.0;
+  // If performing bundle adjustment, the 3D points are only considered inliers
+  // if the reprojection error after bundle adjustment is less than this. This
+  // value is in pixels.
+  double final_sq_max_reprojection_error = 5.0;
 };
 
 bool VerifyTwoViewMatches(

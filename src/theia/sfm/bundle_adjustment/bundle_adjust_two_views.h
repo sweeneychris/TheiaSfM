@@ -35,6 +35,7 @@
 #ifndef THEIA_SFM_BUNDLE_ADJUSTMENT_BUNDLE_ADJUST_TWO_VIEWS_H_
 #define THEIA_SFM_BUNDLE_ADJUSTMENT_BUNDLE_ADJUST_TWO_VIEWS_H_
 
+#include <Eigen/Core>
 #include <vector>
 
 #include "theia/matching/feature_correspondence.h"
@@ -54,16 +55,19 @@ struct TwoViewBundleAdjustmentOptions {
   bool constant_camera2_intrinsics = true;
 };
 
-// Triangulates all 3d points and performs standard bundle adjustment on the
-// points and cameras. The first camera is held constant so only the second
-// camera and points are optimized. The cameras must be initialized with camera
-// intrinsics. The camera pose should be initialized based on epipolar geometry
-// estimation.
+// Performs bundle adjustment on the two views assuming that both views observe
+// all of the 3D points. The cameras should be initialized with intrinsics and
+// extrinsics appropriately, and the 3D points should be set (e.g., from
+// triangulation) before calling this method. The first camera pose is held
+// constant during BA, and the optimized pose of the second camera, (optionally)
+// intrinsics, and 3D points are returned. The indices of the feature
+// correspondences should match the 3D point indices.
 BundleAdjustmentSummary BundleAdjustTwoViews(
     const TwoViewBundleAdjustmentOptions& options,
-    const std::vector<FeatureCorrespondence>& correspondence,
+    const std::vector<FeatureCorrespondence>& correspondences,
     Camera* camera1,
-    Camera* camera2);
+    Camera* camera2,
+    std::vector<Eigen::Vector4d>* points3d);
 
 // Performs bundle adjustment to find the optimal rotation and translation
 // describing the two views. This is done without the need for 3D points, as
