@@ -67,83 +67,6 @@
 namespace theia {
 namespace {
 
-// Given a viewing graph, extract the top k edges that have the most inliers
-// between them.
-void GetCandidateViewPairsByInlierCount(
-    const ViewGraph& view_graph,
-    const int min_num_inliers,
-    std::vector<ViewIdPair>* candidate_view_pairs) {
-  const auto& view_pairs = view_graph.GetAllEdges();
-  candidate_view_pairs->reserve(view_pairs.size());
-
-  // Collect the number of inliers for each view pair.
-  std::vector<std::pair<int, ViewIdPair> > num_inliers_for_view_pair;
-  num_inliers_for_view_pair.reserve(view_pairs.size());
-  for (const auto& view_pair : view_pairs) {
-    // TODO(cmsweeney): Prefer view pairs with known intrinsics.
-    if (view_pair.second.num_verified_matches > min_num_inliers) {
-      num_inliers_for_view_pair.emplace_back(
-          view_pair.second.num_verified_matches, view_pair.first);
-    }
-  }
-
-  // Obtain the top k view pairs by number of inliers.
-  std::sort(num_inliers_for_view_pair.begin(),
-            num_inliers_for_view_pair.end(),
-            std::greater<std::pair<int, ViewIdPair> >());
-
-  // Output the top k candidates
-  for (int i = 0; i < num_inliers_for_view_pair.size(); i++) {
-    candidate_view_pairs->emplace_back(num_inliers_for_view_pair[i].second);
-  }
-}
-
-void NormalizeFeature(const Camera& camera, Feature* feature) {
-  feature->y() = (feature->y() - camera.PrincipalPointY()) /
-                 (camera.AspectRatio() * camera.FocalLength());
-  feature->x() =
-      (feature->x() - camera.Skew() * feature->y() - camera.PrincipalPointX()) /
-      camera.FocalLength();
-}
-
-// Normalize a feature by its camera intrinsics.
-void GetNormalizedFeatures(const Camera& camera1,
-                           const Camera& camera2,
-                           std::vector<FeatureCorrespondence>* matches) {
-  for (FeatureCorrespondence& match : *matches) {
-    NormalizeFeature(camera1, &match.feature1);
-    NormalizeFeature(camera2, &match.feature2);
-  }
-}
-
-double ComputeMedianViewingAngleForFeatures(
-    const TwoViewInfo& info,
-    const std::vector<FeatureCorrespondence>& matches) {
-  Eigen::Matrix3d camera2_to_world_rotation;
-  ceres::AngleAxisToRotationMatrix(
-      info.rotation_2.data(),
-      ceres::ColumnMajorAdapter3x3(camera2_to_world_rotation.data()));
-  camera2_to_world_rotation.transposeInPlace();
-
-  std::vector<double> cos_of_viewing_angles;
-  cos_of_viewing_angles.reserve(matches.size());
-  for (const FeatureCorrespondence& match : matches) {
-    const Eigen::Vector3d direction1 =
-        match.feature1.homogeneous().normalized();
-    const Eigen::Vector3d direction2 =
-        camera2_to_world_rotation * match.feature2.homogeneous().normalized();
-    cos_of_viewing_angles.emplace_back(direction1.dot(direction2));
-  }
-
-  const int median_index = cos_of_viewing_angles.size() / 2;
-  std::nth_element(
-      cos_of_viewing_angles.begin(),
-      cos_of_viewing_angles.begin() + median_index,
-      cos_of_viewing_angles.end());
-
-  return cos_of_viewing_angles[median_index];
-}
-
 void SetReconstructionAsUnestimated(Reconstruction* reconstruction) {
   // Set tracks as unestimated.
   const auto& track_ids = reconstruction->TrackIds();
@@ -219,7 +142,7 @@ IncrementalReconstructionEstimator::IncrementalReconstructionEstimator(
 //   7) Repeat steps 4-6 until all cameras have been added.
 //
 // Incremental SfM is generally considered to be more robust than global SfM
-// methods; hwoever, it requires many more instances of bundle adjustment (which
+// methods; however, it requires many more instances of bundle adjustment (which
 // is very costly) and so incremental SfM is not as efficient or scalable.
 ReconstructionEstimatorSummary IncrementalReconstructionEstimator::Estimate(
     ViewGraph* view_graph, Reconstruction* reconstruction) {
@@ -356,28 +279,29 @@ void IncrementalReconstructionEstimator::InitializeCamerasFromTwoViewInfo(
     const ViewIdPair& view_ids) {
   View* view1 = reconstruction_->MutableView(view_ids.first);
   View* view2 = reconstruction_->MutableView(view_ids.second);
-  const TwoViewInfo info =
-      *view_graph_->GetEdge(view_ids.first, view_ids.second);
+  const TwoViewInfo* info =
+      view_graph_->GetEdge(view_ids.first, view_ids.second);
 
   // The pose of camera 1 will be the identity pose, so we only need to set
   // camera 2's pose.
+  Camera* camera1 = view1->MutableCamera();
+  camera1->SetFocalLength(info->focal_length_1);
   Camera* camera2 = view2->MutableCamera();
-  camera2->SetOrientationFromAngleAxis(info.rotation_2);
-  camera2->SetPosition(info.position_2);
+  camera2->SetOrientationFromAngleAxis(info->rotation_2);
+  camera2->SetPosition(info->position_2);
+  camera2->SetFocalLength(info->focal_length_2);
 
   view1->SetEstimated(true);
   view2->SetEstimated(true);
 }
 
 bool IncrementalReconstructionEstimator::ChooseInitialViewPair() {
-  static const int kNumCandidateViewPairs = 10;
   static const int kMinNumInitialTracks = 100;
 
   // Sort the view pairs by the number of geometrically verified matches.
   std::vector<ViewIdPair> candidate_initial_view_pairs;
-  GetCandidateViewPairsByInlierCount(*view_graph_,
-                                     kMinNumInitialTracks,
-                                     &candidate_initial_view_pairs);
+  OrderViewPairsByInitializationCriterion(kMinNumInitialTracks,
+                                          &candidate_initial_view_pairs);
 
   if (candidate_initial_view_pairs.size() == 0) {
     return false;
@@ -385,8 +309,8 @@ bool IncrementalReconstructionEstimator::ChooseInitialViewPair() {
 
   // Find the k view pairs that contain the highest number of verified matches
   // and contain a sufficient baseline between them.
-  OrderViewPairsByBaseline(kNumCandidateViewPairs,
-                           &candidate_initial_view_pairs);
+  OrderViewPairsByInitializationCriterion(kMinNumInitialTracks,
+                                          &candidate_initial_view_pairs);
 
   // Try to initialize the reconstruction from the candidate view pairs. An
   // initial seed is only considered valid if the baseline relative to the 3D
@@ -437,60 +361,41 @@ bool IncrementalReconstructionEstimator::ChooseInitialViewPair() {
   return false;
 }
 
-void IncrementalReconstructionEstimator::OrderViewPairsByBaseline(
-    const int num_candidate_view_pairs,
-    std::vector<ViewIdPair>* view_id_pairs) {
-  const double kMinCosViewingAngle = cos(DegToRad(3.0));
+void IncrementalReconstructionEstimator::
+    OrderViewPairsByInitializationCriterion(
+        const int min_num_verified_matches,
+        std::vector<ViewIdPair>* view_id_pairs) {
+  const auto& view_pairs = view_graph_->GetAllEdges();
+  view_id_pairs->reserve(view_pairs.size());
 
-  // Extract the angle between viewing rays of every verified correspondence
-  // between the view pairs.
-  std::vector<std::pair<double, ViewIdPair> > cos_of_median_viewing_angles;
-  cos_of_median_viewing_angles.reserve(num_candidate_view_pairs);
-  for (int i = 0;
-       i < view_id_pairs->size() &&
-           cos_of_median_viewing_angles.size() < num_candidate_view_pairs;
-       i++) {
-    const ViewIdPair& view_id_pair = (*view_id_pairs)[i];
-    const View* view1 = reconstruction_->View(view_id_pair.first);
-    const View* view2 = reconstruction_->View(view_id_pair.second);
-
-    // Get tracks common to both views.
-    const std::vector<ViewId> view_ids = {view_id_pair.first,
-                                          view_id_pair.second};
-    const std::vector<TrackId> track_ids =
-        FindCommonTracksInViews(*reconstruction_, view_ids);
-
-    // Normalize the features for both views.
-    std::vector<FeatureCorrespondence> matches(track_ids.size());
-    for (int i = 0; i < matches.size(); i++) {
-      matches[i].feature1 = *view1->GetFeature(track_ids[i]);
-      matches[i].feature2 = *view2->GetFeature(track_ids[i]);
-    }
-    GetNormalizedFeatures(view1->Camera(), view2->Camera(), &matches);
-
-    // Compute the triangulation angles.
-    const double cos_of_median_viewing_angle =
-        ComputeMedianViewingAngleForFeatures(
-            *view_graph_->GetEdge(view_ids[0], view_ids[1]), matches);
-
-    // If the cos of the observed angle is less than the cos of the min angle
-    // then the observed angle is greater than the min angle. We only keep view
-    // pairs that pass the minimum angle threshold.
-    if (cos_of_median_viewing_angle < kMinCosViewingAngle) {
-      cos_of_median_viewing_angles.emplace_back(cos_of_median_viewing_angle,
-                                                view_id_pair);
+  // Collect the number of inliers for each view pair. The tuples store:
+  //     # homography inliers, negative of essential matrix inliers, ViewIdPair
+  //
+  // We store the negative of the essential matrix inliers because we want a
+  // view pair with the fewest homography inliers but the greatest number of
+  // essential matrix inliers. This situation only arises if there were a
+  // tiebreaker in the number of homography inliers, or if (for some unknown
+  // reason) the number of homography inliers is set to 0 for all view pairs.
+  std::vector<std::tuple<int, int, ViewIdPair> >
+      initialization_criterion_for_view_pairs;
+  initialization_criterion_for_view_pairs.reserve(view_pairs.size());
+  for (const auto& view_pair : view_pairs) {
+    // TODO(cmsweeney): Prefer view pairs with known intrinsics.
+    if (view_pair.second.num_verified_matches > min_num_verified_matches) {
+      initialization_criterion_for_view_pairs.emplace_back(
+          view_pair.second.num_homography_inliers,
+          -view_pair.second.num_verified_matches,
+          view_pair.first);
     }
   }
 
-  // Sort the cosines of the median viewing angle. The larger the cosine the
-  // smaller the viewing angle so we want the cosines with the smallest values.
-  std::sort(cos_of_median_viewing_angles.begin(),
-            cos_of_median_viewing_angles.end());
-
-  // Output the view ids in the new ordering.
-  view_id_pairs->resize(num_candidate_view_pairs);
-  for (int i = 0; i < view_id_pairs->size(); i++) {
-    (*view_id_pairs)[i] = cos_of_median_viewing_angles[i].second;
+  // Sort the views to find the ones that are least well-modelled by a
+  // homography.
+  std::sort(initialization_criterion_for_view_pairs.begin(),
+            initialization_criterion_for_view_pairs.end());
+  for (int i = 0; i < initialization_criterion_for_view_pairs.size(); i++) {
+    view_id_pairs->emplace_back(
+        std::get<2>(initialization_criterion_for_view_pairs[i]));
   }
 }
 

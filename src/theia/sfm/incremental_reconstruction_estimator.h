@@ -91,10 +91,15 @@ class IncrementalReconstructionEstimator : public ReconstructionEstimator {
   // correspondences between the views.
   bool ChooseInitialViewPair();
 
-  // Given a set of view pairs, select the pairs with the largest number of
-  // inlier piotns and have a sufficient baseline between them.
-  void OrderViewPairsByBaseline(const int num_candidate_view_pairs,
-                                std::vector<ViewIdPair>* view_id_pairs);
+  // The best initial view pairs for incremental SfM are the ones that have a
+  // lot of matches but sufficient baseline between them. One measurement for a
+  // well-constrained baseline between cameras is the number of inliers when
+  // estimating a homography (more inliers means it is less constrained i.e.,
+  // bad). This method chooses the view pairs with more than
+  // min_num_verified_matches that have the fewest homography inliers.
+  void OrderViewPairsByInitializationCriterion(
+      const int min_num_verified_matches,
+      std::vector<ViewIdPair>* view_id_pairs);
 
   // Initialize the views based on the TwoViewInfo of the view pairs and set the
   // views as estimated.
