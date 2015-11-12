@@ -448,7 +448,9 @@ void FeatureMatcher<DistanceMetric>::MatchAndVerifyImagePairs(
     }
     VLOG(1) << "Images " << image1_name << " and " << image2_name
             << " were matched with " << inliers.size()
-            << " verified matches out of " << old_correspondences.size()
+            << " verified matches and "
+            << image_pair_match.twoview_info.num_homography_inliers
+            << " homography matches out of " << old_correspondences.size()
             << " putative matches.";
     {
       std::lock_guard<std::mutex> lock(mutex_);

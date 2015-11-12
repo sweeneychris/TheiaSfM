@@ -52,7 +52,8 @@ struct TwoViewInfo {
         focal_length_2(0.0),
         position_2(Eigen::Vector3d::Zero()),
         rotation_2(Eigen::Vector3d::Zero()),
-        num_verified_matches(0) {}
+        num_verified_matches(0),
+        num_homography_inliers(0) {}
 
   double focal_length_1;
   double focal_length_2;
@@ -64,6 +65,10 @@ struct TwoViewInfo {
   // images.
   int num_verified_matches;
 
+  // Number of inliers based on homography estimation. This is useful for
+  // incremental SfM for choosing an initial view pair for the reconstruction.
+  int num_homography_inliers;
+
  private:
   // Templated method for disk I/O with cereal. This method tells cereal which
   // data members should be used when reading/writing to/from disk.
@@ -74,7 +79,8 @@ struct TwoViewInfo {
        focal_length_2,
        position_2,
        rotation_2,
-       num_verified_matches);
+       num_verified_matches,
+       num_homography_inliers);
   }
 };
 

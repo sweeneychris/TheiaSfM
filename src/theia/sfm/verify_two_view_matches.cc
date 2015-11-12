@@ -41,6 +41,7 @@
 #include "theia/sfm/bundle_adjustment/bundle_adjust_two_views.h"
 #include "theia/sfm/camera_intrinsics_prior.h"
 #include "theia/sfm/estimate_twoview_info.h"
+#include "theia/sfm/estimators/estimate_homography.h"
 #include "theia/matching/feature_correspondence.h"
 #include "theia/sfm/triangulation/triangulation.h"
 #include "theia/sfm/twoview_info.h"
@@ -174,6 +175,26 @@ bool BundleAdjustRelativePose(
   return summary.success;
 }
 
+// Compute a homography and return the number of inliers. This determines how
+// well a plane fits the two view geometry.
+int CountHomographyInliers(
+    const std::vector<FeatureCorrespondence>& correspondences,
+    const EstimateTwoViewInfoOptions& etvi_options) {
+  RansacParameters homography_params;
+  homography_params.error_thresh = etvi_options.max_sampson_error_pixels *
+                                   etvi_options.max_sampson_error_pixels;
+  homography_params.max_iterations = etvi_options.max_ransac_iterations;
+  homography_params.min_iterations = etvi_options.min_ransac_iterations;
+  homography_params.use_mle = etvi_options.use_mle;
+  homography_params.failure_probability =
+      1.0 - etvi_options.expected_ransac_confidence;
+  RansacSummary homography_summary;
+  Eigen::Matrix3d unused_homography;
+  EstimateHomography(homography_params, etvi_options.ransac_type,
+                     correspondences, &unused_homography, &homography_summary);
+  return homography_summary.inliers.size();
+}
+
 }  // namespace
 
 bool VerifyTwoViewMatches(
@@ -199,15 +220,13 @@ bool VerifyTwoViewMatches(
   }
 
   // Bundle adjustment (optional).
-  if (options.bundle_adjustment) {
-    if (inlier_indices->size() < options.min_num_inlier_matches) {
-      return false;
-    }
-
+  if (options.bundle_adjustment &&
+      inlier_indices->size() > options.min_num_inlier_matches) {
     // Get Camera objects for triangulation and bundle adjustment.
     Camera camera1, camera2;
     SetupCameras(intrinsics1, intrinsics2, *twoview_info, &camera1, &camera2);
 
+    // Triangulate the 3D points.
     std::vector<Eigen::Vector4d> tracks;
     TriangulatePoints(options.triangulation_sq_max_reprojection_error, camera1,
                       camera2, correspondences, inlier_indices, &tracks);
@@ -250,7 +269,11 @@ bool VerifyTwoViewMatches(
     twoview_info->focal_length_1 = camera1.FocalLength();
     twoview_info->focal_length_2 = camera2.FocalLength();
   }
+
+  // Set the number of verified matches and number of homography matches.
   twoview_info->num_verified_matches = inlier_indices->size();
+  twoview_info->num_homography_inliers = CountHomographyInliers(
+      correspondences, options.estimate_twoview_info_options);
   return inlier_indices->size() > options.min_num_inlier_matches;
 }
 
