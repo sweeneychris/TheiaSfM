@@ -37,6 +37,7 @@
 #include <Eigen/Core>
 #include <glog/logging.h>
 
+#include <memory>
 #include <string>
 #include <vector>
 

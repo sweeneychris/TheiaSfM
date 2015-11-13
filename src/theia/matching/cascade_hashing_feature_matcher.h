@@ -35,6 +35,7 @@
 #ifndef THEIA_MATCHING_CASCADE_HASHING_FEATURE_MATCHER_H_
 #define THEIA_MATCHING_CASCADE_HASHING_FEATURE_MATCHER_H_
 
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include <vector>
