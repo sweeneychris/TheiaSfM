@@ -191,11 +191,13 @@ ReconstructionEstimatorSummary IncrementalReconstructionEstimator::Estimate(
     timer.Reset();
     FindViewsToLocalize(&views_to_localize);
     summary_.pose_estimation_time += timer.ElapsedTimeInSeconds();
+    LOG(INFO) << views_to_localize.size() << " candidate views to localize.";
 
     // Attempt to localize all candidate views and estimate new 3D
     // points. Bundle Adjustment is run as either partial or full BA depending
     // on the current state of the reconstruction.
     for (int i = 0; i < views_to_localize.size(); i++) {
+      LOG(INFO) << "Attempting to localize view " << i << " of " << views_to_localize.size();
       timer.Reset();
       if (!LocalizeViewToReconstruction(views_to_localize[i],
                                         localization_options_,
@@ -317,6 +319,9 @@ bool IncrementalReconstructionEstimator::ChooseInitialViewPair() {
   // point depths is sufficient. This robustness is measured by the angle of all
   // 3D points.
   for (const ViewIdPair view_id_pair : candidate_initial_view_pairs) {
+    // Set all values as unestimated and try to use the next candidate pair.
+    SetReconstructionAsUnestimated(reconstruction_);
+
     // Initialize the camera poses of the intiial views and set the two views to
     // estimated.
     InitializeCamerasFromTwoViewInfo(view_id_pair);
@@ -335,8 +340,6 @@ bool IncrementalReconstructionEstimator::ChooseInitialViewPair() {
 
     // Bundle adjustment on the 2-view reconstruction.
     if (!FullBundleAdjustment()) {
-      // Set all values as unestimated and try to use the next candidate pair.
-      SetReconstructionAsUnestimated(reconstruction_);
       continue;
     }
 
@@ -353,9 +356,6 @@ bool IncrementalReconstructionEstimator::ChooseInitialViewPair() {
 
       return true;
     }
-
-    // Set all values as unestimated and try to use the next candidate pair.
-    SetReconstructionAsUnestimated(reconstruction_);
   }
 
   return false;
@@ -424,8 +424,14 @@ void IncrementalReconstructionEstimator::FindViewsToLocalize(
   std::sort(track_count_for_view.begin(),
             track_count_for_view.end(),
             std::greater<std::pair<int, ViewId> >());
+  static const double kObserved3dPointsRatio = 0.75;
+  const int min_3d_points_observed =
+      track_count_for_view.begin()->first * kObserved3dPointsRatio;
   for (const auto& track_count : track_count_for_view) {
-    if (track_count.first < options_.min_num_absolute_pose_inliers) {
+    LOG(INFO) << "View " << track_count.second << " observes "
+              << track_count.first << " 3D points.";
+    if (track_count.first < min_3d_points_observed ||
+        track_count.first < options_.min_num_absolute_pose_inliers) {
       break;
     }
     views_to_localize->emplace_back(track_count.second);
