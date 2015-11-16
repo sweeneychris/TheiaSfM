@@ -154,8 +154,12 @@ bool TriangulateMidpoint(const std::vector<Vector3d>& ray_origin,
     b += A_term * ray_origin[i].homogeneous();
   }
 
-  *triangulated_point = A.colPivHouseholderQr().solve(b);
-  return true;
+  Eigen::ColPivHouseholderQR<Eigen::Matrix4d> qr(A);
+  if (qr.info() != Eigen::Success) {
+    return false;
+  }
+  *triangulated_point = qr.solve(b);
+  return qr.info() == Eigen::Success;
 }
 
 // Triangulates 2 posed views
