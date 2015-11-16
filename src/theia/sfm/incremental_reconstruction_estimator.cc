@@ -196,7 +196,6 @@ ReconstructionEstimatorSummary IncrementalReconstructionEstimator::Estimate(
     // points. Bundle Adjustment is run as either partial or full BA depending
     // on the current state of the reconstruction.
     for (int i = 0; i < views_to_localize.size(); i++) {
-      timer.Reset();
       if (!LocalizeViewToReconstruction(views_to_localize[i],
                                         localization_options_,
                                         reconstruction_,
@@ -317,6 +316,9 @@ bool IncrementalReconstructionEstimator::ChooseInitialViewPair() {
   // point depths is sufficient. This robustness is measured by the angle of all
   // 3D points.
   for (const ViewIdPair view_id_pair : candidate_initial_view_pairs) {
+    // Set all values as unestimated and try to use the next candidate pair.
+    SetReconstructionAsUnestimated(reconstruction_);
+
     // Initialize the camera poses of the intiial views and set the two views to
     // estimated.
     InitializeCamerasFromTwoViewInfo(view_id_pair);
@@ -335,8 +337,6 @@ bool IncrementalReconstructionEstimator::ChooseInitialViewPair() {
 
     // Bundle adjustment on the 2-view reconstruction.
     if (!FullBundleAdjustment()) {
-      // Set all values as unestimated and try to use the next candidate pair.
-      SetReconstructionAsUnestimated(reconstruction_);
       continue;
     }
 
@@ -353,9 +353,6 @@ bool IncrementalReconstructionEstimator::ChooseInitialViewPair() {
 
       return true;
     }
-
-    // Set all values as unestimated and try to use the next candidate pair.
-    SetReconstructionAsUnestimated(reconstruction_);
   }
 
   return false;
@@ -401,6 +398,10 @@ void IncrementalReconstructionEstimator::
 
 void IncrementalReconstructionEstimator::FindViewsToLocalize(
     std::vector<ViewId>* views_to_localize) {
+  // We localize all views that observe 75% or more than the number of 3D points
+  // observed by the view with the largest number of observed 3D points.
+  static const double kObserved3dPointsRatio = 0.75;
+
   // Determine the number of estimated tracks that each view observes.
   std::vector<std::pair<int, ViewId> > track_count_for_view;
   track_count_for_view.reserve(views_to_localize_.size());
@@ -424,8 +425,11 @@ void IncrementalReconstructionEstimator::FindViewsToLocalize(
   std::sort(track_count_for_view.begin(),
             track_count_for_view.end(),
             std::greater<std::pair<int, ViewId> >());
+  const int min_3d_points_observed = static_cast<double>(
+      track_count_for_view.begin()->first * kObserved3dPointsRatio);
   for (const auto& track_count : track_count_for_view) {
-    if (track_count.first < options_.min_num_absolute_pose_inliers) {
+    if (track_count.first < min_3d_points_observed ||
+        track_count.first < options_.min_num_absolute_pose_inliers) {
       break;
     }
     views_to_localize->emplace_back(track_count.second);
