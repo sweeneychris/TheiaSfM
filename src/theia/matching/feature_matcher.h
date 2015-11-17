@@ -439,10 +439,9 @@ void FeatureMatcher<DistanceMetric>::MatchAndVerifyImagePairs(
 
     // Output only the inliers.
     const std::vector<FeatureCorrespondence> old_correspondences =
-        image_pair_match.correspondences;
-    image_pair_match.correspondences.clear();
+        std::move(image_pair_match.correspondences);
     image_pair_match.correspondences.reserve(inliers.size());
-    for (int j = 0; j < inliers.size(); j++) {
+    for (int j = 0; j < inliers.size(); ++j) {
       image_pair_match.correspondences.emplace_back(
           old_correspondences[inliers[j]]);
     }
