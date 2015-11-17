@@ -28,12 +28,81 @@ private:
     typedef Eigen::Ref<Matrix> GenericMatrix;
     typedef const Eigen::Ref<const Matrix> ConstGenericMatrix;
 
+    // These two are for convenience in adapting the tridiagonal_qr_step() function
+    typedef Scalar RealScalar;
+    typedef int Index;
+
     int n;
     Vector main_diag;     // Main diagonal elements of the matrix
     Vector sub_diag;      // Sub-diagonal elements of the matrix
     Matrix evecs;         // To store eigenvectors
 
     bool computed;
+
+    static bool is_much_smaller_than(const Scalar &x, const Scalar &y,
+        const Scalar &prec = Eigen::NumTraits<Scalar>::dummy_precision())
+    {
+        return Eigen::numext::abs2(x) <= Eigen::numext::abs2(y) * prec * prec;
+    }
+
+    // Adapted from Eigen/src/Eigenvaleus/SelfAdjointEigenSolver.h
+    static void tridiagonal_qr_step(RealScalar *diag,
+                                    RealScalar *subdiag, Index start,
+                                    Index end, Scalar *matrixQ,
+                                    Index n)
+    {
+        RealScalar td = (diag[end-1] - diag[end]) * RealScalar(0.5);
+        RealScalar e = subdiag[end-1];
+        // Note that thanks to scaling, e^2 or td^2 cannot overflow, however they can still
+        // underflow thus leading to inf/NaN values when using the following commented code:
+        //   RealScalar e2 = numext::abs2(subdiag[end-1]);
+        //   RealScalar mu = diag[end] - e2 / (td + (td>0 ? 1 : -1) * sqrt(td*td + e2));
+        // This explain the following, somewhat more complicated, version:
+        RealScalar mu = diag[end];
+        if(td == 0)
+            mu -= std::abs(e);
+        else
+        {
+            RealScalar e2 = Eigen::numext::abs2(subdiag[end-1]);
+            RealScalar h = Eigen::numext::hypot(td, e);
+            if(e2==0)  mu -= (e / (td + (td>0 ? 1 : -1))) * (e / h);
+            else       mu -= e2 / (td + (td>0 ? h : -h));
+        }
+
+        RealScalar x = diag[start] - mu;
+        RealScalar z = subdiag[start];
+        for(Index k = start; k < end; ++k)
+        {
+            Eigen::JacobiRotation<RealScalar> rot;
+            rot.makeGivens(x, z);
+
+            // do T = G' T G
+            RealScalar sdk = rot.s() * diag[k] + rot.c() * subdiag[k];
+            RealScalar dkp1 = rot.s() * subdiag[k] + rot.c() * diag[k + 1];
+
+            diag[k] = rot.c() * (rot.c() * diag[k] - rot.s() * subdiag[k]) - rot.s() * (rot.c() * subdiag[k] - rot.s() * diag[k + 1]);
+            diag[k + 1] = rot.s() * sdk + rot.c() * dkp1;
+            subdiag[k] = rot.c() * sdk - rot.s() * dkp1;
+
+            if(k > start)
+                subdiag[k - 1] = rot.c() * subdiag[k - 1] - rot.s() * z;
+
+            x = subdiag[k];
+
+            if(k < end - 1)
+            {
+                z = -rot.s() * subdiag[k+1];
+                subdiag[k + 1] = rot.c() * subdiag[k + 1];
+            }
+
+            // apply the givens rotation to the unit matrix Q = Q * G
+            if(matrixQ)
+            {
+                Eigen::Map<Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor> > q(matrixQ, n, n);
+                q.applyOnTheRight(k, k + 1, rot);
+            }
+        }
+    }
 
 public:
     TridiagEigen() :
@@ -68,7 +137,7 @@ public:
         while(end > 0)
         {
             for(int i = start; i < end; i++)
-                if(Eigen::internal::isMuchSmallerThan(std::abs(subd[i]), (std::abs(maind[i]) + std::abs(maind[i + 1]))))
+                if(is_much_smaller_than(std::abs(subd[i]), (std::abs(maind[i]) + std::abs(maind[i + 1]))))
                     subd[i] = 0;
 
             // find the largest unreduced block
@@ -90,7 +159,7 @@ public:
             while(start > 0 && subd[start - 1] != 0)
                 start--;
 
-            Eigen::internal::tridiagonal_qr_step<Eigen::ColMajor>(maind, subd, start, end, evecs.data(), n);
+            tridiagonal_qr_step(maind, subd, start, end, evecs.data(), n);
         }
 
         if(info > 0)
