@@ -158,7 +158,7 @@ endif (CERES_FOUND)
 include_directories(
   include
   src
-  ${CERES_INCLUDE_DIR}
+  ${CERES_INCLUDE_DIRS}
   ${GFLAGS_INCLUDE_DIRS}
   ${GLOG_INCLUDE_DIRS})
 
