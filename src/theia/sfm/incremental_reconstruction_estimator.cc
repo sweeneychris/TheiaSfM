@@ -426,7 +426,7 @@ void IncrementalReconstructionEstimator::FindViewsToLocalize(
   std::sort(track_count_for_view.begin(),
             track_count_for_view.end(),
             std::greater<std::pair<int, ViewId> >());
-  const int min_3d_points_observed = static_cast<double>(
+  const int min_3d_points_observed = static_cast<int>(
       track_count_for_view.begin()->first * kObserved3dPointsRatio);
   for (const auto& track_count : track_count_for_view) {
     if (track_count.first < min_3d_points_observed ||
