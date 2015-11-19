@@ -76,6 +76,14 @@ void AddCameraParametersToProblem(const bool constant_extrinsic_parameters,
                                   double* camera_parameters,
                                   ceres::Problem* problem) {
   std::vector<int> constant_intrinsics;
+
+  // Set the extrinsics parameters to constant if desired.
+  if (constant_extrinsic_parameters) {
+    for (int i = 0; i < Camera::kExtrinsicsSize; i++) {
+      constant_intrinsics.push_back(i);
+    }
+  }
+
   // Keep focal length constant if desired.
   if (constant_intrinsic_parameters) {
     constant_intrinsics.push_back(Camera::kExtrinsicsSize +
@@ -92,10 +100,6 @@ void AddCameraParametersToProblem(const bool constant_extrinsic_parameters,
   problem->AddParameterBlock(camera_parameters,
                              Camera::kParameterSize,
                              subset_parameterization);
-
-  if (constant_extrinsic_parameters) {
-    problem->SetParameterBlockConstant(camera_parameters);
-  }
 }
 
 }  // namespace
