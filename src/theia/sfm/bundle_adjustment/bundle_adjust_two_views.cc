@@ -94,12 +94,18 @@ void AddCameraParametersToProblem(const bool constant_extrinsic_parameters,
   for (int i = 1; i < Camera::kIntrinsicsSize; i++) {
     constant_intrinsics.push_back(Camera::kExtrinsicsSize + i);
   }
-  ceres::SubsetParameterization* subset_parameterization =
+
+  if (constant_intrinsics.size() != Camera::kParameterSize) {
+    ceres::SubsetParameterization* subset_parameterization =
       new ceres::SubsetParameterization(Camera::kParameterSize,
                                         constant_intrinsics);
-  problem->AddParameterBlock(camera_parameters,
-                             Camera::kParameterSize,
-                             subset_parameterization);
+    problem->AddParameterBlock(camera_parameters,
+                               Camera::kParameterSize,
+                               subset_parameterization);
+  } else {
+    problem->AddParameterBlock(camera_parameters, Camera::kParameterSize);
+    problem->SetParameterBlockConstant(camera_parameters);
+  }
 }
 
 }  // namespace
