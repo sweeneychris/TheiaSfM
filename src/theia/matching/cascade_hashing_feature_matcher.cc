@@ -65,9 +65,7 @@ void CascadeHashingFeatureMatcher::AddImage(
         << "Could not initialize the cascade hasher.";
   }
 
-  // Create the hashing information. NOTE: The HashedImage keeps a pointer to
-  // the descriptors. This will become invalidated immediately after this
-  // function exits so care must be taken going forward.
+  // Create the hashing information.
   if (!ContainsKey(hashed_images_, image)) {
     hashed_images_[image] =
       cascade_hasher_->CreateHashedSiftDescriptors(descriptors);
@@ -90,9 +88,7 @@ void CascadeHashingFeatureMatcher::AddImage(
         << "Could not initialize the cascade hasher.";
   }
 
-  // Create the hashing information. NOTE: The HashedImage keeps a pointer to
-  // the descriptors. This will become invalidated immediately after this
-  // function exits so care must be taken going forward.
+  // Create the hashing information.
   if (!ContainsKey(hashed_images_, image)) {
     hashed_images_[image] =
       cascade_hasher_->CreateHashedSiftDescriptors(descriptors);
@@ -115,9 +111,7 @@ void CascadeHashingFeatureMatcher::AddImage(const std::string& image_name) {
         << "Could not initialize the cascade hasher.";
   }
 
-  // Create the hashing information. NOTE: The HashedImage keeps a pointer to
-  // the descriptors. This will become invalidated immediately after this
-  // function exits so care must be taken going forward.
+  // Create the hashing information.
   hashed_images_[image_name] =
       cascade_hasher_->CreateHashedSiftDescriptors(features->descriptors);
   VLOG(1) << "Created the hashed descriptors for image: " << image_name;
@@ -139,9 +133,7 @@ void CascadeHashingFeatureMatcher::AddImage(
         << "Could not initialize the cascade hasher.";
   }
 
-  // Create the hashing information. NOTE: The HashedImage keeps a pointer to
-  // the descriptors. This will become invalidated immediately after this
-  // function exits so care must be taken going forward.
+  // Create the hashing information.
   hashed_images_[image_name] =
       cascade_hasher_->CreateHashedSiftDescriptors(features->descriptors);
   VLOG(1) << "Created the hashed descriptors for image: " << image_name;
@@ -155,27 +147,25 @@ bool CascadeHashingFeatureMatcher::MatchImagePair(
                                  ? this->matcher_options_.lowes_ratio
                                  : 1.0;
 
-  // Get references to the hashed images for each set of features. NOTE: The
-  // HashedImages keep pointers to the original SIFT descriptors but because we
-  // use an LRUCache to load features, this pointer is very likely
-  // invalidated. We explicitly set it here to ensure the pointer is valid.
+  // Get references to the hashed images for each set of features.
   HashedImage& hashed_features1 =
       FindOrDie(hashed_images_, features1.image_name);
-  hashed_features1.descriptors = &features1.descriptors;
 
   HashedImage& hashed_features2 =
       FindOrDie(hashed_images_, features2.image_name);
-  hashed_features2.descriptors = &features2.descriptors;
 
   std::vector<IndexedFeatureMatch> matches;
-  cascade_hasher_->MatchImages(
-      hashed_features1, hashed_features2, lowes_ratio, &matches);
+  cascade_hasher_->MatchImages(hashed_features1, features1.descriptors,
+                               hashed_features2, features2.descriptors,
+                               lowes_ratio, &matches);
   // Only do symmetric matching if enough matches exist to begin with.
   if (matches.size() >= this->matcher_options_.min_num_feature_matches &&
       this->matcher_options_.keep_only_symmetric_matches) {
     std::vector<IndexedFeatureMatch> backwards_matches;
     cascade_hasher_->MatchImages(hashed_features2,
+                                 features2.descriptors,
                                  hashed_features1,
+                                 features1.descriptors,
                                  lowes_ratio,
                                  &backwards_matches);
     IntersectMatches(backwards_matches, &matches);

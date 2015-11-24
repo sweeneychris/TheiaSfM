@@ -63,12 +63,7 @@ struct HashedSiftDescriptor {
 };
 
 struct HashedImage {
-  explicit HashedImage(const std::vector<Eigen::VectorXf>& desc)
-      : descriptors(&desc) {}
   HashedImage() {}
-
-  // The original SIFT descriptors.
-  const std::vector<Eigen::VectorXf>* descriptors;
 
   // The mean of all descriptors (used for hashing).
   Eigen::VectorXf mean_descriptor;
@@ -103,15 +98,18 @@ class CascadeHasher {
 
   // Matches images with a fast matching scheme based on the hash codes
   // previously generated.
-  void MatchImages(const HashedImage& desc1,
-                   const HashedImage& desc2,
+  void MatchImages(const HashedImage& hashed_desc1,
+                   const std::vector<Eigen::VectorXf>& descriptors1,
+                   const HashedImage& hashed_desc2,
+                   const std::vector<Eigen::VectorXf>& descriptors2,
                    const double lowes_ratio,
                    std::vector<IndexedFeatureMatch>* matches) const;
 
  private:
   // Creates the hash code for each descriptor and determines which buckets each
   // descriptor belongs to.
-  void CreateHashedDescriptors(HashedImage* hashed_image) const;
+  void CreateHashedDescriptors(const std::vector<Eigen::VectorXf>& sift_desc,
+                               HashedImage* hashed_image) const;
 
   // Builds the buckets for an image based on the bucket ids and groups of the
   // sift descriptors.
