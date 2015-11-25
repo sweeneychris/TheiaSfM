@@ -73,9 +73,15 @@ bool AngularDifferenceIsAcceptable(
       rotation_matrix2 * rotation_matrix1.transpose();
 
   // Compute angular distance between the relative rotations.
+  const Eigen::Matrix3d loop_rotation =
+      relative_rotation_matrix.transpose() * composed_relative_rotation_matrix;
+  Eigen::Vector3d loop_rotation_aa;
+  ceres::RotationMatrixToAngleAxis(
+      ceres::ColumnMajorAdapter3x3(loop_rotation.data()),
+      loop_rotation_aa.data());
+
   const double rotation_angular_difference_degrees =
-      RadToDeg(Eigen::AngleAxisd(relative_rotation_matrix.transpose() *
-                                 composed_relative_rotation_matrix).angle());
+      RadToDeg(loop_rotation_aa.norm());
   return rotation_angular_difference_degrees <=
          max_relative_rotation_difference_degrees;
 }
