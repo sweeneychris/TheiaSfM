@@ -69,10 +69,10 @@ TEST(DecomposeEssentialMatrix, BasicTest) {
         std::min((translation - gt_translation).norm(),
                  (translation + gt_translation).norm());
 
-    const double rotation1_dist =
-        Eigen::AngleAxisd(gt_rotation.transpose() * rotation1).angle();
-    const double rotation2_dist =
-        Eigen::AngleAxisd(gt_rotation.transpose() * rotation2).angle();
+    const Eigen::AngleAxisd rotation1_aa(gt_rotation.transpose() * rotation1);
+    const Eigen::AngleAxisd rotation2_aa(gt_rotation.transpose() * rotation2);
+    const double rotation1_dist = rotation1_aa.angle();
+    const double rotation2_dist = rotation2_aa.angle();
 
     EXPECT_TRUE(translation_dist < kTranslationTolerance &&
                 (rotation1_dist < kRotationTolerance ||
