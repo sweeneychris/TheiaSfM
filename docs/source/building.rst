@@ -44,6 +44,7 @@ Building
 Building should be equivalent on all platforms, thanks to CMake. To install Theia, simply run the following commands after you have installed the :ref:`section-dependencies`.
 
 First, navigate to the source directory of the Theia library. Then execute the following commands:
+
 .. code-block:: bash
 
  mkdir theia-build
