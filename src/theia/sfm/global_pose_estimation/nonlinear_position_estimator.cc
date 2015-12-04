@@ -97,6 +97,11 @@ bool NonlinearPositionEstimator::EstimatePositions(
     const std::unordered_map<ViewId, Vector3d>& orientations,
     std::unordered_map<ViewId, Vector3d>* positions) {
   CHECK_NOTNULL(positions);
+  if (view_pairs.empty() || orientations.empty()) {
+    VLOG(2) << "Number of view_pairs = " << view_pairs.size()
+            << " Number of orientations = " << orientations.size();
+    return false;
+  }
   triangulated_points_.clear();
   problem_.reset(new ceres::Problem());
   view_pairs_ = &view_pairs;
