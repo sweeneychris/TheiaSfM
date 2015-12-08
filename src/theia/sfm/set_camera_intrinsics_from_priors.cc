@@ -44,6 +44,48 @@
 
 namespace theia {
 
+void SetViewCameraIntrinsicsFromPriors(View* view) {
+  Camera* camera = view->MutableCamera();
+  const CameraIntrinsicsPrior prior = view->CameraIntrinsicsPrior();
+
+  // Set the image dimensions.
+  camera->SetImageSize(prior.image_width, prior.image_height);
+
+  // Set the focal length.
+  if (prior.focal_length.is_set) {
+    camera->SetFocalLength(prior.focal_length.value);
+  } else {
+    camera->SetFocalLength(1.2 * static_cast<double>(std::max(
+        prior.image_width, prior.image_height)));
+  }
+
+  // Set the principal point.
+  if (prior.principal_point[0].is_set && prior.principal_point[1].is_set) {
+    camera->SetPrincipalPoint(prior.principal_point[0].value,
+                              prior.principal_point[1].value);
+  } else {
+    camera->SetPrincipalPoint(prior.image_width / 2.0,
+                              prior.image_height / 2.0);
+  }
+
+  // Set aspect ratio if available.
+  if (prior.aspect_ratio.is_set) {
+    camera->SetAspectRatio(prior.aspect_ratio.value);
+  }
+
+  // Set skew if available.
+  if (prior.skew.is_set) {
+    camera->SetSkew(prior.skew.value);
+  }
+
+  // Set radial distortion if available.
+  if (prior.radial_distortion[0].is_set &&
+      prior.radial_distortion[1].is_set) {
+    camera->SetRadialDistortion(prior.radial_distortion[0].value,
+                                prior.radial_distortion[1].value);
+  }
+}
+
 // Sets the camera intrinsics from the CameraIntrinsicsPrior of each view. Views
 // that do not have a focal length prior will set a value corresponding to a
 // median viewing angle. Principal points that are not provided by the priors
@@ -52,45 +94,7 @@ void SetCameraIntrinsicsFromPriors(Reconstruction* reconstruction) {
   const auto& view_ids = reconstruction->ViewIds();
   for (const ViewId view_id : view_ids) {
     View* view = CHECK_NOTNULL(reconstruction->MutableView(view_id));
-    Camera* camera = view->MutableCamera();
-    const CameraIntrinsicsPrior prior = view->CameraIntrinsicsPrior();
-
-    // Set the image dimensions.
-    camera->SetImageSize(prior.image_width, prior.image_height);
-
-    // Set the focal length.
-    if (prior.focal_length.is_set) {
-      camera->SetFocalLength(prior.focal_length.value);
-    } else {
-      camera->SetFocalLength(1.2 * static_cast<double>(std::max(
-                                       prior.image_width, prior.image_height)));
-    }
-
-    // Set the principal point.
-    if (prior.principal_point[0].is_set && prior.principal_point[1].is_set) {
-      camera->SetPrincipalPoint(prior.principal_point[0].value,
-                                prior.principal_point[1].value);
-    } else {
-      camera->SetPrincipalPoint(prior.image_width / 2.0,
-                                prior.image_height / 2.0);
-    }
-
-    // Set aspect ratio if available.
-    if (prior.aspect_ratio.is_set) {
-      camera->SetAspectRatio(prior.aspect_ratio.value);
-    }
-
-    // Set skew if available.
-    if (prior.skew.is_set) {
-      camera->SetSkew(prior.skew.value);
-    }
-
-    // Set radial distortion if available.
-    if (prior.radial_distortion[0].is_set &&
-        prior.radial_distortion[1].is_set) {
-      camera->SetRadialDistortion(prior.radial_distortion[0].value,
-                                  prior.radial_distortion[1].value);
-    }
+    SetViewCameraIntrinsicsFromPriors(view);
   }
 }
 
