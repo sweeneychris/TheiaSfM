@@ -59,7 +59,7 @@ void CascadeHashingFeatureMatcher::AddImage(
   // cache.
   FeatureMatcher<L2>::AddImage(image, keypoints, descriptors);
 
-  if (cascade_hasher_.get() == nullptr) {
+  if (cascade_hasher_.get() == nullptr && descriptors.size() > 0) {
     cascade_hasher_.reset(new CascadeHasher());
     CHECK(cascade_hasher_->Initialize(descriptors[0].size()))
         << "Could not initialize the cascade hasher.";
@@ -82,7 +82,7 @@ void CascadeHashingFeatureMatcher::AddImage(
   // cache.
   FeatureMatcher<L2>::AddImage(image, keypoints, descriptors, intrinsics);
 
-  if (cascade_hasher_.get() == nullptr) {
+  if (cascade_hasher_.get() == nullptr && descriptors.size() > 0) {
     cascade_hasher_.reset(new CascadeHasher());
     CHECK(cascade_hasher_->Initialize(descriptors[0].size()))
         << "Could not initialize the cascade hasher.";
@@ -105,7 +105,7 @@ void CascadeHashingFeatureMatcher::AddImage(const std::string& image_name) {
           FeatureFilenameFromImage(image_name));
 
   // Initialize the cascade hasher if needed.
-  if (cascade_hasher_.get() == nullptr) {
+  if (cascade_hasher_.get() == nullptr && features->descriptors.size() > 0) {
     cascade_hasher_.reset(new CascadeHasher());
     CHECK(cascade_hasher_->Initialize(features->descriptors[0].size()))
         << "Could not initialize the cascade hasher.";
@@ -127,7 +127,7 @@ void CascadeHashingFeatureMatcher::AddImage(
           FeatureFilenameFromImage(image_name));
 
   // Initialize the cascade hasher if needed.
-  if (cascade_hasher_.get() == nullptr) {
+  if (cascade_hasher_.get() == nullptr && features->descriptors.size() > 0) {
     cascade_hasher_.reset(new CascadeHasher());
     CHECK(cascade_hasher_->Initialize(features->descriptors[0].size()))
         << "Could not initialize the cascade hasher.";

@@ -195,4 +195,38 @@ TEST(CascadeHashingFeatureMatcherTest, RatioTestOutOfCore) {
   EXPECT_EQ(matches[0].correspondences.size(), 0);
 }
 
+TEST(CascadeHashingFeatureMatcherTest, NoDescriptorsInCore) {
+  // Set up descriptors.
+  std::vector<VectorXf> descriptor1;
+  std::vector<VectorXf> descriptor2(2);
+  // Set the two descriptors to be very close to each other so that they do not
+  // pass the ratio test.
+  descriptor2[0] = VectorXf::Constant(kNumDescriptorDimensions, 1);
+  descriptor2[0].normalize();
+  descriptor2[1] = VectorXf::Constant(kNumDescriptorDimensions, 1);
+  descriptor2[1].normalize();
+
+  // Set options.
+  FeatureMatcherOptions options;
+  options.match_out_of_core = true;
+  options.keypoints_and_descriptors_output_dir = GTEST_TESTING_OUTPUT_DIRECTORY;
+  options.min_num_feature_matches = 30;
+  options.keep_only_symmetric_matches = true;
+  options.use_lowes_ratio = true;
+
+  // Add features.
+  std::vector<Keypoint> keypoints1(descriptor1.size());
+  std::vector<Keypoint> keypoints2(descriptor2.size());
+  CascadeHashingFeatureMatcher matcher(options);
+  matcher.AddImage("1", keypoints1, descriptor1);
+  matcher.AddImage("2", keypoints2, descriptor2);
+
+  // Match features.
+  std::vector<ImagePairMatch> matches;
+  matcher.MatchImages(&matches);
+
+  // Check that the results are valid.
+  EXPECT_EQ(matches.size(), 0);
+}
+
 }  // namespace theia
