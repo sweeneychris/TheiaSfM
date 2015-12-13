@@ -47,7 +47,6 @@
 #include "theia/matching/feature_matcher.h"
 #include "theia/matching/indexed_feature_match.h"
 #include "theia/util/random.h"
-#include "theia/util/timer.h"
 
 namespace theia {
 
