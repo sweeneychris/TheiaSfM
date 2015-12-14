@@ -37,6 +37,8 @@
 
 #include <ceres/ceres.h>
 #include <unordered_set>
+
+#include "theia/sfm/bundle_adjustment/create_loss_function.h"
 #include "theia/sfm/types.h"
 
 namespace theia {
@@ -65,6 +67,11 @@ enum class OptimizeIntrinsicsType {
 };
 
 struct BundleAdjustmentOptions {
+  // The type of loss function used for BA. By default, we use a standard L2
+  // loss function, but robust cost functions could be used.
+  LossFunctionType loss_function_type = LossFunctionType::TRIVIAL;
+  double robust_loss_width = 10.0;
+
   // For larger problems (> 1000 cameras) it is recommended to use the
   // ITERATIVE_SCHUR solver.
   ceres::LinearSolverType linear_solver_type = ceres::SPARSE_SCHUR;

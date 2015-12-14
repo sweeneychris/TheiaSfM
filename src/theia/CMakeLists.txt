@@ -70,6 +70,7 @@ set(THEIA_SRC
   math/probability/sequential_probability_ratio.cc
   sfm/bundle_adjustment/bundle_adjust_two_views.cc
   sfm/bundle_adjustment/bundle_adjustment.cc
+  sfm/bundle_adjustment/create_loss_function.cc
   sfm/bundle_adjustment/optimize_relative_position_with_known_rotation.cc
   sfm/camera/camera.cc
   sfm/camera/projection_matrix_utils.cc

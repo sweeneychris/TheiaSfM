@@ -36,11 +36,13 @@
 
 #include <ceres/ceres.h>
 #include <glog/logging.h>
+#include <memory>
 #include <unordered_set>
 #include <vector>
 
 #include "theia/util/map_util.h"
 #include "theia/util/timer.h"
+#include "theia/sfm/bundle_adjustment/create_loss_function.h"
 #include "theia/sfm/camera/camera.h"
 #include "theia/sfm/camera/reprojection_error.h"
 #include "theia/sfm/reconstruction.h"
@@ -166,6 +168,10 @@ BundleAdjustmentSummary BundleAdjustPartialReconstruction(
   ceres::ParameterBlockOrdering* parameter_ordering =
       solver_options.linear_solver_ordering.get();
 
+  // Get the loss function that will be used for BA.
+  std::unique_ptr<ceres::LossFunction> loss_function =
+      CreateLossFunction(options.loss_function_type, options.robust_loss_width);
+
   // Obtain which params will be constant during optimization.
   const std::vector<int> constant_intrinsics =
       GetIntrinsicsToOptimize(options.intrinsics_to_optimize);
@@ -201,7 +207,7 @@ BundleAdjustmentSummary BundleAdjustPartialReconstruction(
 
       problem.AddResidualBlock(
           ReprojectionError::Create(*feature),
-          NULL,
+          loss_function.get(),
           camera->mutable_parameters(),
           track->MutablePoint()->data());
       // Add the point to group 0.
@@ -237,7 +243,7 @@ BundleAdjustmentSummary BundleAdjustPartialReconstruction(
       const Feature* feature = CHECK_NOTNULL(view->GetFeature(track_id));
       problem.AddResidualBlock(
           ReprojectionError::Create(*feature),
-          NULL,
+          loss_function.get(),
           camera->mutable_parameters(),
           track->MutablePoint()->data());
 
