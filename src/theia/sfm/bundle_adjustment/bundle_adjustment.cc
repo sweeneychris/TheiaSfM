@@ -160,17 +160,19 @@ BundleAdjustmentSummary BundleAdjustPartialReconstruction(
 
   // Start setup timer.
   Timer timer;
-  ceres::Problem problem;
+
+  // Get the loss function that will be used for BA.
+  ceres::Problem::Options problem_options;
+  std::unique_ptr<ceres::LossFunction> loss_function =
+      CreateLossFunction(options.loss_function_type, options.robust_loss_width);
+  problem_options.loss_function_ownership = ceres::DO_NOT_TAKE_OWNERSHIP;;
+  ceres::Problem problem(problem_options);
 
   // Set solver options.
   ceres::Solver::Options solver_options;
   SetSolverOptions(options, &solver_options);
   ceres::ParameterBlockOrdering* parameter_ordering =
       solver_options.linear_solver_ordering.get();
-
-  // Get the loss function that will be used for BA.
-  std::unique_ptr<ceres::LossFunction> loss_function =
-      CreateLossFunction(options.loss_function_type, options.robust_loss_width);
 
   // Obtain which params will be constant during optimization.
   const std::vector<int> constant_intrinsics =

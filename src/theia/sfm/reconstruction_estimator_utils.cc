@@ -104,15 +104,15 @@ void GetFeatureCorrespondences(const View& view1, const View& view2,
 
 }  // namespace
 
-using Eigen::Vector3d;
-
-// Sets the bundle adjustment optiosn from the reconstruction estimator options.
+// Sets the bundle adjustment options from the reconstruction estimator options.
 BundleAdjustmentOptions SetBundleAdjustmentOptions(
     const ReconstructionEstimatorOptions& options, const int num_views) {
   static const int kMinViewsForSparseSchur = 150;
 
   BundleAdjustmentOptions ba_options;
   ba_options.num_threads = options.num_threads;
+  ba_options.loss_function_type = options.bundle_adjustment_loss_function_type;
+  ba_options.robust_loss_width = options.bundle_adjustment_robust_loss_width;
   ba_options.use_inner_iterations = true;
   ba_options.intrinsics_to_optimize = options.intrinsics_to_optimize;
 
@@ -169,7 +169,8 @@ void SetReconstructionFromEstimatedPoses(
                                    "already been estimated. View Id "
                                 << position.first;
 
-    const Vector3d* orientation = FindOrNull(orientations, position.first);
+    const Eigen::Vector3d* orientation =
+        FindOrNull(orientations, position.first);
     if (orientation == nullptr) {
       LOG(WARNING) << "Cannot add View " << position.first
                    << " to the reconstruction because it does nto contain an "

@@ -166,6 +166,17 @@ DEFINE_double(
 DEFINE_bool(bundle_adjust_tracks, true,
             "Set to true to optimize tracks immediately upon estimation.");
 
+// Bundle adjustment parameters.
+DEFINE_string(bundle_adjustment_robust_loss_function, "NONE",
+              "By setting this to an option other than NONE, a robust loss "
+              "function will be used during bundle adjustment which can "
+              "improve robustness to outliers. Options are NONE, HUBER, "
+              "SOFTLONE, CAUCHY, ARCTAN, and TUKEY.");
+DEFINE_double(bundle_adjustment_robust_loss_width, 10.0,
+              "If the BA loss function is not NONE, then this value controls "
+              "where the robust loss begins with respect to reprojection error "
+              "in pixels.");
+
 // Sift parameters.
 DEFINE_int32(sift_num_octaves, -1, "Number of octaves in the scale space. "
              "Set to a value less than 0 to use the maximum  ");
@@ -284,6 +295,12 @@ ReconstructionBuilderOptions SetReconstructionBuilderOptions() {
       FLAGS_triangulation_reprojection_error_pixels;
   reconstruction_estimator_options.bundle_adjust_tracks =
       FLAGS_bundle_adjust_tracks;
+
+  // Bundle adjustment options (used by all SfM pipelines).
+  reconstruction_estimator_options.bundle_adjustment_loss_function_type =
+      StringToLossFunction(FLAGS_bundle_adjustment_robust_loss_function);
+  reconstruction_estimator_options.bundle_adjustment_robust_loss_width =
+      FLAGS_bundle_adjustment_robust_loss_width;
   return options;
 }
 

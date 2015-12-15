@@ -756,6 +756,22 @@ description of these options.
   reprojection error of any observation is greater than this value then we can
   consider the triangluation unsuccessful.
 
+.. member:: LossFunctionType ReconstructionEstimatorOptions::bundle_adjustment_loss_function_type
+
+  DEFAULT: ``LossFunctionType::TRIVIAL``
+
+  A `robust cost function
+  <http://ceres-solver.org/nnls_modeling.html#instances>`_ may be used during
+  bundle adjustment to increase robustness to noise and outliers during
+  optimization.
+
+.. member:: double ReconstructionEstimatorOptions::bundle_adjustment_robust_loss_width
+
+  DEFAULT: ``10.0``
+
+  If a robust cost function is used, this is the value of the reprojection error
+  at which robustness begins.
+
 .. member:: int ReconstructorEstimatorOptions::min_cameras_for_iterative_solver
 
   DEFAULT: ``1000``
@@ -1234,6 +1250,22 @@ We perform bundle adjustment using `Ceres Solver
 the reprojection error.
 
 .. class:: BundleAdjustmentOptions
+
+.. member:: LossFunctionType BundleAdjustmentOptions::loss_function_type
+
+  DEFAULT: ``TRIVIAL``
+
+  A `robust cost function
+  <http://ceres-solver.org/nnls_modeling.html#instances>`_ may be used during
+  bundle adjustment to increase robustness to noise and outliers during
+  optimization.
+
+.. member:: double BundleAdjustmentOptions::robust_loss_width
+
+  DEFAULT: ``10.0``
+
+  If a robust cost function is used, this is the value of the reprojection error
+  at which robustness begins.
 
 .. member:: ceres::LinearSolverType BundleAdjustmentOptions::linear_solver_type
 

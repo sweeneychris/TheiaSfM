@@ -202,6 +202,17 @@ struct ReconstructionEstimatorOptions {
 
   // --------------- Bundle Adjustment Options --------------- //
 
+  // For bundle adjustment, we may want to use a robust loss function to improve
+  // robustness to outliers. The various types of robust loss functions used can
+  // be found at //theia/sfm/bundle_adjustment/create_loss_function.h
+  LossFunctionType bundle_adjustment_loss_function_type =
+      LossFunctionType::TRIVIAL;
+
+  // For robust loss functions, the robustness will begin for values that have
+  // an error greater than this value. For example, Tukey loss will have a
+  // constant loss when the error values are greater than this.
+  double bundle_adjustment_robust_loss_width = 10.0;
+
   // Use SPARSE_SCHUR for problems smaller than this size and ITERATIVE_SCHUR
   // for problems larger than this size.
   int min_cameras_for_iterative_solver = 1000;

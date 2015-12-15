@@ -62,6 +62,9 @@ std::unique_ptr<ceres::LossFunction> CreateLossFunction(
     case LossFunctionType::TUKEY:
       loss_function.reset(new ceres::TukeyLoss(robust_loss_width));
       break;
+    default:
+      LOG(FATAL) << "Invalid Loss Function chosen.";
+      break;
   }
 
   return loss_function;

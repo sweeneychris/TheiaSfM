@@ -44,6 +44,7 @@
 using theia::DescriptorExtractorType;
 using theia::GlobalPositionEstimatorType;
 using theia::GlobalRotationEstimatorType;
+using theia::LossFunctionType;
 using theia::MatchingStrategy;
 using theia::OptimizeIntrinsicsType;
 using theia::ReconstructionEstimatorType;
@@ -132,6 +133,25 @@ inline OptimizeIntrinsicsType StringToOptimizeIntrinsicsType(
         FOCAL_LENGTH_PRINCIPAL_POINTS_AND_RADIAL_DISTORTION;
   } else {
     LOG(FATAL) << "Invalid option for intrinsics_to_optimize";
+  }
+}
+
+inline LossFunctionType StringToLossFunction(
+    const std::string& loss_function_type) {
+  if (loss_function_type == "NONE") {
+    return LossFunctionType::TRIVIAL;
+  } else if (loss_function_type == "HUBER") {
+    return LossFunctionType::HUBER;
+  } else if (loss_function_type == "SOFTLONE") {
+    return LossFunctionType::SOFTLONE;
+  } else if (loss_function_type == "CAUCHY") {
+    return LossFunctionType::CAUCHY;
+  } else if (loss_function_type == "ARCTAN") {
+    return LossFunctionType::ARCTAN;
+  } else if (loss_function_type == "TUKEY") {
+    return LossFunctionType::TUKEY;
+  } else {
+    LOG(FATAL) << "Invalid option for bundle_adjustment_robust_loss_function";
   }
 }
 
