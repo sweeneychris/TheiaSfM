@@ -78,6 +78,7 @@ set(THEIA_SRC
   sfm/estimate_track.cc
   sfm/estimate_twoview_info.cc
   sfm/estimators/estimate_calibrated_absolute_pose.cc
+  sfm/estimators/estimate_dominant_plane_from_points.cc
   sfm/estimators/estimate_essential_matrix.cc
   sfm/estimators/estimate_fundamental_matrix.cc
   sfm/estimators/estimate_homography.cc
@@ -215,6 +216,7 @@ if (BUILD_TESTING)
   gtest(sfm/camera/projection_matrix_utils)
   gtest(sfm/camera/radial_distortion)
   gtest(sfm/estimators/estimate_calibrated_absolute_pose)
+  gtest(sfm/estimators/estimate_dominant_plane_from_points)
   gtest(sfm/estimators/estimate_essential_matrix)
   gtest(sfm/estimators/estimate_fundamental_matrix)
   gtest(sfm/estimators/estimate_homography)

@@ -103,6 +103,7 @@
 #include "theia/sfm/estimate_track.h"
 #include "theia/sfm/estimate_twoview_info.h"
 #include "theia/sfm/estimators/estimate_calibrated_absolute_pose.h"
+#include "theia/sfm/estimators/estimate_dominant_plane_from_points.h"
 #include "theia/sfm/estimators/estimate_essential_matrix.h"
 #include "theia/sfm/estimators/estimate_fundamental_matrix.h"
 #include "theia/sfm/estimators/estimate_homography.h"
