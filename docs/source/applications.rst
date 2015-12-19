@@ -95,11 +95,11 @@ positions difference, and the difference between camera intrinsic parameters.
 
 .. code-block:: bash
 
-   ./bin/compare_reconstructions --reconstruction1=ground_truth_reconstruction --reconstruction2=your_reconstruction --logtostderr
+   ./bin/compare_reconstructions --reference_reconstruction=ground_truth_reconstruction --reconstruction_to_align=your_reconstruction --logtostderr
 
-Note that reconstruction1 is considered the "ground truth" reconstruction for
-this application. The reconstruction in reconstruction2 is aligned to
-reconstruction1 with a similarity transformation (aligning the cameras with the
+Note that reference_reconstruction is considered the "ground truth" reconstruction for
+this application. The reconstruction in reconstruction_to_align is aligned to
+reference_reconstruction with a similarity transformation (aligning the cameras with the
 same name in both reconstructions) then the errors are measured.
 
 For the 1DSfM dataset, you can use the ``compare_reconstructions`` application

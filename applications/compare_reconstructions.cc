@@ -42,8 +42,14 @@
 #include <memory>
 #include <string>
 
-DEFINE_string(reconstruction1, "", "Reconstruction file to compare.");
-DEFINE_string(reconstruction2, "", "Reconstruction file to compare.");
+DEFINE_string(reference_reconstruction, "",
+              "Filepath to the reconstruction that is considered the reference "
+              "or 'ground truth' reconstruction.");
+DEFINE_string(reconstruction_to_align, "",
+              "Filepath to the reconstruction that will be aligned to the "
+              "ground truth reconstruction. The reported errors/distance are "
+              "the distances from this to the reference reconstruction after a "
+              "robust alignment has been performed.");
 DEFINE_double(robust_alignment_threshold, 0.0,
               "If greater than 0.0, this threshold sets determines inliers for "
               "RANSAC alignment of reconstructions. The inliers are then used "
@@ -84,20 +90,22 @@ double AngularDifference(const Eigen::Vector3d& rotation1,
 
 // Aligns the orientations of the models (ignoring the positions) and reports
 // the difference in orientations after alignment.
-void EvaluateRotations(const Reconstruction& reconstruction1,
-                       const Reconstruction& reconstruction2,
+void EvaluateRotations(const Reconstruction& reference_reconstruction,
+                       const Reconstruction& reconstruction_to_align,
                        const std::vector<std::string>& common_view_names) {
   // Gather all the rotations in common with both views.
   std::vector<Eigen::Vector3d> rotations1, rotations2;
   rotations1.reserve(common_view_names.size());
   rotations2.reserve(common_view_names.size());
   for (const std::string& view_name : common_view_names) {
-    const ViewId view_id1 = reconstruction1.ViewIdFromName(view_name);
-    const ViewId view_id2 = reconstruction2.ViewIdFromName(view_name);
-    rotations1.push_back(
-        reconstruction1.View(view_id1)->Camera().GetOrientationAsAngleAxis());
-    rotations2.push_back(
-        reconstruction2.View(view_id2)->Camera().GetOrientationAsAngleAxis());
+    const ViewId view_id1 = reference_reconstruction.ViewIdFromName(view_name);
+    const ViewId view_id2 = reconstruction_to_align.ViewIdFromName(view_name);
+    rotations1.push_back(reference_reconstruction.View(view_id1)
+                             ->Camera()
+                             .GetOrientationAsAngleAxis());
+    rotations2.push_back(reconstruction_to_align.View(view_id2)
+                             ->Camera()
+                             .GetOrientationAsAngleAxis());
   }
 
   // Align the rotation estimations.
@@ -120,13 +128,14 @@ void EvaluateRotations(const Reconstruction& reconstruction1,
 // Align the reconstructions then evaluate the pose errors.
 void EvaluateAlignedPoseError(
     const std::vector<std::string>& common_view_names,
-    const Reconstruction& reconstruction1,
-    Reconstruction* reconstruction2) {
+    const Reconstruction& reference_reconstruction,
+    Reconstruction* reconstruction_to_align) {
   if (FLAGS_robust_alignment_threshold > 0.0) {
     AlignReconstructionsRobust(FLAGS_robust_alignment_threshold,
-                               reconstruction1, reconstruction2);
+                               reference_reconstruction,
+                               reconstruction_to_align);
   } else {
-    AlignReconstructions(reconstruction1, reconstruction2);
+    AlignReconstructions(reference_reconstruction, reconstruction_to_align);
   }
 
   std::vector<double> rotation_bins = {1, 2, 5, 10, 15, 20, 45};
@@ -135,11 +144,13 @@ void EvaluateAlignedPoseError(
   std::vector<double> focal_length_errors(common_view_names.size());
   for (int i = 0; i < common_view_names.size(); i++) {
     const ViewId view_id1 =
-        reconstruction1.ViewIdFromName(common_view_names[i]);
+        reference_reconstruction.ViewIdFromName(common_view_names[i]);
     const ViewId view_id2 =
-        reconstruction2->ViewIdFromName(common_view_names[i]);
-    const theia::Camera& camera1 = reconstruction1.View(view_id1)->Camera();
-    const theia::Camera& camera2 = reconstruction2->View(view_id2)->Camera();
+        reconstruction_to_align->ViewIdFromName(common_view_names[i]);
+    const theia::Camera& camera1 =
+        reference_reconstruction.View(view_id1)->Camera();
+    const theia::Camera& camera2 =
+        reconstruction_to_align->View(view_id2)->Camera();
 
     // Rotation error.
     const double rotation_error =
@@ -181,38 +192,43 @@ int main(int argc, char* argv[]) {
   google::InitGoogleLogging(argv[0]);
   THEIA_GFLAGS_NAMESPACE::ParseCommandLineFlags(&argc, &argv, true);
 
-  std::unique_ptr<Reconstruction> reconstruction1(new Reconstruction());
-  CHECK(theia::ReadReconstruction(FLAGS_reconstruction1,
-                                  reconstruction1.get()))
+  std::unique_ptr<Reconstruction> reference_reconstruction(
+      new Reconstruction());
+  CHECK(theia::ReadReconstruction(FLAGS_reference_reconstruction,
+                                  reference_reconstruction.get()))
       << "Could not read ground truth reconstruction file:"
-      << FLAGS_reconstruction1;
+      << FLAGS_reference_reconstruction;
 
-  std::unique_ptr<Reconstruction> reconstruction2(new Reconstruction());
-  CHECK(theia::ReadReconstruction(FLAGS_reconstruction2, reconstruction2.get()))
-      << "Could not read reconstruction file:" << FLAGS_reconstruction2;
+  std::unique_ptr<Reconstruction> reconstruction_to_align(new Reconstruction());
+  CHECK(theia::ReadReconstruction(FLAGS_reconstruction_to_align,
+                                  reconstruction_to_align.get()))
+      << "Could not read reconstruction file:" << FLAGS_reconstruction_to_align;
 
   const std::vector<std::string> common_view_names =
-      theia::FindCommonViewsByName(*reconstruction1, *reconstruction2);
+      theia::FindCommonViewsByName(*reference_reconstruction,
+                                   *reconstruction_to_align);
 
   // Compare number of cameras.
   LOG(INFO) << "Number of cameras:\n"
-            << "\tReconstruction 1: " << reconstruction1->NumViews()
-            << "\n\tReconstruction 2: " << reconstruction2->NumViews()
+            << "\tReconstruction 1: " << reference_reconstruction->NumViews()
+            << "\n\tReconstruction 2: " << reconstruction_to_align->NumViews()
             << "\n\tNumber of Common cameras: "
             << common_view_names.size();
 
   // Compare number of 3d points.
   LOG(INFO) << "Number of 3d points:\n"
-            << "\tReconstruction 1: " << reconstruction1->NumTracks()
-            << "\n\tReconstruction 2: " << reconstruction2->NumTracks();
+            << "\tReconstruction 1: " << reference_reconstruction->NumTracks()
+            << "\n\tReconstruction 2: " << reconstruction_to_align->NumTracks();
 
   // Evaluate rotation independent of positions.
-  EvaluateRotations(*reconstruction1, *reconstruction2, common_view_names);
+  EvaluateRotations(*reference_reconstruction,
+                    *reconstruction_to_align,
+                    common_view_names);
 
   // Align models and evaluate position and rotation errors.
   EvaluateAlignedPoseError(common_view_names,
-                           *reconstruction1,
-                           reconstruction2.get());
+                           *reference_reconstruction,
+                           reconstruction_to_align.get());
 
   return 0;
 }
