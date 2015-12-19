@@ -41,6 +41,7 @@
 namespace theia {
 
 struct SimilarityTransformation {
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   Eigen::Matrix3d rotation;
   Eigen::Vector3d translation;
   double scale;
