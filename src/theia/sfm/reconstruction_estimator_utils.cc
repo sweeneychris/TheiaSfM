@@ -297,6 +297,8 @@ int RemoveOutlierFeatures(const std::unordered_set<TrackId>& track_ids,
 
     std::vector<Eigen::Vector3d> ray_directions;
     const auto& view_ids = track->ViewIds();
+    int num_projections = 0;
+    double mean_sq_reprojection_error = 0;
     for (const ViewId view_id : view_ids) {
       const View* view = CHECK_NOTNULL(reconstruction->View(view_id));
       if (!view->IsEstimated()) {
@@ -313,15 +315,21 @@ int RemoveOutlierFeatures(const std::unordered_set<TrackId>& track_ids,
       // Reproject the observations.
       Eigen::Vector2d projection;
       const double depth = camera.ProjectPoint(track->Point(), &projection);
-      // Remove the feature if the reprojection error is too large or is behind
-      // the camera.
-      const double sq_reprojection_error =
-          (projection - *feature).squaredNorm();
-      if (depth < 0 || sq_reprojection_error > max_sq_reprojection_error) {
+      // Remove the feature if the reprojection is behind the camera.
+      if (depth < 0) {
         ++num_bad_reprojections;
         track->SetEstimated(false);
         break;
       }
+      mean_sq_reprojection_error += (projection - *feature).squaredNorm();
+      ++num_projections;
+    }
+
+    mean_sq_reprojection_error /= static_cast<double>(num_projections);
+    if (track->IsEstimated() &&
+        mean_sq_reprojection_error > max_sq_reprojection_error) {
+      ++num_bad_reprojections;
+      track->SetEstimated(false);
     }
 
     // The track will remain estimated if the reprojection errors were all

@@ -89,6 +89,8 @@ bool AcceptableReprojectionError(
     const TrackId& track_id,
     const double sq_max_reprojection_error_pixels) {
   const Track& track = *reconstruction.Track(track_id);
+  int num_projections = 0;
+  double mean_sq_reprojection_error = 0;
   for (const ViewId view_id : track.ViewIds()) {
     const View* view = reconstruction.View(view_id);
     if (view == nullptr || !view->IsEstimated()) {
@@ -100,13 +102,13 @@ bool AcceptableReprojectionError(
     if (camera.ProjectPoint(track.Point(), &reprojection) < 0) {
       return false;
     }
-    const double sq_reprojection_error =
-        (*feature - reprojection).squaredNorm();
-    if (sq_reprojection_error > sq_max_reprojection_error_pixels) {
-      return false;
-    }
+
+    mean_sq_reprojection_error += (*feature - reprojection).squaredNorm();
+    ++num_projections;
   }
-  return true;
+
+  return (mean_sq_reprojection_error / static_cast<double>(num_projections)) <
+         sq_max_reprojection_error_pixels;
 }
 
 int NumEstimatedViewsObservingTrack(const Reconstruction& reconstruction,
