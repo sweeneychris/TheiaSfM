@@ -187,7 +187,7 @@ bool RobustRotationEstimator::SolveL1Regression() {
   static const double kConvergenceThreshold = 1e-3;
 
   L1Solver<Eigen::SparseMatrix<double> >::Options options;
-  options.max_num_iterations = 5;
+  options.max_num_iterations = 20;
   L1Solver<Eigen::SparseMatrix<double> > l1_solver(options, sparse_matrix_);
 
   rotation_change_.setZero();
