@@ -4,6 +4,40 @@
 Releases
 ========
 
+HEAD
+====
+
+New Features
+------------
+* Bundle adjustment can now choose which intrinsics it wants to optimize.
+* TrackEstimator can now estimate specific tracks (used for incremental SfM).
+* Features can be read/written from/to files.
+* Matching features can now utilize feature files (so that out-of-core matching can be done).
+* Improved SVD efficiency for the 5 point alg.
+* 2-view geometric verification takes in the 3D points for BA as input.
+* Homographies are now computed during geometric verification
+* Homography inlier count is used to choose a better initial pair for Incremental SfM.
+* Robust cost functions may now be used for Bundle Adjustment
+* Method to esitmate a dominant plane from points (by bnuernberger).
+* L1 solver now uses the ADMM method. This results in problems that are generally better conditioned and are much faster at scale.
+
+Bug Fixes
+---------
+* Several bug fixes for Windows (thanks to Jonas Scheer and others).
+* 2-view BA properly holds the camera's extrinsic parameters constant.
+* No pointers are used anymore in the cascade hasher. This prevent rarely occuring segfaults.
+* Position estimation now fails when view_pairs is empty (thanks to vfragoso).
+* Cacade Hasher works properly with zero descriptors (thanks to anfractuosity).
+
+Misc.
+-----
+* Incremental SfM will now exit early if no suitable initial pair can be found
+* Computing the maximal parallel rigid subgraph only considers views that are in the largest connected component
+* RemovesDisconnectedViewPairs now returns the views that were removed
+* Only compute HashedImages once per image (for out of core matching)
+* Triangulation algorithms return true on success properly
+* The point cloud viewer uses the dominant plane detection to set the ground plane for viewing.
+
 `0.5.0  <https://github.com/sweeneychris/TheiaSfM/archive/v0.5.tar.gz>`_
 ========================================================================
 
