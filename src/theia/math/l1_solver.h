@@ -139,16 +139,17 @@ class L1Solver {
         "  % 4d     % 4.4e     % 4.4e     % 4.4e     % 4.4e";
     for (int i = 0; i < options_.max_num_iterations; i++) {
       // Update x.
-      x = linear_solver_.solve(a_.transpose() * (rhs + z - u));
-      a_times_x = a_ * x;
-      ax_hat = options_.alpha * a_times_x + (1.0 - options_.alpha) * (z + rhs);
+      x.noalias() = linear_solver_.solve(a_.transpose() * (rhs + z - u));
+      a_times_x.noalias() = a_ * x;
+      ax_hat.noalias() = options_.alpha * a_times_x;
+      ax_hat.noalias() += (1.0 - options_.alpha) * (z + rhs);
 
       // Update z and set z_old.
       std::swap(z, z_old);
-      z = Shrinkage(ax_hat - rhs + u, 1.0 / options_.rho);
+      z.noalias() = Shrinkage(ax_hat - rhs + u, 1.0 / options_.rho);
 
       // Update u.
-      u += ax_hat - z - rhs;
+      u.noalias() += ax_hat - z - rhs;
 
       // Compute the convergence terms.
       const double r_norm = (a_times_x - z - rhs).norm();
