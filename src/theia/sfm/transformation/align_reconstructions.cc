@@ -41,6 +41,7 @@
 
 #include "theia/sfm/find_common_views_by_name.h"
 #include "theia/sfm/reconstruction.h"
+#include "theia/sfm/similarity_transformation.h"
 #include "theia/sfm/transformation/align_point_clouds.h"
 #include "theia/sfm/transformation/transform_reconstruction.h"
 #include "theia/sfm/types.h"
@@ -53,12 +54,6 @@ namespace {
 struct CameraCorrespondence {
   Eigen::Vector3d camera1;
   Eigen::Vector3d camera2;
-};
-
-struct SimilarityTransformation {
-  Eigen::Matrix3d rotation;
-  Eigen::Vector3d translation;
-  double scale;
 };
 
 class CameraAlignmentEstimator
