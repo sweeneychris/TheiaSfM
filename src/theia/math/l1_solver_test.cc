@@ -71,7 +71,6 @@ TEST(L1Solver, SmallProblem) {
 
   // Recover the code word.
   L1Solver<Eigen::MatrixXd>::Options options;
-  options.duality_gap_tolerance = 1e-8;
   options.max_num_iterations = 100;
   L1Solver<Eigen::MatrixXd> l1_solver(options, lhs);
   l1_solver.Solve(rhs, &solution);
@@ -113,7 +112,7 @@ TEST(L1Solver, Decoding) {
 
   // Recover the code word.
   L1Solver<Eigen::MatrixXd>::Options options;
-  options.duality_gap_tolerance = 1e-8;
+  options.absolute_tolerance = 1e-8;
   L1Solver<Eigen::MatrixXd> l1_solver(options, mat);
   // Set the initial noisy guess.
   Eigen::VectorXd solution =

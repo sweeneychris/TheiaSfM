@@ -40,6 +40,11 @@
 #include <Eigen/SparseCholesky>
 #include <glog/logging.h>
 
+#include <algorithm>
+#include <string>
+
+#include "theia/util/stringprintf.h"
+
 namespace theia {
 
 // These are template overrides that allow the sparse linear solvers to work
@@ -47,55 +52,51 @@ namespace theia {
 // Eigen::SparseMatrix.
 namespace l1_solver_internal {
 
-inline void AnalyzePattern(
+inline void Compute(
     const Eigen::SparseMatrix<double>& spd_mat,
     Eigen::SimplicialLLT<Eigen::SparseMatrix<double> >* linear_solver) {
-  linear_solver->analyzePattern(spd_mat);
+  linear_solver->compute(spd_mat);
 }
 
-inline void AnalyzePattern(
+inline void Compute(
     const Eigen::MatrixXd& spd_mat,
     Eigen::SimplicialLLT<Eigen::SparseMatrix<double> >* linear_solver) {
-  linear_solver->analyzePattern(spd_mat.sparseView());
-}
-
-inline void Factorize(
-    const Eigen::SparseMatrix<double>& spd_mat,
-    Eigen::SimplicialLLT<Eigen::SparseMatrix<double> >* linear_solver) {
-  linear_solver->factorize(spd_mat);
-}
-
-inline void Factorize(
-    const Eigen::MatrixXd& spd_mat,
-    Eigen::SimplicialLLT<Eigen::SparseMatrix<double> >* linear_solver) {
-  linear_solver->factorize(spd_mat.sparseView());
+  linear_solver->compute(spd_mat.sparseView());
 }
 
 }  // namespace l1_solver_internal
 
 // An L1 norm approximation solver. This class will attempt to solve the
 // problem: || A * x - b || under L1-norm (as opposed to L2 i.e. "least-squares"
-// norm). This problem can be cast as a simple linear program which, in turn, is
-// actually just a simple set of weighted least squares problems. We use a
-// MatrixType template type so that dense or sparse matrices can be used,
-// however, they must be a double type.
+// norm). This problem can be solved with the alternating direction method of
+// multipliers (ADMM) as a least unsquared deviations minimizer. A full
+// description of the method, including how to use ADMM for L1 minimization can
+// be found in "Distributed Optimization and Statistical Learning via the
+// Alternating Direction Method of Multipliers" by Boyd et al, Foundations and
+// Trends in Machine Learning (2012). The paper can be found at:
+//   https://web.stanford.edu/~boyd/papers/pdf/admm_distr_stats.pdf
 //
-// The solution strategy comes from the book "Convex Optimization" by Boyd and
-// Vandenberghe: http://web.stanford.edu/~boyd/cvxbook/
-// Section 11.8.2 gives an implementation of how to solve the L1 norm
-// approximation problem with Newton steps, which is the method used here.
+// ADMM can be much faster than interior point methods but convergence may be
+// slower. Generally speaking, ADMM solvers converge to good solutions in only a
+// few number of iterations, but can spend many iterations subsuquently refining
+// the solution to optain the global optimum. The speed improvements are because
+// the matrix A only needs to be factorized (by Cholesky decomposition) once, as
+// opposed to every iteration.
+//
+// This implementation is based off of the code found at:
+//   https://web.stanford.edu/~boyd/papers/admm/least_abs_deviations/lad.html
 template <class MatrixType>
 class L1Solver {
  public:
   struct Options {
-    // If the primal dual gap is smaller than this then the algorithm stops.
-    double duality_gap_tolerance = 1e-3;
-    int max_num_iterations = 100;
+    int max_num_iterations = 1000;
+    // Rho is the augmented Lagrangian parameter.
+    double rho = 1.0;
+    // Alpha is the over-relaxation parameter (typically between 1.0 and 1.8).
+    double alpha = 1.0;
 
-    // Parameters for convergence and backtracking.
-    double alpha = 0.01;
-    double beta = 0.5;
-    double mu = 20;
+    double absolute_tolerance = 1e-4;
+    double relative_tolerance = 1e-2;
   };
 
   L1Solver(const Options& options, const MatrixType& mat)
@@ -103,7 +104,7 @@ class L1Solver {
     // Analyze the sparsity pattern once. Only the values of the entries will be
     // changed with each iteration.
     const MatrixType spd_mat = a_.transpose() * a_;
-    l1_solver_internal::AnalyzePattern(spd_mat, &linear_solver_);
+    l1_solver_internal::Compute(spd_mat, &linear_solver_);
     CHECK_EQ(linear_solver_.info(), Eigen::Success);
   }
 
@@ -119,216 +120,74 @@ class L1Solver {
   //        [ -A   -I ] [ y ]   [ -b ]
   // which is an equivalent linear program.
   void Solve(const Eigen::VectorXd& rhs, Eigen::VectorXd* solution) {
-    x_ = solution;
-    rhs_ = rhs;
+    CHECK_NOTNULL(solution);
+    Eigen::VectorXd& x = *solution;
+    Eigen::VectorXd z(a_.rows()), u(a_.rows());
+    z.setZero();
+    u.setZero();
 
-    ax_ = a_ * (*x_);
-    const Eigen::VectorXd initial_l2_residual = ax_ - rhs_;
-    y_ = 0.95 * (initial_l2_residual.array().abs()) +
-         0.1 * (initial_l2_residual.array().abs()).maxCoeff();
-
-    // Initialize the primal_penalty and dual variables.
-    primal_penalty1_ = initial_l2_residual - y_;
-    primal_penalty2_ = -initial_l2_residual - y_;
-    lambda1_ = -primal_penalty1_.array().inverse();
-    lambda2_ = -primal_penalty2_.array().inverse();
-    atv_ = a_.transpose() * (lambda1_ - lambda2_);
-
+    Eigen::VectorXd a_times_x(a_.rows()), z_old(z.size()), ax_hat(a_.rows());
+    // Precompute some convergence terms.
+    const double rhs_norm = rhs.norm();
+    const double primal_abs_tolerance_eps =
+        std::sqrt(a_.rows()) * options_.absolute_tolerance;
+    const double dual_abs_tolerance_eps =
+        std::sqrt(a_.cols()) * options_.absolute_tolerance;
+    VLOG(2) << "Iteration   R norm          S norm          Primal eps      "
+               "Dual eps";
+    const std::string row_format =
+        "  % 4d     % 4.4e     % 4.4e     % 4.4e     % 4.4e";
     for (int i = 0; i < options_.max_num_iterations; i++) {
-      const double surrogate_duality_gap =
-          -(primal_penalty1_.dot(lambda1_) + primal_penalty2_.dot(lambda2_));
+      // Update x.
+      x = linear_solver_.solve(a_.transpose() * (rhs + z - u));
+      a_times_x = a_ * x;
+      ax_hat = options_.alpha * a_times_x + (1.0 - options_.alpha) * (z + rhs);
 
-      // TODO(cmsweeney): Check the dual residual for convergence.
-      if (surrogate_duality_gap <= options_.duality_gap_tolerance) {
-        VLOG(1) << "Converged in " << i + 1 << " iterations.";
-        return;
-      }
-      const double tau = options_.mu * rhs_.size() / surrogate_duality_gap;
+      // Update z and set z_old.
+      std::swap(z, z_old);
+      z = Shrinkage(ax_hat - rhs + u, 1.0 / options_.rho);
 
-      // Solve for the direction of the newton step. For L1 minimization this is
-      // a special-case which is more simple than the general LP.
-      if (!ComputeNewtonStep(tau)) {
-        LOG(WARNING) << "Could not compute Newton step. Exiting at iteration "
-                     << i + 1;
-        return;
-      }
+      // Update u.
+      u += ax_hat - z - rhs;
 
-      // Compute the maximum step size to remain a feasible solution.
-      ComputeStepSize(tau);
-    }
-    VLOG(1) << "L1 solver did not converge after max_num_iterations ("
-            << options_.max_num_iterations << "). Exiting.";
-  }
+      // Compute the convergence terms.
+      const double r_norm = (a_times_x - z - rhs).norm();
+      const double s_norm =
+          (-options_.rho * a_.transpose() * (z - z_old)).norm();
+      const double max_norm =
+          std::max({a_times_x.norm(), z.norm(), rhs_norm});
+      const double primal_eps =
+          primal_abs_tolerance_eps + options_.relative_tolerance * max_norm;
+      const double dual_eps = dual_abs_tolerance_eps +
+                 options_.relative_tolerance *
+                     (options_.rho * a_.transpose() * u).norm();
 
- private:
-  // Determines the primal-dual search direction from the linear program.
-  bool ComputeNewtonStep(const double tau) {
-    const double inv_tau = 1.0 / tau;
-    const Eigen::VectorXd x_quotient = lambda1_.cwiseQuotient(primal_penalty1_);
-    const Eigen::VectorXd y_quotient = lambda2_.cwiseQuotient(primal_penalty2_);
-    const Eigen::VectorXd sig1 = -x_quotient - y_quotient;
-    const Eigen::VectorXd sig2 = x_quotient - y_quotient;
-    const Eigen::VectorXd sigx = sig1 - sig2.cwiseAbs2().cwiseQuotient(sig1);
-    const Eigen::VectorXd w1 =
-        -inv_tau *
-        (a_.transpose() * (-primal_penalty1_.array().inverse() +
-                             primal_penalty2_.array().inverse()).matrix());
-    const Eigen::VectorXd w2 =
-        -1.0 - inv_tau * ((primal_penalty1_.array().inverse() +
-                           primal_penalty2_.array().inverse())).array();
-
-    const Eigen::VectorXd w1p =
-        w1 - a_.transpose() * ((sig2.cwiseQuotient(sig1)).cwiseProduct(w2));
-    const MatrixType lhs = a_.transpose() * sigx.asDiagonal() * a_;
-
-    // Factorize the matrix based on the current linear system. If factorization
-    // fails, return false.
-    l1_solver_internal::Factorize(lhs, &linear_solver_);
-    if (linear_solver_.info() != Eigen::Success) {
-      LOG(WARNING) << "Failed to compute a Sparse Cholesky factorization for "
-                      "Simplicial LLT.";
-      return false;
-    }
-
-    dx_ = linear_solver_.solve(w1p);
-    CHECK_EQ(linear_solver_.info(), Eigen::Success);
-
-    adx_ = a_ * dx_;
-
-    dy_ = (w2 - sig2.cwiseProduct(adx_)).cwiseQuotient(sig1);
-    dlambda1_ =
-        -(lambda1_.cwiseQuotient(primal_penalty1_)).cwiseProduct(adx_ - dy_) -
-        lambda1_ - (inv_tau * primal_penalty1_.array().inverse()).matrix();
-    dlambda2_ =
-        (lambda2_.cwiseQuotient(primal_penalty2_)).cwiseProduct(adx_ + dy_) -
-        lambda2_ - (inv_tau * primal_penalty2_.array().inverse()).matrix();
-    return true;
-  }
-
-  // Computes a step size to ensure that the solution will lie within the
-  // feasible region, i.e., lambda1, lambda2 > 0 and primal_penalty1,
-  // primal_penalty2 < 0.
-  double ComputeFeasibleStep() {
-    double step_size = 1.0;
-
-    // Ensure lambda1 and lambda 2 > 0.
-    for (int i = 0; i < dlambda1_.size(); i++) {
-      if (dlambda1_(i) < 0) {
-        const double new_step_size = -lambda1_(i) / dlambda1_(i);
-        if (new_step_size < step_size) {
-          step_size = new_step_size;
-        }
-      }
-      if (dlambda2_(i) < 0) {
-        const double new_step_size = -lambda2_(i) / dlambda2_(i);
-        if (new_step_size < step_size) {
-          step_size = new_step_size;
-        }
-      }
-    }
-
-    // Ensure that primal_penalty1, primal_penalty2 < 0.
-    for (int i = 0; i < primal_penalty1_.size(); i++) {
-      if (adx_(i) - dy_(i) > 0) {
-        const double new_step_size = -primal_penalty1_(i) / (adx_(i) - dy_(i));
-        if (new_step_size < step_size) {
-          step_size = new_step_size;
-        }
-      }
-      if (-adx_(i) - dy_(i) > 0) {
-        const double new_step_size = -primal_penalty2_(i) / (-adx_(i) - dy_(i));
-        if (new_step_size < step_size) {
-          step_size = new_step_size;
-        }
-      }
-    }
-    step_size *= 0.99;
-    return step_size;
-  }
-
-  // Computes the step size using backtracking given the direction of the newton
-  // step.
-  void ComputeStepSize(const double tau) {
-    static const int kMaxBacktrackIterations = 32;
-    const double inv_tau = 1.0 / tau;
-
-    const Eigen::VectorXd atdv = a_.transpose() * (dlambda1_ - dlambda2_);
-    double rdual =
-        ((-lambda1_ - lambda2_).array() + 1.0).matrix().squaredNorm();
-
-    Eigen::VectorXd temp1 =
-        (-lambda1_.cwiseProduct(primal_penalty1_)).array() + inv_tau;
-    Eigen::VectorXd temp2 =
-        (-lambda2_.cwiseProduct(primal_penalty2_)).array() + inv_tau;
-    const double norm_residual = std::sqrt(
-        atv_.squaredNorm() + rdual + temp1.squaredNorm() + temp2.squaredNorm());
-
-    // Make sure that the step size is feasible i.e. lambda1, lambda2 > 0 and
-    // primal_penalty1, primal_penalty2 > 0.
-    double step_size = ComputeFeasibleStep();
-
-    Eigen::VectorXd x_p, y_p, lambda1_p, lambda2_p, axp, atvp;
-    for (int i = 0; i < kMaxBacktrackIterations; i++) {
-      x_p = *x_ + step_size * dx_;
-      y_p = y_ + step_size * dy_;
-
-      axp = ax_ + step_size * adx_;
-      atvp = atv_ + step_size * atdv;
-
-      lambda1_p = lambda1_ + step_size * dlambda1_;
-      lambda2_p = lambda2_ + step_size * dlambda2_;
-
-      primal_penalty1_ = axp - rhs_ - y_p;
-      primal_penalty2_ = -axp + rhs_ - y_p;
-
-      rdual = ((-lambda1_p - lambda2_p).array() + 1.0).matrix().squaredNorm();
-      temp1 = (-lambda1_.cwiseProduct(primal_penalty1_)).array() + inv_tau;
-      temp2 = (-lambda2_.cwiseProduct(primal_penalty2_)).array() + inv_tau;
-      const double step_norm =
-          std::sqrt(atvp.squaredNorm() + rdual + temp1.squaredNorm() +
-                    temp2.squaredNorm());
-      step_size *= options_.beta;
-      if (step_norm <= (1.0 - options_.alpha * step_size) * norm_residual) {
+      // Log the result to the screen.
+      VLOG(2) << StringPrintf(row_format.c_str(), i, r_norm, s_norm, primal_eps,
+                              dual_eps);
+      // Determine if the minimizer has converged.
+      if (r_norm < primal_eps && s_norm < dual_eps) {
         break;
       }
     }
-
-    *x_ = x_p;
-    y_ = y_p;
-    lambda1_ = lambda1_p;
-    lambda2_ = lambda2_p;
-    ax_ = axp;
-    atv_ = atvp;
   }
 
+ private:
   Options options_;
-
-  // Solution vector.
-  Eigen::VectorXd* x_;
 
   // Matrix A where || Ax - b ||_1 is the problem we are solving.
   MatrixType a_;
 
-  // rhs corresponds to the vector b, and y is the auxillary variable that we
-  // minimize for the linear program:
-  //   minimize y s.t.
-  //    Ax - b < y
-  //   -Ax + b < y
-  Eigen::VectorXd y_, rhs_;
-
-  // Primal penalties correspond to the inverse of lambda, the dual variables.
-  Eigen::VectorXd primal_penalty1_, primal_penalty2_;
-  Eigen::VectorXd lambda1_, lambda2_;
-
-  // Derivitives computed by the Newton step.
-  Eigen::VectorXd dx_, dy_, dlambda1_, dlambda2_;
-
-  // Pre-computed values A * x, A * dx, A^t * (lambda1 - lambda2).
-  Eigen::VectorXd ax_, adx_, atv_;
-
   // Cholesky linear solver. Since our linear system will be a SPD matrix we can
   // utilize the Cholesky factorization.
   Eigen::SimplicialLLT<Eigen::SparseMatrix<double> > linear_solver_;
+
+  Eigen::VectorXd Shrinkage(const Eigen::VectorXd& vec, const double kappa) {
+    Eigen::ArrayXd zero_vec(vec.size());
+    zero_vec.setZero();
+    return zero_vec.max(vec.array() - kappa) -
+           zero_vec.max(-vec.array() - kappa);
+  }
 };
 
 }  // namespace theia
