@@ -18,7 +18,7 @@ New Features
 * Homographies are now computed during geometric verification
 * Homography inlier count is used to choose a better initial pair for Incremental SfM.
 * Robust cost functions may now be used for Bundle Adjustment
-* Method to esitmate a dominant plane from points (by bnuernberger).
+* Method to estimate a dominant plane from points (by bnuernberger).
 * L1 solver now uses the ADMM method. This results in problems that are generally better conditioned and are much faster at scale.
 
 Bug Fixes
@@ -27,7 +27,7 @@ Bug Fixes
 * 2-view BA properly holds the camera's extrinsic parameters constant.
 * No pointers are used anymore in the cascade hasher. This prevent rarely occuring segfaults.
 * Position estimation now fails when view_pairs is empty (thanks to vfragoso).
-* Cacade Hasher works properly with zero descriptors (thanks to anfractuosity).
+* Cascade Hasher works properly with zero descriptors (thanks to anfractuosity).
 
 Misc.
 -----
