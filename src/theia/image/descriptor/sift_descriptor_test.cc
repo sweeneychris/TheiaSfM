@@ -72,6 +72,14 @@ TEST(SiftDescriptor, Sanity) {
                                                 &sift_descriptors));
 }
 
+TEST(SiftDescriptor, ZeroDescriptorRootSiftTest) {
+  Eigen::VectorXf descriptor(128);
+  descriptor.setZero();
+  SiftDescriptorExtractor sift_extractor;
+  sift_extractor.ConvertToRootSift(&descriptor);
+  EXPECT_DOUBLE_EQ(descriptor.squaredNorm(), 0.0);
+}
+
 TEST(SiftDescriptor, DifferentImageSizes) {
   FloatImage input_img(img_filename);
 

@@ -53,15 +53,6 @@ namespace {
 // than this then we begin to have memory and speed issues.
 static const int kMaxScaledDim = 3600;
 
-// Converts to a RootSIFT descriptor which is proven to provide better matches
-// for SIFT: "Three things everyone should know to improve object retrieval" by
-// Arandjelovic and Zisserman.
-void ConvertToRootSift(Eigen::VectorXf* descriptor) {
-  const double l1_norm = descriptor->lpNorm<1>();
-  *descriptor /= l1_norm;
-  *descriptor = descriptor->array().sqrt();
-}
-
 double GetValidFirstOctave(const int first_octave,
                            const int width,
                            const int height) {
@@ -186,12 +177,16 @@ bool SiftDescriptorExtractor::ComputeDescriptors(
       vl_sift_calc_keypoint_descriptor(
           sift_filter_, (*descriptors)[i].data(), &sift_keypoints[i],
           (*keypoints)[i].orientation());
-      if (sift_params_.root_sift) {
-        ConvertToRootSift(&descriptors->at(i));
-      }
     }
     vl_status = vl_sift_process_next_octave(sift_filter_);
   }
+
+  if (sift_params_.root_sift) {
+    for (int i = 0; i < descriptors->size(); i++) {
+      ConvertToRootSift(&(*descriptors)[i]);
+    }
+  }
+
   return true;
 }
 
@@ -250,9 +245,6 @@ bool SiftDescriptorExtractor::DetectAndExtractDescriptors(
         vl_sift_calc_keypoint_descriptor(
             sift_filter_, descriptors->back().data(), &vl_keypoints[i],
             angles[j]);
-        if (sift_params_.root_sift) {
-          ConvertToRootSift(&descriptors->back());
-        }
 
         Keypoint keypoint(vl_keypoints[i].x, vl_keypoints[i].y, Keypoint::SIFT);
         keypoint.set_scale(vl_keypoints[i].sigma);
@@ -263,7 +255,26 @@ bool SiftDescriptorExtractor::DetectAndExtractDescriptors(
     // Attempt to process the next octave.
     vl_status = vl_sift_process_next_octave(sift_filter_);
   }
+
+  if (sift_params_.root_sift) {
+    for (int i = 0; i < descriptors->size(); i++) {
+      ConvertToRootSift(&(*descriptors)[i]);
+    }
+  }
+
   return true;
+}
+
+// Converts to a RootSIFT descriptor which is proven to provide better matches
+// for SIFT: "Three things everyone should know to improve object retrieval" by
+// Arandjelovic and Zisserman.
+void SiftDescriptorExtractor::ConvertToRootSift(Eigen::VectorXf* descriptor) {
+  static const double kTolerance = 1e-8;
+  const double l1_norm = descriptor->lpNorm<1>();
+  if (l1_norm > kTolerance) {
+    *descriptor /= l1_norm;
+    *descriptor = descriptor->array().sqrt();
+  }
 }
 
 }  // namespace theia

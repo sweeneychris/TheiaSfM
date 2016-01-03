@@ -81,6 +81,8 @@ class SiftDescriptorExtractor : public DescriptorExtractor {
       std::vector<Keypoint>* keypoints,
       std::vector<Eigen::VectorXf>* descriptors);
 
+  // This method is only public so that we can easily test it.
+  static void ConvertToRootSift(Eigen::VectorXf* descriptor);
  private:
   const SiftParameters sift_params_;
   VlSiftFilt* sift_filter_;
