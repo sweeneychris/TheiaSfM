@@ -42,6 +42,7 @@ set(THEIA_SRC
   image/descriptor/sift_descriptor.cc
   image/image_canvas.cc
   image/keypoint_detector/sift_detector.cc
+  io/import_nvm_file.cc
   io/read_1dsfm.cc
   io/read_bundler_files.cc
   io/read_calibration.cc
@@ -162,7 +163,8 @@ set(THEIA_LIBRARY_DEPENDENCIES
   easyexif
   statx
   stlplus3
-  vlfeat)
+  vlfeat
+  visual_sfm)
 
 set(THEIA_LIBRARY_SOURCE
   ${THEIA_SRC}
