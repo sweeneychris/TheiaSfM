@@ -76,6 +76,7 @@ set(THEIA_SRC
   sfm/camera/camera.cc
   sfm/camera/projection_matrix_utils.cc
   sfm/camera/radial_distortion.cc
+  sfm/colorize_reconstruction.cc
   sfm/estimate_track.cc
   sfm/estimate_twoview_info.cc
   sfm/estimators/estimate_calibrated_absolute_pose.cc

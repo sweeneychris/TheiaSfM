@@ -53,7 +53,9 @@ void GatherTracks(const Reconstruction& reconstruction,
       continue;
     }
     points_to_write->emplace_back(track.Point().hnormalized());
-    colors_to_write->emplace_back(255, 255, 255);
+    colors_to_write->emplace_back(track.Color()[0],
+                                  track.Color()[1],
+                                  track.Color()[2]);
   }
 }
 

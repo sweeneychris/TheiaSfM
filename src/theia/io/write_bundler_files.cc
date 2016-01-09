@@ -116,8 +116,8 @@ bool WriteBundleFile(const Reconstruction& reconstruction,
     const Eigen::Vector3d position = track->Point().hnormalized();
     ofs_bundle << position.transpose().format(unaligned) << std::endl;
 
-    // Output black since we do not current keep colors.
-    ofs_bundle << "255 255 255" << std::endl;
+    ofs_bundle << track->Color()[0] << " " << track->Color()[1] << " "
+               << track->Color()[2] << std::endl;
     const auto& views_in_track = track->ViewIds();
     ofs_bundle << views_in_track.size();
     for (const ViewId view_id : views_in_track) {

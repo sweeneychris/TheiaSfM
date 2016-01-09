@@ -101,6 +101,7 @@
 #include "theia/sfm/camera/radial_distortion.h"
 #include "theia/sfm/camera/reprojection_error.h"
 #include "theia/sfm/camera_intrinsics_prior.h"
+#include "theia/sfm/colorize_reconstruction.h"
 #include "theia/sfm/estimate_track.h"
 #include "theia/sfm/estimate_twoview_info.h"
 #include "theia/sfm/estimators/estimate_calibrated_absolute_pose.h"
