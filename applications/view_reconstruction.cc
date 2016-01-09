@@ -61,6 +61,7 @@ DEFINE_string(reconstruction, "", "Reconstruction file to be viewed.");
 // Containers for the data.
 std::vector<theia::Camera> cameras;
 std::vector<Eigen::Vector3d> world_points;
+std::vector<Eigen::Vector3f> point_colors;
 std::vector<int> num_views_for_track;
 
 // Parameters for OpenGL.
@@ -201,7 +202,7 @@ void DrawPoints(const float point_scale,
 
   // TODO(cmsweeney): Render points with the actual 3D point color! This would
   // require Theia to save the colors during feature extraction.
-  const Eigen::Vector3f default_color(0.05, 0.05, 0.05);
+  //const Eigen::Vector3f default_color(0.05, 0.05, 0.05);
 
   // Enable anti-aliasing for round points and alpha blending that helps make
   // points look nicer.
@@ -220,17 +221,18 @@ void DrawPoints(const float point_scale,
   glPointParameterfv(GL_POINT_DISTANCE_ATTENUATION, point_size_coords);
 
 
-  glColor4f(color_scale * default_color[0],
-            color_scale * default_color[1],
-            color_scale * default_color[2],
-            alpha_scale * default_alpha_scale);
-
   glPointSize(point_scale * default_point_size);
   glBegin(GL_POINTS);
   for (int i = 0; i < world_points.size(); i++) {
     if (num_views_for_track[i] < min_num_views_for_track) {
       continue;
     }
+    const Eigen::Vector3f color = point_colors[i] / 255.0;
+    glColor4f(color_scale * color[0],
+              color_scale * color[1],
+              color_scale * color[2],
+              alpha_scale * default_alpha_scale);
+
     glVertex3d(world_points[i].x(), world_points[i].y(), world_points[i].z());
   }
   glEnd();
@@ -431,14 +433,16 @@ int main(int argc, char* argv[]) {
     cameras.emplace_back(view->Camera());
   }
 
-  // Set up world points.
+  // Set up world points and colors.
   world_points.reserve(reconstruction->NumTracks());
+  point_colors.reserve(reconstruction->NumTracks());
   for (const theia::TrackId track_id : reconstruction->TrackIds()) {
     const auto* track = reconstruction->Track(track_id);
     if (track == nullptr || !track->IsEstimated()) {
       continue;
     }
     world_points.emplace_back(track->Point().hnormalized());
+    point_colors.emplace_back(track->Color().cast<float>());
     num_views_for_track.emplace_back(track->NumViews());
   }
 

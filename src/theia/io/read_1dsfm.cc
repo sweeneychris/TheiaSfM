@@ -84,6 +84,9 @@ class Input1DSFM {
 
   // Maps image id -> [ feature id -> feature coordinate].
   std::unordered_map<ViewId, std::vector<Feature> > feature_coordinates_;
+  // Maps image id -> [ feature id -> feature color].
+  std::unordered_map<ViewId, std::vector<Eigen::Matrix<uint8_t, 3, 1> > >
+      feature_colors_;
 };
 
 // Reads the connected components file.
@@ -204,6 +207,7 @@ bool Input1DSFM::ReadCoords() {
   }
 
   feature_coordinates_.reserve(reconstruction_->NumViews());
+  feature_colors_.reserve(reconstruction_->NumViews());
   while (!ifs.eof()) {
     std::string line;
     std::getline(ifs, line);
@@ -223,12 +227,17 @@ bool Input1DSFM::ReadCoords() {
 
     auto& features = feature_coordinates_[view_id];
     features.reserve(num_keys);
+    auto& colors = feature_colors_[view_id];
+    colors.reserve(num_keys);
 
     Eigen::Vector2d keypoint;
+    Eigen::Vector3i color;
     for (int i = 0; i < num_keys; i++) {
       std::getline(ifs, line);
-      sscanf(line.c_str(), "%*d %lf %lf", &keypoint[0], &keypoint[1]);
+      sscanf(line.c_str(), "%*d %lf %lf 0 0 %d %d %d", &keypoint[0],
+             &keypoint[1], &color[0], &color[1], &color[2]);
       features.emplace_back(keypoint);
+      colors.emplace_back(color.cast<uint8_t>());
     }
   }
 
@@ -255,15 +264,28 @@ bool Input1DSFM::ReadTracks() {
     track.reserve(num_features);
     int feature_id;
     ViewId view_id;
+    Eigen::Vector3f color = Eigen::Vector3f::Zero();
     for (int j = 0; j < num_features; j++) {
       ifs >> view_id;
       ifs >> feature_id;
 
+      // Aggregate the features that form this track.
       const auto& features = FindOrDie(feature_coordinates_, view_id);
       const Feature& feature = features[feature_id];
       track.emplace_back(view_id, feature);
+
+      // Add the color of the feature to form the mean color of the point.
+      const auto& colors = FindOrDie(feature_colors_, view_id);
+      color += colors[feature_id].cast<float>();
     }
-    CHECK_NE(reconstruction_->AddTrack(track), kInvalidTrackId);
+    // Add the track to the reconstruction.
+    const TrackId track_id = reconstruction_->AddTrack(track);
+    CHECK_NE(track_id, kInvalidTrackId);
+
+    // Set the color of the track.
+    color /= static_cast<float>(track.size());
+    *reconstruction_->MutableTrack(track_id)->MutableColor() =
+        color.cast<uint8_t>();
   }
 
   return true;

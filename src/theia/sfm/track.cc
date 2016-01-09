@@ -43,7 +43,11 @@ namespace theia {
 
 using Eigen::Vector4d;
 
-Track::Track() : is_estimated_(false), point_(Vector4d::Zero()) {}
+Track::Track()
+    : is_estimated_(false) {
+  point_.setZero();
+  color_.setZero();
+}
 
 int Track::NumViews() const {
   return view_ids_.size();
@@ -63,6 +67,14 @@ const Eigen::Vector4d& Track::Point() const {
 
 Vector4d* Track::MutablePoint() {
   return &point_;
+}
+
+const Eigen::Matrix<uint8_t, 3, 1>& Track::Color() const {
+  return color_;
+}
+
+Eigen::Matrix<uint8_t, 3, 1>* Track::MutableColor() {
+  return &color_;
 }
 
 void Track::AddView(const ViewId view_id) {

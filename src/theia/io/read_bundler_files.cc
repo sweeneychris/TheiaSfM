@@ -280,7 +280,7 @@ bool ReadBundlerFiles(const std::string& lists_file,
     p = color_str.c_str();
     Eigen::Vector3f color;
     for (int j = 0; j < 3; j++) {
-      color(j) = static_cast<float>(strtol(p, &p2, 10)) / 255.0;
+      color(j) = strtol(p, &p2, 10);
       p = p2;
     }
 
@@ -323,9 +323,10 @@ bool ReadBundlerFiles(const std::string& lists_file,
     const TrackId track_id = reconstruction->AddTrack(track);
     CHECK_NE(track_id, kInvalidTrackId)
         << "Could not add a track to the reconstruction!";
-    reconstruction->MutableTrack(track_id)->SetEstimated(true);
-    *reconstruction->MutableTrack(track_id)->MutablePoint() =
-        position.homogeneous();
+    Track* mutable_track = reconstruction->MutableTrack(track_id);
+    mutable_track->SetEstimated(true);
+    *mutable_track->MutablePoint() = position.homogeneous();
+    *mutable_track->MutableColor() = color.cast<uint8_t>();
 
     if ((i + 1) % 100 == 0 || i == num_points - 1) {
       std::cout << "\r Loading 3D points " << i + 1 << " / " << num_points

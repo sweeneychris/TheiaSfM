@@ -38,6 +38,7 @@
 #include <cereal/access.hpp>
 #include <cereal/types/unordered_set.hpp>
 #include <Eigen/Core>
+#include <stdint.h>
 #include <unordered_set>
 
 #include "theia/io/eigen_serializable.h"
@@ -63,6 +64,9 @@ class Track {
   const Eigen::Vector4d& Point() const;
   Eigen::Vector4d* MutablePoint();
 
+  const Eigen::Matrix<uint8_t, 3, 1>& Color() const;
+  Eigen::Matrix<uint8_t, 3, 1>* MutableColor();
+
   void AddView(const ViewId view_id);
   bool RemoveView(const ViewId view_id);
 
@@ -74,12 +78,13 @@ class Track {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& ar) {  // NOLINT
-    ar(is_estimated_, view_ids_, point_);
+    ar(is_estimated_, view_ids_, point_, color_);
   }
 
   bool is_estimated_;
   std::unordered_set<ViewId> view_ids_;
   Eigen::Vector4d point_;
+  Eigen::Matrix<uint8_t, 3, 1> color_;
 };
 
 }  // namespace theia
