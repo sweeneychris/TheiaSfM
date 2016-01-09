@@ -142,7 +142,7 @@ bool ExifReader::ExtractEXIFMetadata(
 
   // TODO(cmsweeney): The exif parser returns a success code. We may want to log
   // the success code.
-  EXIFInfo exif_parser;
+  easyexif::EXIFInfo exif_parser;
   exif_parser.parseFrom(jpeg_data.data(), file_size);
   file.close();
 
@@ -168,9 +168,9 @@ bool ExifReader::ExtractEXIFMetadata(
   // Attempt to set the focal length from the plane resolution, then try the
   // sensor width database if that fails.
   if (exif_parser.ImageWidth > 0 &&
-      exif_parser.FocalPlaneXResolution > 0 &&
-      exif_parser.FocalPlaneResolutionUnit > 1 &&
-      exif_parser.FocalPlaneResolutionUnit <= 5) {
+      exif_parser.LensInfo.FocalPlaneXResolution > 0 &&
+      exif_parser.LensInfo.FocalPlaneResolutionUnit > 1 &&
+      exif_parser.LensInfo.FocalPlaneResolutionUnit <= 5) {
     SetFocalLengthFromExif(exif_parser,
                            image.Width(),
                            image.Height(),
@@ -191,13 +191,13 @@ bool ExifReader::ExtractEXIFMetadata(
 }
 
 void ExifReader::SetFocalLengthFromExif(
-    const EXIFInfo& exif_parser,
+    const easyexif::EXIFInfo& exif_parser,
     const double image_width,
     const double image_height,
     CameraIntrinsicsPrior* camera_intrinsics_prior) const {
   // CCD resolution is the pixels per unit resolution of the CCD.
   double ccd_resolution_units = 1.0;
-  switch (exif_parser.FocalPlaneResolutionUnit) {
+  switch (exif_parser.LensInfo.FocalPlaneResolutionUnit) {
     case 2:
       // Convert inches to mm.
       ccd_resolution_units = 25.4;
@@ -219,10 +219,10 @@ void ExifReader::SetFocalLengthFromExif(
 
   const double ccd_width =
       exif_parser.ImageWidth /
-      (exif_parser.FocalPlaneXResolution / ccd_resolution_units);
+      (exif_parser.LensInfo.FocalPlaneXResolution / ccd_resolution_units);
   const double ccd_height =
       exif_parser.ImageHeight /
-      (exif_parser.FocalPlaneYResolution / ccd_resolution_units);
+      (exif_parser.LensInfo.FocalPlaneYResolution / ccd_resolution_units);
 
   const double focal_length_x =
       exif_parser.FocalLength * image_width / ccd_width;
@@ -237,7 +237,7 @@ void ExifReader::SetFocalLengthFromExif(
 }
 
 void ExifReader::SetFocalLengthFromSensorDatabase(
-    const EXIFInfo& exif_parser,
+    const easyexif::EXIFInfo& exif_parser,
     const double max_image_dimension,
     CameraIntrinsicsPrior* camera_intrinsics_prior) const {
   const std::string make = ToLowercase(exif_parser.Make);

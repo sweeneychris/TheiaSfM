@@ -67,6 +67,9 @@ int main(int argc, char *argv[]) {
 
   //   image_name focal_length ppx ppy aspect_ratio skew k1 k2
   for (int i = 0; i < image_files.size(); i++) {
+    std::string image_name;
+    theia::GetFilenameFromFilepath(image_files[i], true, &image_name);
+
     theia::CameraIntrinsicsPrior prior;
     CHECK(exif_reader.ExtractEXIFMetadata(image_files[i], &prior))
         << "Could not open " << image_files[i] << " for reading.";
@@ -78,15 +81,14 @@ int main(int argc, char *argv[]) {
         // Set the focal length based on a median viewing angle.
         prior.focal_length.is_set = true;
         prior.focal_length.value =
-            1.2 *
-            static_cast<double>(std::max(prior.image_width, prior.image_height));
+            1.2 * static_cast<double>(
+                      std::max(prior.image_width, prior.image_height));
       } else {
+        LOG(INFO) << image_name << " did not contain an EXIF focal length.";
         continue;
       }
     }
 
-    std::string image_name;
-    theia::GetFilenameFromFilepath(image_files[i], true, &image_name);
     // We write the default values for aspect ratio, skew, and radial distortion
     // since those cannot be recovered from EXIF.
     LOG(INFO) << image_name << " has an EXIF focal length of "
