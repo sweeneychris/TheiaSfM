@@ -128,10 +128,7 @@ void CascadeHasher::CreateHashedDescriptors(
 }
 
 void CascadeHasher::BuildBuckets(HashedImage* hashed_image) const {
-  hashed_image->buckets.resize(kNumBucketGroups);
   for (int i = 0; i < kNumBucketGroups; i++) {
-    hashed_image->buckets[i].resize(kNumBucketsPerGroup);
-
     // Add the descriptor ID to the proper bucket group and id.
     for (int j = 0; j < hashed_image->hashed_desc.size(); j++) {
       const uint16_t bucket_id = hashed_image->hashed_desc[j].bucket_ids[i];
@@ -147,6 +144,13 @@ void CascadeHasher::BuildBuckets(HashedImage* hashed_image) const {
 HashedImage CascadeHasher::CreateHashedSiftDescriptors(
     const std::vector<Eigen::VectorXf>& sift_desc) const {
   HashedImage hashed_image;
+
+  // Allocate the buckets even if no descriptors exist to fill them.
+  hashed_image.buckets.resize(kNumBucketGroups);
+  for (int i = 0; i < kNumBucketGroups; i++) {
+    hashed_image.buckets[i].resize(kNumBucketsPerGroup);
+  }
+
   if (sift_desc.size() == 0) {
     return hashed_image;
   }
