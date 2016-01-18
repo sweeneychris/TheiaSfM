@@ -59,18 +59,30 @@ void ExtractColorsFromImage(
     std::mutex* mutex_lock) {
   LOG(INFO) << "Extracting color for features in image: " << image_file;
   const FloatImage image(image_file);
-  CHECK_EQ(image.Channels(), 3)
-      << "The image file at: " << image_file
-      << " is not an RGB image so the color cannot be extracted.";
 
   const auto& track_ids = view.TrackIds();
-  for (const TrackId track_id : track_ids) {
-    const Feature feature = *view.GetFeature(track_id);
-    const int x = static_cast<int>(feature.x());
-    const int y = static_cast<int>(feature.y());
-    std::lock_guard<std::mutex> lock(*mutex_lock);
-    (*colors)[track_id] +=
-        Eigen::Vector3f(image(x, y, 0), image(x, y, 1), image(x, y, 2));
+  if (image.Channels() == 3) {
+    for (const TrackId track_id : track_ids) {
+      const Feature feature = *view.GetFeature(track_id);
+      const int x = static_cast<int>(feature.x());
+      const int y = static_cast<int>(feature.y());
+      std::lock_guard<std::mutex> lock(*mutex_lock);
+      (*colors)[track_id] +=
+          Eigen::Vector3f(image(x, y, 0), image(x, y, 1), image(x, y, 2));
+    }
+  } else if (image.Channels() == 1) {
+    for (const TrackId track_id : track_ids) {
+      const Feature feature = *view.GetFeature(track_id);
+      const int x = static_cast<int>(feature.x());
+      const int y = static_cast<int>(feature.y());
+      std::lock_guard<std::mutex> lock(*mutex_lock);
+      (*colors)[track_id] +=
+          Eigen::Vector3f(image(x, y, 0), image(x, y, 0), image(x, y, 0));
+    }
+  } else {
+    LOG(FATAL) << "The image file at: " << image_file
+               << " is not an RGB or a grayscale image so the color cannot be "
+                  "extracted.";
   }
 }
 
