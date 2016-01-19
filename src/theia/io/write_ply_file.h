@@ -43,7 +43,8 @@ class Reconstruction;
 
 // Writes a PLY file for viewing in software such as MeshLab.
 bool WritePlyFile(const std::string& ply_file,
-                  const Reconstruction& reconstruction);
+                  const Reconstruction& reconstruction,
+                  const int min_num_observations_per_point);
 
 }  // namespace theia
 

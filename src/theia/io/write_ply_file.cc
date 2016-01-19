@@ -49,9 +49,6 @@ void GatherTracks(const Reconstruction& reconstruction,
                   std::vector<Eigen::Vector3i>* colors_to_write) {
   for (const TrackId track_id : reconstruction.TrackIds()) {
     const Track& track = *reconstruction.Track(track_id);
-    if (!track.IsEstimated()) {
-      continue;
-    }
     points_to_write->emplace_back(track.Point().hnormalized());
     colors_to_write->emplace_back(track.Color()[0],
                                   track.Color()[1],
@@ -75,7 +72,8 @@ void GatherCameras(const Reconstruction& reconstruction,
 
 // Writes a PLY file for viewing in software such as MeshLab.
 bool WritePlyFile(const std::string& ply_file,
-                  const Reconstruction& reconstruction) {
+                  const Reconstruction& const_reconstruction,
+                  const int min_num_observations_per_point) {
   CHECK_GT(ply_file.length(), 0);
 
   // Return false if the file cannot be opened for writing.
@@ -86,7 +84,20 @@ bool WritePlyFile(const std::string& ply_file,
     return false;
   }
 
-  // Containers for points that we will write to the PLY file.
+  // First, remove any points that are unestimated or do not have enough 3D
+  // points.
+  Reconstruction reconstruction = const_reconstruction;
+  const auto& track_ids = reconstruction.TrackIds();
+  for (const TrackId track_id : track_ids) {
+    const Track& track = *reconstruction.Track(track_id);
+    if (!track.IsEstimated() || track.NumViews() < 3) {
+      reconstruction.RemoveTrack(track_id);
+    }
+  }
+
+  reconstruction.Normalize();
+
+  // Extract points that we will write to the PLY file.
   std::vector<Eigen::Vector3d> points_to_write;
   std::vector<Eigen::Vector3i> colors_to_write;
   GatherTracks(reconstruction, &points_to_write, &colors_to_write);
