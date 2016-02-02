@@ -114,7 +114,7 @@ void WritePMVSOptions(const std::string& working_dir,
   ofs << "CPU " << FLAGS_num_threads << std::endl;
   ofs << "setEdge 0" << std::endl;
   ofs << "useBound 0" << std::endl;
-  ofs << "useVisData 1" << std::endl;
+  ofs << "useVisData 0" << std::endl;
   ofs << "sequence -1" << std::endl;
   ofs << "timages -1 0 " << num_images << std::endl;
   ofs << "oimages 0" << std::endl;
