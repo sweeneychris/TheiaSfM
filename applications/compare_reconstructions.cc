@@ -215,6 +215,12 @@ int main(int argc, char* argv[]) {
             << "\n\tNumber of Common cameras: "
             << common_view_names.size();
 
+  if (common_view_names.size() == 0) {
+    LOG(INFO) << "Could not compare reconstructions because they do not have "
+                 "any common view names.";
+    return 0;
+  }
+
   // Compare number of 3d points.
   LOG(INFO) << "Number of 3d points:\n"
             << "\tReconstruction 1: " << reference_reconstruction->NumTracks()
