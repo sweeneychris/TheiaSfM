@@ -57,6 +57,8 @@ namespace {
 // with matlab for optimal runtime.
 void SetupAndSolveSylvesterMatrix(const Matrix<double, 8, 3>& n,
                                   double* y1_soln, double* y2_soln) {
+  static const double kTolerance = 1e-12;
+
   // The Sylvester matrix will help us solve for one of the two unknown
   // variables. By using Eq 10, 11 (i.e., the orthonormal constraint), we can
   // set up the two equations as a polynomial in y1, leaving y2 as part of the
@@ -152,12 +154,23 @@ void SetupAndSolveSylvesterMatrix(const Matrix<double, 8, 3>& n,
   for (int i = 0; i < 4; i++) {
     // Substituting solutions for y2 yields a linear equation of the form
     // ax + b = 0.
-    const double a = (s22_2 - (s12_2 * s21_1) / s11_1) * roots[i] + s22_1 -
-                     (s12_1 * s21_1) / s11_1;
+    double a = (s22_2 - (s12_2 * s21_1) / s11_1) * roots[i] + s22_1 -
+               (s12_1 * s21_1) / s11_1;
 
-    const double b = (s23_3 - (s13_3 * s21_1) / s11_1) * roots[i] * roots[i] +
-                     (s23_2 - (s13_2 * s21_1) / s11_1) * roots[i] + s23_1 -
-                     (s13_1 * s21_1) / s11_1;
+    double b = (s23_3 - (s13_3 * s21_1) / s11_1) * roots[i] * roots[i] +
+               (s23_2 - (s13_2 * s21_1) / s11_1) * roots[i] + s23_1 -
+               (s13_1 * s21_1) / s11_1;
+
+    // If dividing by a is unstable, recompute a and b.
+    if (a < kTolerance) {
+      a = (s12_2 - (s22_2 * s11_1) / s21_1) * roots[i] + s12_1 -
+          (s22_1 * s11_1) / s21_1;
+
+      b = (s13_3 - (s23_3 * s11_1) / s21_1) * roots[i] * roots[i] +
+          (s13_2 - (s23_2 * s11_1) / s21_1) * roots[i] + s13_1 -
+          (s23_1 * s11_1) / s21_1;
+    }
+
     y1_soln[i] = -b / a;
     y2_soln[i] = roots[i];
   }
