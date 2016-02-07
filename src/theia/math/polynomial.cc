@@ -75,7 +75,7 @@
 #include <cmath>
 #include <limits>
 
-#include "theia/math/find_polynomial_roots_companion_matrix.h"
+#include "theia/math/find_polynomial_roots_jenkins_traub.h"
 
 namespace theia {
 
@@ -86,7 +86,7 @@ using Eigen::VectorXcd;
 bool FindPolynomialRoots(const VectorXd& polynomial,
                          VectorXd* real,
                          VectorXd* imaginary) {
-  return FindPolynomialRootsCompanionMatrix(polynomial, real, imaginary);
+  return FindPolynomialRootsJenkinsTraub(polynomial, real, imaginary);
 }
 
 // Remove leading terms with zero coefficients.
