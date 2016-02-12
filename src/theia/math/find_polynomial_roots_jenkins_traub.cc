@@ -404,7 +404,6 @@ ConvergenceType JenkinsTraubSolver::ApplyFixedShiftToKPolynomial(
     UpdateKPolynomialWithQuadraticShift(polynomial_quotient,
                                         k_polynomial_quotient);
   }
-
   return ConvergenceType::NO_CONVERGENCE;
 }
 
@@ -440,7 +439,6 @@ bool JenkinsTraubSolver::ApplyQuadraticShiftToKPolynomial(
   if (attempted_quadratic_shift_) {
     return false;
   }
-  attempted_quadratic_shift_ = true;
 
   const double kTinyRelativeStep = 0.01;
 
@@ -513,6 +511,8 @@ bool JenkinsTraubSolver::ApplyQuadraticShiftToKPolynomial(
     k_polynomial_ /= k_polynomial_(0);
     prev_poly_at_root = poly_at_root;
   }
+
+  attempted_quadratic_shift_ = true;
   return ApplyLinearShiftToKPolynomial(root, kMaxLinearShiftIterations);
 }
 
@@ -525,7 +525,6 @@ bool JenkinsTraubSolver::ApplyLinearShiftToKPolynomial(
   if (attempted_linear_shift_) {
     return false;
   }
-  attempted_linear_shift_ = true;
 
   // Compute an initial guess for the root.
   double real_root = (root -
@@ -570,6 +569,8 @@ bool JenkinsTraubSolver::ApplyLinearShiftToKPolynomial(
                                               kMaxQuadraticShiftIterations);
     }
   }
+
+  attempted_linear_shift_ = true;
   return ApplyQuadraticShiftToKPolynomial(root, kMaxQuadraticShiftIterations);
 }
 
