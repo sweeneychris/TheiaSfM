@@ -41,7 +41,6 @@
 #include <memory>
 #include <vector>
 
-#include "theia/math/distribution.h"
 #include "theia/solvers/quality_measurement.h"
 
 namespace theia {
