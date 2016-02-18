@@ -57,7 +57,7 @@ class Distribution {
 // Normal Gaussian Distribution.
 class NormalDistribution : public Distribution {
  public:
-  NormalDistribution(const double mean, const double sigma) {
+  NormalDistribution(const double mean, const double sigma) : mean_(mean) {
     CHECK_GT(sigma, 0)
         << "Sigma must be greater than zero in a normal distribution";
     alpha_ = 1.0 / (sigma * sqrt(2.0 * M_PI));
