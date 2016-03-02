@@ -95,8 +95,6 @@ bool WritePlyFile(const std::string& ply_file,
     }
   }
 
-  reconstruction.Normalize();
-
   // Extract points that we will write to the PLY file.
   std::vector<Eigen::Vector3d> points_to_write;
   std::vector<Eigen::Vector3i> colors_to_write;
