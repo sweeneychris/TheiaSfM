@@ -80,6 +80,7 @@
 #include "theia/math/find_polynomial_roots_companion_matrix.h"
 #include "theia/math/find_polynomial_roots_jenkins_traub.h"
 #include "theia/math/graph/connected_components.h"
+#include "theia/math/graph/minimum_spanning_tree.h"
 #include "theia/math/graph/normalized_graph_cut.h"
 #include "theia/math/histogram.h"
 #include "theia/math/l1_solver.h"

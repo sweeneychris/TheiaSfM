@@ -118,6 +118,19 @@ class ConnectedComponents {
     }
   }
 
+  // Returns true if both nodes are in the same connected component and false
+  // otherwise.
+  bool NodesInSameConnectedComponent(const T& node1, const T& node2) {
+    if (!ContainsKey(disjoint_set_, node1) ||
+        !ContainsKey(disjoint_set_, node2)) {
+      return false;
+    }
+
+    const Root* root1 = FindRoot(node1);
+    const Root* root2 = FindRoot(node2);
+    return root1->id == root2->id;
+  }
+
  private:
   // Attempts to find the root of the tree, or otherwise inserts the node.
   Root* FindOrInsert(const T& node) {
