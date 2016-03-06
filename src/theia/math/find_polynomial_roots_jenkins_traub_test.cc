@@ -49,8 +49,8 @@ using Eigen::VectorXd;
 namespace {
 
 // For IEEE-754 doubles, machine precision is about 2e-16.
-const double kEpsilon = 1e-10;
-const double kEpsilonLoose = 1e-8;
+const double kEpsilon = 1e-12;
+const double kEpsilonLoose = 1e-10;
 
 // Return the constant polynomial p(x) = 1.23.
 VectorXd ConstantPolynomial(double value) {
@@ -193,7 +193,7 @@ TEST(Polynomial, QuadraticPolynomialWithComplexRootsWorks) {
 
 TEST(Polynomial, QuarticPolynomialWorks) {
   const double roots[4] = { 1.23e-4, 1.23e-1, 1.23e+2, 1.23e+5 };
-  RunPolynomialTestRealRoots(roots, true, true, kEpsilon);
+  RunPolynomialTestRealRoots(roots, true, true, kEpsilonLoose);
 }
 
 TEST(Polynomial, QuarticPolynomialWithTwoClustersOfCloseRootsWorks) {
@@ -213,7 +213,7 @@ TEST(Polynomial, QuarticMonomialWorks) {
 
 TEST(Polynomial, NullPointerAsImaginaryPartWorks) {
   const double roots[4] = { 1.23e-4, 1.23e-1, 1.23e+2, 1.23e+5 };
-  RunPolynomialTestRealRoots(roots, true, false, kEpsilon);
+  RunPolynomialTestRealRoots(roots, true, false, kEpsilonLoose);
 }
 
 TEST(Polynomial, NullPointerAsRealPartWorks) {
