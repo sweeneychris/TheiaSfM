@@ -66,6 +66,7 @@ class TrackEstimator {
     // Perform bundle adjustment on the track as soon as a position is
     // estimated.
     bool bundle_adjustment = true;
+    BundleAdjustmentOptions ba_options;
 
     // For thread-level parallelism, it is better to estimate a small fixed
     // number of tracks per thread worker instead of 1 track per worker. This

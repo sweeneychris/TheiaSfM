@@ -109,6 +109,8 @@ IncrementalReconstructionEstimator::IncrementalReconstructionEstimator(
   triangulation_options_.min_triangulation_angle_degrees =
       options_.min_triangulation_angle_degrees;
   triangulation_options_.bundle_adjustment = options_.bundle_adjust_tracks;
+  triangulation_options_.ba_options = SetBundleAdjustmentOptions(options_, 0);
+  triangulation_options_.ba_options.verbose = false;
   triangulation_options_.num_threads = options_.num_threads;
 
   // Localization options.
@@ -116,6 +118,8 @@ IncrementalReconstructionEstimator::IncrementalReconstructionEstimator(
       options_.absolute_pose_reprojection_error_threshold;
   localization_options_.ransac_params = ransac_params_;
   localization_options_.bundle_adjust_view = false;
+  localization_options_.ba_options = SetBundleAdjustmentOptions(options_, 0);
+  localization_options_.ba_options.verbose = false;
   localization_options_.min_num_inliers =
       options_.min_num_absolute_pose_inliers;
 

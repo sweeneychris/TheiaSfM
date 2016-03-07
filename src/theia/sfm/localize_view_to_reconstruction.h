@@ -35,6 +35,7 @@
 #ifndef THEIA_SFM_LOCALIZE_VIEW_TO_RECONSTRUCTION_H_
 #define THEIA_SFM_LOCALIZE_VIEW_TO_RECONSTRUCTION_H_
 
+#include "theia/sfm/bundle_adjustment/bundle_adjustment.h"
 #include "theia/sfm/types.h"
 #include "theia/solvers/sample_consensus_estimator.h"
 
@@ -52,6 +53,7 @@ struct LocalizeViewToReconstructionOptions {
   // The view will be bundle adjusted (while all tracks are held constant) if
   // this is set to true.
   bool bundle_adjust_view = true;
+  BundleAdjustmentOptions ba_options;
 
   // The minimum number of inliers found from RANSAC in order to be considered
   // successful localization.

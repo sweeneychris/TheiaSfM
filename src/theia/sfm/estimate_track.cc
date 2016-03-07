@@ -232,9 +232,8 @@ bool TrackEstimator::EstimateTrack(const TrackId track_id) {
   // do not need to run BA for that case.
   if (options_.bundle_adjustment) {
     track->SetEstimated(true);
-    BundleAdjustmentOptions ba_options;
     const BundleAdjustmentSummary summary =
-        BundleAdjustTrack(ba_options, track_id, reconstruction_);
+        BundleAdjustTrack(options_.ba_options, track_id, reconstruction_);
     track->SetEstimated(false);
     if (!summary.success) {
       return false;
