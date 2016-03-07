@@ -145,7 +145,7 @@ set(THEIA_SRC
   sfm/twoview_info.cc
   sfm/verify_two_view_matches.cc
   sfm/view.cc
-  sfm/view_graph/orientations_from_view_graph.cc
+  sfm/view_graph/orientations_from_maximum_spanning_tree.cc
   sfm/view_graph/remove_disconnected_view_pairs.cc
   sfm/view_graph/triplet_extractor.cc
   sfm/view_graph/view_graph.cc
@@ -270,7 +270,7 @@ if (BUILD_TESTING)
   gtest(sfm/triangulation/triangulation)
   gtest(sfm/twoview_info)
   gtest(sfm/view)
-  gtest(sfm/view_graph/orientations_from_view_graph)
+  gtest(sfm/view_graph/orientations_from_maximum_spanning_tree)
   gtest(sfm/view_graph/remove_disconnected_view_pairs)
   gtest(sfm/view_graph/triplet_extractor)
   gtest(sfm/view_graph/view_graph)

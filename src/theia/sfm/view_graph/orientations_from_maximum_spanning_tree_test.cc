@@ -39,7 +39,7 @@
 
 #include "gtest/gtest.h"
 #include "theia/util/map_util.h"
-#include "theia/sfm/view_graph/orientations_from_view_graph.h"
+#include "theia/sfm/view_graph/orientations_from_maximum_spanning_tree.h"
 #include "theia/sfm/view_graph/view_graph.h"
 
 namespace theia {
@@ -79,6 +79,7 @@ TwoViewInfo CreateTwoViewInfo(
   if (view_id1 > view_id2) {
     info.rotation_2 *= -1.0;
   }
+  info.num_verified_matches = 100;
   return info;
 }
 
@@ -145,7 +146,7 @@ void TestOrientationsFromViewGraph(const int num_views,
   CreateViewGraph(num_edges, orientations, &view_graph);
 
   std::unordered_map<ViewId, Vector3d> estimated_orientations;
-  OrientationsFromViewGraph(view_graph, 0, &estimated_orientations);
+  OrientationsFromMaximumSpanningTree(view_graph, &estimated_orientations);
   VerifyOrientations(view_graph, orientations, estimated_orientations);
 }
 

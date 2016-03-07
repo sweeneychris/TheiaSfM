@@ -56,7 +56,7 @@
 #include "theia/sfm/reconstruction_estimator_utils.h"
 #include "theia/sfm/set_camera_intrinsics_from_priors.h"
 #include "theia/sfm/twoview_info.h"
-#include "theia/sfm/view_graph/orientations_from_view_graph.h"
+#include "theia/sfm/view_graph/orientations_from_maximum_spanning_tree.h"
 #include "theia/sfm/view_graph/remove_disconnected_view_pairs.h"
 #include "theia/sfm/view_graph/view_graph.h"
 #include "theia/solvers/sample_consensus_estimator.h"
@@ -89,25 +89,6 @@ SetRelativeTranslationFilteringOptions(
   fvpfrt_options.translation_projection_tolerance =
       options.translation_filtering_projection_tolerance;
   return fvpfrt_options;
-}
-
-ViewId RandomViewId(const ViewGraph& view_graph) {
-  const auto& view_pairs = view_graph.GetAllEdges();
-
-  // Collect all view ids.
-  std::unordered_set<ViewId> views;
-  for (const auto& view_pair : view_pairs) {
-    views.insert(view_pair.first.first);
-    views.insert(view_pair.first.second);
-  }
-
-  // Find a random view id. TODO(cmsweeney): Choose the "best" random view by
-  // some criterion such as highest connectivity.
-  InitRandomGenerator();
-  const int num_advances = RandInt(0, views.size() - 1);
-  auto it = views.begin();
-  std::advance(it, num_advances);
-  return *it;
 }
 
 void SetUnderconstrainedAsUnestimated(Reconstruction* reconstruction) {
@@ -328,30 +309,18 @@ bool GlobalReconstructionEstimator::EstimateGlobalRotations() {
   std::unique_ptr<RotationEstimator> rotation_estimator;
   switch (options_.global_rotation_estimator_type) {
     case GlobalRotationEstimatorType::ROBUST_L1L2: {
-      // Initialize the orientation estimations by a random walk along the
-      // viewing graph.
-      //
-      // TODO(cmsweeney): We should use the linear method to initialize the
-      // rotation estimations from a spanning tree.
-      const ViewId random_starting_view = RandomViewId(*view_graph_);
-      OrientationsFromViewGraph(*view_graph_,
-                                random_starting_view,
-                                &orientations_);
+      // Initialize the orientation estimations by walking along the maximum
+      // spanning tree.
+      OrientationsFromMaximumSpanningTree(*view_graph_, &orientations_);
       RobustRotationEstimator::Options robust_rotation_estimator_options;
       rotation_estimator.reset(
           new RobustRotationEstimator(robust_rotation_estimator_options));
       break;
     }
     case GlobalRotationEstimatorType::NONLINEAR: {
-      // Initialize the orientation estimations by a random walk along the
-      // viewing graph.
-      //
-      // TODO(cmsweeney): We should use the linear method to initialize the
-      // rotation estimations from a spanning tree.
-      const ViewId random_starting_view = RandomViewId(*view_graph_);
-      OrientationsFromViewGraph(*view_graph_,
-                                random_starting_view,
-                                &orientations_);
+      // Initialize the orientation estimations by walking along the maximum
+      // spanning tree.
+      OrientationsFromMaximumSpanningTree(*view_graph_, &orientations_);
       rotation_estimator.reset(new NonlinearRotationEstimator());
       break;
     }

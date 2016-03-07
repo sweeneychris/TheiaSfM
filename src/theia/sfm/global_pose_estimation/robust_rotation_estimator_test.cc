@@ -235,7 +235,7 @@ TEST_F(EstimateRotationsRobustTest, LargeTestWithNoise) {
   static const double kToleranceDegrees = 5.0;
   static const int kNumViews = 100;
   static const int kNumViewPairs = 800;
-  static const double kPoseNoiseDegrees = 5.0;
+  static const double kPoseNoiseDegrees = 2.0;
   TestRobustRotationEstimator(kNumViews,
                               kNumViewPairs,
                               kPoseNoiseDegrees,

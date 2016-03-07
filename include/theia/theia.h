@@ -178,7 +178,7 @@
 #include "theia/sfm/types.h"
 #include "theia/sfm/verify_two_view_matches.h"
 #include "theia/sfm/view.h"
-#include "theia/sfm/view_graph/orientations_from_view_graph.h"
+#include "theia/sfm/view_graph/orientations_from_maximum_spanning_tree.h"
 #include "theia/sfm/view_graph/remove_disconnected_view_pairs.h"
 #include "theia/sfm/view_graph/triplet_extractor.h"
 #include "theia/sfm/view_graph/view_graph.h"
