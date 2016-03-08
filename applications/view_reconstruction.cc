@@ -71,7 +71,7 @@ int height = 800;
 // OpenGL camera parameters.
 Eigen::Vector3f viewer_position(0.0, 0.0, 0.0);
 float zoom = -50.0;
-float delta_zoom = 25;
+float delta_zoom = 1.1;
 
 // Rotation values for the navigation
 Eigen::Vector2f navigation_rotation(0.0, 0.0);
@@ -305,9 +305,9 @@ void MouseButton(int button, int state, int x, int y) {
     // Each wheel event reports like a button click, GLUT_DOWN then GLUT_UP
     if (state == GLUT_UP) return;  // Disregard redundant GLUT_UP events
     if (button == 3) {
-      zoom += delta_zoom;
+      zoom *= delta_zoom;
     } else {
-      zoom -= delta_zoom;
+      zoom /= delta_zoom;
     }
   }
 
@@ -368,10 +368,10 @@ void Keyboard(unsigned char key, int x, int y) {
       point_size = 1.0;
       break;
     case 'z':
-      zoom += delta_zoom;
+      zoom *= delta_zoom;
       break;
     case 'Z':
-      zoom -= delta_zoom;
+      zoom /= delta_zoom;
       break;
     case 'p':
       point_size /= 1.2;
