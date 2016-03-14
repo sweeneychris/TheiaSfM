@@ -52,6 +52,9 @@ TARGET_LINK_LIBRARIES(convert_sift_key_file theia ${GFLAGS_LIBRARIES} ${GLOG_LIB
 ADD_EXECUTABLE(convert_bundle_file convert_bundle_file.cc)
 TARGET_LINK_LIBRARIES(convert_bundle_file theia ${GFLAGS_LIBRARIES} ${GLOG_LIBRARIES})
 
+ADD_EXECUTABLE(export_to_nvm_file export_to_nvm_file.cc)
+TARGET_LINK_LIBRARIES(export_to_nvm_file theia ${GFLAGS_LIBRARIES} ${GLOG_LIBRARIES})
+
 ADD_EXECUTABLE(convert_nvm_file convert_nvm_file.cc)
 TARGET_LINK_LIBRARIES(convert_nvm_file theia ${GFLAGS_LIBRARIES} ${GLOG_LIBRARIES})
 

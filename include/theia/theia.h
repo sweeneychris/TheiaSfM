@@ -63,6 +63,7 @@
 #include "theia/io/write_keypoints_and_descriptors.h"
 #include "theia/io/write_matches.h"
 #include "theia/io/write_matches_deprecated.h"
+#include "theia/io/write_nvm_file.h"
 #include "theia/io/write_ply_file.h"
 #include "theia/matching/brute_force_feature_matcher.h"
 #include "theia/matching/cascade_hasher.h"
