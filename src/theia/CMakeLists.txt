@@ -59,6 +59,7 @@ set(THEIA_SRC
   io/write_keypoints_and_descriptors.cc
   io/write_matches.cc
   io/write_matches_deprecated.cc
+  io/write_nvm_file.cc
   io/write_ply_file.cc
   matching/cascade_hasher.cc
   matching/cascade_hashing_feature_matcher.cc

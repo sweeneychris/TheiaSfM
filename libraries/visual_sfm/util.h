@@ -68,6 +68,7 @@ bool LoadNVM(ifstream& in, vector<CameraT>& camera_data,
       rotation_parameter_num = 9;  // rotation as 3x3 matrix
       format_r9t = true;
     }
+    getline(in, token);
   }
 
   int ncam = 0, npoint = 0, nproj = 0;
