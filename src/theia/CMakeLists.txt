@@ -70,6 +70,7 @@ set(THEIA_SRC
   math/find_polynomial_roots_jenkins_traub.cc
   math/polynomial.cc
   math/probability/sequential_probability_ratio.cc
+  math/qp_solver.cc
   sfm/bundle_adjustment/bundle_adjust_two_views.cc
   sfm/bundle_adjustment/bundle_adjustment.cc
   sfm/bundle_adjustment/create_loss_function.cc
@@ -217,6 +218,7 @@ if (BUILD_TESTING)
   gtest(math/matrix/rq_decomposition)
   gtest(math/polynomial)
   gtest(math/probability/sprt)
+  gtest(math/qp_solver)
   gtest(sfm/bundle_adjustment/optimize_relative_position_with_known_rotation)
   gtest(sfm/camera/camera)
   gtest(sfm/camera/projection_matrix_utils)
