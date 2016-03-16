@@ -44,8 +44,8 @@
 namespace theia {
 
 // Computes orientations of each view in the view graph by computing the maximum
-// spanning tree (by edge weight) and linearly solving for the global
-// orientations.
+// spanning tree (by edge weight) and solving for the global orientations by
+// chaining rotations.
 bool OrientationsFromMaximumSpanningTree(
     const ViewGraph& view_graph,
     std::unordered_map<ViewId, Eigen::Vector3d>* orientations);

@@ -34,18 +34,77 @@
 
 #include "theia/sfm/view_graph/orientations_from_maximum_spanning_tree.h"
 
+#include <ceres/rotation.h>
 #include <Eigen/Core>
+
+#include <algorithm>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
+#include <vector>
 
 #include "theia/math/graph/minimum_spanning_tree.h"
-#include "theia/sfm/global_pose_estimation/linear_rotation_estimator.h"
 #include "theia/sfm/twoview_info.h"
 #include "theia/sfm/types.h"
 #include "theia/sfm/view_graph/view_graph.h"
 #include "theia/util/map_util.h"
 
 namespace theia {
+namespace {
+typedef std::pair<TwoViewInfo, ViewIdPair> HeapElement;
+
+bool SortHeapElement(const HeapElement& h1, const HeapElement& h2) {
+  return h1.first.num_verified_matches > h2.first.num_verified_matches;
+}
+
+// Computes the orientation of the neighbor camera based on the orientation of
+// the source camera and the relative rotation between the cameras.
+Eigen::Vector3d ComputeOrientation(const Eigen::Vector3d& source_orientation,
+                                   const TwoViewInfo& two_view_info,
+                                   const ViewId source_view_id,
+                                   const ViewId neighbor_view_id) {
+  Eigen::Matrix3d source_rotation_mat, relative_rotation;
+  ceres::AngleAxisToRotationMatrix(
+      source_orientation.data(),
+      ceres::ColumnMajorAdapter3x3(source_rotation_mat.data()));
+  ceres::AngleAxisToRotationMatrix(
+      two_view_info.rotation_2.data(),
+      ceres::ColumnMajorAdapter3x3(relative_rotation.data()));
+
+  const Eigen::Matrix3d neighbor_orientation =
+      (source_view_id < neighbor_view_id)
+          ? (relative_rotation * source_rotation_mat).eval()
+          : (relative_rotation.transpose() * source_rotation_mat).eval();
+
+  Eigen::Vector3d orientation;
+  ceres::RotationMatrixToAngleAxis(
+      ceres::ColumnMajorAdapter3x3(neighbor_orientation.data()),
+      orientation.data());
+  return orientation;
+}
+
+// Adds all the edges of view_id to the heap. Only edges that do not already
+// have an orientation estimation are added.
+void AddEdgesToHeap(
+    const ViewGraph& view_graph,
+    const std::unordered_map<ViewId, Eigen::Vector3d>& orientations,
+    const ViewId view_id,
+    std::vector<HeapElement >* heap) {
+  const std::unordered_set<ViewId>* edge_ids =
+      view_graph.GetNeighborIdsForView(view_id);
+  for (const ViewId edge_id : *edge_ids) {
+    // Only add edges to the heap that contain a vertex that has not been seen.
+    if (ContainsKey(orientations, edge_id)) {
+      continue;
+    }
+
+    heap->emplace_back(*view_graph.GetEdge(view_id, edge_id),
+                       ViewIdPair(view_id, edge_id));
+    std::push_heap(heap->begin(), heap->end(), SortHeapElement);
+  }
+}
+
+}  // namespace
 
 bool OrientationsFromMaximumSpanningTree(
     const ViewGraph& view_graph,
@@ -70,17 +129,48 @@ bool OrientationsFromMaximumSpanningTree(
     return false;
   }
 
-  // Collect the MST edges for the rotation computation.
-  std::unordered_map<ViewIdPair, TwoViewInfo> mst_view_pairs;
-  mst_view_pairs.reserve(mst.size());
-  for (const auto& edge : mst) {
-    mst_view_pairs[edge] = FindOrDieNoPrint(all_edges, edge);
+  // Create an MST view graph.
+  ViewGraph mst_view_graph;
+  for (const ViewIdPair& edge : mst) {
+    mst_view_graph.AddEdge(edge.first, edge.second,
+                           *view_graph.GetEdge(edge.first, edge.second));
   }
 
-  // Solve for rotations using the linear solver. Weigh the edges by the inlier
-  // count to give more weight to more stable edges.
-  LinearRotationEstimator rotation_estimator(true);
-  return rotation_estimator.EstimateRotations(mst_view_pairs, orientations);
+  // Chain the relative rotations together to compute orientations.  We use a
+  // heap to determine the next edges to add to the minimum spanning tree.
+  std::vector<HeapElement> heap;
+
+  // Set the root value.
+  const ViewId root_view_id = mst.begin()->first;
+  (*orientations)[root_view_id] = Eigen::Vector3d::Zero();
+  AddEdgesToHeap(mst_view_graph, *orientations, root_view_id, &heap);
+
+  while (!heap.empty()) {
+    const HeapElement next_edge = heap.front();
+    // Remove the best edge.
+    std::pop_heap(heap.begin(), heap.end(), SortHeapElement);
+    heap.pop_back();
+
+    // If the edge contains two vertices that have already been added then do
+    // nothing.
+    if (ContainsKey(*orientations, next_edge.second.second)) {
+      continue;
+    }
+
+    // Compute the orientation for the vertex.
+    (*orientations)[next_edge.second.second] = ComputeOrientation(
+        FindOrDie(*orientations, next_edge.second.first),
+        next_edge.first,
+        next_edge.second.first,
+        next_edge.second.second);
+
+    // Add all edges to the heap.
+    AddEdgesToHeap(mst_view_graph,
+                   *orientations,
+                   next_edge.second.second,
+                   &heap);
+  }
+  return true;
 }
 
 }  // namespace theia
