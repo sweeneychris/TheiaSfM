@@ -60,12 +60,12 @@ QPSolver::QPSolver(const Options& options,
   lb_.setConstant(P_.cols(), -std::numeric_limits<double>::infinity());
   ub_.setConstant(P_.cols(), std::numeric_limits<double>::infinity());
 
-  // Analyze the sparsity pattern once. Only the values of the entries will be
-  // changed with each iteration.
-  Eigen::SparseMatrix<double> spd_mat = P_;
-  Eigen::MatrixXd diag_rho =
-      Eigen::VectorXd::Constant(P_.rows(), options_.rho).asDiagonal();
-  spd_mat += diag_rho.sparseView();
+  // Set up the linear solver to compute the cholesky decomposition of:
+  //     P_ + rho * eye(N)
+  Eigen::SparseMatrix<double> spd_mat(P_.rows(), P_.cols());
+  spd_mat.setIdentity();
+  spd_mat *= options_.rho;
+  spd_mat += P_;
 
   linear_solver_.compute(spd_mat);
   CHECK_EQ(linear_solver_.info(), Eigen::Success);

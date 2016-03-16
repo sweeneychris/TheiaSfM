@@ -95,8 +95,8 @@ class QPSolver {
 
   // Matrix P, q, double r where || 1/2 * x * P * x + q' * x + b ||_2 is the
   // problem we are solving.
-  const Eigen::SparseMatrix<double> P_;
-  const Eigen::VectorXd q_;
+  const Eigen::SparseMatrix<double>& P_;
+  const Eigen::VectorXd& q_;
   const double r_;
 
   // Lower and upper bounds.
