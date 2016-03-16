@@ -142,31 +142,39 @@ void RobustRotationEstimator::SetupLinearSystem() {
   // R_ij = R_j - R_i. This makes the sparse matrix just a bunch of identity
   // matrices.
   int rotation_error_index = 0;
+  std::vector<Eigen::Triplet<double> > triplet_list;
   for (const auto& view_pair : *view_pairs_) {
     const int view1_index =
         FindOrDie(view_id_to_index_, view_pair.first.first);
     if (view1_index != kConstantRotationIndex) {
-      sparse_matrix_.insert(3 * rotation_error_index + 0, 3 * view1_index + 0) =
-          -1.0;
-      sparse_matrix_.insert(3 * rotation_error_index + 1, 3 * view1_index + 1) =
-          -1.0;
-      sparse_matrix_.insert(3 * rotation_error_index + 2, 3 * view1_index + 2) =
-          -1.0;
+      triplet_list.emplace_back(3 * rotation_error_index,
+                                3 * view1_index,
+                                -1.0);
+      triplet_list.emplace_back(3 * rotation_error_index + 1,
+                                3 * view1_index + 1,
+                                -1.0);
+      triplet_list.emplace_back(3 * rotation_error_index + 2,
+                                3 * view1_index + 2,
+                                -1.0);
     }
 
     const int view2_index =
         FindOrDie(view_id_to_index_, view_pair.first.second);
     if (view2_index != kConstantRotationIndex) {
-      sparse_matrix_.insert(3 * rotation_error_index + 0, 3 * view2_index + 0) =
-          1.0;
-      sparse_matrix_.insert(3 * rotation_error_index + 1, 3 * view2_index + 1) =
-          1.0;
-      sparse_matrix_.insert(3 * rotation_error_index + 2, 3 * view2_index + 2) =
-          1.0;
+      triplet_list.emplace_back(3 * rotation_error_index + 0,
+                                3 * view2_index + 0,
+                                1.0);
+      triplet_list.emplace_back(3 * rotation_error_index + 1,
+                                3 * view2_index + 1,
+                                1.0);
+      triplet_list.emplace_back(3 * rotation_error_index + 2,
+                                3 * view2_index + 2,
+                                1.0);
     }
 
     ++rotation_error_index;
   }
+  sparse_matrix_.setFromTriplets(triplet_list.begin(), triplet_list.end());
 }
 
 // Computes the relative rotation error based on the current global
@@ -187,7 +195,7 @@ bool RobustRotationEstimator::SolveL1Regression() {
   static const double kConvergenceThreshold = 1e-3;
 
   L1Solver<Eigen::SparseMatrix<double> >::Options options;
-  options.max_num_iterations = 20;
+  options.max_num_iterations = 5;
   L1Solver<Eigen::SparseMatrix<double> > l1_solver(options, sparse_matrix_);
 
   rotation_change_.setZero();
@@ -228,14 +236,18 @@ bool RobustRotationEstimator::SolveIRLS() {
   // Set up the linear solver and analyze the sparsity pattern of the
   // system. Since the sparsity pattern will not change with each linear solve
   // this can help speed up the solution time.
-  Eigen::SimplicialLDLT<Eigen::SparseMatrix<double> > linear_solver;
+  Eigen::SimplicialLLT<Eigen::SparseMatrix<double> > linear_solver;
   linear_solver.analyzePattern(sparse_matrix_.transpose() * sparse_matrix_);
   if (linear_solver.info() != Eigen::Success) {
     LOG(ERROR) << "Cholesky decomposition failed.";
     return false;
   }
 
+  VLOG(2) << "Iteration   Error           Delta";
+  const std::string row_format = "  % 4d     % 4.4e     % 4.4e";
+
   Eigen::ArrayXd errors, weights;
+  Eigen::SparseMatrix<double> at_weight;
   for (int i = 0; i < options_.max_num_irls_iterations; i++) {
     const Eigen::VectorXd prev_rotation_change = rotation_change_;
     ComputeRotationError();
@@ -246,7 +258,7 @@ bool RobustRotationEstimator::SolveIRLS() {
     weights = kDeltaSq / (errors.square() + kDeltaSq).square();
 
     // Update the factorization for the weighted values.
-    const Eigen::SparseMatrix<double> at_weight =
+    at_weight =
         sparse_matrix_.transpose() * weights.matrix().asDiagonal();
     linear_solver.factorize(at_weight * sparse_matrix_);
     if (linear_solver.info() != Eigen::Success) {
@@ -263,8 +275,13 @@ bool RobustRotationEstimator::SolveIRLS() {
     }
 
     UpdateGlobalRotations();
-    if ((prev_rotation_change - rotation_change_).squaredNorm() <
-        kConvergenceThreshold) {
+
+    // Log some statistics for the output.
+    const double rotation_change_sq_norm =
+        (prev_rotation_change - rotation_change_).squaredNorm();
+    VLOG(2) << StringPrintf(row_format.c_str(), i, errors.square().sum(),
+                            rotation_change_sq_norm);
+    if (rotation_change_sq_norm < kConvergenceThreshold) {
       VLOG(1) << "IRLS Converged in " << i + 1 << " iterations.";
       break;
     }
