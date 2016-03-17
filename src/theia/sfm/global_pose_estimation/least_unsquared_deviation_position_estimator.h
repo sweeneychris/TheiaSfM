@@ -35,11 +35,9 @@
 #ifndef THEIA_SFM_GLOBAL_POSE_ESTIMATION_LEAST_UNSQUARED_DEVIATION_POSITION_ESTIMATOR_H_
 #define THEIA_SFM_GLOBAL_POSE_ESTIMATION_LEAST_UNSQUARED_DEVIATION_POSITION_ESTIMATOR_H_
 
-#include <ceres/ceres.h>
 #include <Eigen/Core>
-#include <memory>
+#include <Eigen/SparseCore>
 #include <unordered_map>
-#include <vector>
 
 #include "theia/util/hash.h"
 #include "theia/util/util.h"
@@ -58,14 +56,8 @@ namespace theia {
 class LeastUnsquaredDeviationPositionEstimator : public PositionEstimator {
  public:
   struct Options {
-    // Options for Ceres nonlinear solver.
-    int num_threads = 1;
+    // Options for ADMM QP solver.
     int max_num_iterations = 400;
-
-    // By default, we initialize the positions to be random. However, in the
-    // case that we have priors on position locations then we use the positions
-    // passed into the EstimatePositions method as the initial positions.
-    bool initialize_random_positions = true;
 
     // Maximum number of reweighted iterations.
     int max_num_reweighted_iterations = 10;
@@ -85,28 +77,23 @@ class LeastUnsquaredDeviationPositionEstimator : public PositionEstimator {
       std::unordered_map<ViewId, Eigen::Vector3d>* positions);
 
  private:
-  // Initialize all cameras to be random.
-  void InitializeRandomPositions(
-      const std::unordered_map<ViewId, Eigen::Vector3d>& orientations,
-      std::unordered_map<ViewId, Eigen::Vector3d>* positions);
-
   // Creates camera to camera constraints from relative translations.
-  void AddCameraToCameraConstraints(
-      const std::unordered_map<ViewId, Eigen::Vector3d>& orientations,
-      std::unordered_map<ViewId, Eigen::Vector3d>* positions);
+  void SetupConstraintMatrix(
+      const std::unordered_map<ViewIdPair, TwoViewInfo>& view_pairs,
+      const std::unordered_map<ViewId, Eigen::Vector3d>& orientations);
 
   // Computes the weight of the error terms for the IRLS system.
-  void ComputeWeights(
-      const std::unordered_map<ViewId, Eigen::Vector3d>& orientations,
-      const std::unordered_map<ViewId, Eigen::Vector3d>& positions);
+  void UpdateConstraintWeights();
 
   const LeastUnsquaredDeviationPositionEstimator::Options options_;
-  const std::unordered_map<ViewIdPair, TwoViewInfo>* view_pairs_;
 
-  std::unordered_map<ViewIdPair, double> scales_, weights_;
+  std::unordered_map<ViewIdPair, int> view_id_pair_to_index_;
+  std::unordered_map<ViewId, int> view_id_to_index_;
+  static const int kConstantViewIndex = -3;
 
-  std::unique_ptr<ceres::Problem> problem_;
-  ceres::Solver::Options solver_options_;
+  Eigen::ArrayXd weights_;
+  Eigen::SparseMatrix<double> constraint_matrix_;
+  Eigen::VectorXd solution_;
 
   friend class EstimatePositionsLeastUnsquaredDeviationTest;
 

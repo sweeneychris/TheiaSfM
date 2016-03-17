@@ -34,11 +34,12 @@
 
 #include "theia/sfm/global_pose_estimation/least_unsquared_deviation_position_estimator.h"
 
-#include <ceres/ceres.h>
 #include <ceres/rotation.h>
 #include <Eigen/Core>
+#include <Eigen/SparseCore>
 #include <unordered_map>
 
+#include "theia/math/qp_solver.h"
 #include "theia/sfm/global_pose_estimation/pairwise_translation_and_scale_error.h"
 #include "theia/sfm/types.h"
 #include "theia/util/map_util.h"
@@ -65,145 +66,151 @@ LeastUnsquaredDeviationPositionEstimator::
     LeastUnsquaredDeviationPositionEstimator(
         const LeastUnsquaredDeviationPositionEstimator::Options& options)
     : options_(options) {
-  CHECK_GT(options_.num_threads, 0);
+  CHECK_GT(options_.max_num_iterations, 0);
+  CHECK_GT(options_.max_num_reweighted_iterations, 0);
 }
 
 bool LeastUnsquaredDeviationPositionEstimator::EstimatePositions(
     const std::unordered_map<ViewIdPair, TwoViewInfo>& view_pairs,
     const std::unordered_map<ViewId, Vector3d>& orientations,
     std::unordered_map<ViewId, Vector3d>* positions) {
-  CHECK_NOTNULL(positions);
-  view_pairs_ = &view_pairs;
+  CHECK_NOTNULL(positions)->clear();
 
-  // Initialize scale and weight terms.
-  scales_.reserve(view_pairs_->size());
-  weights_.reserve(view_pairs_->size());
-  for (const auto& view_pair : *view_pairs_) {
-    scales_[view_pair.first] = 10.0;
-    weights_[view_pair.first] = 1.0;
-  }
-
-  if (options_.initialize_random_positions) {
-    // Initialize positions to be random.
-    InitializeRandomPositions(orientations, positions);
-  }
-
-  ceres::Solver::Summary summary;
-  for (int i = 0; i < options_.max_num_reweighted_iterations; i++) {
-    problem_.reset(new ceres::Problem());
-
-    // Add the (weighted) constraints to the problem.
-    AddCameraToCameraConstraints(orientations, positions);
-
-    // Set one camera to be at the origin to remove the ambiguity of the origin.
-    positions->begin()->second.setZero();
-    problem_->SetParameterBlockConstant(positions->begin()->second.data());
-
-    // Set the solver options.
-    solver_options_.num_threads = options_.num_threads;
-    solver_options_.num_linear_solver_threads = options_.num_threads;
-    solver_options_.max_num_iterations = options_.max_num_iterations;
-    solver_options_.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
-
-    ceres::Solve(solver_options_, problem_.get(), &summary);
-    LOG(INFO) << "Iteration " << i + 1
-              << " of the Iterative Reweighted Least Squares\n"
-              << summary.FullReport();
-
-    const double convergence_criterion =
-        (summary.initial_cost - summary.final_cost) / summary.initial_cost;
-    if (convergence_criterion < options_.convergence_criterion) {
-      break;
-    }
-
-    ComputeWeights(orientations, *positions);
-  }
-
-  return summary.IsSolutionUsable();
-}
-
-void LeastUnsquaredDeviationPositionEstimator::InitializeRandomPositions(
-    const std::unordered_map<ViewId, Vector3d>& orientations,
-    std::unordered_map<ViewId, Vector3d>* positions) {
-  std::unordered_set<ViewId> constrained_positions;
-  constrained_positions.reserve(orientations.size());
-  for (const auto& view_pair : *view_pairs_) {
-    constrained_positions.insert(view_pair.first.first);
-    constrained_positions.insert(view_pair.first.second);
-  }
-
-  positions->reserve(orientations.size());
+  // Create a mapping from the view id to the index of the linear system.
+  int index = kConstantViewIndex;
+  view_id_to_index_.reserve(orientations.size());
   for (const auto& orientation : orientations) {
-    if (ContainsKey(constrained_positions, orientation.first)) {
-      (*positions)[orientation.first] = 100.0 * Vector3d::Random();
+    view_id_to_index_[orientation.first] = index;
+    index += 3;
+  }
+
+  // Create a mapping from the view id pair to the index of the linear system.
+  view_id_pair_to_index_.reserve(view_pairs.size());
+  for (const auto& view_pair : view_pairs) {
+    view_id_pair_to_index_[view_pair.first] = index;
+    ++index;
+  }
+
+  // Set up the linear system.
+  SetupConstraintMatrix(view_pairs, orientations);
+  solution_.setZero(constraint_matrix_.cols());
+  weights_.setConstant(constraint_matrix_.rows(), 1.0);
+
+  // Set the lower bounds for the QP. The positions should be unbounded while
+  // the scales havea lower bound of 1.0.
+  Eigen::VectorXd lower_bound(constraint_matrix_.cols());
+  lower_bound.head(3 * orientations.size())
+      .setConstant(-std::numeric_limits<double>::infinity());
+  lower_bound.tail(view_pairs.size()).setConstant(1.0);
+
+  // Solve for the camera positions using an IRLS scheme. The values p and r are
+  // constant at zero.
+  Eigen::SparseMatrix<double> P(constraint_matrix_.rows(),
+                                constraint_matrix_.rows());
+  Eigen::VectorXd q(constraint_matrix_.cols());
+  q.setZero();
+  const double r = 0;
+  QPSolver::Options qp_solver_options;
+  qp_solver_options.max_num_iterations = options_.max_num_iterations;
+  for (int i = 0; i < options_.max_num_reweighted_iterations; i++) {
+    if (i > 0) {
+      UpdateConstraintWeights();
+    }
+
+    // Compute P = A^t * W * A, the quadratic matrix term for our QP.
+    P = constraint_matrix_.transpose() * weights_.matrix().asDiagonal() *
+        constraint_matrix_;
+
+    // Solve the quadratic program.
+    QPSolver qp_solver(qp_solver_options, P, q, r);
+    const Eigen::VectorXd prev_solution = solution_;
+    qp_solver.SetLowerBound(lower_bound);
+    if (!qp_solver.Solve(&solution_)) {
+      LOG(WARNING) << "Could not solve the Quadratic Program for the least "
+                      "unsquared deviations position solver.";
+      return false;
     }
   }
+
+  // Set the estimated positions.
+  for (const auto& view_id_index : view_id_to_index_) {
+    const int index = view_id_index.second;
+    const ViewId view_id = view_id_index.first;
+    if (index == kConstantViewIndex) {
+      (*positions)[view_id] = Eigen::Vector3d::Zero();
+    } else {
+      (*positions)[view_id] = solution_.segment<3>(index);
+    }
+  }
+
+  return true;
 }
 
-void LeastUnsquaredDeviationPositionEstimator::AddCameraToCameraConstraints(
-    const std::unordered_map<ViewId, Vector3d>& orientations,
-    std::unordered_map<ViewId, Vector3d>* positions) {
-  // Add the camera to camera constraints.
-  for (const auto& view_pair : *view_pairs_) {
-    const ViewId view_id1 = view_pair.first.first;
-    const ViewId view_id2 = view_pair.first.second;
-    Vector3d* position1 = FindOrNull(*positions, view_id1);
-    Vector3d* position2 = FindOrNull(*positions, view_id2);
+void LeastUnsquaredDeviationPositionEstimator::SetupConstraintMatrix(
+    const std::unordered_map<ViewIdPair, TwoViewInfo>& view_pairs,
+    const std::unordered_map<ViewId, Vector3d>& orientations) {
+  constraint_matrix_.resize(3 * view_pairs.size(),
+                            3 * orientations.size() + view_pairs.size());
 
-    // Do not add this view pair if one or both of the positions do not exist.
-    if (position1 == nullptr || position2 == nullptr) {
-      continue;
-    }
+  // Add the camera to camera constraints.
+  std::vector<Eigen::Triplet<double> > triplet_list;
+  triplet_list.reserve(9 * view_pairs.size());
+  int row = 0;
+  for (const auto& view_pair : view_pairs) {
+    const ViewIdPair view_id_pair = view_pair.first;
+
+    const int view1_index = FindOrDie(view_id_to_index_, view_id_pair.first);
+    const int view2_index = FindOrDie(view_id_to_index_, view_id_pair.second);
+    const int scale_index =
+        FindOrDieNoPrint(view_id_pair_to_index_, view_id_pair);
 
     // Rotate the relative translation so that it is aligned to the global
     // orientation frame.
-    const Vector3d translation_direction = GetRotatedTranslation(
-        FindOrDie(orientations, view_id1), view_pair.second.position_2);
+    const Vector3d translation_direction =
+        GetRotatedTranslation(FindOrDie(orientations, view_id_pair.first),
+                              view_pair.second.position_2);
 
-    ceres::CostFunction* cost_function =
-        PairwiseTranslationAndScaleError::Create(translation_direction);
-
-    double* scale = FindOrNull(scales_, view_pair.first);
-    const double weight = FindOrDieNoPrint(weights_, view_pair.first);
-    problem_->AddResidualBlock(
-        cost_function,
-        new ceres::ScaledLoss(NULL, weight, ceres::TAKE_OWNERSHIP),
-        position1->data(),
-        position2->data(),
-        scale);
-    problem_->SetParameterLowerBound(scale, 0, 1.0);
-  }
-
-  VLOG(2) << problem_->NumResidualBlocks() << " camera to camera constraints "
-                                              "were added to the position "
-                                              "estimation problem.";
-}
-
-void LeastUnsquaredDeviationPositionEstimator::ComputeWeights(
-    const std::unordered_map<ViewId, Vector3d>& orientations,
-    const std::unordered_map<ViewId, Vector3d>& positions) {
-  const double gamma = 1e-8;
-  // Add the camera to camera constraints.
-  for (const auto& view_pair : *view_pairs_) {
-    const ViewId view_id1 = view_pair.first.first;
-    const ViewId view_id2 = view_pair.first.second;
-    const Vector3d* position1 = FindOrNull(positions, view_id1);
-    const Vector3d* position2 = FindOrNull(positions, view_id2);
-
-    // Do not add this view pair if one or both of the positions do not exist.
-    if (position1 == nullptr || position2 == nullptr) {
-      continue;
+    // Add the constraint for view 1 in the minimization:
+    //   position2 - position1 - scale_1_2 * translation_direction.
+    if (view1_index != kConstantViewIndex) {
+      triplet_list.emplace_back(row + 0, view1_index + 0, -1.0);
+      triplet_list.emplace_back(row + 1, view1_index + 1, -1.0);
+      triplet_list.emplace_back(row + 2, view1_index + 2, -1.0);
     }
 
-    // Rotate the relative translation so that it is aligned to the global
-    // orientation frame.
-    const Vector3d translation_direction = GetRotatedTranslation(
-        FindOrDie(orientations, view_id1), view_pair.second.position_2);
-    const double scale = FindOrDieNoPrint(scales_, view_pair.first);
-    const double error =
-        (*position2 - *position1 - scale * translation_direction).squaredNorm();
-    weights_[view_pair.first] = std::sqrt(1.0 / (error + gamma));
+    // Add the constraint for view 2 in the minimization:
+    //   position2 - position1 - scale_1_2 * translation_direction.
+    if (view2_index != kConstantViewIndex) {
+      triplet_list.emplace_back(row + 0, view2_index + 0, 1.0);
+      triplet_list.emplace_back(row + 1, view2_index + 1, 1.0);
+      triplet_list.emplace_back(row + 2, view2_index + 2, 1.0);
+    }
+
+    // Add the constraint for scale in the minimization:
+    //   position2 - position1 - scale_1_2 * translation_direction.
+    triplet_list.emplace_back(row + 0, scale_index, -translation_direction[0]);
+    triplet_list.emplace_back(row + 1, scale_index, -translation_direction[1]);
+    triplet_list.emplace_back(row + 2, scale_index, -translation_direction[2]);
+
+    row += 3;
   }
+
+  constraint_matrix_.setFromTriplets(triplet_list.begin(), triplet_list.end());
+
+  VLOG(2) << view_pairs.size() << " camera to camera constraints were added "
+                                    "to the position estimation problem.";
+}
+
+// Compute the error:
+//     err_i_j = || c_j - c_i - scale_i_j * t_i_j ||^2
+//
+// For each pairwise constraint, set w_i_j = (err_i_j + delta)^(-1/2) to
+// reweight the QP solver for robustness.
+void LeastUnsquaredDeviationPositionEstimator::UpdateConstraintWeights() {
+  static const double delta = 1e-12;
+  // Compute the errors with a simple matrix multiplication.
+  const Eigen::VectorXd errors = constraint_matrix_ * solution_;
+  weights_ = (errors.array().square() + delta).sqrt().inverse();
 }
 
 }  // namespace theia
