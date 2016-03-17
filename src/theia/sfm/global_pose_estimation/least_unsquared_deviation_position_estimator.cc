@@ -79,20 +79,7 @@ bool LeastUnsquaredDeviationPositionEstimator::EstimatePositions(
     std::unordered_map<ViewId, Vector3d>* positions) {
   CHECK_NOTNULL(positions)->clear();
 
-  // Create a mapping from the view id to the index of the linear system.
-  int index = kConstantViewIndex;
-  view_id_to_index_.reserve(orientations.size());
-  for (const auto& orientation : orientations) {
-    view_id_to_index_[orientation.first] = index;
-    index += 3;
-  }
-
-  // Create a mapping from the view id pair to the index of the linear system.
-  view_id_pair_to_index_.reserve(view_pairs.size());
-  for (const auto& view_pair : view_pairs) {
-    view_id_pair_to_index_[view_pair.first] = index;
-    ++index;
-  }
+  InitializeIndexMapping(view_pairs, orientations);
 
   // Set up the linear system.
   SetupConstraintMatrix(view_pairs, orientations);
@@ -150,6 +137,35 @@ bool LeastUnsquaredDeviationPositionEstimator::EstimatePositions(
   }
 
   return true;
+}
+
+void LeastUnsquaredDeviationPositionEstimator::InitializeIndexMapping(
+    const std::unordered_map<ViewIdPair, TwoViewInfo>& view_pairs,
+    const std::unordered_map<ViewId, Vector3d>& orientations) {
+  std::unordered_set<ViewId> views;
+  for (const auto& view_pair : view_pairs) {
+    if (ContainsKey(orientations, view_pair.first.first)) {
+      views.insert(view_pair.first.first);
+    }
+    if (ContainsKey(orientations, view_pair.first.second)) {
+      views.insert(view_pair.first.second);
+    }
+  }
+
+  // Create a mapping from the view id to the index of the linear system.
+  int index = kConstantViewIndex;
+  view_id_to_index_.reserve(orientations.size());
+  for (const ViewId view_id : views) {
+    view_id_to_index_[view_id] = index;
+    index += 3;
+  }
+
+  // Create a mapping from the view id pair to the index of the linear system.
+  view_id_pair_to_index_.reserve(view_pairs.size());
+  for (const auto& view_pair : view_pairs) {
+    view_id_pair_to_index_[view_pair.first] = index;
+    ++index;
+  }
 }
 
 void LeastUnsquaredDeviationPositionEstimator::SetupConstraintMatrix(

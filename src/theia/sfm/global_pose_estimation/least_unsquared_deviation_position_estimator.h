@@ -77,6 +77,10 @@ class LeastUnsquaredDeviationPositionEstimator : public PositionEstimator {
       std::unordered_map<ViewId, Eigen::Vector3d>* positions);
 
  private:
+  void InitializeIndexMapping(
+      const std::unordered_map<ViewIdPair, TwoViewInfo>& view_pairs,
+      const std::unordered_map<ViewId, Eigen::Vector3d>& orientations);
+
   // Creates camera to camera constraints from relative translations.
   void SetupConstraintMatrix(
       const std::unordered_map<ViewIdPair, TwoViewInfo>& view_pairs,
