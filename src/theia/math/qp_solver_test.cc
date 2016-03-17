@@ -66,7 +66,8 @@ TEST(QPSolver, Unbounded) {
 
   QPSolver::Options options;
   options.max_num_iterations = 100;
-  QPSolver qp_solver(options, P.sparseView(), q, r);
+  Eigen::SparseMatrix<double> P_sparse(P.sparseView());
+  QPSolver qp_solver(options, P_sparse, q, r);
   Eigen::VectorXd solution;
   EXPECT_TRUE(qp_solver.Solve(&solution));
 
@@ -97,7 +98,8 @@ TEST(QPSolver, LooseBounds) {
 
   QPSolver::Options options;
   options.max_num_iterations = 100;
-  QPSolver qp_solver(options, P.sparseView(), q, r);
+  Eigen::SparseMatrix<double> P_sparse(P.sparseView());
+  QPSolver qp_solver(options, P_sparse, q, r);
 
   // Set a lower bound that should not affect the output.
   Eigen::VectorXd lower_bound(3);
@@ -140,7 +142,8 @@ TEST(QPSolver, TightBounds) {
   QPSolver::Options options;
   options.absolute_tolerance = 1e-8;
   options.relative_tolerance = 1e-8;
-  QPSolver qp_solver(options, P.sparseView(), q, r);
+  Eigen::SparseMatrix<double> P_sparse(P.sparseView());
+  QPSolver qp_solver(options, P_sparse, q, r);
 
   // Set a lower bound that constrains the output.
   Eigen::VectorXd lower_bound(3);
@@ -179,7 +182,8 @@ TEST(QPSolver, InvalidBounds) {
   const double r = 5;
 
   QPSolver::Options options;
-  QPSolver qp_solver(options, P.sparseView(), q, r);
+  Eigen::SparseMatrix<double> P_sparse(P.sparseView());
+  QPSolver qp_solver(options, P_sparse, q, r);
 
   // Set the upper bound as the lower bound.
   Eigen::VectorXd lower_bound(3);
