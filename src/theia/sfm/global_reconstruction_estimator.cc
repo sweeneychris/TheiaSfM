@@ -112,8 +112,6 @@ GlobalReconstructionEstimator::GlobalReconstructionEstimator(
       options_.num_threads;
   options_.linear_triplet_position_estimator_options.num_threads =
       options_.num_threads;
-  options_.least_unsquared_deviation_position_estimator_options.num_threads =
-      options_.num_threads;
   ransac_params_ = SetRansacParameters(options);
 }
 
