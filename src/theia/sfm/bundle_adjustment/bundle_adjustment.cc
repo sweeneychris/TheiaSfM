@@ -78,48 +78,43 @@ void SetSolverOptions(const BundleAdjustmentOptions& options,
       new ceres::ParameterBlockOrdering);
 }
 
+// Determine which camera intrinsics to optimize by investigating the individual
+// bits of intrinsics_to_optimize.
 std::vector<int> GetIntrinsicsToOptimize(
     const OptimizeIntrinsicsType& intrinsics_to_optimize) {
   std::vector<int> constant_intrinsics;
-  switch (intrinsics_to_optimize) {
-    case OptimizeIntrinsicsType::NONE:
-      for (int i = 0; i < Camera::kIntrinsicsSize; i++) {
-        constant_intrinsics.push_back(Camera::kExtrinsicsSize + i);
-      }
-      break;
-    case OptimizeIntrinsicsType::FOCAL_LENGTH:
-      constant_intrinsics = {
-          Camera::kExtrinsicsSize + Camera::ASPECT_RATIO,
-          Camera::kExtrinsicsSize + Camera::SKEW,
-          Camera::kExtrinsicsSize + Camera::PRINCIPAL_POINT_X,
-          Camera::kExtrinsicsSize + Camera::PRINCIPAL_POINT_Y,
-          Camera::kExtrinsicsSize + Camera::RADIAL_DISTORTION_1,
-          Camera::kExtrinsicsSize + Camera::RADIAL_DISTORTION_2};
-      break;
-    case OptimizeIntrinsicsType::FOCAL_LENGTH_AND_PRINCIPAL_POINTS:
-      constant_intrinsics = {
-          Camera::kExtrinsicsSize + Camera::ASPECT_RATIO,
-          Camera::kExtrinsicsSize + Camera::SKEW,
-          Camera::kExtrinsicsSize + Camera::RADIAL_DISTORTION_1,
-          Camera::kExtrinsicsSize + Camera::RADIAL_DISTORTION_2};
-      break;
-    case OptimizeIntrinsicsType::FOCAL_LENGTH_AND_RADIAL_DISTORTION:
-      constant_intrinsics = {
-          Camera::kExtrinsicsSize + Camera::ASPECT_RATIO,
-          Camera::kExtrinsicsSize + Camera::SKEW,
-          Camera::kExtrinsicsSize + Camera::PRINCIPAL_POINT_X,
-          Camera::kExtrinsicsSize + Camera::PRINCIPAL_POINT_Y};
-      break;
-    case OptimizeIntrinsicsType::
-        FOCAL_LENGTH_PRINCIPAL_POINTS_AND_RADIAL_DISTORTION:
-      constant_intrinsics = {Camera::kExtrinsicsSize + Camera::ASPECT_RATIO,
-                             Camera::kExtrinsicsSize + Camera::SKEW};
-      break;
-    case OptimizeIntrinsicsType::ALL:
-      break;
-    default:
-      break;
-  };
+  if (intrinsics_to_optimize == OptimizeIntrinsicsType::ALL) {
+    return constant_intrinsics;
+  }
+
+  if ((intrinsics_to_optimize &
+      OptimizeIntrinsicsType::FOCAL_LENGTH) == OptimizeIntrinsicsType::NONE) {
+    constant_intrinsics.emplace_back(Camera::kExtrinsicsSize +
+                                     Camera::FOCAL_LENGTH);
+  }
+  if ((intrinsics_to_optimize & OptimizeIntrinsicsType::ASPECT_RATIO) ==
+      OptimizeIntrinsicsType::NONE) {
+    constant_intrinsics.emplace_back(Camera::kExtrinsicsSize +
+                                     Camera::ASPECT_RATIO);
+  }
+  if ((intrinsics_to_optimize & OptimizeIntrinsicsType::SKEW) ==
+      OptimizeIntrinsicsType::NONE) {
+    constant_intrinsics.emplace_back(Camera::kExtrinsicsSize + Camera::SKEW);
+  }
+  if ((intrinsics_to_optimize & OptimizeIntrinsicsType::PRINCIPAL_POINTS) ==
+      OptimizeIntrinsicsType::NONE) {
+    constant_intrinsics.emplace_back(Camera::kExtrinsicsSize +
+                                     Camera::PRINCIPAL_POINT_X);
+    constant_intrinsics.emplace_back(Camera::kExtrinsicsSize +
+                                     Camera::PRINCIPAL_POINT_Y);
+  }
+  if ((intrinsics_to_optimize & OptimizeIntrinsicsType::RADIAL_DISTORTION) ==
+      OptimizeIntrinsicsType::NONE) {
+    constant_intrinsics.emplace_back(Camera::kExtrinsicsSize +
+                                     Camera::RADIAL_DISTORTION_1);
+    constant_intrinsics.emplace_back(Camera::kExtrinsicsSize +
+                                     Camera::RADIAL_DISTORTION_2);
+  }
   return constant_intrinsics;
 }
 

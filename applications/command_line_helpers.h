@@ -40,6 +40,7 @@
 #include <theia/theia.h>
 
 #include <string>
+#include <sstream>
 
 using theia::DescriptorExtractorType;
 using theia::GlobalPositionEstimatorType;
@@ -117,23 +118,50 @@ inline GlobalPositionEstimatorType StringToPositionEstimatorType(
 
 inline OptimizeIntrinsicsType StringToOptimizeIntrinsicsType(
     const std::string& intrinsics_to_optimize) {
-  if (intrinsics_to_optimize == "NONE") {
-    return OptimizeIntrinsicsType::NONE;
-  } else if (intrinsics_to_optimize == "ALL") {
-    return OptimizeIntrinsicsType::ALL;
-  } else if (intrinsics_to_optimize == "FOCAL_LENGTH") {
-    return OptimizeIntrinsicsType::FOCAL_LENGTH;
-  } else if (intrinsics_to_optimize == "FOCAL_LENGTH_AND_PRINCIPAL_POINTS") {
-    return OptimizeIntrinsicsType::FOCAL_LENGTH_AND_PRINCIPAL_POINTS;
-  } else if (intrinsics_to_optimize == "FOCAL_LENGTH_AND_RADIAL_DISTORTION") {
-    return OptimizeIntrinsicsType::FOCAL_LENGTH_AND_RADIAL_DISTORTION;
-  } else if (intrinsics_to_optimize ==
-             "FOCAL_LENGTH_PRINCIPAL_POINTS_AND_RADIAL_DISTORTION") {
-    return OptimizeIntrinsicsType::
-        FOCAL_LENGTH_PRINCIPAL_POINTS_AND_RADIAL_DISTORTION;
-  } else {
-    LOG(FATAL) << "Invalid option for intrinsics_to_optimize";
+  CHECK_GT(intrinsics_to_optimize.size(), 0)
+      << "You must specify which camera intrinsics parametrs to optimize. "
+         "Please specify NONE, ALL, or any bitwise OR combination (without "
+         "spaces) of FOCAL_LENGTH, PRINCIPAL_POINTS, RADIAL_DISTORTION, "
+         "ASPECT_RATIO, SKEW";
+
+  // Split the string by the '|' token.
+  std::stringstream ss(intrinsics_to_optimize);
+  std::vector<std::string> intrinsics;
+  std::string item;
+  const char delimiter = '|';
+  while (std::getline(ss, item, delimiter)) {
+    intrinsics.emplace_back(item);
   }
+
+  CHECK_GT(intrinsics.size(), 0)
+      << "Could not decipher any valid camera intrinsics.";
+  if (intrinsics[0] == "NONE") {
+    return OptimizeIntrinsicsType::NONE;
+  }
+
+  if (intrinsics[0] == "ALL") {
+    return OptimizeIntrinsicsType::ALL;
+  }
+
+  // Compile all intrinsics we wish to optimize.
+  OptimizeIntrinsicsType intrinsic_params = OptimizeIntrinsicsType::NONE;
+  for (int i = 0; i < intrinsics.size(); i++) {
+    if (intrinsics[i] == "FOCAL_LENGTH") {
+      intrinsic_params |= OptimizeIntrinsicsType::FOCAL_LENGTH;
+    } else if (intrinsics[i] == "ASPECT_RATIO") {
+      intrinsic_params |= OptimizeIntrinsicsType::ASPECT_RATIO;
+    } else if (intrinsics[i] == "SKEW") {
+      intrinsic_params |= OptimizeIntrinsicsType::SKEW;
+    } else if (intrinsics[i] == "PRINCIPAL_POINTS") {
+      intrinsic_params |= OptimizeIntrinsicsType::PRINCIPAL_POINTS;
+    } else if (intrinsics[i] == "RADIAL_DISTORTION") {
+      intrinsic_params |= OptimizeIntrinsicsType::RADIAL_DISTORTION;
+    } else {
+      LOG(FATAL) << "Invalid option for intrinsics_to_optimize: "
+                 << intrinsics[i];
+    }
+  }
+  return intrinsic_params;
 }
 
 inline LossFunctionType StringToLossFunction(

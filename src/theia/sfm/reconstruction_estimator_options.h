@@ -221,8 +221,10 @@ struct ReconstructionEstimatorOptions {
   // set the camera intrinsics constant during bundle adjustment. Othewise, you
   // can choose which intrinsics to optimize. See
   // //theia/sfm/bundle_adjustment_options.h for full details.
-  OptimizeIntrinsicsType intrinsics_to_optimize = OptimizeIntrinsicsType::
-      FOCAL_LENGTH_PRINCIPAL_POINTS_AND_RADIAL_DISTORTION;
+  OptimizeIntrinsicsType intrinsics_to_optimize =
+      OptimizeIntrinsicsType::FOCAL_LENGTH |
+      OptimizeIntrinsicsType::PRINCIPAL_POINTS |
+      OptimizeIntrinsicsType::RADIAL_DISTORTION;
 };
 
 }  // namespace theia

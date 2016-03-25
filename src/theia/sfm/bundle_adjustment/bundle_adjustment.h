@@ -40,6 +40,7 @@
 
 #include "theia/sfm/bundle_adjustment/create_loss_function.h"
 #include "theia/sfm/types.h"
+#include "theia/util/enable_enum_bitmask_operators.h"
 
 namespace theia {
 
@@ -47,24 +48,28 @@ class Reconstruction;
 
 // The camera intrinsics parameters are defined by:
 //   - Focal length
+//   - Aspect ratio
+//   - Skew
 //   - Principal points (x and y)
 //   - Radial distortion (2-parameter model)
-//   - Skew
-//   - Aspect ratio
 // It is often known for instance that skew is 0 and aspect ratio is 1, and so
 // we do not always desire to optimize all camera intrinsics. In many cases, the
 // focal length is the only parameter we care to optimize.
 //
-// When NONE is selected, all intrinsic parameters are held constant. Otherwise,
-// only the indicated parameters are optimized.
+// Users can specify which intrinsics to optimize by using a bitmask. For
+// instance FOCAL_LENGTH|PRINCIPAL_POINTS will optimize the focal length and
+// principal points. The options NONE and ALL are also given for convenience.
 enum class OptimizeIntrinsicsType {
-  NONE = 0,
-  ALL = 1,
-  FOCAL_LENGTH = 2,
-  FOCAL_LENGTH_AND_PRINCIPAL_POINTS = 3,
-  FOCAL_LENGTH_AND_RADIAL_DISTORTION = 4,
-  FOCAL_LENGTH_PRINCIPAL_POINTS_AND_RADIAL_DISTORTION = 5,
+  NONE = 0x00,
+  FOCAL_LENGTH = 0x01,
+  ASPECT_RATIO = 0x02,
+  SKEW = 0x04,
+  PRINCIPAL_POINTS = 0x08,
+  RADIAL_DISTORTION = 0x10,
+  ALL =
+    FOCAL_LENGTH | ASPECT_RATIO | SKEW | PRINCIPAL_POINTS | RADIAL_DISTORTION,
 };
+ENABLE_ENUM_BITMASK_OPERATORS(OptimizeIntrinsicsType)
 
 struct BundleAdjustmentOptions {
   // The type of loss function used for BA. By default, we use a standard L2
@@ -85,8 +90,10 @@ struct BundleAdjustmentOptions {
   // Indicates which intrinsics should be optimized as part of bundle
   // adjustment. By default, we do not optimize skew and aspect ratio since
   // these are almost universally constant.
-  OptimizeIntrinsicsType intrinsics_to_optimize = OptimizeIntrinsicsType::
-      FOCAL_LENGTH_PRINCIPAL_POINTS_AND_RADIAL_DISTORTION;
+  OptimizeIntrinsicsType intrinsics_to_optimize =
+      OptimizeIntrinsicsType::FOCAL_LENGTH |
+      OptimizeIntrinsicsType::PRINCIPAL_POINTS |
+      OptimizeIntrinsicsType::RADIAL_DISTORTION;
 
   int num_threads = 1;
   int max_num_iterations = 500;
