@@ -9,7 +9,7 @@ HEAD
 
 New Features
 ------------
-* Bundle adjustment can now choose which intrinsics it wants to optimize.
+* Users can now specify which intrinsics to optimize (using bitmask operators) during bundle adjustment.
 * TrackEstimator can now estimate specific tracks (used for incremental SfM).
 * Features can be read/written from/to files.
 * Matching features can now utilize feature files (so that out-of-core matching can be done).
@@ -20,6 +20,13 @@ New Features
 * Robust cost functions may now be used for Bundle Adjustment
 * Method to estimate a dominant plane from points (by bnuernberger).
 * L1 solver now uses the ADMM method. This results in problems that are generally better conditioned and are much faster at scale.
+* Reconstructions now can store and compute colors of 3D points.
+* Support for reading and writing NVM files (Visual SfM's default format).
+* Defaults polynomial solver is now Jenkins Traub method using the `RPolyPlusPlus <https://github.com/sweeneychris/RpolyPlusPlus>`_ implementation.
+* Global rotations solvers use a minimum spanning tree to initialize the global orientations.
+* Robust cost functions and camera intrinsic optimizations can be used for any type of Bundle Adjustment (not just global BA).
+* A new Quadratic Programming module that uses the ADMM method.
+* Least Unsquared Deviations position estimation uses the proper QP method for solving.
 
 Bug Fixes
 ---------
@@ -28,6 +35,9 @@ Bug Fixes
 * No pointers are used anymore in the cascade hasher. This prevent rarely occuring segfaults.
 * Position estimation now fails when view_pairs is empty (thanks to vfragoso).
 * Cascade Hasher works properly with zero descriptors (thanks to anfractuosity).
+* Root-SIFT handles zero-norm vectors properly.
+* Cascade Hasher initializes properly (thanks to anfractuosity).
+* Robust rotations solver initializes the sparse matrix from a triplet list. This results in a dramatic speedup for large scale problems.
 
 Misc.
 -----
@@ -37,6 +47,7 @@ Misc.
 * Only compute HashedImages once per image (for out of core matching)
 * Triangulation algorithms return true on success properly
 * The point cloud viewer uses the dominant plane detection to set the ground plane for viewing.
+* Upgraded EasyEXIF lib to the latest version.
 
 `0.5.0  <https://github.com/sweeneychris/TheiaSfM/archive/v0.5.tar.gz>`_
 ========================================================================

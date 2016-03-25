@@ -1,13 +1,14 @@
-Copyright 2015 Chris Sweeney (cmsweeney@cs.ucsb.edu)
+Copyright 2015-2016 Chris Sweeney (sweeney.chris.m@gmail.com)
 UC Santa Barbara
 
 ---------------------
 What is this library?
 ---------------------
 
-Theia is a structure-from-motion library that was created by UC Santa Barbara
-PhD candidate Chris Sweeney. It is designed to be very efficient, scalable, and
-extendible.
+Theia is an end-to-end structure-from-motion library that was created by Chris
+Sweeney. It is designed to be very efficient, scalable, and accurate. All
+steps of the pipeline are designed to be modular so that code is easy to read
+and easy to extend.
 
 Please see the Theia website for detailed information, including instructions
 for building Theia and full documentation of the library. The website is
