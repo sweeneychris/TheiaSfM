@@ -102,8 +102,12 @@
 # robustness begins (if a robust cost function is being used).
 --bundle_adjustment_robust_loss_width=10.0
 
-# Set this parameter to change which camera intrinsics should be optimized.
+# Set this parameter to change which camera intrinsics should be
+# optimized. Valid options are NONE, ALL, FOCAL_LENGTH, PRINCIPAL_POINTS,
+# RADIAL_DISTORTION, ASPECT_RATIO, and SKEW. This parameter can be set using a
+# bitmask (with no spaces) e.g., FOCAL_LENGTH|RADIAL_DISTORTION
 --intrinsics_to_optimize=NONE
+
 # After BA, remove any points that have a reprojection error greater
 # than this.
 --max_reprojection_error_pixels=4.0
