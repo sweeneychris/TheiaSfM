@@ -59,7 +59,7 @@ part of the SfM pipeline.
 .. class:: Track
 
 A :class:`Track` represents a feature that has been matched over potentially
-many images. When a feature appears in multiple images, it typically means that
+many images. When a feature appears in multiple images it typically means that
 the features correspond to the same 3D point. These 3D points are useful
 constraints in SfM reconstruction, as they represent the "structure" in
 "Structure-from-Motion" and help to build a point cloud for our reconstruction.
@@ -824,7 +824,7 @@ is very costly) and so incremental SfM is not as efficient or scalable.
 
 To use the Incremental SfM pipeline, simply set the
 ``reconstruction_estimator_type`` to
-``ReconstructionEstimatorType::INCREMENTAL``. There are much more options that
+``ReconstructionEstimatorType::INCREMENTAL``. There are many more options that
 may be set to tune the incremental SfM pipeline that can be found in the
 :class:`ReconstructionEstimatorOptions`.
 
@@ -1378,7 +1378,7 @@ Similarity Transformation
 
   .. function:: void AlignPointCloudsUmeyama(const int num_points, const double left[], const double right[], double rotation[], double translation[], double* scale)
 
-    This function estimates the 3D similarty transformation using the least
+    This function estimates the 3D similarity transformation using the least
     squares method of [Umeyama]_. The returned rotation, translation, and scale
     align the left points to the right such that :math:`Right = s * R * Left +
     t`.
