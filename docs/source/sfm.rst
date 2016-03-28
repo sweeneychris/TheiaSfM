@@ -53,13 +53,13 @@ Views and Tracks
 At the heart of our SfM framework is the :class:`View` class which represents
 everything about an image that we want to reconstruct. It contains information
 about features from the image, camera pose information, and EXIF
-information. Views make up our basic visiblity constraints and are a fundamental
+information. Views make up our basic visibility constraints and are a fundamental
 part of the SfM pipeline.
 
 .. class:: Track
 
 A :class:`Track` represents a feature that has been matched over potentially
-many images. When a feature appears in multiple images it typically means that
+many images. When a feature appears in multiple images, it typically means that
 the features correspond to the same 3D point. These 3D points are useful
 constraints in SfM reconstruction, as they represent the "structure" in
 "Structure-from-Motion" and help to build a point cloud for our reconstruction.
@@ -171,7 +171,7 @@ Reconstruction
 .. image:: pisa.png
 
 At the core of our SfM pipeline is an SfM :class:`Reconstruction`. A
-:class:`Reconstruction` is the representation of a 3D reconstuction consisting
+:class:`Reconstruction` is the representation of a 3D reconstruction consisting
 of a set of unique :class:`Views` and :class:`Tracks`. More importantly, the
 :class:`Reconstruction` class contains visibility information relating all of
 the Views and Tracks to each other. We identify each :class:`View` uniquely
@@ -219,8 +219,8 @@ lightweight and efficient.
 .. function:: TrackId Reconstruction::AddTrack(const std::vector<std::pair<ViewId, Feature> >& track)
 
     Add a track to the reconstruction with all of its features across views that observe
-    this track. Each pair contains a feature and the corresponding View name
-    (i.e., the string) that observes the feature. A new View will be created if
+    this track. Each pair contains a feature and the corresponding ViewId
+    that observes the feature. A new View will be created if
     a View with the view name does not already exist. This method will not
     estimate the position of the track. The TrackId returned will be unique or
     will be kInvalidTrackId if the method fails.
@@ -309,8 +309,8 @@ Building a Reconstruction
 =========================
 
 Theia implements a generic interface for estimating a :class:`Reconstruction`
-with the :class:`ReconstructionEstimator`. This class take in as input a
-:class:`ViewingGraph` with connectivity and relative pose information, and a
+with the :class:`ReconstructionEstimator`. This class takes in as input a
+:class:`ViewGraph` with connectivity and relative pose information, and a
 :class:`Reconstruction` with view and track information and unestimated poses
 and 3d points. All SfM pipelines are derived directly from the
 :class:`ReconstructionEstimator` class. This allows for a consistent interface
@@ -367,7 +367,7 @@ these classes are:
   Initializes the reconstruction and view graph explicitly. This method
   should be used as an alternative to the Add* methods.
 
-  .. NOTE:: The ReconstructionBuilder takses ownership of the reconstruction and view graph.
+  .. NOTE:: The ReconstructionBuilder takes ownership of the reconstruction and view graph.
 
 .. function:: bool ReconstructionBuilder::BuildReconstruction(std::vector<Reconstruction*>* reconstructions)
 
@@ -388,7 +388,7 @@ Setting the ReconstructionBuilder Options
 The :class:`ReconstructionBuilder` has many customizable options that can easily
 be set to modify the functionality, strategies, and performance of the SfM
 reconstruction process. This includes options for feature description
-extractionn, feature matching, which SfM pipeline to use, and more.
+extraction, feature matching, which SfM pipeline to use, and more.
 
 .. member:: int ReconstructionBuilderOptions::num_threads
 
@@ -433,20 +433,23 @@ extractionn, feature matching, which SfM pipeline to use, and more.
   DEFAULT: ``DescriptorExtractorType::SIFT``
 
   Descriptor type for extracting features.
-  See //theia/image/descriptor/create_descriptor_extractor.h
+  See `//theia/image/descriptor/create_descriptor_extractor.h
+  <https://github.com/sweeneychris/TheiaSfM/blob/master/src/theia/image/descriptor/create_descriptor_extractor.h>`_
 
 .. member:: SiftParameters ReconstructionBuilderOptions::sift_parameters
 
   If the desired descriptor type is SIFT then these are the sift parameters
   controlling keypoint detection and description options. See
-  //theia/image/keypoint_detector/sift_parameters.h
+  `//theia/image/keypoint_detector/sift_parameters.h
+  <https://github.com/sweeneychris/TheiaSfM/blob/master/src/theia/image/keypoint_detector/sift_parameters.h>`_
 
 .. member:: MatchingStrategy ReconstructionBuilderOptions::matching_strategy
 
   DEFAULT: ``MatchingStrategy::BRUTE_FORCE``
 
   Matching strategy type. Current the options are ``BRUTE_FORCE`` or ``CASCADE_HASHING``
-  See //theia/matching/create_feature_matcher.h
+  See `//theia/matching/create_feature_matcher.h
+  <https://github.com/sweeneychris/TheiaSfM/blob/master/src/theia/matching/create_feature_matcher.h>`_
 
 .. member:: FeatureMatcherOptions ReconstructionBuilderOptions::matching_options
 
@@ -456,7 +459,8 @@ extractionn, feature matching, which SfM pipeline to use, and more.
 .. member:: VerifyTwoViewMatchesOptions ReconstructionBuilderOptions::geometric_verification_options
 
   Settings for estimating the relative pose between two images to perform
-  geometric verification.  See //theia/sfm/verify_two_view_matches.h
+  geometric verification.  See `//theia/sfm/verify_two_view_matches.h
+  <https://github.com/sweeneychris/TheiaSfM/blob/master/src/theia/sfm/verify_two_view_matches.h>`_
 
 .. member:: ReconstructionEstimatorOptions ReconstructionBuilderOptions::reconstruction_estimator_options
 
@@ -511,7 +515,8 @@ performing SfM. All of the available parameters may be set as part of the
 :class:`ReconstructionEstimatorOptions` that are required in the
 :class:`ReconstructionEstimator` constructor. The documentation here attempts to
 provide the high-level summary of these options; however, you should look at the
-header //theia/sfm/reconstruction_estimator_options.h file for a fully detailed
+header `//theia/sfm/reconstruction_estimator_options.h
+<https://github.com/sweeneychris/TheiaSfM/blob/master/src/theia/sfm/reconstruction_estimator_options.h>`_ file for a fully detailed
 description of these options.
 
 .. member:: ReconstructionEstimatorType ReconstructorEstimatorOptions::reconstruction_estimator_type
@@ -533,7 +538,7 @@ description of these options.
 
    If the Global SfM pipeline is used, this parameter determines which type of global rotations solver is used. Options are ``GlobalRotationEstimatorType::ROBUST_L1L2``, ``GlobalRotationEstimatorType::NONLINEAR`` and ``GlobalRotationEstimatorType::LINEAR``. See below for more details on the various global rotations solvers.
 
-   .. member:: GlobalPositionEstimationType ReconstructorEstimatorOptions::global_position_estimator_type
+.. member:: GlobalPositionEstimationType ReconstructorEstimatorOptions::global_position_estimator_type
 
    DEFAULT: ``GlobalPositionEstimatorType::NONLINEAR``
 
@@ -597,7 +602,7 @@ description of these options.
 
   DEFAULT: ``true``
 
-  Using the MLE quality assesment (as opposed to simply an inlier count) can
+  Using the MLE quality assessment (as opposed to simply an inlier count) can
   improve the quality of a RANSAC estimation with virtually no computational
   cost.
 
@@ -618,7 +623,7 @@ description of these options.
 
   After orientations are estimated, view pairs may be filtered/removed if the
   relative rotation of the view pair differs from the relative rotation formed
-  by the global orientation estimations. That is, measure the angulaar distance
+  by the global orientation estimations. That is, measure the angular distance
   between :math:`R_{i,j}` and :math:`R_j * R_i^T` and if it greater than
   ``rotation_filtering_max_difference_degrees`` than we remove that view pair
   from the graph. Adjust this threshold to control the threshold at which
@@ -648,7 +653,7 @@ description of these options.
   DEFAULT: ``true``
 
   If true, filter the pairwise translation estimates to remove potentially bad
-  relative poses with the 1DSfM filter of [WilsonECCV2012]_. Removing potential
+  relative poses with the 1DSfM filter of [WilsonECCV2014]_. Removing potential
   outliers can increase the performance of position estimation.
 
 .. member:: int ReconstructorEstimatorOptions::translation_filtering_num_iterations
@@ -663,7 +668,7 @@ description of these options.
 
   A tolerance for the 1DSfM filter. Each relative translation is assigned a cost
   where the higher the cost, the more likely a relative translation is to be an
-  outlier. Increasing this threshold makes the filtering more leniant, and
+  outlier. Increasing this threshold makes the filtering more lenient, and
   decreasing it makes it more strict.
 
 .. member:: double ReconstructorEstimatorOptions::rotation_estimation_robust_loss_scale
@@ -817,9 +822,9 @@ Incremental SfM is generally considered to be more robust than global SfM
 methods; however, it requires many more instances of bundle adjustment (which
 is very costly) and so incremental SfM is not as efficient or scalable.
 
-To use the Incremental SfM pipeline, simple set the
+To use the Incremental SfM pipeline, simply set the
 ``reconstruction_estimator_type`` to
-``ReconstructionEstimatorType::INCREMENTAL``. There are many more options that
+``ReconstructionEstimatorType::INCREMENTAL``. There are much more options that
 may be set to tune the incremental SfM pipeline that can be found in the
 :class:`ReconstructionEstimatorOptions`.
 
@@ -834,12 +839,12 @@ increase performance dramatically for global SfM, though robust estimation
 methods are still required to obtain good results. The general pipeline is as
 follows:
 
-  #. Create the intial view graph from 2-view matches and :class:`TwoViewInfo`
+  #. Create the initial view graph from 2-view matches and :class:`TwoViewInfo`
      that describes the relative pose between matched images.
   #. Filter initial view graph and remove outlier 2-view matches.
   #. Calibrate internal parameters of all cameras (either from EXIF or another
      calibration method).
-  #. Estimate global orientations of each camera with a :class:`RotationsEstimator`
+  #. Estimate global orientations of each camera with a :class:`RotationEstimator`
   #. Filter the view graph: remove any TwoViewInfos where the relative rotation
      does not agree with the estimated global rotations.
   #. Refine the relative translation estimation to account for the estimated
@@ -856,7 +861,7 @@ The steps above describe the general framework for global SfM, but there are
 many possible ways to, for instance, estimate rotations or estimate
 positions. Much work has been put into developing robust and efficient
 algorithms to solve these problems and, in theory, each algorithm should be
-easily inter-changable.
+easily inter-changeable.
 
 
 Since Theia is built to be modular and extendible, we make it extremely easy to
@@ -873,6 +878,8 @@ run-time, making experiments with global SfM painless!
 
 Estimating Global Rotations
 ---------------------------
+
+.. class:: RotationEstimator
 
 Theia estimates the global rotations of cameras using an abstract interface
 class :class:`RotationEstimator`.
@@ -935,7 +942,7 @@ There are several types of rotation estimators that Theia implements natively:
    This class minimizes equation :eq:`rotation_constraint` using nonlinear
    optimization with the Ceres Solver. The angle-axis rotation parameterization
    is used so that rotations always remain on the SO(3) rotation manifold during
-   the optimizatin.
+   the optimization.
 
 .. function:: NonlinearRotationEstimator::NonlinearRotationEstimator(const double robust_loss_width)
 
@@ -1009,9 +1016,9 @@ position estimation methods at runtime thanks to polymorphism.
 
 .. class:: NonlinearPositionEstimator
 
-This class attempts to minimze the position constraint of
-:eq:`position_constraint` with a nonlinear solver that minimzes the chordal
-distance [WilsonECCV2012]_. A robust cost function is utilized to remain robust
+This class attempts to minimize the position constraint of
+:eq:`position_constraint` with a nonlinear solver that minimizes the chordal
+distance [WilsonECCV2014]_. A robust cost function is utilized to remain robust
 to outliers.
 
 .. function:: NonlinearPositionEstimator(const NonlinearPositionEstimator::Options& options, const Reconstruction& reconstruction)
@@ -1180,7 +1187,7 @@ Triangulation
   .. function:: bool EstimateAllTracks(const EstimateTrackOptions& options, const int num_threads, Reconstruction* reconstruction)
 
     Performs (potentially multithreaded) track estimation. Track estimation is
-    embarassingly parallel so multithreading is recommended.
+    embarrassingly parallel so multithreading is recommended.
 
   .. cpp:function:: bool Triangulate(const Matrix3x4d& pose1, const Matrix3x4d& pose2, const Eigen::Vector2d& point1, const Eigen::Vector2d& point2, Eigen::Vector4d* triangulated_point)
 
@@ -1371,7 +1378,7 @@ Similarity Transformation
 
   .. function:: void AlignPointCloudsUmeyama(const int num_points, const double left[], const double right[], double rotation[], double translation[], double* scale)
 
-    This function estimates the 3D similiarty transformation using the least
+    This function estimates the 3D similarty transformation using the least
     squares method of [Umeyama]_. The returned rotation, translation, and scale
     align the left points to the right such that :math:`Right = s * R * Left +
     t`.
