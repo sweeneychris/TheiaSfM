@@ -180,8 +180,9 @@ BundleAdjustmentSummary BundleAdjustPartialReconstruction(
       continue;
     }
 
-    Camera* camera = view->MutableCamera();
-    problem.AddParameterBlock(camera->mutable_extrinsics(), Camera::kExtrinsicsSize);
+    Camera *camera = view->MutableCamera();
+    problem.AddParameterBlock(camera->mutable_extrinsics(),
+                              Camera::kExtrinsicsSize);
     // Add camera extrinsics to group 2.
     parameter_ordering->AddElementToGroup(camera->mutable_extrinsics(), 2);
 
@@ -192,13 +193,14 @@ BundleAdjustmentSummary BundleAdjustPartialReconstruction(
     if (group_id != kInvalidCameraIntrinsicsGroupId) {
       if (ContainsKey(group_representatives, group_id)) {
         ViewId leader_id = group_representatives[group_id];
-        Camera *leader_camera = reconstruction->MutableView(leader_id)->MutableCamera();
+        Camera *leader_camera =
+            reconstruction->MutableView(leader_id)->MutableCamera();
         camera_group_intrinsics = leader_camera->mutable_intrinsics();
       }
       else {
         group_representatives[group_id] = view_id;
-        // This function will add intrinsic camera parameters to the problem and will keep
-        // them constant if desired.
+        // This function will add intrinsic camera parameters to the problem
+        // and will keep them constant if desired.
         AddCameraIntrinsicsToProblem(constant_intrinsics,
                                      camera_group_intrinsics,
                                      &problem);
@@ -293,13 +295,15 @@ BundleAdjustmentSummary BundleAdjustPartialReconstruction(
       continue;
     }
     CameraIntrinsicsGroupId group_id = view->GetCameraIntrinsicsGroupId();
-    // If the view reach this code, it's group (if present) is already in group_representatives.
+    // If the view reach this code, it's group (if present) is already
+    // in group_representatives.
     if (group_id == kInvalidCameraIntrinsicsGroupId ||
         group_representatives[group_id] == view_id)
       continue;
 
     Camera *camera = view->MutableCamera();
-    const Camera &leader_camera = reconstruction->View(group_representatives[group_id])->Camera();
+    const Camera &leader_camera =
+        reconstruction->View(group_representatives[group_id])->Camera();
 
     memcpy(camera->mutable_intrinsics(),
            leader_camera.intrinsics(),

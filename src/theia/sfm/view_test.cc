@@ -114,7 +114,8 @@ TEST(View, CameraIntrinsicsGroupId) {
   // Test second constructor, too.
   const std::string kName = "0";
   View view_with_name(kName);
-  EXPECT_EQ(kInvalidCameraIntrinsicsGroupId, view_with_name.GetCameraIntrinsicsGroupId());
+  EXPECT_EQ(kInvalidCameraIntrinsicsGroupId,
+            view_with_name.GetCameraIntrinsicsGroupId());
 
   // Test getter and setter.
   CameraIntrinsicsGroupId group_id = 1;

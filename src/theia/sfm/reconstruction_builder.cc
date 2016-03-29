@@ -174,7 +174,10 @@ ReconstructionBuilder::~ReconstructionBuilder() {}
 bool ReconstructionBuilder::AddImage(const std::string &image_filepath,
                                      const CameraIntrinsicsGroupId group_id) {
   image_filepaths_.emplace_back(image_filepath);
-  if (!AddViewToReconstruction(image_filepath, NULL, group_id, reconstruction_.get())) {
+  if (!AddViewToReconstruction(image_filepath,
+                               NULL,
+                               group_id,
+                               reconstruction_.get())) {
     return false;
   }
   return feature_extractor_and_matcher_->AddImage(image_filepath);

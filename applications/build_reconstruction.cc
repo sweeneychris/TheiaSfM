@@ -109,7 +109,7 @@ DEFINE_string(intrinsics_to_optimize,
               "Set to control which intrinsics parameters are optimized during "
               "bundle adjustment.");
 DEFINE_bool(common_intrinsics, false,
-            "If set to true, intrinsics of all cameras will be considered common."
+            "Set to true to consider intrinsics of all cameras to be common."
             "At the moment, it is used only in bundle adjustment.");
 DEFINE_double(max_reprojection_error_pixels, 4.0,
               "Maximum reprojection error for a correspondence to be "
@@ -320,7 +320,8 @@ void AddMatchesToReconstructionBuilder(
                                 &camera_intrinsics_prior,
                                 &image_matches);
 
-  theia::CameraIntrinsicsGroupId group_id = theia::kInvalidCameraIntrinsicsGroupId;
+  theia::CameraIntrinsicsGroupId
+      group_id = theia::kInvalidCameraIntrinsicsGroupId;
   if (FLAGS_common_intrinsics)
     group_id = 0;
 
@@ -356,12 +357,13 @@ void AddImagesToReconstructionBuilder(
         << "Could not read calibration file.";
   }
 
-  theia::CameraIntrinsicsGroupId group_id = theia::kInvalidCameraIntrinsicsGroupId;
+  theia::CameraIntrinsicsGroupId
+      group_id = theia::kInvalidCameraIntrinsicsGroupId;
   if (FLAGS_common_intrinsics)
     group_id = 0;
 
   // Add images with possible calibration.
-  for (const std::string& image_file : image_files) {
+  for (const std::string &image_file : image_files) {
     std::string image_filename;
     CHECK(theia::GetFilenameFromFilepath(image_file, true, &image_filename));
 
