@@ -108,6 +108,9 @@ DEFINE_string(intrinsics_to_optimize,
               "FOCAL_LENGTH_PRINCIPAL_POINT_AND_RADIAL_DISTORTION",
               "Set to control which intrinsics parameters are optimized during "
               "bundle adjustment.");
+DEFINE_bool(common_intrinsics, false,
+            "If set to true, intrinsics of all cameras will be considered common."
+            "At the moment, it is used only in bundle adjustment.");
 DEFINE_double(max_reprojection_error_pixels, 4.0,
               "Maximum reprojection error for a correspondence to be "
               "considered an inlier after bundle adjustment.");
@@ -317,10 +320,14 @@ void AddMatchesToReconstructionBuilder(
                                 &camera_intrinsics_prior,
                                 &image_matches);
 
+  theia::CameraIntrinsicsGroupId group_id = theia::kInvalidCameraIntrinsicsGroupId;
+  if (FLAGS_common_intrinsics)
+    group_id = 0;
+
   // Add all the views.
   for (int i = 0; i < image_files.size(); i++) {
     reconstruction_builder->AddImageWithCameraIntrinsicsPrior(
-        image_files[i], camera_intrinsics_prior[i]);
+        image_files[i], camera_intrinsics_prior[i], group_id);
   }
 
   // Add the matches.
@@ -349,6 +356,10 @@ void AddImagesToReconstructionBuilder(
         << "Could not read calibration file.";
   }
 
+  theia::CameraIntrinsicsGroupId group_id = theia::kInvalidCameraIntrinsicsGroupId;
+  if (FLAGS_common_intrinsics)
+    group_id = 0;
+
   // Add images with possible calibration.
   for (const std::string& image_file : image_files) {
     std::string image_filename;
@@ -358,9 +369,9 @@ void AddImagesToReconstructionBuilder(
         FindOrNull(camera_intrinsics_prior, image_filename);
     if (image_camera_intrinsics_prior != nullptr) {
       CHECK(reconstruction_builder->AddImageWithCameraIntrinsicsPrior(
-          image_file, *image_camera_intrinsics_prior));
+          image_file, *image_camera_intrinsics_prior, group_id));
     } else {
-      CHECK(reconstruction_builder->AddImage(image_file));
+      CHECK(reconstruction_builder->AddImage(image_file, group_id));
     }
   }
 
