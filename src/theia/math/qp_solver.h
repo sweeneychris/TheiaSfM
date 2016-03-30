@@ -36,7 +36,8 @@
 #define THEIA_MATH_QP_SOLVER_H_
 
 #include <Eigen/Core>
-#include <Eigen/SparseCholesky>
+
+#include "theia/math/matrix/sparse_cholesky_llt.h"
 
 namespace theia {
 
@@ -104,7 +105,7 @@ class QPSolver {
 
   // Cholesky linear solver. Since our linear system will be a SPD matrix we can
   // utilize the Cholesky factorization.
-  Eigen::SimplicialLLT<Eigen::SparseMatrix<double> > linear_solver_;
+  SparseCholeskyLLt linear_solver_;
 };
 
 }  // namespace theia

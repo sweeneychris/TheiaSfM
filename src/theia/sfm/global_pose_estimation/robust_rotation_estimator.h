@@ -37,13 +37,12 @@
 
 #include <Eigen/Core>
 #include <Eigen/SparseCore>
-#include <Eigen/SparseCholesky>
 #include <unordered_map>
 
-#include "theia/util/hash.h"
 #include "theia/sfm/global_pose_estimation/rotation_estimator.h"
 #include "theia/sfm/twoview_info.h"
 #include "theia/sfm/types.h"
+#include "theia/util/hash.h"
 
 namespace theia {
 

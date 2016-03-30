@@ -37,12 +37,12 @@
 
 #include <Eigen/Cholesky>
 #include <Eigen/Core>
-#include <Eigen/SparseCholesky>
 #include <glog/logging.h>
 
 #include <algorithm>
 #include <string>
 
+#include "theia/math/matrix/sparse_cholesky_llt.h"
 #include "theia/util/stringprintf.h"
 
 namespace theia {
@@ -52,16 +52,14 @@ namespace theia {
 // Eigen::SparseMatrix.
 namespace l1_solver_internal {
 
-inline void Compute(
-    const Eigen::SparseMatrix<double>& spd_mat,
-    Eigen::SimplicialLLT<Eigen::SparseMatrix<double> >* linear_solver) {
-  linear_solver->compute(spd_mat);
+inline void Compute(const Eigen::SparseMatrix<double>& spd_mat,
+                    SparseCholeskyLLt* linear_solver) {
+  linear_solver->Compute(spd_mat);
 }
 
-inline void Compute(
-    const Eigen::MatrixXd& spd_mat,
-    Eigen::SimplicialLLT<Eigen::SparseMatrix<double> >* linear_solver) {
-  linear_solver->compute(spd_mat.sparseView());
+inline void Compute(const Eigen::MatrixXd& spd_mat,
+                    SparseCholeskyLLt* linear_solver) {
+  linear_solver->Compute(spd_mat.sparseView());
 }
 
 }  // namespace l1_solver_internal
@@ -105,7 +103,7 @@ class L1Solver {
     // changed with each iteration.
     const MatrixType spd_mat = a_.transpose() * a_;
     l1_solver_internal::Compute(spd_mat, &linear_solver_);
-    CHECK_EQ(linear_solver_.info(), Eigen::Success);
+    CHECK_EQ(linear_solver_.Info(), Eigen::Success);
   }
 
   void SetMaxIterations(const int max_iterations) {
@@ -139,7 +137,13 @@ class L1Solver {
         "  % 4d     % 4.4e     % 4.4e     % 4.4e     % 4.4e";
     for (int i = 0; i < options_.max_num_iterations; i++) {
       // Update x.
-      x.noalias() = linear_solver_.solve(a_.transpose() * (rhs + z - u));
+      x.noalias() = linear_solver_.Solve(a_.transpose() * (rhs + z - u));
+      if (linear_solver_.Info() != Eigen::Success) {
+        LOG(ERROR) << "L1 Minimization failed. Could not solve the sparse "
+                      "linear system with Cholesky Decomposition";
+        return;
+      }
+
       a_times_x.noalias() = a_ * x;
       ax_hat.noalias() = options_.alpha * a_times_x;
       ax_hat.noalias() += (1.0 - options_.alpha) * (z + rhs);
@@ -181,7 +185,7 @@ class L1Solver {
 
   // Cholesky linear solver. Since our linear system will be a SPD matrix we can
   // utilize the Cholesky factorization.
-  Eigen::SimplicialLLT<Eigen::SparseMatrix<double> > linear_solver_;
+  SparseCholeskyLLt linear_solver_;
 
   Eigen::VectorXd Shrinkage(const Eigen::VectorXd& vec, const double kappa) {
     Eigen::ArrayXd zero_vec(vec.size());
