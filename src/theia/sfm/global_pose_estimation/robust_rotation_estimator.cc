@@ -37,10 +37,11 @@
 #include <ceres/rotation.h>
 #include <Eigen/Core>
 #include <Eigen/SparseCore>
-#include <Eigen/SparseCholesky>
 #include <unordered_map>
 
 #include "theia/math/l1_solver.h"
+#include "theia/math/matrix/sparse_cholesky_llt.h"
+#include "theia/math/util.h"
 #include "theia/sfm/types.h"
 #include "theia/util/hash.h"
 #include "theia/util/map_util.h"
@@ -231,14 +232,16 @@ void RobustRotationEstimator::UpdateGlobalRotations() {
 
 bool RobustRotationEstimator::SolveIRLS() {
   static const double kConvergenceThreshold = 1e-3;
-  static const double kDeltaSq = 1e-8;
+  // This is the point where the Huber-like cost function switches from L1 to
+  // L2.
+  static const double kSigma = DegToRad(5.0);
 
   // Set up the linear solver and analyze the sparsity pattern of the
   // system. Since the sparsity pattern will not change with each linear solve
   // this can help speed up the solution time.
-  Eigen::SimplicialLLT<Eigen::SparseMatrix<double> > linear_solver;
-  linear_solver.analyzePattern(sparse_matrix_.transpose() * sparse_matrix_);
-  if (linear_solver.info() != Eigen::Success) {
+  SparseCholeskyLLt linear_solver;
+  linear_solver.AnalyzePattern(sparse_matrix_.transpose() * sparse_matrix_);
+  if (linear_solver.Info() != Eigen::Success) {
     LOG(ERROR) << "Cholesky decomposition failed.";
     return false;
   }
@@ -255,21 +258,21 @@ bool RobustRotationEstimator::SolveIRLS() {
     // Compute the weights for each error term.
     errors =
         (sparse_matrix_ * rotation_change_ - relative_rotation_error_).array();
-    weights = kDeltaSq / (errors.square() + kDeltaSq).square();
+    weights = kSigma / (errors.square() + kSigma * kSigma).square();
 
     // Update the factorization for the weighted values.
     at_weight =
         sparse_matrix_.transpose() * weights.matrix().asDiagonal();
-    linear_solver.factorize(at_weight * sparse_matrix_);
-    if (linear_solver.info() != Eigen::Success) {
+    linear_solver.Factorize(at_weight * sparse_matrix_);
+    if (linear_solver.Info() != Eigen::Success) {
       LOG(ERROR) << "Failed to factorize the least squares system.";
       return false;
     }
 
     // Solve the least squares problem..
     rotation_change_ =
-        linear_solver.solve(at_weight * relative_rotation_error_);
-    if (linear_solver.info() != Eigen::Success) {
+        linear_solver.Solve(at_weight * relative_rotation_error_);
+    if (linear_solver.Info() != Eigen::Success) {
       LOG(ERROR) << "Failed to solve the least squares system.";
       return false;
     }

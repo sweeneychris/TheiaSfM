@@ -69,7 +69,7 @@ TEST(QPSolver, Unbounded) {
   Eigen::SparseMatrix<double> P_sparse(P.sparseView());
   QPSolver qp_solver(options, P_sparse, q, r);
   Eigen::VectorXd solution;
-  EXPECT_TRUE(qp_solver.Solve(&solution));
+  ASSERT_TRUE(qp_solver.Solve(&solution));
 
   // Verify the solution is near (3, 5, 7).
   const Eigen::Vector3d gt_solution(3, 5, 7);
@@ -112,7 +112,7 @@ TEST(QPSolver, LooseBounds) {
   qp_solver.SetUpperBound(upper_bound);
   Eigen::VectorXd solution;
 
-  EXPECT_TRUE(qp_solver.Solve(&solution));
+  ASSERT_TRUE(qp_solver.Solve(&solution));
 
   // Verify the solution is near (3, 5, 7).
   const Eigen::Vector3d gt_solution(3, 5, 7);
@@ -156,7 +156,7 @@ TEST(QPSolver, TightBounds) {
   qp_solver.SetUpperBound(upper_bound);
 
   Eigen::VectorXd solution;
-  EXPECT_TRUE(qp_solver.Solve(&solution));
+  ASSERT_TRUE(qp_solver.Solve(&solution));
 
   // Verify the solution is near (5, 7, 9).
   const Eigen::Vector3d gt_solution(5, 7, 9);

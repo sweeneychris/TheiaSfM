@@ -35,13 +35,13 @@
 #include "theia/math/qp_solver.h"
 
 #include <Eigen/Core>
-#include <Eigen/SparseCholesky>
 #include <glog/logging.h>
 
 #include <algorithm>
 #include <limits>
 #include <string>
 
+#include "theia/math/matrix/sparse_cholesky_llt.h"
 #include "theia/util/stringprintf.h"
 
 namespace theia {
@@ -67,8 +67,8 @@ QPSolver::QPSolver(const Options& options,
   spd_mat *= options_.rho;
   spd_mat += P_;
 
-  linear_solver_.compute(spd_mat);
-  CHECK_EQ(linear_solver_.info(), Eigen::Success);
+  linear_solver_.Compute(spd_mat);
+  CHECK_EQ(linear_solver_.Info(), Eigen::Success);
 }
 
 void QPSolver::SetMaxIterations(const int max_iterations) {
@@ -113,7 +113,10 @@ bool QPSolver::Solve(Eigen::VectorXd* solution) {
   // Run the iterations.
   for (int i = 0; i < options_.max_num_iterations; i++) {
     // Update x.
-    x.noalias() = linear_solver_.solve(options_.rho * (z - u) - q_);
+    x.noalias() = linear_solver_.Solve(options_.rho * (z - u) - q_);
+    if (linear_solver_.Info() != Eigen::Success) {
+      return false;
+    }
 
     // Update x_hat.
     std::swap(z, z_old);
