@@ -163,6 +163,18 @@ else (GFLAGS_FOUND)
 endif (GFLAGS_FOUND)
 list(APPEND THEIA_INCLUDE_DIRS ${GFLAGS_INCLUDE_DIRS})
 
+find_package(SuiteSparse QUIET)
+if (SUITESPARSE_FOUND)
+  message("-- Found SuiteSparse ${SUITESPARSE_VERSION}")
+  add_definitions(-DTHEIA_SUITESPARSE_VERSION="${SUITESPARSE_VERSION}")
+else (SUITESPARSE_FOUND)
+  # Disable use of SuiteSparse if it cannot be found and continue.
+  theia_report_not_found("Can't find SuiteSparse. This library is required "
+    "for bundle adjustment and for solving convex optimization problems. "
+    "Please set SUITESPARSE_INCLUDE_DIR & SUITESPARSE_LIBRARY")
+endif (SUITESPARSE_FOUND)
+list(APPEND THEIA_INCLUDE_DIRS ${SUITESPARSE_INCLUDE_DIRS})
+
 # Import exported Theia targets.
 if (NOT TARGET theia AND NOT Theia_BINARY_DIR)
   include(${THEIA_CURRENT_CONFIG_INSTALL_DIR}/TheiaTargets.cmake)
