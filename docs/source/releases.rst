@@ -4,8 +4,8 @@
 Releases
 ========
 
-HEAD
-====
+`0.6.0  <https://github.com/sweeneychris/TheiaSfM/archive/v0.6.tar.gz>`_
+========================================================================
 
 New Features
 ------------
@@ -48,6 +48,7 @@ Misc.
 * Triangulation algorithms return true on success properly
 * The point cloud viewer uses the dominant plane detection to set the ground plane for viewing.
 * Upgraded EasyEXIF lib to the latest version.
+* New CHOLMOD wrapper for sparse cholesky decomposition. This provides a notable performance increase for large scale problems.
 
 `0.5.0  <https://github.com/sweeneychris/TheiaSfM/archive/v0.5.tar.gz>`_
 ========================================================================
