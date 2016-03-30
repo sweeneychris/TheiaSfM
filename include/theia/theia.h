@@ -87,6 +87,7 @@
 #include "theia/math/l1_solver.h"
 #include "theia/math/matrix/gauss_jordan.h"
 #include "theia/math/matrix/rq_decomposition.h"
+#include "theia/math/matrix/sparse_cholesky_llt.h"
 #include "theia/math/polynomial.h"
 #include "theia/math/probability/sequential_probability_ratio.h"
 #include "theia/math/qp_solver.h"

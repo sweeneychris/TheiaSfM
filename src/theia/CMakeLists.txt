@@ -68,6 +68,7 @@ set(THEIA_SRC
   math/closed_form_polynomial_solver.cc
   math/find_polynomial_roots_companion_matrix.cc
   math/find_polynomial_roots_jenkins_traub.cc
+  math/matrix/sparse_cholesky_llt.cc
   math/polynomial.cc
   math/probability/sequential_probability_ratio.cc
   math/qp_solver.cc
@@ -163,6 +164,7 @@ set(THEIA_LIBRARY_DEPENDENCIES
   ${GFLAGS_LIBRARIES}
   ${GLOG_LIBRARIES}
   ${CIMG_LIBRARIES}
+  ${SUITESPARSE_LIBRARIES}
   easyexif
   statx
   stlplus3
