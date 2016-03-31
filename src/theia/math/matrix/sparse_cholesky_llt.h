@@ -35,7 +35,7 @@
 #ifndef THEIA_MATH_MATRIX_SPARSE_CHOLESKY_LLT_H_
 #define THEIA_MATH_MATRIX_SPARSE_CHOLESKY_LLT_H_
 
-#include <suitesparse/cholmod.h>
+#include <cholmod.h>
 #include <Eigen/SparseCore>
 
 // UF_long is deprecated but SuiteSparse_long is only available in

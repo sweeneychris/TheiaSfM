@@ -68,7 +68,7 @@
 
 #include "theia/math/matrix/sparse_cholesky_llt.h"
 
-#include <suitesparse/cholmod.h>
+#include <cholmod.h>
 #include <Eigen/Core>
 #include <Eigen/SparseCore>
 #include <glog/logging.h>
