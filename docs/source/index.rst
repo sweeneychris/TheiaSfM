@@ -63,10 +63,10 @@ Citation
 If you use Theia for an academic publication, please cite this
 manual. e.g., ::
 
-  @manual{theia-manual,
+  @misc{theia-manual,
           Author = {Chris Sweeney},
           Title = {Theia Multiview Geometry Library: Tutorial \& Reference},
-          Organization = {University of California Santa Barbara.}
+          howpublished = "\url{http://theia-sfm.org}",
   }
 
 When using specific algorithms that are implemented within Theia, we ask that
