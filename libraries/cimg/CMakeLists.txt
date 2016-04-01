@@ -53,20 +53,14 @@ endif (ImageMagick_FOUND)
 
 if(PNG_FOUND)
   add_definitions(-Dcimg_use_png ${PNG_DEFINITIONS})
-  include_directories( ${PNG_INCLUDE_DIRS} )
-  list( APPEND DEPENDENCIES_LIBRARIES ${PNG_LIBRARIES} )
 endif(PNG_FOUND)
 
 if(JPEG_FOUND)
   add_definitions( -Dcimg_use_jpeg )
-  include_directories( ${JPEG_INCLUDE_DIR} )
-  list( APPEND DEPENDENCIES_LIBRARIES ${JPEG_LIBRARIES} )
 endif(JPEG_FOUND)
 
 if(TIFF_FOUND)
   add_definitions( -Dcimg_use_tiff )
-  include_directories( ${TIFF_INCLUDE_DIR} )
-  list( APPEND DEPENDENCIES_LIBRARIES ${TIFF_LIBRARIES} )
 endif(TIFF_FOUND)
 
 if(CIMG_WITH_LAPACK)
@@ -79,6 +73,12 @@ if(CIMG_WITH_LAPACK)
     message("-- Failed to find Lapack, disabling.")
   endif (LAPACK_FOUND)
 endif(CIMG_WITH_LAPACK)
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+  if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-shift-negative-value")
+  endif (CMAKE_SYSTEM_NAME MATCHES "Darwin")
+endif (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
 
 # aliases
 set(VERSION "${PACKAGE_VERSION}")
