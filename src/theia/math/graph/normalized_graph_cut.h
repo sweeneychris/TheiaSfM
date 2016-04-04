@@ -131,9 +131,9 @@ class NormalizedGraphCut {
     // Note that D^{-1/2} * (D - W) * D^{-1/2} is a symmetric positive
     // semi-definite matrix, so we may use the symmetric eigensolver to find the
     // eigenvalues of lhs.
-    SparseSymShiftSolveLDLT op(lhs);
+    SparseSymShiftSolveLLT op(lhs);
     Spectra::SymEigsShiftSolver<double, Spectra::LARGEST_MAGN,
-                                SparseSymShiftSolveLDLT> eigs(&op, 2, 6, 0.0);
+                                SparseSymShiftSolveLLT> eigs(&op, 2, 6, 0.0);
     eigs.init();
     eigs.compute();
 

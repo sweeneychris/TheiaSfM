@@ -250,9 +250,9 @@ bool LinearPositionEstimator::EstimatePositions(
   // eigenvector corresponding to the smallest eigenvalue. This can be done
   // efficiently with inverse power iterations.
   VLOG(2) << "Solving for positions from the sparse eigenvalue problem...";
-  SparseSymShiftSolveLDLT op(aTa);
+  SparseSymShiftSolveLLT op(aTa);
   Spectra::SymEigsShiftSolver<double, Spectra::LARGEST_MAGN,
-                              SparseSymShiftSolveLDLT> eigs(&op, 1, 6, 0.0);
+                              SparseSymShiftSolveLLT> eigs(&op, 1, 6, 0.0);
   eigs.init();
   eigs.compute();
   // Compute with power iterations.

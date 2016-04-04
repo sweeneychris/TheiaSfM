@@ -35,21 +35,22 @@
 #ifndef THEIA_MATH_MATRIX_LINEAR_OPERATOR_H_
 #define THEIA_MATH_MATRIX_LINEAR_OPERATOR_H_
 
-#include <Eigen/SparseCholesky>
 #include <Eigen/SparseCore>
 #include <glog/logging.h>
+
+#include "theia/math/matrix/sparse_cholesky_llt.h"
 
 namespace theia {
 
 // A sparse method for computing the shift and inverse linear operator. This
 // method is intended for use with the Spectra library.
-class SparseSymShiftSolveLDLT {
+class SparseSymShiftSolveLLT {
  public:
-  explicit SparseSymShiftSolveLDLT(const Eigen::SparseMatrix<double>& mat)
+  explicit SparseSymShiftSolveLLT(const Eigen::SparseMatrix<double>& mat)
       : mat_(mat) {
     CHECK_EQ(mat_.rows(), mat_.cols());
-    ldlt_.compute(mat_);
-    if (ldlt_.info() != Eigen::Success) {
+    linear_solver_.Compute(mat_);
+    if (linear_solver_.Info() != Eigen::Success) {
       LOG(FATAL)
           << "Could not perform Cholesky decomposition on the matrix. Are "
           "you sure it is positive semi-definite?";
@@ -64,8 +65,8 @@ class SparseSymShiftSolveLDLT {
   void perform_op(double* x_in, double* y_out) {
     Eigen::Map<Eigen::VectorXd> x(x_in, mat_.rows());
     Eigen::Map<Eigen::VectorXd> y(y_out, mat_.cols());
-    y = ldlt_.solve(x);
-    if (ldlt_.info() != Eigen::Success) {
+    y = linear_solver_.Solve(x);
+    if (linear_solver_.Info() != Eigen::Success) {
       LOG(FATAL)
           << "Could not perform Cholesky decomposition on the matrix. Are "
           "you sure it is positive semi-definite?";
@@ -73,7 +74,7 @@ class SparseSymShiftSolveLDLT {
   }
 
   const Eigen::SparseMatrix<double>& mat_;
-  Eigen::SimplicialLDLT<Eigen::SparseMatrix<double>, Eigen::Upper> ldlt_;
+  SparseCholeskyLLt linear_solver_;
   double sigma_;
 };
 
