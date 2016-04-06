@@ -78,7 +78,7 @@ void ExecuteRandomTest(const RansacParameters& options,
                        const Vector3d& position,
                        const double inlier_ratio,
                        const double noise,
-                       const double tolerance) {
+                       const double tolerance_degrees) {
   InitRandomGenerator();
 
   // Create feature correspondences (inliers and outliers) and add noise if
@@ -122,15 +122,14 @@ void ExecuteRandomTest(const RansacParameters& options,
   // Expect that the inlier ratio is close to the ground truth.
   EXPECT_GT(static_cast<double>(ransac_summary.inliers.size()), 5);
 
-  // Expect poses are near.
-  EXPECT_TRUE(test::ArraysEqualUpToScale(9,
-                                         rotation.data(),
-                                         relative_pose.rotation.data(),
-                                         tolerance));
-  EXPECT_TRUE(test::ArraysEqualUpToScale(3,
-                                         position.data(),
-                                         relative_pose.position.data(),
-                                         tolerance));
+  Eigen::AngleAxisd rotation_loop(rotation *
+                                  relative_pose.rotation.transpose());
+  EXPECT_LT(RadToDeg(rotation_loop.angle()), tolerance_degrees);
+
+  const double translation_diff_rad = std::acos(
+      Clamp(position.normalized().dot(relative_pose.position), -1.0, 1.0));
+
+  EXPECT_LT(RadToDeg(translation_diff_rad), tolerance_degrees);
 }
 
 TEST(EstimateRelativePose, AllInliersNoNoise) {
@@ -140,7 +139,7 @@ TEST(EstimateRelativePose, AllInliersNoNoise) {
   options.failure_probability = 0.001;
   const double kInlierRatio = 1.0;
   const double kNoise = 0.0;
-  const double kPoseTolerance = 1e-4;
+  const double kPoseToleranceDegrees = 1e-4;
 
   const std::vector<Matrix3d> rotations = {
     Matrix3d::Identity(),
@@ -149,7 +148,7 @@ TEST(EstimateRelativePose, AllInliersNoNoise) {
         .toRotationMatrix()
   };
   const std::vector<Vector3d> positions = { Vector3d(-1.3, 0, 0),
-                                            Vector3d(0, 0, 0.5) };
+                                            Vector3d(0, 0.1, 0.5) };
   for (int i = 0; i < rotations.size(); i++) {
     for (int j = 0; j < positions.size(); j++) {
       ExecuteRandomTest(options,
@@ -157,7 +156,7 @@ TEST(EstimateRelativePose, AllInliersNoNoise) {
                         positions[j],
                         kInlierRatio,
                         kNoise,
-                        kPoseTolerance);
+                        kPoseToleranceDegrees);
     }
   }
 }
@@ -169,7 +168,7 @@ TEST(EstimateRelativePose, AllInliersWithNoise) {
   options.failure_probability = 0.001;
   const double kInlierRatio = 1.0;
   const double kNoise = 1.0;
-  const double kPoseTolerance = 1e-2;
+  const double kPoseToleranceDegrees = 5.0;
 
   const std::vector<Matrix3d> rotations = {
     Matrix3d::Identity(),
@@ -178,7 +177,7 @@ TEST(EstimateRelativePose, AllInliersWithNoise) {
         .toRotationMatrix()
   };
   const std::vector<Vector3d> positions = { Vector3d(-1.3, 0, 0),
-                                            Vector3d(0, 0, 0.5) };
+                                            Vector3d(0, 0.1, 0.5) };
 
   for (int i = 0; i < rotations.size(); i++) {
     for (int j = 0; j < positions.size(); j++) {
@@ -187,7 +186,7 @@ TEST(EstimateRelativePose, AllInliersWithNoise) {
                         positions[j],
                         kInlierRatio,
                         kNoise,
-                        kPoseTolerance);
+                        kPoseToleranceDegrees);
     }
   }
 }
@@ -196,17 +195,17 @@ TEST(EstimateRelativePose, OutliersNoNoise) {
   RansacParameters options;
   options.use_mle = true;
   options.error_thresh = kErrorThreshold;
-  options.failure_probability = 0.001;
+  options.failure_probability = 0.0001;
   const double kInlierRatio = 0.7;
   const double kNoise = 0.0;
-  const double kPoseTolerance = 1e-2;
+  const double kPoseToleranceDegrees = 5.0;
 
   const std::vector<Matrix3d> rotations = {
     Matrix3d::Identity(),
-    ProjectToRotationMatrix(Matrix3d::Identity() + 0.3 * Matrix3d::Random())
+    ProjectToRotationMatrix(Matrix3d::Identity() + 0.2 * Matrix3d::Random())
   };
-  const std::vector<Vector3d> positions = { Vector3d(1, 0, 0),
-                                            Vector3d(0, 1, 0) };
+  const std::vector<Vector3d> positions = { Vector3d(1, 0.2, 0),
+                                            Vector3d(0, 1, 0.1) };
 
   for (int i = 0; i < rotations.size(); i++) {
     for (int j = 0; j < positions.size(); j++) {
@@ -215,7 +214,7 @@ TEST(EstimateRelativePose, OutliersNoNoise) {
                         positions[j],
                         kInlierRatio,
                         kNoise,
-                        kPoseTolerance);
+                        kPoseToleranceDegrees);
     }
   }
 }
@@ -227,14 +226,14 @@ TEST(EstimateRelativePose, OutliersWithNoise) {
   options.failure_probability = 0.001;
   const double kInlierRatio = 0.7;
   const double kNoise = 1.0;
-  const double kPoseTolerance = 1e-2;
+  const double kPoseToleranceDegrees = 5.0;
 
   const std::vector<Matrix3d> rotations = {
     Matrix3d::Identity(),
-    ProjectToRotationMatrix(Matrix3d::Identity() + 0.3 * Matrix3d::Random())
+    ProjectToRotationMatrix(Matrix3d::Identity() + 0.2 * Matrix3d::Random())
   };
-  const std::vector<Vector3d> positions = { Vector3d(1, 0, 0),
-                                            Vector3d(0, 1, 0) };
+  const std::vector<Vector3d> positions = { Vector3d(1, 0.2, 0),
+                                            Vector3d(0, 1, 0.1) };
 
   for (int i = 0; i < rotations.size(); i++) {
     for (int j = 0; j < positions.size(); j++) {
@@ -243,7 +242,7 @@ TEST(EstimateRelativePose, OutliersWithNoise) {
                         positions[j],
                         kInlierRatio,
                         kNoise,
-                        kPoseTolerance);
+                        kPoseToleranceDegrees);
     }
   }
 }

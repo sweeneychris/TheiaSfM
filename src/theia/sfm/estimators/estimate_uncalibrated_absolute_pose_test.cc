@@ -113,10 +113,11 @@ void ExecuteRandomTest(const RansacParameters& options,
                                          rotation.data(),
                                          pose.rotation.data(),
                                          tolerance));
+  // The position is more noisy than the rotation usually.
   EXPECT_TRUE(test::ArraysEqualUpToScale(3,
                                          position.data(),
                                          pose.position.data(),
-                                         tolerance));
+                                         2.0 * tolerance));
 
   // Expect focal length is near.
   static const double kFocalLengthTolerance = 0.05;
@@ -222,7 +223,7 @@ TEST(EstimateUncalibratedAbsolutePose, OutliersWithNoise) {
   options.max_iterations = 1000;
   const double kInlierRatio = 0.7;
   const double kNoise = 1.0;
-  const double kPoseTolerance = 1e-2;
+  const double kPoseTolerance = 0.1;
 
   const std::vector<Matrix3d> rotations = {
     Matrix3d::Identity(),
