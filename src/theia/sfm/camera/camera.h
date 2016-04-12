@@ -42,6 +42,7 @@
 #include <vector>
 
 #include "theia/sfm/types.h"
+#include "theia/sfm/camera/shared_extrinsics.h"
 
 namespace theia {
 
@@ -77,6 +78,7 @@ class Camera {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   Camera();
+  Camera(std::shared_ptr<SharedExtrinsics> shared_extrinsics);
   ~Camera() {}
 
   // Initializes the camera intrinsic and extrinsic parameters from the
@@ -126,7 +128,7 @@ class Camera {
   void SetPosition(const Eigen::Vector3d& position);
   Eigen::Vector3d GetPosition() const;
 
-  void SetOrientationFromRotationMatrix(const Eigen::Matrix3d& rotation);
+  void SetOrientationFromRotationMatrix(const Eigen::Matrix3d& world_to_local_rotation);
   void SetOrientationFromAngleAxis(const Eigen::Vector3d& angle_axis);
   Eigen::Matrix3d GetOrientationAsRotationMatrix() const;
   Eigen::Vector3d GetOrientationAsAngleAxis() const;
@@ -154,25 +156,30 @@ class Camera {
   int ImageWidth() const { return image_size_[0]; }
   int ImageHeight() const { return image_size_[1]; }
 
-  const double* extrinsics() const { return camera_parameters_; }
-  double* mutable_extrinsics() { return camera_parameters_;  }
-
   const double* intrinsics() const {
-    return camera_parameters_ + kExtrinsicsSize;
+    return camera_parameters_;
   }
-  double* mutable_intrinsics() { return camera_parameters_ + kExtrinsicsSize; }
+  double* mutable_intrinsics() { return camera_parameters_; }
 
-  const double* parameters() const { return camera_parameters_; }
-  double* mutable_parameters() { return camera_parameters_; }
+  const SharedExtrinsics& extrinsics() const { return *shared_extrinsics; }
+
+  SharedExtrinsics& mutable_extrinsics() { return *shared_extrinsics; }
+
+  void SetSharedExtrinsics(std::shared_ptr<SharedExtrinsics> shared_extrinsics) {
+    this->shared_extrinsics = shared_extrinsics;
+  }
+
+  const Eigen::Matrix3d& GetSharedToLocalTransform() const {
+    return shared_to_local_rotation;
+  }
+
+  void SetSharedToLocalTransform(const Eigen::Matrix3d& sharedToLocalTransform) {
+    this->shared_to_local_rotation = sharedToLocalTransform;
+  }
 
   // Indexing for the location of parameters. Collecting the extrinsics and
   // intrinsics into a single array makes the interface to bundle adjustment
   // with Ceres much simpler.
-  enum ExternalParametersIndex {
-    POSITION = 0,
-    ORIENTATION = 3
-  };
-
   enum InternalParametersIndex{
     FOCAL_LENGTH = 0,
     ASPECT_RATIO = 1,
@@ -183,9 +190,8 @@ class Camera {
     RADIAL_DISTORTION_2 = 6
   };
 
-  static const int kExtrinsicsSize = 6;
+
   static const int kIntrinsicsSize = 7;
-  static const int kParameterSize = kExtrinsicsSize + kIntrinsicsSize;
 
  private:
   // Templated method for disk I/O with cereal. This method tells cereal which
@@ -193,11 +199,13 @@ class Camera {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& ar) {  // NOLINT
-    ar(cereal::binary_data(camera_parameters_, sizeof(double) * kParameterSize),
+    ar(cereal::binary_data(camera_parameters_, sizeof(double) * kIntrinsicsSize),
        cereal::binary_data(image_size_, sizeof(int) * 2));
   }
 
-  double camera_parameters_[kParameterSize];
+  double camera_parameters_[kIntrinsicsSize];
+  std::shared_ptr<SharedExtrinsics> shared_extrinsics;
+  Eigen::Matrix3d shared_to_local_rotation;
 
   // The image size as width then height.
   int image_size_[2];

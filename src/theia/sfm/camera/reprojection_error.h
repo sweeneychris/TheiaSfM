@@ -44,40 +44,46 @@ namespace theia {
 
 struct ReprojectionError {
  public:
-  explicit ReprojectionError(const Feature& feature) : feature_(feature) {}
+  explicit ReprojectionError(const Feature& feature,
+                             const Eigen::Matrix3d sharedToLocalTransform)
+      : feature_(feature), sharedToLocalTransform(sharedToLocalTransform) {}
 
-  template<typename T> bool operator()(const T* camera_parameters,
-                                       const T* point_parameters,
-                                       T* reprojection_error) const {
+  template<typename T> bool operator()(const T* camera_intrinsics,
+                      const T* camera_extrinsics,
+                      const T* point_parameters,
+                      T* reprojection_error) const {
     // Do not evaluate invalid camera configurations.
-    if (camera_parameters[Camera::kExtrinsicsSize + Camera::FOCAL_LENGTH] <
+    if (camera_intrinsics[Camera::FOCAL_LENGTH] <
             T(0.0) ||
-        camera_parameters[Camera::kExtrinsicsSize + Camera::ASPECT_RATIO] <
+        camera_intrinsics[Camera::ASPECT_RATIO] <
             T(0.0)) {
       return false;
     }
 
     T reprojection[2];
-    ProjectPointToImage(camera_parameters,
-                        camera_parameters + Camera::kExtrinsicsSize,
+    ProjectPointToImage(camera_intrinsics,
+                        camera_extrinsics,
                         point_parameters,
+                        sharedToLocalTransform,
                         reprojection);
     reprojection_error[0] = reprojection[0] - T(feature_.x());
     reprojection_error[1] = reprojection[1] - T(feature_.y());
     return true;
   }
 
-  static ceres::CostFunction* Create(const Feature& feature) {
+  static ceres::CostFunction* Create(const Feature& feature, const Eigen::Matrix3d& sharedToLocalTransform) {
     static const int kPointSize = 4;
     return new ceres::AutoDiffCostFunction<ReprojectionError,
                                            2,
-                                           Camera::kParameterSize,
+                                           Camera::kIntrinsicsSize,
+                                           SharedExtrinsics::kExtrinsicsSize,
                                            kPointSize>(
-        new ReprojectionError(feature));
+        new ReprojectionError(feature, sharedToLocalTransform));
   }
 
  private:
   const Feature feature_;
+  const Eigen::Matrix3d sharedToLocalTransform;
 };
 
 }  // namespace theia

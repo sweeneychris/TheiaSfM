@@ -61,11 +61,11 @@ void CalibrationMatrixToIntrinsics(const Eigen::Matrix3d& calibration_matrix,
 
 bool DecomposeProjectionMatrix(const Matrix3x4d pmatrix,
                                Eigen::Matrix3d* calibration_matrix,
-                               Eigen::Vector3d* rotation,
+                               Eigen::Matrix3d* rotation_matrix,
                                Eigen::Vector3d* position);
 
 bool ComposeProjectionMatrix(const Eigen::Matrix3d& calibration_matrix,
-                             const Eigen::Vector3d& rotation,
+                             const Eigen::Matrix3d& rotation_matrix,
                              const Eigen::Vector3d& position,
                              Matrix3x4d* pmatrix);
 }  // namespace theia
