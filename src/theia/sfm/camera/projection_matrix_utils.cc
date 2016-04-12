@@ -75,11 +75,11 @@ void CalibrationMatrixToIntrinsics(const Matrix3d& calibration_matrix,
 
 bool DecomposeProjectionMatrix(const Matrix3x4d pmatrix,
                                Matrix3d* calibration_matrix,
-                               Vector3d* rotation,
+                               Matrix3d* rotation_matrix,
                                Vector3d* position) {
   RQDecomposition<Matrix3d> rq(pmatrix.block<3, 3>(0, 0));
 
-  Matrix3d rotation_matrix = ProjectToRotationMatrix(rq.matrixQ());
+  *rotation_matrix = ProjectToRotationMatrix(rq.matrixQ());
 
   const double k_det = rq.matrixR().determinant();
   if (k_det == 0) {
@@ -97,7 +97,7 @@ bool DecomposeProjectionMatrix(const Matrix3x4d pmatrix,
   for (int i = 0; i < 3; ++i) {
     if (kmatrix(i, i) < 0) {
       kmatrix.col(i) *= -1.0;
-      rotation_matrix.row(i) *= -1.0;
+      rotation_matrix->row(i) *= -1.0;
     }
   }
 
@@ -107,28 +107,19 @@ bool DecomposeProjectionMatrix(const Matrix3x4d pmatrix,
 
   // c = - R' * t, and flip the sign according to k_det;
   if (k_det > 0) {
-    *position = - rotation_matrix.transpose() * t;
+    *position = - rotation_matrix->transpose() * t;
   } else {
-    *position = rotation_matrix.transpose() * t;
+    *position = rotation_matrix->transpose() * t;
   }
-
-  const Eigen::AngleAxisd rotation_aa(rotation_matrix);
-  *rotation = rotation_aa.angle() * rotation_aa.axis();
 
   return true;
 }
 
 bool ComposeProjectionMatrix(const Matrix3d& calibration_matrix,
-                             const Vector3d& rotation,
+                             const Matrix3d& rotation_matrix,
                              const Vector3d& position,
                              Matrix3x4d* pmatrix) {
-  const double rotation_angle = rotation.norm();
-  if (rotation_angle == 0) {
-    pmatrix->block<3, 3>(0, 0) = Matrix3d::Identity();
-  } else {
-    pmatrix->block<3, 3>(0, 0) = Eigen::AngleAxisd(
-        rotation_angle, rotation / rotation_angle).toRotationMatrix();
-  }
+  pmatrix->block<3, 3>(0, 0) = rotation_matrix;
 
   pmatrix->col(3) = - (pmatrix->block<3, 3>(0, 0) *  position);
   *pmatrix = calibration_matrix * (*pmatrix);

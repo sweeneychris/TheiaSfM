@@ -50,9 +50,9 @@ set(THEIA_SRC
   io/read_matches.cc
   io/read_matches_deprecated.cc
   io/reconstruction_reader.cc
-  io/reconstruction_reader_deprecated.cc
+#  io/reconstruction_reader_deprecated.cc
   io/reconstruction_writer.cc
-  io/reconstruction_writer_deprecated.cc
+#  io/reconstruction_writer_deprecated.cc
   io/sift_binary_file.cc
   io/sift_text_file.cc
   io/write_bundler_files.cc
@@ -79,6 +79,7 @@ set(THEIA_SRC
   sfm/camera/camera.cc
   sfm/camera/projection_matrix_utils.cc
   sfm/camera/radial_distortion.cc
+  sfm/camera/shared_extrinsics.cc
   sfm/colorize_reconstruction.cc
   sfm/estimate_track.cc
   sfm/estimate_twoview_info.cc

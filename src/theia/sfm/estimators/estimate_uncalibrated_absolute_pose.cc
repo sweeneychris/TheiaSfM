@@ -120,16 +120,11 @@ bool EstimateUncalibratedAbsolutePose(
 
   // Recover the focal length and pose.
   Eigen::Matrix3d calibration_matrix;
-  Eigen::Vector3d rotation;
+  Eigen::Matrix3d rotation_matrix;
   DecomposeProjectionMatrix(projection_matrix,
                             &calibration_matrix,
-                            &rotation,
+                            &absolute_pose->rotation,
                             &absolute_pose->position);
-
-  // Convert angle-axis rotation to rotation matrix.
-  ceres::AngleAxisToRotationMatrix(
-      rotation.data(),
-      ceres::ColumnMajorAdapter3x3(absolute_pose->rotation.data()));
 
   absolute_pose->focal_length =
       calibration_matrix(0, 0) / calibration_matrix(2, 2);
