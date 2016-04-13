@@ -147,7 +147,7 @@ endif (GLOG_FOUND)
 
 # Ceres
 message("-- Check for Ceres")
-find_package(Ceres REQUIRED)
+find_package(Ceres REQUIRED SuiteSparse)
 if (CERES_FOUND)
   message("-- Found Ceres: ${CERES_INCLUDE_DIRS}")
 else (CERES_FOUND)
