@@ -98,7 +98,7 @@ class PrimalDualQP : public Solver<Scalar> {
 
   // Solve the QP program
   TERMINATION_TYPE
-  operator()(typename const PrimalDualQP<Scalar, n, m, p>::Params& params,
+  operator()(const typename PrimalDualQP<Scalar, n, m, p>::Params& params,
              Matrix<Scalar, n, 1>* x,
              Scalar* min_value);
 
