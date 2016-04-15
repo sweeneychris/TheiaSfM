@@ -6,7 +6,7 @@ set(stlplus3_sources
   portability_fixes.cpp
   wildcard.cpp)
 
-add_library(stlplus3 SHARED ${stlplus3_sources})
+add_library(stlplus3 STATIC ${stlplus3_sources})
 install(TARGETS stlplus3
   EXPORT  TheiaExport
   RUNTIME DESTINATION bin
