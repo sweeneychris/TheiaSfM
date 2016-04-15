@@ -641,8 +641,23 @@ bool EvsacSampler<Datum>::Initialize() {
   }
 
   // Initialize sampler.
-  correspondence_sampler_.reset(new std::discrete_distribution<>(
+#if defined(_MSC_VER) & _MSC_VER < 1900
+  // MSVC has one of the constructors missing. See
+  // http://stackoverflow.com/questions/21959404/initialising-stddiscrete-distribution-in-vs2013
+  std::size_t i(0);
+  correspondence_sampler_.reset(
+      new std::discrete_distribution<int>(sampling_weights.size(),
+                                          0.0,  // dummy!
+                                          0.0,  // dummy!
+                                          [&sampling_weights, &i](double) {
+                                            auto w = sampling_weights[i];
+                                            ++i;
+                                            return w;
+                                          }));
+#else
+  correspondence_sampler_.reset(new std::discrete_distribution<int>(
       sampling_weights.begin(), sampling_weights.end()));
+#endif
 
   return true;
 }
