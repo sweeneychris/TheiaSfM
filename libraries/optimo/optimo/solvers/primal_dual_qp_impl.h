@@ -44,7 +44,7 @@ using Eigen::Dynamic;
 template <typename Scalar, uint n, uint m, uint p>
 TERMINATION_TYPE
 PrimalDualQP<Scalar, n, m, p>::operator()(
-    const PrimalDualQP<Scalar, n, m, p>::Params& params,
+    typename const PrimalDualQP<Scalar, n, m, p>::Params& params,
     Matrix<Scalar, n, 1>* x,
     Scalar* min_value) {
   if (!x || !min_value) return INVALID_ARGUMENTS;
