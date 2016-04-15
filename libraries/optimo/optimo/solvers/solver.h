@@ -31,8 +31,11 @@
 
 #ifndef OPTIMO_SOLVERS_SOLVER_H_
 #define OPTIMO_SOLVERS_SOLVER_H_
+
 namespace optimo {
 namespace solvers {
+
+typedef unsigned int uint;
 
 /// This enum captures the possible termination states that a solver can have.
 enum TERMINATION_TYPE {
