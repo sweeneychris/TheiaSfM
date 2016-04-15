@@ -27,8 +27,11 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
-// A unit test for Google Test itself.  This verifies that the basic
-// constructs of Google Test work.
+// The purpose of this file is to generate Google Test output under
+// various conditions.  The output will then be verified by
+// gtest_output_test.py to ensure that Google Test generates the
+// desired messages.  Therefore, most tests in this file are MEANT TO
+// FAIL.
 //
 // Author: wan@google.com (Zhanyong Wan)
 
@@ -55,8 +58,6 @@ using testing::internal::ThreadWithParam;
 #endif
 
 namespace posix = ::testing::internal::posix;
-using testing::internal::String;
-using testing::internal::scoped_ptr;
 
 // Tests catching fatal failures.
 
@@ -100,6 +101,21 @@ TEST_P(FailingParamTest, Fails) {
 INSTANTIATE_TEST_CASE_P(PrintingFailingParams,
                         FailingParamTest,
                         testing::Values(2));
+
+static const char kGoldenString[] = "\"Line\0 1\"\nLine 2";
+
+TEST(NonfatalFailureTest, EscapesStringOperands) {
+  std::string actual = "actual \"string\"";
+  EXPECT_EQ(kGoldenString, actual);
+
+  const char* golden = kGoldenString;
+  EXPECT_EQ(golden, actual);
+}
+
+TEST(NonfatalFailureTest, DiffForLongStrings) {
+  std::string golden_str(kGoldenString, sizeof(kGoldenString) - 1);
+  EXPECT_EQ(golden_str, "Line 2");
+}
 
 // Tests catching a fatal failure in a subroutine.
 TEST(FatalFailureTest, FatalFailureInSubroutine) {
@@ -221,13 +237,13 @@ TEST(SCOPED_TRACETest, CanBeRepeated) {
 
   {
     SCOPED_TRACE("C");
-    ADD_FAILURE() << "This failure is expected, and should contain "
-                  << "trace point A, B, and C.";
+    ADD_FAILURE() << "This failure is expected, and should "
+                  << "contain trace point A, B, and C.";
   }
 
   SCOPED_TRACE("D");
-  ADD_FAILURE() << "This failure is expected, and should contain "
-                << "trace point A, B, and D.";
+  ADD_FAILURE() << "This failure is expected, and should "
+                << "contain trace point A, B, and D.";
 }
 
 #if GTEST_IS_THREADSAFE
@@ -378,6 +394,7 @@ class FatalFailureInFixtureConstructorTest : public testing::Test {
                   << "We should never get here, as the test fixture c'tor "
                   << "had a fatal failure.";
   }
+
  private:
   void Init() {
     FAIL() << "Expected failure #1, in the test fixture c'tor.";
@@ -497,7 +514,8 @@ class DeathTestAndMultiThreadsTest : public testing::Test {
 
  private:
   SpawnThreadNotifications notifications_;
-  scoped_ptr<ThreadWithParam<SpawnThreadNotifications*> > thread_;
+  testing::internal::scoped_ptr<ThreadWithParam<SpawnThreadNotifications*> >
+      thread_;
 };
 
 #endif  // GTEST_IS_THREADSAFE
@@ -737,6 +755,32 @@ TEST(ExpectFatalFailureTest, FailsWhenStatementThrows) {
 
 #endif  // GTEST_HAS_EXCEPTIONS
 
+// This #ifdef block tests the output of value-parameterized tests.
+
+#if GTEST_HAS_PARAM_TEST
+
+std::string ParamNameFunc(const testing::TestParamInfo<std::string>& info) {
+  return info.param;
+}
+
+class ParamTest : public testing::TestWithParam<std::string> {
+};
+
+TEST_P(ParamTest, Success) {
+  EXPECT_EQ("a", GetParam());
+}
+
+TEST_P(ParamTest, Failure) {
+  EXPECT_EQ("b", GetParam()) << "Expected failure";
+}
+
+INSTANTIATE_TEST_CASE_P(PrintingStrings,
+                        ParamTest,
+                        testing::Values(std::string("a")),
+                        ParamNameFunc);
+
+#endif  // GTEST_HAS_PARAM_TEST
+
 // This #ifdef block tests the output of typed tests.
 #if GTEST_HAS_TYPED_TEST
 
@@ -972,8 +1016,6 @@ class BarEnvironment : public testing::Environment {
   }
 };
 
-bool GTEST_FLAG(internal_skip_environment_and_ad_hoc_tests) = false;
-
 // The main function.
 //
 // The idea is to use Google Test to run all the tests we have defined (some
@@ -990,9 +1032,9 @@ int main(int argc, char **argv) {
   // global side effects.  The following line serves as a sanity test
   // for it.
   testing::InitGoogleTest(&argc, argv);
-  if (argc >= 2 &&
-      String(argv[1]) == "--gtest_internal_skip_environment_and_ad_hoc_tests")
-    GTEST_FLAG(internal_skip_environment_and_ad_hoc_tests) = true;
+  bool internal_skip_environment_and_ad_hoc_tests =
+      std::count(argv, argv + argc,
+                 std::string("internal_skip_environment_and_ad_hoc_tests")) > 0;
 
 #if GTEST_HAS_DEATH_TEST
   if (testing::internal::GTEST_FLAG(internal_run_death_test) != "") {
@@ -1007,7 +1049,7 @@ int main(int argc, char **argv) {
   }
 #endif  // GTEST_HAS_DEATH_TEST
 
-  if (GTEST_FLAG(internal_skip_environment_and_ad_hoc_tests))
+  if (internal_skip_environment_and_ad_hoc_tests)
     return RUN_ALL_TESTS();
 
   // Registers two global test environments.

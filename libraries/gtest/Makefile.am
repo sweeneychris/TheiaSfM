@@ -6,6 +6,7 @@ ACLOCAL_AMFLAGS = -I m4
 EXTRA_DIST = \
   CHANGES \
   CONTRIBUTORS \
+  LICENSE \
   include/gtest/gtest-param-test.h.pump \
   include/gtest/internal/gtest-param-util-generated.h.pump \
   include/gtest/internal/gtest-tuple.h.pump \
@@ -57,6 +58,7 @@ EXTRA_DIST += \
   test/gtest-param-test_test.cc \
   test/gtest-param-test_test.h \
   test/gtest-port_test.cc \
+  test/gtest_premature_exit_test.cc \
   test/gtest-printers_test.cc \
   test/gtest-test-part_test.cc \
   test/gtest-tuple_test.cc \
@@ -203,9 +205,13 @@ pkginclude_internal_HEADERS = \
   include/gtest/internal/gtest-param-util-generated.h \
   include/gtest/internal/gtest-param-util.h \
   include/gtest/internal/gtest-port.h \
+  include/gtest/internal/gtest-port-arch.h \
   include/gtest/internal/gtest-string.h \
   include/gtest/internal/gtest-tuple.h \
-  include/gtest/internal/gtest-type-util.h
+  include/gtest/internal/gtest-type-util.h \
+  include/gtest/internal/custom/gtest.h \
+  include/gtest/internal/custom/gtest-port.h \
+  include/gtest/internal/custom/gtest-printers.h
 
 lib_libgtest_main_la_SOURCES = src/gtest_main.cc
 lib_libgtest_main_la_LIBADD = lib/libgtest.la
@@ -261,6 +267,7 @@ FUSED_GTEST_SRC = \
   fused-src/gtest/gtest.h \
   fused-src/gtest/gtest_main.cc
 
+if HAVE_PYTHON
 TESTS += test/fused_gtest_test
 check_PROGRAMS += test/fused_gtest_test
 test_fused_gtest_test_SOURCES = $(FUSED_GTEST_SRC) \
@@ -284,6 +291,7 @@ fused-gtest: $(pkginclude_HEADERS) $(pkginclude_internal_HEADERS) \
 
 maintainer-clean-local:
 	rm -rf "$(srcdir)/fused-src"
+endif
 
 # Death tests may produce core dumps in the build directory. In case
 # this happens, clean them to keep distcleancheck happy.
