@@ -48,7 +48,7 @@ DEFINE_int32(num_threads, 1, "Number of threads used in PMVS.");
 
 void CreateDirectoryIfDoesNotExist(const std::string& directory) {
   if (!theia::DirectoryExists(directory)) {
-    CHECK(theia::CreateDirectory(directory))
+    CHECK(theia::CreateNewDirectory(directory))
         << "Could not create the directory: " << directory;
   }
 }

@@ -86,7 +86,7 @@ bool FeatureExtractor::ExtractToDisk(
   // Determine if the directory for writing out feature exists. If not, try to
   // create it.
   if (!DirectoryExists(options_.output_directory)) {
-    CHECK(CreateDirectory(options_.output_directory))
+    CHECK(CreateNewDirectory(options_.output_directory))
         << "Could not create the directory for storing features: "
         << options_.output_directory;
   }

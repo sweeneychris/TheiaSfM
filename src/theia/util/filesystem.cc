@@ -103,7 +103,7 @@ bool DirectoryExists(const std::string& directory) {
 }
 
 // Creates the given directory.
-bool CreateDirectory(const std::string& directory) {
+bool CreateNewDirectory(const std::string& directory) {
   return stlplus::folder_create(directory);
 }
 

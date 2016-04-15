@@ -218,7 +218,7 @@ FeatureMatcher<DistanceMetric>::FeatureMatcher(
     // create it.
     if (!DirectoryExists(
             matcher_options_.keypoints_and_descriptors_output_dir)) {
-      CHECK(CreateDirectory(
+      CHECK(CreateNewDirectory(
           matcher_options_.keypoints_and_descriptors_output_dir))
           << "Could not create the directory for storing features during "
              "matching: "
