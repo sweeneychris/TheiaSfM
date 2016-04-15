@@ -53,7 +53,8 @@ int (*MatchFile::matchfile_printf)(const char* format, ...) = ::printf;
 #define printf matchfile_printf
 
 #ifdef _WIN64
-#define lseek lseeki64
+#define lseek _lseeki64
+#define strcasecmp _stricmp
 #endif
 
 #ifdef WIN32
