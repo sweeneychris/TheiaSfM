@@ -17,16 +17,21 @@ target_link_libraries(build_1dsfm_reconstruction theia ${GFLAGS_LIBRARIES} ${GLO
 
 # Reconstruction visualization.
 find_package(OpenGL REQUIRED)
-find_package(GLUT REQUIRED)
-include_directories( ${OPENGL_INCLUDE_DIRS}  ${GLUT_INCLUDE_DIRS} )
-
 if (NOT MSVC)
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated-declarations")
+  find_package(GLUT REQUIRED)
+  include_directories( ${OPENGL_INCLUDE_DIRS}  ${GLUT_INCLUDE_DIRS} )
+  set(EXTRA_GL_LIBRARIES ${GLUT_LIBRARIES})
+else (NOT MSVC)
+  find_package(GLEW REQUIRED)
+  include_directories( ${OPENGL_INCLUDE_DIRS}  ${GLEW_INCLUDE_DIRS} )
+  set(EXTRA_GL_LIBRARIES ${GLEW_LIBRARIES})
 endif (NOT MSVC)
+
 add_executable(view_reconstruction view_reconstruction.cc)
 target_link_libraries(view_reconstruction theia ${GFLAGS_LIBRARIES}
   ${OPENGL_LIBRARIES}
-  ${GLUT_LIBRARY})
+  ${EXTRA_GL_LIBRARIES})
 
 # Useful tools for analyzing reconstructions.
 add_executable(compute_reconstruction_statistics compute_reconstruction_statistics.cc)

@@ -43,18 +43,21 @@
 #include <OpenGL/OpenGL.h>
 #ifdef FREEGLUT
 #include <GL/freeglut.h>
-#else
+#else  // FREEGLUT
 #include <GLUT/glut.h>
-#endif
-#else
+#endif  // FREEGLUT
+#else  // __APPLE__
 #ifdef _WIN32
 #include <windows.h>
-#endif
+#include <GL/glew.h>
+#include <GL/glut.h>
+#else  // _WIN32
 #define GL_GLEXT_PROTOTYPES 1
 #include <GL/gl.h>
 #include <GL/glu.h>
 #include <GL/glut.h>
-#endif
+#endif  // _WIN32
+#endif  // __APPLE__
 
 DEFINE_string(reconstruction, "", "Reconstruction file to be viewed.");
 
