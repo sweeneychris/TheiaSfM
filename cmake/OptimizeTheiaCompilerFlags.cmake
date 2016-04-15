@@ -175,6 +175,10 @@ macro(OptimizeTheiaCompilerFlags)
     # the warnings.
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} /ignore:4049")
 
+    # Visual Studio has a limit to how many addresses and object can hold. This
+    # can hobble templated classes that are large and result in compiler errors.
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigoj")
+
     # Update the C/CXX flags for MSVC to use either the static or shared
     # C-Run Time (CRT) library based on the user option: MSVC_USE_STATIC_CRT.
     list(APPEND C_CXX_FLAGS
