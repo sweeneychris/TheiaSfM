@@ -177,7 +177,7 @@ macro(OptimizeTheiaCompilerFlags)
 
     # Visual Studio has a limit to how many addresses and object can hold. This
     # can hobble templated classes that are large and result in compiler errors.
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigoj")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /bigobj")
 
     # Update the C/CXX flags for MSVC to use either the static or shared
     # C-Run Time (CRT) library based on the user option: MSVC_USE_STATIC_CRT.
