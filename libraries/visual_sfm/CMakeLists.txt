@@ -6,7 +6,9 @@ set(visual_sfm_sources
   MatchFile.cpp)
 
 add_library(visual_sfm STATIC ${visual_sfm_sources})
-add_definitions("-Wno-unused-result")
+if (NOT MSVC)
+  add_definitions("-Wno-unused-result")
+endif (NOT MSVC)
 install(TARGETS visual_sfm
   EXPORT  TheiaExport
   RUNTIME DESTINATION bin
