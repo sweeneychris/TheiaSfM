@@ -90,7 +90,7 @@ bool WritePlyFile(const std::string& ply_file,
   const auto& track_ids = reconstruction.TrackIds();
   for (const TrackId track_id : track_ids) {
     const Track& track = *reconstruction.Track(track_id);
-    if (!track.IsEstimated() || track.NumViews() < 3) {
+    if (!track.IsEstimated() || track.NumViews() < min_num_observations_per_point) {
       reconstruction.RemoveTrack(track_id);
     }
   }
