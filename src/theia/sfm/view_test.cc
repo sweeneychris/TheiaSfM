@@ -105,4 +105,25 @@ TEST(View, TrackIds) {
   }
 }
 
+TEST(View, CameraIntrinsicsGroupId) {
+  View view;
+
+  // By default group_id is set to Invalid.
+  EXPECT_EQ(kInvalidCameraIntrinsicsGroupId, view.GetCameraIntrinsicsGroupId());
+
+  // Test second constructor, too.
+  const std::string kName = "0";
+  View view_with_name(kName);
+  EXPECT_EQ(kInvalidCameraIntrinsicsGroupId,
+            view_with_name.GetCameraIntrinsicsGroupId());
+
+  // Test getter and setter.
+  CameraIntrinsicsGroupId group_id = 1;
+  view.SetCameraIntrinsicsGroupId(group_id);
+  EXPECT_EQ(group_id, view.GetCameraIntrinsicsGroupId());
+
+  // Impossibility to set group_id to Invalid is checked in code.
+  // Maybe this behaviour must be changed later.
+}
+
 }  // namespace theia

@@ -38,6 +38,7 @@
 #include <glog/logging.h>
 #include <memory>
 #include <unordered_set>
+#include <unordered_map>
 #include <vector>
 
 #include "theia/util/map_util.h"
@@ -87,58 +88,52 @@ std::vector<int> GetIntrinsicsToOptimize(
     return constant_intrinsics;
   }
 
-  if ((intrinsics_to_optimize &
-      OptimizeIntrinsicsType::FOCAL_LENGTH) == OptimizeIntrinsicsType::NONE) {
-    constant_intrinsics.emplace_back(Camera::kExtrinsicsSize +
-                                     Camera::FOCAL_LENGTH);
+  if ((intrinsics_to_optimize & OptimizeIntrinsicsType::FOCAL_LENGTH) ==
+      OptimizeIntrinsicsType::NONE) {
+    constant_intrinsics.emplace_back(Camera::FOCAL_LENGTH);
   }
   if ((intrinsics_to_optimize & OptimizeIntrinsicsType::ASPECT_RATIO) ==
       OptimizeIntrinsicsType::NONE) {
-    constant_intrinsics.emplace_back(Camera::kExtrinsicsSize +
-                                     Camera::ASPECT_RATIO);
+    constant_intrinsics.emplace_back(Camera::ASPECT_RATIO);
   }
   if ((intrinsics_to_optimize & OptimizeIntrinsicsType::SKEW) ==
       OptimizeIntrinsicsType::NONE) {
-    constant_intrinsics.emplace_back(Camera::kExtrinsicsSize + Camera::SKEW);
+    constant_intrinsics.emplace_back(Camera::SKEW);
   }
   if ((intrinsics_to_optimize & OptimizeIntrinsicsType::PRINCIPAL_POINTS) ==
       OptimizeIntrinsicsType::NONE) {
-    constant_intrinsics.emplace_back(Camera::kExtrinsicsSize +
-                                     Camera::PRINCIPAL_POINT_X);
-    constant_intrinsics.emplace_back(Camera::kExtrinsicsSize +
-                                     Camera::PRINCIPAL_POINT_Y);
+    constant_intrinsics.emplace_back(Camera::PRINCIPAL_POINT_X);
+    constant_intrinsics.emplace_back(Camera::PRINCIPAL_POINT_Y);
   }
   if ((intrinsics_to_optimize & OptimizeIntrinsicsType::RADIAL_DISTORTION) ==
       OptimizeIntrinsicsType::NONE) {
-    constant_intrinsics.emplace_back(Camera::kExtrinsicsSize +
-                                     Camera::RADIAL_DISTORTION_1);
-    constant_intrinsics.emplace_back(Camera::kExtrinsicsSize +
-                                     Camera::RADIAL_DISTORTION_2);
+    constant_intrinsics.emplace_back(Camera::RADIAL_DISTORTION_1);
+    constant_intrinsics.emplace_back(Camera::RADIAL_DISTORTION_2);
   }
   return constant_intrinsics;
 }
 
 // Adds camera parameters to the problem while optionally holding some
 // intrinsics parameters constant.
-void AddCameraParametersToProblem(const std::vector<int>& constant_intrinsics,
-                                  double* camera_parameters,
+void AddCameraIntrinsicsToProblem(const std::vector<int>& constant_intrinsics,
+                                  double* camera_intrinsics,
                                   ceres::Problem* problem) {
   if (constant_intrinsics.size() > 0) {
     ceres::SubsetParameterization* subset_parameterization =
-      new ceres::SubsetParameterization(Camera::kParameterSize,
+      new ceres::SubsetParameterization(Camera::kIntrinsicsSize,
                                         constant_intrinsics);
-    problem->AddParameterBlock(camera_parameters,
-                               Camera::kParameterSize,
+    problem->AddParameterBlock(camera_intrinsics,
+                               Camera::kIntrinsicsSize,
                                subset_parameterization);
   } else {
-    problem->AddParameterBlock(camera_parameters, Camera::kParameterSize);
+    problem->AddParameterBlock(camera_intrinsics, Camera::kIntrinsicsSize);
   }
 
   // Set bounds for certain camera parameters to make sure they are reasonable.
   problem->SetParameterLowerBound(
-      camera_parameters, Camera::kExtrinsicsSize + Camera::FOCAL_LENGTH, 0.0);
+      camera_intrinsics, Camera::FOCAL_LENGTH, 0.0);
   problem->SetParameterLowerBound(
-      camera_parameters, Camera::kExtrinsicsSize + Camera::ASPECT_RATIO, 0.0);
+      camera_intrinsics, Camera::ASPECT_RATIO, 0.0);
 }
 
 }  // namespace
@@ -173,6 +168,8 @@ BundleAdjustmentSummary BundleAdjustPartialReconstruction(
   const std::vector<int> constant_intrinsics =
       GetIntrinsicsToOptimize(options.intrinsics_to_optimize);
 
+  std::unordered_map<CameraIntrinsicsGroupId, ViewId> group_representatives;
+
   // Per recommendation of Ceres documentation we group the parameters by points
   // (group 0) and camera parameters (group 1) so that the points are eliminated
   // first then the cameras.
@@ -183,15 +180,34 @@ BundleAdjustmentSummary BundleAdjustPartialReconstruction(
       continue;
     }
 
-    Camera* camera = view->MutableCamera();
-    // This function will add all camera parameters to the problem and will keep
-    // the intrinsic params constant if desired.
-    AddCameraParametersToProblem(constant_intrinsics,
-                                 camera->mutable_parameters(),
-                                 &problem);
+    Camera *camera = view->MutableCamera();
+    problem.AddParameterBlock(camera->mutable_extrinsics(),
+                              Camera::kExtrinsicsSize);
+    // Add camera extrinsics to group 2.
+    parameter_ordering->AddElementToGroup(camera->mutable_extrinsics(), 2);
 
-    // Add camera parameters to group 1.
-    parameter_ordering->AddElementToGroup(camera->mutable_parameters(), 1);
+    // Get intrinsics of the camera for this group.
+    double *camera_group_intrinsics = camera->mutable_intrinsics();
+
+    CameraIntrinsicsGroupId group_id = view->GetCameraIntrinsicsGroupId();
+    if (group_id != kInvalidCameraIntrinsicsGroupId) {
+      if (ContainsKey(group_representatives, group_id)) {
+        ViewId leader_id = group_representatives[group_id];
+        Camera *leader_camera =
+            reconstruction->MutableView(leader_id)->MutableCamera();
+        camera_group_intrinsics = leader_camera->mutable_intrinsics();
+      }
+      else {
+        group_representatives[group_id] = view_id;
+        // This function will add intrinsic camera parameters to the problem
+        // and will keep them constant if desired.
+        AddCameraIntrinsicsToProblem(constant_intrinsics,
+                                     camera_group_intrinsics,
+                                     &problem);
+        // Add camera intrinsics to group 1.
+        parameter_ordering->AddElementToGroup(camera_group_intrinsics, 1);
+      }
+    }
 
     // Add residuals for all tracks in the view.
     for (const TrackId track_id : view->TrackIds()) {
@@ -205,7 +221,8 @@ BundleAdjustmentSummary BundleAdjustPartialReconstruction(
       problem.AddResidualBlock(
           ReprojectionError::Create(*feature),
           loss_function.get(),
-          camera->mutable_parameters(),
+          camera->mutable_extrinsics(),
+          camera_group_intrinsics,
           track->MutablePoint()->data());
       // Add the point to group 0.
       parameter_ordering->AddElementToGroup(track->MutablePoint()->data(), 0);
@@ -241,14 +258,17 @@ BundleAdjustmentSummary BundleAdjustPartialReconstruction(
       problem.AddResidualBlock(
           ReprojectionError::Create(*feature),
           loss_function.get(),
-          camera->mutable_parameters(),
+          camera->mutable_extrinsics(),
+          camera->mutable_intrinsics(),
           track->MutablePoint()->data());
 
       // Add camera parameters to group 1.
-      parameter_ordering->AddElementToGroup(camera->mutable_parameters(), 1);
+      parameter_ordering->AddElementToGroup(camera->mutable_extrinsics(), 2);
+      parameter_ordering->AddElementToGroup(camera->mutable_intrinsics(), 1);
       // Any camera that reaches this point was not part of the first loop, so
       // we do not want to optimize it.
-      problem.SetParameterBlockConstant(camera->mutable_parameters());
+      problem.SetParameterBlockConstant(camera->mutable_extrinsics());
+      problem.SetParameterBlockConstant(camera->mutable_intrinsics());
     }
   }
 
@@ -266,6 +286,29 @@ BundleAdjustmentSummary BundleAdjustPartialReconstruction(
   ceres::Solver::Summary solver_summary;
   ceres::Solve(solver_options, &problem, &solver_summary);
   LOG_IF(INFO, options.verbose) << solver_summary.FullReport();
+
+  // Update camera intrinsics shared by groups
+  for (const ViewId view_id : view_ids) {
+    View *view = CHECK_NOTNULL(reconstruction->MutableView(view_id));
+    // Only optimize estimated views.
+    if (!view->IsEstimated()) {
+      continue;
+    }
+    CameraIntrinsicsGroupId group_id = view->GetCameraIntrinsicsGroupId();
+    // If the view reach this code, it's group (if present) is already
+    // in group_representatives.
+    if (group_id == kInvalidCameraIntrinsicsGroupId ||
+        group_representatives[group_id] == view_id)
+      continue;
+
+    Camera *camera = view->MutableCamera();
+    const Camera &leader_camera =
+        reconstruction->View(group_representatives[group_id])->Camera();
+
+    memcpy(camera->mutable_intrinsics(),
+           leader_camera.intrinsics(),
+           Camera::kIntrinsicsSize * sizeof(double));
+  }
 
   // Set the BundleAdjustmentSummary.
   summary.setup_time_in_seconds =

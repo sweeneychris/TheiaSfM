@@ -69,6 +69,9 @@ class View {
   const class Camera& Camera() const;
   class Camera* MutableCamera();
 
+  CameraIntrinsicsGroupId GetCameraIntrinsicsGroupId() const;
+  void SetCameraIntrinsicsGroupId(const CameraIntrinsicsGroupId group_id);
+
   const struct CameraIntrinsicsPrior& CameraIntrinsicsPrior() const;
   struct CameraIntrinsicsPrior* MutableCameraIntrinsicsPrior();
 
@@ -94,6 +97,7 @@ class View {
   std::string name_;
   bool is_estimated_;
   class Camera camera_;
+  CameraIntrinsicsGroupId camera_intrinsics_group_id_;
   struct CameraIntrinsicsPrior camera_intrinsics_prior_;
   std::unordered_map<TrackId, Feature> features_;
 };

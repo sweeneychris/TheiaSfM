@@ -72,6 +72,9 @@ DEFINE_int32(min_num_inliers_for_valid_match, 30,
              "match.");
 DEFINE_bool(bundle_adjust_two_view_geometry, true,
             "Set to false to turn off 2-view BA.");
+DEFINE_bool(common_intrinsics, false,
+            "If set to true, intrinsics of cameras will be considered common "
+            " in BA.");
 
 using theia::DescriptorExtractorType;
 using theia::MatchingStrategy;
@@ -115,6 +118,11 @@ void AddImagesToReconstructionBuilder(
         << "Could not read calibration file.";
   }
 
+  theia::CameraIntrinsicsGroupId
+      group_id = theia::kInvalidCameraIntrinsicsGroupId;
+  if (FLAGS_common_intrinsics)
+    group_id = 0;
+
   // Add images with possible calibration.
   for (const std::string& image_file : image_files) {
     std::string image_filename;
@@ -124,9 +132,9 @@ void AddImagesToReconstructionBuilder(
         FindOrNull(camera_intrinsics_prior, image_filename);
     if (image_camera_intrinsics_prior != nullptr) {
       CHECK(reconstruction_builder->AddImageWithCameraIntrinsicsPrior(
-          image_file, *image_camera_intrinsics_prior));
+          image_file, *image_camera_intrinsics_prior, group_id));
     } else {
-      CHECK(reconstruction_builder->AddImage(image_file));
+      CHECK(reconstruction_builder->AddImage(image_file, group_id));
     }
   }
 

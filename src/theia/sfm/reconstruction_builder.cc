@@ -54,6 +54,7 @@ namespace {
 
 bool AddViewToReconstruction(const std::string& image_filepath,
                              const CameraIntrinsicsPrior* intrinsics,
+                             const CameraIntrinsicsGroupId group_id,
                              Reconstruction* reconstruction) {
   std::string image_filename;
   CHECK(GetFilenameFromFilepath(image_filepath, true, &image_filename));
@@ -70,6 +71,11 @@ bool AddViewToReconstruction(const std::string& image_filepath,
   if (intrinsics != nullptr) {
     View* view = reconstruction->MutableView(view_id);
     *view->MutableCameraIntrinsicsPrior() = *intrinsics;
+  }
+
+  // Add the camera intrinsics group id if available.
+  if (group_id != kInvalidCameraIntrinsicsGroupId) {
+    reconstruction->MutableView(view_id)->SetCameraIntrinsicsGroupId(group_id);
   }
   return true;
 }
@@ -165,20 +171,26 @@ ReconstructionBuilder::ReconstructionBuilder(
 
 ReconstructionBuilder::~ReconstructionBuilder() {}
 
-bool ReconstructionBuilder::AddImage(const std::string& image_filepath) {
+bool ReconstructionBuilder::AddImage(const std::string &image_filepath,
+                                     const CameraIntrinsicsGroupId group_id) {
   image_filepaths_.emplace_back(image_filepath);
-  if (!AddViewToReconstruction(image_filepath, NULL, reconstruction_.get())) {
+  if (!AddViewToReconstruction(image_filepath,
+                               NULL,
+                               group_id,
+                               reconstruction_.get())) {
     return false;
   }
   return feature_extractor_and_matcher_->AddImage(image_filepath);
 }
 
 bool ReconstructionBuilder::AddImageWithCameraIntrinsicsPrior(
-    const std::string& image_filepath,
-    const CameraIntrinsicsPrior& camera_intrinsics_prior) {
+    const std::string &image_filepath,
+    const CameraIntrinsicsPrior &camera_intrinsics_prior,
+    const CameraIntrinsicsGroupId group_id) {
   image_filepaths_.emplace_back(image_filepath);
   if (!AddViewToReconstruction(image_filepath,
                                &camera_intrinsics_prior,
+                               group_id,
                                reconstruction_.get())) {
     return false;
   }

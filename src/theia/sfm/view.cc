@@ -46,10 +46,13 @@
 
 namespace theia {
 
-View::View() : name_(""), is_estimated_(false) {}
+View::View()
+    : name_(""), is_estimated_(false),
+      camera_intrinsics_group_id_(kInvalidCameraIntrinsicsGroupId) {}
 
-View::View(const std::string& name)
-    : name_(name), is_estimated_(false) {}
+View::View(const std::string &name)
+    : name_(name), is_estimated_(false),
+      camera_intrinsics_group_id_(kInvalidCameraIntrinsicsGroupId) {}
 
 const std::string& View::Name() const {
   return name_;
@@ -69,6 +72,17 @@ const class Camera& View::Camera() const {
 
 class Camera* View::MutableCamera() {
   return &camera_;
+}
+
+CameraIntrinsicsGroupId View::GetCameraIntrinsicsGroupId() const {
+  return camera_intrinsics_group_id_;
+}
+
+void View::SetCameraIntrinsicsGroupId(const CameraIntrinsicsGroupId group_id) {
+  // TODO(stoyanovd): is this check needed here?
+  CHECK(group_id != kInvalidCameraIntrinsicsGroupId)
+    << "Could not set " << "camera_intrinsics_group_id to invalid value.";
+  camera_intrinsics_group_id_ = group_id;
 }
 
 const struct CameraIntrinsicsPrior& View::CameraIntrinsicsPrior() const {
