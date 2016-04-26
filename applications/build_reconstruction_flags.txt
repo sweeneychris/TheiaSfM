@@ -57,6 +57,12 @@
 --reconstruction_estimator=GLOBAL
 --max_track_length=50
 --reconstruct_largest_connected_component=false
+
+# Set to true if all views were captured with the same camera. If true, then a
+# single set of camera intrinsic parameters will be used for all views in the
+# reconstruction.
+--shared_calibration=false
+
 # If set to true, only views with known calibration are reconstructed.
 --only_calibrated_views=false
 

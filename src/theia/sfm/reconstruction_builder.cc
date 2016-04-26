@@ -52,14 +52,24 @@ namespace theia {
 
 namespace {
 
+// Add the view to the reconstruction. If the camera intrinsics group id is set
+// to an invalid group id then simply add the view to the reconstruction without
+// shared camera intrinsics.
 bool AddViewToReconstruction(const std::string& image_filepath,
                              const CameraIntrinsicsPrior* intrinsics,
+                             const CameraIntrinsicsGroupId intrinsics_group_id,
                              Reconstruction* reconstruction) {
   std::string image_filename;
   CHECK(GetFilenameFromFilepath(image_filepath, true, &image_filename));
 
   // Add the image to the reconstruction.
-  const ViewId view_id = reconstruction->AddView(image_filename);
+  ViewId view_id;
+  if (intrinsics_group_id == kInvalidCameraIntrinsicsGroupId) {
+    view_id = reconstruction->AddView(image_filename);
+  } else {
+    view_id = reconstruction->AddView(image_filename, intrinsics_group_id);
+  }
+
   if (view_id == kInvalidViewId) {
     LOG(INFO) << "Could not add " << image_filename
               << " to the reconstruction.";
@@ -166,8 +176,17 @@ ReconstructionBuilder::ReconstructionBuilder(
 ReconstructionBuilder::~ReconstructionBuilder() {}
 
 bool ReconstructionBuilder::AddImage(const std::string& image_filepath) {
+  return AddImage(image_filepath, kInvalidCameraIntrinsicsGroupId);
+}
+
+bool ReconstructionBuilder::AddImage(
+    const std::string& image_filepath,
+    const CameraIntrinsicsGroupId camera_intrinsics_group) {
   image_filepaths_.emplace_back(image_filepath);
-  if (!AddViewToReconstruction(image_filepath, NULL, reconstruction_.get())) {
+  if (!AddViewToReconstruction(image_filepath,
+                               NULL,
+                               camera_intrinsics_group,
+                               reconstruction_.get())) {
     return false;
   }
   return feature_extractor_and_matcher_->AddImage(image_filepath);
@@ -176,9 +195,18 @@ bool ReconstructionBuilder::AddImage(const std::string& image_filepath) {
 bool ReconstructionBuilder::AddImageWithCameraIntrinsicsPrior(
     const std::string& image_filepath,
     const CameraIntrinsicsPrior& camera_intrinsics_prior) {
+  return AddImageWithCameraIntrinsicsPrior(
+      image_filepath, camera_intrinsics_prior, kInvalidCameraIntrinsicsGroupId);
+}
+
+bool ReconstructionBuilder::AddImageWithCameraIntrinsicsPrior(
+    const std::string& image_filepath,
+    const CameraIntrinsicsPrior& camera_intrinsics_prior,
+    const CameraIntrinsicsGroupId camera_intrinsics_group) {
   image_filepaths_.emplace_back(image_filepath);
   if (!AddViewToReconstruction(image_filepath,
                                &camera_intrinsics_prior,
+                               camera_intrinsics_group,
                                reconstruction_.get())) {
     return false;
   }

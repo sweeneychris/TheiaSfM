@@ -100,6 +100,11 @@ DEFINE_bool(reconstruct_largest_connected_component, false,
             "If set to true, only the single largest connected component is "
             "reconstructed. Otherwise, as many models as possible are "
             "estimated.");
+DEFINE_bool(shared_calibration, false,
+            "Set to true if all camera intrinsic parameters should be shared "
+            "as a single set of intrinsics. This is useful, for instance, if "
+            "all images in the reconstruction were taken with the same "
+            "camera.");
 DEFINE_bool(only_calibrated_views, false,
             "Set to true to only reconstruct the views where calibration is "
             "provided or can be extracted from EXIF");
@@ -317,10 +322,18 @@ void AddMatchesToReconstructionBuilder(
                                 &camera_intrinsics_prior,
                                 &image_matches);
 
-  // Add all the views.
+  // Add all the views. When the intrinsics group id is invalid, the
+  // reconstruction builder will assume that the view does not share its
+  // intrinsics with any other views.
+  theia::CameraIntrinsicsGroupId intrinsics_group_id =
+      theia::kInvalidCameraIntrinsicsGroupId;
+  if (FLAGS_shared_calibration) {
+    intrinsics_group_id = 0;
+  }
+
   for (int i = 0; i < image_files.size(); i++) {
     reconstruction_builder->AddImageWithCameraIntrinsicsPrior(
-        image_files[i], camera_intrinsics_prior[i]);
+        image_files[i], camera_intrinsics_prior[i], intrinsics_group_id);
   }
 
   // Add the matches.
@@ -349,18 +362,26 @@ void AddImagesToReconstructionBuilder(
         << "Could not read calibration file.";
   }
 
-  // Add images with possible calibration.
+  // Add images with possible calibration. When the intrinsics group id is
+  // invalid, the reconstruction builder will assume that the view does not
+  // share its intrinsics with any other views.
+  theia::CameraIntrinsicsGroupId intrinsics_group_id =
+      theia::kInvalidCameraIntrinsicsGroupId;
+  if (FLAGS_shared_calibration) {
+    intrinsics_group_id = 0;
+  }
+
   for (const std::string& image_file : image_files) {
     std::string image_filename;
     CHECK(theia::GetFilenameFromFilepath(image_file, true, &image_filename));
 
     const theia::CameraIntrinsicsPrior* image_camera_intrinsics_prior =
-        FindOrNull(camera_intrinsics_prior, image_filename);
+      FindOrNull(camera_intrinsics_prior, image_filename);
     if (image_camera_intrinsics_prior != nullptr) {
       CHECK(reconstruction_builder->AddImageWithCameraIntrinsicsPrior(
-          image_file, *image_camera_intrinsics_prior));
+          image_file, *image_camera_intrinsics_prior, intrinsics_group_id));
     } else {
-      CHECK(reconstruction_builder->AddImage(image_file));
+      CHECK(reconstruction_builder->AddImage(image_file, intrinsics_group_id));
     }
   }
 

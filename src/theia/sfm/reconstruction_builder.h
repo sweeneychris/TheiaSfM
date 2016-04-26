@@ -118,11 +118,21 @@ class ReconstructionBuilder {
 
   // Add an image to the reconstruction.
   bool AddImage(const std::string& image_filepath);
+  // Same as above, but with the camera intrinsics group specified to enable
+  // shared camera intrinsics.
+  bool AddImage(const std::string& image_filepath,
+                const CameraIntrinsicsGroupId camera_intrinsics_group);
 
   // Same as above, but with the camera priors manually specified.
   bool AddImageWithCameraIntrinsicsPrior(
       const std::string& image_filepath,
       const CameraIntrinsicsPrior& camera_intrinsics_prior);
+  // Same as above, but with the camera intrinsics group specified to enable
+  // shared camera intrinsics.
+  bool AddImageWithCameraIntrinsicsPrior(
+      const std::string& image_filepath,
+      const CameraIntrinsicsPrior& camera_intrinsics_prior,
+      const CameraIntrinsicsGroupId camera_intrinsics_group);
 
   // Add a match to the view graph. Either this method is repeatedly called or
   // ExtractAndMatchFeatures must be called.
