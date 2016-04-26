@@ -79,7 +79,10 @@ double Median(std::vector<double>* data) {
 
 }  // namespace
 
-Reconstruction::Reconstruction() : next_track_id_(0), next_view_id_(0) {}
+Reconstruction::Reconstruction()
+    : next_track_id_(0),
+      next_view_id_(0),
+      next_camera_intrinsics_group_id_(0) {}
 
 Reconstruction::~Reconstruction() {}
 
@@ -88,6 +91,13 @@ ViewId Reconstruction::ViewIdFromName(const std::string& view_name) const {
 }
 
 ViewId Reconstruction::AddView(const std::string& view_name) {
+  const ViewId view_id = AddView(view_name, next_camera_intrinsics_group_id_);
+  ++next_camera_intrinsics_group_id_;
+  return view_id;
+}
+
+ViewId Reconstruction::AddView(const std::string& view_name,
+                               const CameraIntrinsicsGroupId group_id) {
   if (ContainsKey(view_name_to_id_, view_name)) {
     LOG(WARNING) << "Could not add view with the name " << view_name
                << " because that name already exists in the reconstruction.";
@@ -103,6 +113,9 @@ ViewId Reconstruction::AddView(const std::string& view_name) {
   class View new_view(view_name);
   views_.emplace(next_view_id_, new_view);
   view_name_to_id_.emplace(view_name, next_view_id_);
+
+  view_id_to_camera_intrinsics_group_id_.emplace(next_view_id_, group_id);
+  camera_intrinsics_groups_[group_id].emplace(next_view_id_);
 
   ++next_view_id_;
   return next_view_id_ - 1;
@@ -141,6 +154,17 @@ bool Reconstruction::RemoveView(const ViewId view_id) {
   const std::string& view_name = view->Name();
   view_name_to_id_.erase(view_name);
 
+  // Remove the view from the camera intrinsics groups.
+  const CameraIntrinsicsGroupId group_id =
+      CameraIntrinsicsGroupIdFromViewId(view_id);
+  view_id_to_camera_intrinsics_group_id_.erase(view_id);
+  std::unordered_set<ViewId>& camera_intrinsics_group =
+      FindOrDie(camera_intrinsics_groups_, group_id);
+  camera_intrinsics_group.erase(view_id);
+  if (camera_intrinsics_group.size() == 0) {
+    camera_intrinsics_groups_.erase(group_id);
+  }
+
   // Remove the view.
   views_.erase(view_id);
   return true;
@@ -165,6 +189,37 @@ std::vector<ViewId> Reconstruction::ViewIds() const {
     view_ids.push_back(view.first);
   }
   return view_ids;
+}
+
+  // Get the camera intrinsics group id for the view id.
+CameraIntrinsicsGroupId Reconstruction::CameraIntrinsicsGroupIdFromViewId(
+    const ViewId view_id) const {
+  return FindWithDefault(view_id_to_camera_intrinsics_group_id_,
+                         view_id,
+                         kInvalidCameraIntrinsicsGroupId);
+}
+
+// Return all view ids with the given camera intrinsics group id. If an
+// invalid or non-existant group is chosen then an empty set will be returned.
+std::unordered_set<ViewId> Reconstruction::GetViewsInCameraIntrinsicGroup(
+    const CameraIntrinsicsGroupId group_id) const {
+  return FindWithDefault(camera_intrinsics_groups_,
+                         group_id,
+                         std::unordered_set<ViewId>());
+}
+
+std::unordered_set<CameraIntrinsicsGroupId>
+Reconstruction::CameraIntrinsicsGroupIds() const {
+  std::unordered_set<CameraIntrinsicsGroupId> group_ids;
+  group_ids.reserve(camera_intrinsics_groups_.size());
+  for (const auto& groups : camera_intrinsics_groups_) {
+    group_ids.emplace(groups.first);
+  }
+  return group_ids;
+}
+
+int Reconstruction::NumCameraIntrinsicGroups() const {
+  return camera_intrinsics_groups_.size();
 }
 
 TrackId Reconstruction::AddTrack(
