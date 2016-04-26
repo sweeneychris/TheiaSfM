@@ -46,20 +46,19 @@ struct ReprojectionError {
  public:
   explicit ReprojectionError(const Feature& feature) : feature_(feature) {}
 
-  template<typename T> bool operator()(const T* camera_parameters,
+  template<typename T> bool operator()(const T* camera_extrinsics,
+                                       const T* camera_intrinsics,
                                        const T* point_parameters,
                                        T* reprojection_error) const {
     // Do not evaluate invalid camera configurations.
-    if (camera_parameters[Camera::kExtrinsicsSize + Camera::FOCAL_LENGTH] <
-            T(0.0) ||
-        camera_parameters[Camera::kExtrinsicsSize + Camera::ASPECT_RATIO] <
-            T(0.0)) {
+    if (camera_intrinsics[Camera::FOCAL_LENGTH] < T(0.0) ||
+        camera_intrinsics[Camera::ASPECT_RATIO] < T(0.0)) {
       return false;
     }
 
     T reprojection[2];
-    ProjectPointToImage(camera_parameters,
-                        camera_parameters + Camera::kExtrinsicsSize,
+    ProjectPointToImage(camera_extrinsics,
+                        camera_intrinsics,
                         point_parameters,
                         reprojection);
     reprojection_error[0] = reprojection[0] - T(feature_.x());
@@ -71,7 +70,8 @@ struct ReprojectionError {
     static const int kPointSize = 4;
     return new ceres::AutoDiffCostFunction<ReprojectionError,
                                            2,
-                                           Camera::kParameterSize,
+                                           Camera::kExtrinsicsSize,
+                                           Camera::kIntrinsicsSize,
                                            kPointSize>(
         new ReprojectionError(feature));
   }

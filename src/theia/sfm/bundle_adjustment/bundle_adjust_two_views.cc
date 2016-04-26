@@ -155,12 +155,14 @@ BundleAdjustmentSummary BundleAdjustTwoViews(
     problem.AddResidualBlock(
         ReprojectionError::Create(correspondences[i].feature1),
         NULL,
-        camera1->mutable_parameters(),
+        camera1->mutable_extrinsics(),
+        camera1->mutable_intrinsics(),
         points3d->at(i).data());
     problem.AddResidualBlock(
         ReprojectionError::Create(correspondences[i].feature2),
         NULL,
-        camera2->mutable_parameters(),
+        camera2->mutable_extrinsics(),
+        camera2->mutable_intrinsics(),
         points3d->at(i).data());
 
     parameter_ordering->AddElementToGroup(points3d->at(i).data(), 0);
