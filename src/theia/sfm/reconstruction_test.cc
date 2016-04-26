@@ -35,6 +35,7 @@
 #include "gtest/gtest.h"
 
 #include "theia/sfm/reconstruction.h"
+#include "theia/util/map_util.h"
 
 namespace theia {
 
@@ -63,6 +64,20 @@ TEST(Reconstruction, AddView) {
   EXPECT_EQ(reconstruction.NumViews(), 1);
   EXPECT_EQ(reconstruction.NumTracks(), 0);
   EXPECT_EQ(reconstruction.AddView(view_names[0]), kInvalidViewId);
+  EXPECT_EQ(reconstruction.CameraIntrinsicsGroupIdFromViewId(view_id), 0);
+}
+
+TEST(Reconstruction, AddViewWithCameraIntrinsicsGroup) {
+  Reconstruction reconstruction;
+  const CameraIntrinsicsGroupId intrinsics_id = 1;
+  const ViewId view_id = reconstruction.AddView(view_names[0], intrinsics_id);
+  EXPECT_NE(view_id, kInvalidViewId);
+  EXPECT_EQ(reconstruction.NumViews(), 1);
+  EXPECT_EQ(reconstruction.NumTracks(), 0);
+  EXPECT_EQ(reconstruction.NumCameraIntrinsicGroups(), 1);
+  EXPECT_EQ(reconstruction.CameraIntrinsicsGroupIdFromViewId(view_id),
+            intrinsics_id);
+  EXPECT_EQ(reconstruction.AddView(view_names[0]), kInvalidViewId);
 }
 
 TEST(Reconstruction, RemoveView) {
@@ -70,16 +85,34 @@ TEST(Reconstruction, RemoveView) {
   const ViewId view_id1 = reconstruction.AddView(view_names[0]);
   const ViewId view_id2 = reconstruction.AddView(view_names[1]);
   EXPECT_EQ(reconstruction.NumViews(), 2);
+  EXPECT_EQ(reconstruction.NumCameraIntrinsicGroups(), 2);
+
+  const CameraIntrinsicsGroupId view1_group =
+      reconstruction.CameraIntrinsicsGroupIdFromViewId(view_id1);
+  const CameraIntrinsicsGroupId view2_group =
+      reconstruction.CameraIntrinsicsGroupIdFromViewId(view_id2);
 
   EXPECT_TRUE(reconstruction.RemoveView(view_id1));
   EXPECT_EQ(reconstruction.NumViews(), 1);
   EXPECT_EQ(reconstruction.ViewIdFromName(view_names[0]), kInvalidViewId);
   EXPECT_EQ(reconstruction.View(view_id1), nullptr);
+  EXPECT_EQ(reconstruction.CameraIntrinsicsGroupIdFromViewId(view_id1),
+            kInvalidCameraIntrinsicsGroupId);
+  EXPECT_EQ(reconstruction.NumCameraIntrinsicGroups(), 1);
+  const std::unordered_set<ViewId> view1_camera_intrinsics_group =
+      reconstruction.GetViewsInCameraIntrinsicGroup(view1_group);
+  EXPECT_FALSE(ContainsKey(view1_camera_intrinsics_group, view_id1));
 
   EXPECT_TRUE(reconstruction.RemoveView(view_id2));
   EXPECT_EQ(reconstruction.NumViews(), 0);
   EXPECT_EQ(reconstruction.ViewIdFromName(view_names[1]), kInvalidViewId);
   EXPECT_EQ(reconstruction.View(view_id2), nullptr);
+  EXPECT_EQ(reconstruction.CameraIntrinsicsGroupIdFromViewId(view_id2),
+            kInvalidCameraIntrinsicsGroupId);
+  EXPECT_EQ(reconstruction.NumCameraIntrinsicGroups(), 0);
+  const std::unordered_set<ViewId> view2_camera_intrinsics_group =
+      reconstruction.GetViewsInCameraIntrinsicGroup(view2_group);
+  EXPECT_FALSE(ContainsKey(view2_camera_intrinsics_group, view_id2));
 
   EXPECT_FALSE(reconstruction.RemoveView(kInvalidViewId));
   EXPECT_FALSE(reconstruction.RemoveView(view_id1));
@@ -105,6 +138,53 @@ TEST(Reconstruction, GetViewValidInvalid) {
 
   View* mutable_view = reconstruction.MutableView(view_id);
   EXPECT_EQ(mutable_view, nullptr);
+}
+
+TEST(Reconstruction, GetViewsInCameraIntrinsicGroup) {
+  Reconstruction reconstruction;
+  const ViewId view_id1 = reconstruction.AddView(view_names[0]);
+  const CameraIntrinsicsGroupId intrinsics_id1 =
+      reconstruction.CameraIntrinsicsGroupIdFromViewId(view_id1);
+
+  // Add a second view with to the same camera intrinsics group.
+  const ViewId view_id2 = reconstruction.AddView(view_names[1], intrinsics_id1);
+  const CameraIntrinsicsGroupId intrinsics_id2 =
+      reconstruction.CameraIntrinsicsGroupIdFromViewId(view_id2);
+  EXPECT_EQ(intrinsics_id1, intrinsics_id2);
+
+  // Add a third view that is in it's own camera intrinsics group.
+  const ViewId view_id3 = reconstruction.AddView(view_names[2]);
+  const CameraIntrinsicsGroupId intrinsics_id3 =
+      reconstruction.CameraIntrinsicsGroupIdFromViewId(view_id3);
+  EXPECT_NE(intrinsics_id1, intrinsics_id3);
+  EXPECT_EQ(reconstruction.NumCameraIntrinsicGroups(), 2);
+}
+
+TEST(Reconstruction, CameraIntrinsicsGroupIds) {
+  Reconstruction reconstruction;
+  const ViewId view_id1 = reconstruction.AddView(view_names[0]);
+  const CameraIntrinsicsGroupId intrinsics_id1 =
+      reconstruction.CameraIntrinsicsGroupIdFromViewId(view_id1);
+
+  // Add a second view with to the same camera intrinsics group.
+  const ViewId view_id2 = reconstruction.AddView(view_names[1], intrinsics_id1);
+  const CameraIntrinsicsGroupId intrinsics_id2 =
+      reconstruction.CameraIntrinsicsGroupIdFromViewId(view_id2);
+  EXPECT_EQ(intrinsics_id1, intrinsics_id2);
+
+  // Add a third view that is in it's own camera intrinsics group.
+  const ViewId view_id3 = reconstruction.AddView(view_names[2]);
+  const CameraIntrinsicsGroupId intrinsics_id3 =
+      reconstruction.CameraIntrinsicsGroupIdFromViewId(view_id3);
+  EXPECT_NE(intrinsics_id1, intrinsics_id3);
+  EXPECT_EQ(reconstruction.NumCameraIntrinsicGroups(), 2);
+
+  // Ensure that the group ids are correct.
+  const std::unordered_set<CameraIntrinsicsGroupId> group_ids =
+      reconstruction.CameraIntrinsicsGroupIds();
+  EXPECT_EQ(group_ids.size(), 2);
+  EXPECT_TRUE(ContainsKey(group_ids, intrinsics_id1));
+  EXPECT_TRUE(ContainsKey(group_ids, intrinsics_id2));
 }
 
 TEST(Reconstruction, AddTrackValid) {
