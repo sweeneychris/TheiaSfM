@@ -67,6 +67,13 @@ void SetCameraIntrinsicsFromPriors(const CameraIntrinsicsPrior& prior,
   if (prior.skew.is_set) {
     camera->SetSkew(prior.skew.value);
   }
+
+  // Set radial distortion if available.
+  if (prior.radial_distortion[0].is_set &&
+      prior.radial_distortion[1].is_set) {
+    camera->SetRadialDistortion(prior.radial_distortion[0].value,
+                                prior.radial_distortion[1].value);
+  }
 }
 
 void SetupCameras(const CameraIntrinsicsPrior& intrinsics1,
