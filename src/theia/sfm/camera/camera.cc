@@ -126,8 +126,16 @@ double Camera::ProjectPoint(const Vector4d& point, Vector2d* pixel) const {
 }
 
 Vector3d Camera::PixelToUnitDepthRay(const Vector2d& pixel) const {
-  Vector3d direction;
+  // Remove the effect of calibration.
+  const Vector3d undistorted_point = PixelToNormalizedCoordinates(pixel);
 
+  // Apply rotation.
+  const Matrix3d& rotation = GetOrientationAsRotationMatrix();
+  const Vector3d direction = rotation.transpose() * undistorted_point;
+  return direction;
+}
+
+Vector3d Camera::PixelToNormalizedCoordinates(const Vector2d& pixel) const {
   // First, undo the calibration.
   const double focal_length_y = FocalLength() * AspectRatio();
   const double y_normalized = (pixel[1] - PrincipalPointY()) / focal_length_y;
@@ -136,16 +144,13 @@ Vector3d Camera::PixelToUnitDepthRay(const Vector2d& pixel) const {
 
   // Undo radial distortion.
   const Vector2d normalized_point(x_normalized, y_normalized);
-  Vector2d undistorted_point;
+  Vector2d undistorted_pixel;
   RadialUndistortPoint(normalized_point,
                        RadialDistortion1(),
                        RadialDistortion2(),
-                       &undistorted_point);
-
-  // Apply rotation.
-  const Matrix3d& rotation = GetOrientationAsRotationMatrix();
-  direction = rotation.transpose() * undistorted_point.homogeneous();
-  return direction;
+                       &undistorted_pixel);
+  const Vector3d undistorted_point = undistorted_pixel.homogeneous();
+  return undistorted_point;
 }
 
   // ----------------------- Getter and Setter methods ---------------------- //

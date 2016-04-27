@@ -112,7 +112,7 @@ class Camera {
   // consistent with ProjectPoint. That is:
   //      if we have:
   //         d = ProjectPoint(X, &x);
-  //         r = PixelToRay(x);
+  //         r = PixelToUnitDepthRay(x);
   //      then it will be the case that
   //         X = c + r * d;
   //    X is the 3D point
@@ -121,6 +121,13 @@ class Camera {
   //    r is the ray obtained from PixelToRay
   //    d is the depth of the 3D point with respect to the image
   Eigen::Vector3d PixelToUnitDepthRay(const Eigen::Vector2d& pixel) const;
+
+  // Converts image pixel coordinates to normalized coordinates in the camera
+  // coordinates by removing the effect of camera intrinsics/calibration. This
+  // method is similar to PixelToUnitDepthRay except that it only removes the
+  // effect of camera calibration and does not account for the camera pose.
+  Eigen::Vector3d PixelToNormalizedCoordinates(
+      const Eigen::Vector2d& pixel) const;
 
   // ----------------------- Getter and Setter methods ---------------------- //
   void SetPosition(const Eigen::Vector3d& position);
