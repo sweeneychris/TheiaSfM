@@ -92,7 +92,7 @@ void GetNormalized2D3DMatches(const Reconstruction& reconstruction,
       // Get the image feature and undistort it according to the camera
       // parameters.
       const Eigen::Vector3d normalized_feature =
-          camera.PixelToUnitDepthRay(feature);
+          camera.PixelToNormalizedCoordinates(feature);
       correspondence.feature = normalized_feature.hnormalized();
     } else {
       // Otherwise, simply shift the pixel to remove the effect of the principal
@@ -121,9 +121,6 @@ bool LocalizeViewToReconstruction(
       DoesViewHaveKnownIntrinsics(*reconstruction, view_to_localize);
 
   Camera* camera = view->MutableCamera();
-  // Set the pose to be the identity pose.
-  camera->SetPosition(Eigen::Vector3d::Zero());
-  camera->SetOrientationFromAngleAxis(Eigen::Vector3d::Zero());
 
   // Gather all 2D-3D correspondences.
   std::vector<FeatureCorrespondence2D3D> matches;

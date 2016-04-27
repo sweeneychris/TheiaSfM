@@ -40,15 +40,16 @@
 
 #include <vector>
 
-#include "theia/solvers/sample_consensus_estimator.h"
+#include "theia/matching/feature_correspondence.h"
+#include "theia/sfm/camera/camera.h"
 #include "theia/sfm/camera_intrinsics_prior.h"
 #include "theia/sfm/estimators/estimate_relative_pose.h"
 #include "theia/sfm/estimators/estimate_uncalibrated_relative_pose.h"
-#include "theia/matching/feature_correspondence.h"
 #include "theia/sfm/pose/util.h"
 #include "theia/sfm/triangulation/triangulation.h"
 #include "theia/sfm/twoview_info.h"
 #include "theia/sfm/types.h"
+#include "theia/solvers/sample_consensus_estimator.h"
 
 namespace theia {
 
@@ -59,49 +60,41 @@ using Eigen::Vector3d;
 
 namespace {
 
-struct CameraIntrinsics {
-  CameraIntrinsics() {
-    focal_length = 1.0;
-    principal_point[0] = 0.0;
-    principal_point[1] = 0.0;
-    aspect_ratio = 1.0;
-    skew = 0.0;
-  }
-
-  double focal_length;
-  double principal_point[2];
-  double aspect_ratio;
-  double skew;
-};
-
 void SetCameraIntrinsics(const CameraIntrinsicsPrior& prior,
-                         CameraIntrinsics* intrinsics) {
+                         Camera* camera) {
+  // Set the image dimensions.
+  camera->SetImageSize(prior.image_width, prior.image_height);
+
+  // Set the focal length.
   if (prior.focal_length.is_set) {
-    intrinsics->focal_length = prior.focal_length.value;
+    camera->SetFocalLength(prior.focal_length.value);
   }
 
+  // Set the principal point.
   if (prior.principal_point[0].is_set && prior.principal_point[1].is_set) {
-    intrinsics->principal_point[0] = prior.principal_point[0].value;
-    intrinsics->principal_point[1] = prior.principal_point[1].value;
+    camera->SetPrincipalPoint(prior.principal_point[0].value,
+                              prior.principal_point[1].value);
   } else {
-    intrinsics->principal_point[0] = prior.image_width / 2.0;
-    intrinsics->principal_point[1] = prior.image_height / 2.0;
+    camera->SetPrincipalPoint(prior.image_width / 2.0,
+                              prior.image_height / 2.0);
   }
 
+  // Set aspect ratio if available.
   if (prior.aspect_ratio.is_set) {
-    intrinsics->aspect_ratio = prior.aspect_ratio.value;
+    camera->SetAspectRatio(prior.aspect_ratio.value);
   }
 
+  // Set skew if available.
   if (prior.skew.is_set) {
-    intrinsics->skew = prior.skew.value;
+    camera->SetSkew(prior.skew.value);
   }
-}
 
-void NormalizeFeature(const CameraIntrinsics& intrinsics, Vector2d* feature) {
-  feature->y() = (feature->y() - intrinsics.principal_point[1]) /
-                 (intrinsics.focal_length * intrinsics.aspect_ratio);
-  feature->x() = (feature->x() - intrinsics.skew * feature->y() -
-                  intrinsics.principal_point[0]) / intrinsics.focal_length;
+  // Set radial distortion if available.
+  if (prior.radial_distortion[0].is_set &&
+      prior.radial_distortion[1].is_set) {
+    camera->SetRadialDistortion(prior.radial_distortion[0].value,
+                                prior.radial_distortion[1].value);
+  }
 }
 
 // Normalizes the image features by the camera intrinsics.
@@ -110,14 +103,23 @@ void NormalizeFeatures(
     const CameraIntrinsicsPrior& prior2,
     const std::vector<FeatureCorrespondence>& correspondences,
     std::vector<FeatureCorrespondence>* normalized_correspondences) {
-  *CHECK_NOTNULL(normalized_correspondences) = correspondences;
+  CHECK_NOTNULL(normalized_correspondences)->clear();
 
-  CameraIntrinsics intrinsics1, intrinsics2;
-  SetCameraIntrinsics(prior1, &intrinsics1);
-  SetCameraIntrinsics(prior2, &intrinsics2);
-  for (int i = 0; i < correspondences.size(); i++) {
-    NormalizeFeature(intrinsics1, &normalized_correspondences->at(i).feature1);
-    NormalizeFeature(intrinsics2, &normalized_correspondences->at(i).feature2);
+  Camera camera1, camera2;
+  SetCameraIntrinsics(prior1, &camera1);
+  SetCameraIntrinsics(prior2, &camera2);
+  normalized_correspondences->reserve(correspondences.size());
+  for (const FeatureCorrespondence& correspondence : correspondences) {
+    FeatureCorrespondence normalized_correspondence;
+    const Eigen::Vector3d normalized_feature1 =
+        camera1.PixelToNormalizedCoordinates(correspondence.feature1);
+    normalized_correspondence.feature1 = normalized_feature1.hnormalized();
+
+    const Eigen::Vector3d normalized_feature2 =
+        camera2.PixelToNormalizedCoordinates(correspondence.feature2);
+    normalized_correspondence.feature2 = normalized_feature2.hnormalized();
+
+    normalized_correspondences->emplace_back(normalized_correspondence);
   }
 }
 
