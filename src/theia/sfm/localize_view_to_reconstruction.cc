@@ -49,26 +49,36 @@
 namespace theia {
 namespace {
 
-// Normalize a feature by its camera intrinsics.
-void NormalizeFeature(const Camera& camera,
-                      const double focal_length,
-                      Feature* feature) {
-  feature->y() = (feature->y() - camera.PrincipalPointY()) /
-                 (focal_length * camera.AspectRatio());
-  feature->x() =
-      (feature->x() - camera.Skew() * feature->y() - camera.PrincipalPointX()) /
-      focal_length;
+bool DoesViewHaveKnownIntrinsics(const Reconstruction& reconstruction,
+                                 const ViewId view_id) {
+  const View* view = reconstruction.View(view_id);
+  // Return true if the EXIF data provides a focal length guess
+  if (view->CameraIntrinsicsPrior().focal_length.is_set) {
+    return true;
+  }
+
+  // If the camera has shared intrinsics, return true if one of the shared
+  // cameras has been estimated.
+  const CameraIntrinsicsGroupId intrinsics_group_id =
+      reconstruction.CameraIntrinsicsGroupIdFromViewId(view_id);
+  const std::unordered_set<ViewId> views_in_intrinsics_group =
+      reconstruction.GetViewsInCameraIntrinsicGroup(intrinsics_group_id);
+  for (const ViewId shared_intrinsics_view_id : views_in_intrinsics_group) {
+    const View* view = reconstruction.View(view_id);
+    if (view->IsEstimated() && view_id != shared_intrinsics_view_id) {
+      return true;
+    }
+  }
+  return false;
 }
 
-void GetNormalized2D3DCorrespondencesForView(
-        const View& view,
-        const Reconstruction& reconstruction,
-        const double focal_length,
-        std::vector<FeatureCorrespondence2D3D>* correspondences) {
-  const auto& tracks_in_view = view.TrackIds();
+void GetNormalized2D3DMatches(const Reconstruction& reconstruction,
+                              const View& view,
+                              const bool known_intrinsics,
+                              std::vector<FeatureCorrespondence2D3D>* matches) {
   const Camera& camera = view.Camera();
-  correspondences->reserve(tracks_in_view.size());
-
+  const auto& tracks_in_view = view.TrackIds();
+  matches->reserve(tracks_in_view.size());
   for (const TrackId track_id : tracks_in_view) {
     const Track* track = reconstruction.Track(track_id);
     // We only use 3D points that have been estimated.
@@ -77,12 +87,22 @@ void GetNormalized2D3DCorrespondencesForView(
     }
 
     FeatureCorrespondence2D3D correspondence;
-    correspondence.feature = *view.GetFeature(track_id);
-    // Normalize the feature by the intrinsics.
-    NormalizeFeature(camera, focal_length, &correspondence.feature);
-
+    const Feature& feature = *view.GetFeature(track_id);
+    if (known_intrinsics) {
+      // Get the image feature and undistort it according to the camera
+      // parameters.
+      const Eigen::Vector3d normalized_feature =
+          camera.PixelToUnitDepthRay(feature);
+      correspondence.feature = normalized_feature.hnormalized();
+    } else {
+      // Otherwise, simply shift the pixel to remove the effect of the principal
+      // point.
+      correspondence.feature =
+          feature -
+          Eigen::Vector2d(camera.PrincipalPointX(), camera.PrincipalPointY());
+    }
     correspondence.world_point = track->Point().hnormalized();
-    correspondences->emplace_back(correspondence);
+    matches->emplace_back(correspondence);
   }
 }
 
@@ -97,23 +117,19 @@ bool LocalizeViewToReconstruction(
   CHECK_NOTNULL(summary);
 
   View* view = reconstruction->MutableView(view_to_localize);
-  Camera* camera = view->MutableCamera();
+  const bool known_intrinsics =
+      DoesViewHaveKnownIntrinsics(*reconstruction, view_to_localize);
 
-  // Normalizing the pixels to remove the camera intrinsics requires dividing by
-  // the focal length. In the case where the focal length is unknown we simply
-  // skip this division by making the focal length equal to 1.
-  static const double kUnknownFocalLength = 1.0;
-  const bool known_focal_length =
-      view->CameraIntrinsicsPrior().focal_length.is_set;
-  const double focal_length =
-      known_focal_length ? camera->FocalLength() : kUnknownFocalLength;
+  Camera* camera = view->MutableCamera();
+  // Set the pose to be the identity pose.
+  camera->SetPosition(Eigen::Vector3d::Zero());
+  camera->SetOrientationFromAngleAxis(Eigen::Vector3d::Zero());
 
   // Gather all 2D-3D correspondences.
   std::vector<FeatureCorrespondence2D3D> matches;
-  GetNormalized2D3DCorrespondencesForView(*view,
-                                          *reconstruction,
-                                          focal_length,
-                                          &matches);
+  GetNormalized2D3DMatches(*reconstruction, *view, known_intrinsics, &matches);
+
+  // Exit early if there are not enough putative matches.
   if (matches.size() < options.min_num_inliers) {
     VLOG(2) << "Not enough 2D-3D correspondences to localize view "
             << view_to_localize;
@@ -122,15 +138,15 @@ bool LocalizeViewToReconstruction(
 
   // Set up the ransac parameters for absolute pose estimation.
   bool success = false;
-  // NOTE: The value of focal_length depends on if the focal length is known or
-  // not so this threshold will scale appropriately.
   RansacParameters ransac_parameters = options.ransac_params;
-  ransac_parameters.error_thresh = options.reprojection_error_threshold_pixels *
-                                   options.reprojection_error_threshold_pixels /
-                                   (focal_length * focal_length);
 
   // If calibrated, estimate the pose with P3P.
-  if (known_focal_length) {
+  if (known_intrinsics) {
+    ransac_parameters.error_thresh =
+        options.reprojection_error_threshold_pixels *
+        options.reprojection_error_threshold_pixels /
+        (camera->FocalLength() * camera->FocalLength());
+
     CalibratedAbsolutePose pose;
     success = EstimateCalibratedAbsolutePose(
         ransac_parameters, RansacType::RANSAC, matches, &pose, summary);
@@ -139,6 +155,10 @@ bool LocalizeViewToReconstruction(
   } else {
     // If the focal length is not known, estimate the focal length and pose
     // together.
+    ransac_parameters.error_thresh =
+        options.reprojection_error_threshold_pixels *
+        options.reprojection_error_threshold_pixels;
+
     UncalibratedAbsolutePose pose;
     success = EstimateUncalibratedAbsolutePose(
         ransac_parameters, RansacType::RANSAC, matches, &pose, summary);
