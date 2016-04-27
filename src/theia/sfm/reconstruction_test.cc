@@ -184,7 +184,7 @@ TEST(Reconstruction, CameraIntrinsicsGroupIds) {
       reconstruction.CameraIntrinsicsGroupIds();
   EXPECT_EQ(group_ids.size(), 2);
   EXPECT_TRUE(ContainsKey(group_ids, intrinsics_id1));
-  EXPECT_TRUE(ContainsKey(group_ids, intrinsics_id2));
+  EXPECT_TRUE(ContainsKey(group_ids, intrinsics_id3));
 }
 
 TEST(Reconstruction, AddTrackValid) {
