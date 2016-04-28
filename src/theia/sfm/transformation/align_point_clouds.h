@@ -51,8 +51,17 @@ namespace theia {
 void AlignPointCloudsUmeyama(const std::vector<Eigen::Vector3d>& left,
                              const std::vector<Eigen::Vector3d>& right,
                              Eigen::Matrix3d* rotation,
-                             Eigen::Vector3d* translation,
-                             double* scale);
+                             Eigen::Vector3d* translation, double* scale);
+
+// Adds weights for each match
+// The previous objective function E = Sum(|| yi - (c.R.xi + T) ||^2) becomes
+// Sum(wi * || yi - (c.R.xi + T) ||^2)
+// The weights must be positive
+void AlignPointCloudsUmeyamaWithWeights(
+    const std::vector<Eigen::Vector3d>& left,
+    const std::vector<Eigen::Vector3d>& right,
+    const std::vector<double>& weights, Eigen::Matrix3d* rotation,
+    Eigen::Vector3d* translation, double* scale);
 
 }  // namespace theia
 
