@@ -83,7 +83,8 @@ class NormalizedGraphCut {
   // parameter to NULL if the cost is not desired).
   bool ComputeCut(const std::unordered_map<std::pair<T, T>, double>& edges,
                   std::unordered_set<T>* subgraph1,
-                  std::unordered_set<T>* subgraph2, double* cost_or_null) {
+                  std::unordered_set<T>* subgraph2,
+                  double* cost_or_null) {
     // Create a mapping of node id to index within our linear system.
     IndexNodeIds(edges);
 
@@ -123,10 +124,9 @@ class NormalizedGraphCut {
     //   D^{-1/2} * (D - W) * D^{-1/2} * z = \lambda * z
     //
     // where z = D^{1/2} * y.
-    const Eigen::SparseMatrix<double> lhs =
-        node_weight_inv_sqrt_ *
-        (node_weight_ - edge_weight_).template selfadjointView<Eigen::Upper>() *
-        node_weight_inv_sqrt_;
+    const Eigen::SparseMatrix<double> lhs = node_weight_inv_sqrt_ *
+                                            (node_weight_ - edge_weight_) *
+                                            node_weight_inv_sqrt_;
 
     // Note that D^{-1/2} * (D - W) * D^{-1/2} is a symmetric positive
     // semi-definite matrix, so we may use the symmetric eigensolver to find the
