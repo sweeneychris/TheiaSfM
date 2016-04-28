@@ -147,7 +147,8 @@ class IncrementalReconstructionEstimator : public ReconstructionEstimator {
   ReconstructionEstimatorSummary summary_;
 
   // A container to keep track of which views need to be localized.
-  std::unordered_set<ViewId> views_to_localize_;
+  std::unordered_set<ViewId> unlocalized_views_;
+
   // An *ordered* container to keep track of which views have been added to the
   // reconstruction. This is used to determine which views are optimized during
   // partial BA.
