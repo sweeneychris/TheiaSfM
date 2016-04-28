@@ -30,7 +30,7 @@
 # POSSIBILITY OF SUCH DAMAGE.
 #
 # Please contact the author of this library if you have any questions.
-# Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
+# Author: Chris Sweeney (sweeney.chris.m@gmail.com)
 
 cmake_minimum_required(VERSION 2.8.3)
 if (COMMAND cmake_policy)
@@ -59,7 +59,7 @@ if (EXISTS ${LOCAL_GIT_DIRECTORY})
   if (NOT EXISTS ${LOCAL_GIT_DIRECTORY}/hooks/commit-msg)
     # Download the hook only if it is not already present. We borrow the hook
     # hosted by Ceres because it is not specific to the project.
-    file(DOWNLOAD http://cs.ucsb.edu/~cmsweeney/theia/commit-msg
+    file(DOWNLOAD http://www.theia-sfm.org/_static/commit-msg
          ${CMAKE_BINARY_DIR}/commit-msg)
 
     # Make the downloaded file executable, since it is not by default.
