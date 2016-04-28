@@ -153,11 +153,11 @@ ReconstructionEstimatorSummary IncrementalReconstructionEstimator::Estimate(
   reconstruction_ = reconstruction;
   view_graph_ = view_graph;
 
-  // Initialize the views_to_localize_ variable.
+  // Initialize the unlocalized_views_ variable.
   const auto& view_ids = reconstruction_->ViewIds();
-  views_to_localize_.reserve(view_ids.size());
+  unlocalized_views_.reserve(view_ids.size());
   for (const ViewId view_id : view_ids) {
-    views_to_localize_.insert(view_id);
+    unlocalized_views_.insert(view_id);
   }
 
   Timer total_timer;
@@ -184,7 +184,7 @@ ReconstructionEstimatorSummary IncrementalReconstructionEstimator::Estimate(
   RansacSummary unused_ransac_summary;
   std::vector<ViewId> views_to_localize;
   int failed_localization_attempts = -1;
-  while (!views_to_localize_.empty() &&
+  while (!unlocalized_views_.empty() &&
          failed_localization_attempts != views_to_localize.size()) {
     failed_localization_attempts = 0;
     views_to_localize.clear();
@@ -211,7 +211,7 @@ ReconstructionEstimatorSummary IncrementalReconstructionEstimator::Estimate(
       summary_.pose_estimation_time += timer.ElapsedTimeInSeconds();
 
       reconstructed_views_.push_back(views_to_localize[i]);
-      views_to_localize_.erase(views_to_localize[i]);
+      unlocalized_views_.erase(views_to_localize[i]);
 
       // Remove any tracks that have very bad 3D point reprojections after the
       // new view has been merged. This can happen when a new observation of a
@@ -353,8 +353,8 @@ bool IncrementalReconstructionEstimator::ChooseInitialViewPair() {
     if (estimated_tracks.size() > kMinNumInitialTracks) {
       reconstructed_views_.push_back(view_id_pair.first);
       reconstructed_views_.push_back(view_id_pair.second);
-      views_to_localize_.erase(view_id_pair.first);
-      views_to_localize_.erase(view_id_pair.second);
+      unlocalized_views_.erase(view_id_pair.first);
+      unlocalized_views_.erase(view_id_pair.second);
 
       return true;
     }
@@ -409,8 +409,8 @@ void IncrementalReconstructionEstimator::FindViewsToLocalize(
 
   // Determine the number of estimated tracks that each view observes.
   std::vector<std::pair<int, ViewId> > track_count_for_view;
-  track_count_for_view.reserve(views_to_localize_.size());
-  for (const ViewId view_id : views_to_localize_) {
+  track_count_for_view.reserve(unlocalized_views_.size());
+  for (const ViewId view_id : unlocalized_views_) {
     // Do not consider estimated views since they have already been localized.
     const View* view = reconstruction_->View(view_id);
 
@@ -559,8 +559,8 @@ void IncrementalReconstructionEstimator::SetUnderconstrainedAsUnestimated() {
     const auto& view_ids = reconstruction_->ViewIds();
     for (const ViewId view_id : view_ids) {
       if (!reconstruction_->View(view_id)->IsEstimated() &&
-          !ContainsKey(views_to_localize_, view_id)) {
-        views_to_localize_.insert(view_id);
+          !ContainsKey(unlocalized_views_, view_id)) {
+        unlocalized_views_.insert(view_id);
 
         // Remove the view from the list of localized views.
         auto view_to_remove = std::find(reconstructed_views_.begin(),
