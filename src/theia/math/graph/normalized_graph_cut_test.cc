@@ -50,39 +50,39 @@ namespace theia {
 //    2 ------------------------- 5
 // This should be very simple to partition.
 TEST(NormalizedGraphCut, SimpleGraph) {
-//  typedef std::pair<int, int> IntPair;
-//  std::unordered_map<std::pair<int, int>, double> edge_weights;
-//  edge_weights.emplace(IntPair(0, 1), 1000);
-//  edge_weights.emplace(IntPair(1, 2), 1000);
-//  edge_weights.emplace(IntPair(0, 3), 1000);
-//  edge_weights.emplace(IntPair(3, 4), 1000);
-//  edge_weights.emplace(IntPair(4, 5), 1000);
-//  edge_weights.emplace(IntPair(3, 5), 1000);
-//  edge_weights.emplace(IntPair(0, 3), 1);
-//  edge_weights.emplace(IntPair(1, 4), 1);
-//  edge_weights.emplace(IntPair(2, 5), 1);
-//
-//  NormalizedGraphCut<int>::Options options;
-//  NormalizedGraphCut<int> ncut(options);
-//  std::unordered_set<int> subgraph1, subgraph2;
-//  EXPECT_TRUE(ncut.ComputeCut(edge_weights, &subgraph1, &subgraph2, NULL));
-//
-//  // Make sure that the subgraphs are split properly.
-//  EXPECT_EQ(subgraph1.size(), 3);
-//  EXPECT_EQ(subgraph2.size(), 3);
-//
-//  const int node_0_subgraph = ContainsKey(subgraph1, 0) ? 1 : 2;
-//  const int node_1_subgraph = ContainsKey(subgraph1, 1) ? 1 : 2;
-//  const int node_2_subgraph = ContainsKey(subgraph1, 2) ? 1 : 2;
-//  const int node_3_subgraph = ContainsKey(subgraph1, 3) ? 1 : 2;
-//  const int node_4_subgraph = ContainsKey(subgraph1, 3) ? 1 : 2;
-//  const int node_5_subgraph = ContainsKey(subgraph1, 3) ? 1 : 2;
-//
-//  EXPECT_EQ(node_0_subgraph, node_1_subgraph);
-//  EXPECT_EQ(node_1_subgraph, node_2_subgraph);
-//  EXPECT_EQ(node_3_subgraph, node_4_subgraph);
-//  EXPECT_EQ(node_4_subgraph, node_5_subgraph);
-//  EXPECT_NE(node_0_subgraph, node_3_subgraph);
+  typedef std::pair<int, int> IntPair;
+  std::unordered_map<std::pair<int, int>, double> edge_weights;
+  edge_weights.emplace(IntPair(0, 1), 1000);
+  edge_weights.emplace(IntPair(1, 2), 1000);
+  edge_weights.emplace(IntPair(0, 3), 1000);
+  edge_weights.emplace(IntPair(3, 4), 1000);
+  edge_weights.emplace(IntPair(4, 5), 1000);
+  edge_weights.emplace(IntPair(3, 5), 1000);
+  edge_weights.emplace(IntPair(0, 3), 1);
+  edge_weights.emplace(IntPair(1, 4), 1);
+  edge_weights.emplace(IntPair(2, 5), 1);
+
+  NormalizedGraphCut<int>::Options options;
+  NormalizedGraphCut<int> ncut(options);
+  std::unordered_set<int> subgraph1, subgraph2;
+  EXPECT_TRUE(ncut.ComputeCut(edge_weights, &subgraph1, &subgraph2, NULL));
+
+  // Make sure that the subgraphs are split properly.
+  EXPECT_EQ(subgraph1.size(), 3);
+  EXPECT_EQ(subgraph2.size(), 3);
+
+  const int node_0_subgraph = ContainsKey(subgraph1, 0) ? 1 : 2;
+  const int node_1_subgraph = ContainsKey(subgraph1, 1) ? 1 : 2;
+  const int node_2_subgraph = ContainsKey(subgraph1, 2) ? 1 : 2;
+  const int node_3_subgraph = ContainsKey(subgraph1, 3) ? 1 : 2;
+  const int node_4_subgraph = ContainsKey(subgraph1, 3) ? 1 : 2;
+  const int node_5_subgraph = ContainsKey(subgraph1, 3) ? 1 : 2;
+
+  EXPECT_EQ(node_0_subgraph, node_1_subgraph);
+  EXPECT_EQ(node_1_subgraph, node_2_subgraph);
+  EXPECT_EQ(node_3_subgraph, node_4_subgraph);
+  EXPECT_EQ(node_4_subgraph, node_5_subgraph);
+  EXPECT_NE(node_0_subgraph, node_3_subgraph);
 }
 
 }  // namespace theia
