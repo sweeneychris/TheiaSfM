@@ -82,28 +82,24 @@ void AddCameraParametersToProblem(const bool constant_extrinsic_parameters,
     problem->SetParameterBlockConstant(camera_extrinsics);
   }
 
-  std::vector<int> constant_intrinsics;
-  // Keep focal length constant if desired.
+  // Keep the intrinsics constant if desired.
   if (constant_intrinsic_parameters) {
-    constant_intrinsics.push_back(Camera::FOCAL_LENGTH);
-  }
+    problem->AddParameterBlock(camera_intrinsics, Camera::kIntrinsicsSize);
+    problem->SetParameterBlockConstant(camera_intrinsics);
+  } else {
+    // NOTE: We start at index 1 because the focal length is considered
+    // variable.
+    std::vector<int> constant_intrinsics(Camera::kIntrinsicsSize - 1);
+    std::iota(constant_intrinsics.begin(),
+              constant_intrinsics.end(),
+              1);
 
-  // NOTE: We start at index 1 because the focal length was handled previously.
-  for (int i = 1; i < Camera::kIntrinsicsSize; i++) {
-    constant_intrinsics.push_back(i);
-  }
-
-  // Add intrinsics to problem
-  if (constant_intrinsics.size() != Camera::kIntrinsicsSize) {
     ceres::SubsetParameterization* subset_parameterization =
-      new ceres::SubsetParameterization(Camera::kIntrinsicsSize,
-                                        constant_intrinsics);
+        new ceres::SubsetParameterization(Camera::kIntrinsicsSize,
+                                          constant_intrinsics);
     problem->AddParameterBlock(camera_intrinsics,
                                Camera::kIntrinsicsSize,
                                subset_parameterization);
-  } else {
-    problem->AddParameterBlock(camera_intrinsics, Camera::kIntrinsicsSize);
-    problem->SetParameterBlockConstant(camera_intrinsics);
   }
 }
 
