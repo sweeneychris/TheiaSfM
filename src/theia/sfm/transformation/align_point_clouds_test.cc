@@ -141,7 +141,7 @@ void UmeyamaWithWeigthsAndNoise() {
 
     // Add noise on scale, point and translation
     for (size_t i = 0, end = (size_t)(kNoiseRatio * num_points); i < end; ++i) {
-      const size_t k = static_cast<size_t>(theia::RandInt(0, num_points - 1));
+      const size_t k = static_cast<size_t>(theia::RandInt(0,  num_points));
       const double noiseOnScale = expected_scale + theia::RandDouble(0, 10);
       right[k] = noiseOnScale * rotation_mat * (left[k] + Vector3d::Random()) +
                  translation_vec + Vector3d::Random();

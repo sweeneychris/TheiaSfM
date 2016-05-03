@@ -59,11 +59,6 @@ void AlignPointCloudsUmeyamaWithWeights(
   CHECK_NOTNULL(translation);
   CHECK_NOTNULL(scale);
 
-  // Fill outputs (useful when it fails)
-  *scale = 1.0;
-  *translation = Eigen::Vector3d::Zero();
-  *rotation = Eigen::Matrix3d::Identity();
-
   const size_t num_points = left.size();
   Eigen::Map<const Eigen::Matrix<double, 3, Eigen::Dynamic> > left_points(
       left[0].data(), 3, num_points);
@@ -79,9 +74,6 @@ void AlignPointCloudsUmeyamaWithWeights(
     left_centroid += left[i] * weights[i];
     right_centroid += right[i] * weights[i];
   }
-  // Check if the sum is valid
-  if (weights_sum <= 0.0) return;
-
   left_centroid /= weights_sum;
   right_centroid /= weights_sum;
 
