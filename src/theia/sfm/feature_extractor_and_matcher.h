@@ -121,7 +121,7 @@ class FeatureExtractorAndMatcher {
   ExifReader exif_reader_;
 
   // Feature matcher and mutex for thread-safe access.
-  std::unique_ptr<FeatureMatcher<L2> > matcher_;
+  std::unique_ptr<FeatureMatcher> matcher_;
   std::mutex intrinsics_mutex_, matcher_mutex_;
 };
 

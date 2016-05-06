@@ -50,10 +50,10 @@ namespace theia {
 // Performs features matching between two sets of features using a cascade
 // hashing approach. This hashing does not require any training and is extremely
 // efficient but can only be used with float features like SIFT.
-class CascadeHashingFeatureMatcher : public FeatureMatcher<L2> {
+class CascadeHashingFeatureMatcher : public FeatureMatcher {
  public:
   explicit CascadeHashingFeatureMatcher(const FeatureMatcherOptions& options)
-      : FeatureMatcher<L2>(options) {}
+      : FeatureMatcher(options) {}
   ~CascadeHashingFeatureMatcher() {}
 
   // These methods are the same as the base class except that the HashedImage is

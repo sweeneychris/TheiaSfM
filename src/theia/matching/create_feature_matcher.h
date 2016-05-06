@@ -37,7 +37,6 @@
 
 #include <memory>
 
-#include "theia/matching/distance.h"
 #include "theia/matching/feature_matcher.h"
 #include "theia/matching/feature_matcher_options.h"
 
@@ -51,7 +50,7 @@ enum class MatchingStrategy {
 
 // A factory method for creating an L2-based feature matcher (i.e. for float
 // descriptors).
-std::unique_ptr<FeatureMatcher<L2> > CreateFeatureMatcher(
+std::unique_ptr<FeatureMatcher> CreateFeatureMatcher(
     const MatchingStrategy& matching_strategy,
     const FeatureMatcherOptions& options);
 
