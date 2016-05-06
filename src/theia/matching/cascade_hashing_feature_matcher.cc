@@ -57,7 +57,7 @@ void CascadeHashingFeatureMatcher::AddImage(
     const std::vector<Eigen::VectorXf>& descriptors) {
   // This will save the descriptors and keypoints to disk and set up our LRU
   // cache.
-  FeatureMatcher<L2>::AddImage(image, keypoints, descriptors);
+  FeatureMatcher::AddImage(image, keypoints, descriptors);
 
   if (cascade_hasher_.get() == nullptr && descriptors.size() > 0) {
     cascade_hasher_.reset(new CascadeHasher());
@@ -80,7 +80,7 @@ void CascadeHashingFeatureMatcher::AddImage(
     const CameraIntrinsicsPrior& intrinsics) {
   // This will save the descriptors and keypoints to disk and set up our LRU
   // cache.
-  FeatureMatcher<L2>::AddImage(image, keypoints, descriptors, intrinsics);
+  FeatureMatcher::AddImage(image, keypoints, descriptors, intrinsics);
 
   if (cascade_hasher_.get() == nullptr && descriptors.size() > 0) {
     cascade_hasher_.reset(new CascadeHasher());

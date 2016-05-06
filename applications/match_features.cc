@@ -155,7 +155,7 @@ int main(int argc, char *argv[]) {
   SetMatchingOptions(&matching_options, &verification_options);
   const theia::MatchingStrategy matching_strategy =
       StringToMatchingStrategyType(FLAGS_matching_strategy);
-  std::unique_ptr<theia::FeatureMatcher<theia::L2> > matcher =
+  std::unique_ptr<theia::FeatureMatcher> matcher =
       CreateFeatureMatcher(matching_strategy, matching_options);
 
   // Optionally read the intrinsics from a calibration file.

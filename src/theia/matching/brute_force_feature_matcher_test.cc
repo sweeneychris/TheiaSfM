@@ -72,7 +72,7 @@ TEST(BruteForceFeatureMatcherTest, NoOptionsInCore) {
   // Add features.
   std::vector<Keypoint> keypoints1(descriptor1.size());
   std::vector<Keypoint> keypoints2(descriptor2.size());
-  BruteForceFeatureMatcher<L2> matcher(options);
+  BruteForceFeatureMatcher matcher(options);
   matcher.AddImage("1", keypoints1, descriptor1);
   matcher.AddImage("2", keypoints2, descriptor2);
 
@@ -110,7 +110,7 @@ TEST(BruteForceFeatureMatcherTest, RatioTestInCore) {
   // Add features.
   std::vector<Keypoint> keypoints1(descriptor1.size());
   std::vector<Keypoint> keypoints2(descriptor2.size());
-  BruteForceFeatureMatcher<L2> matcher(options);
+  BruteForceFeatureMatcher matcher(options);
   matcher.AddImage("1", keypoints1, descriptor1);
   matcher.AddImage("2", keypoints2, descriptor2);
 
@@ -151,7 +151,7 @@ TEST(BruteForceFeatureMatcherTest, SymmetricMatchesInCore) {
   // Add features.
   std::vector<Keypoint> keypoints1(descriptor1.size());
   std::vector<Keypoint> keypoints2(descriptor2.size());
-  BruteForceFeatureMatcher<L2> matcher(options);
+  BruteForceFeatureMatcher matcher(options);
   matcher.AddImage("1", keypoints1, descriptor1);
   matcher.AddImage("2", keypoints2, descriptor2);
 
@@ -186,7 +186,7 @@ TEST(BruteForceFeatureMatcherTest, NoOptionsOutOfCore) {
   // Add features.
   std::vector<Keypoint> keypoints1(descriptor1.size());
   std::vector<Keypoint> keypoints2(descriptor2.size());
-  BruteForceFeatureMatcher<L2> matcher(options);
+  BruteForceFeatureMatcher matcher(options);
   matcher.AddImage("1", keypoints1, descriptor1);
   matcher.AddImage("2", keypoints2, descriptor2);
 
@@ -224,7 +224,7 @@ TEST(BruteForceFeatureMatcherTest, RatioTestOutOfCore) {
   // Add features.
   std::vector<Keypoint> keypoints1(descriptor1.size());
   std::vector<Keypoint> keypoints2(descriptor2.size());
-  BruteForceFeatureMatcher<L2> matcher(options);
+  BruteForceFeatureMatcher matcher(options);
   matcher.AddImage("1", keypoints1, descriptor1);
   matcher.AddImage("2", keypoints2, descriptor2);
 
@@ -265,7 +265,7 @@ TEST(BruteForceFeatureMatcherTest, SymmetricMatchesOutOfCore) {
   // Add features.
   std::vector<Keypoint> keypoints1(descriptor1.size());
   std::vector<Keypoint> keypoints2(descriptor2.size());
-  BruteForceFeatureMatcher<L2> matcher(options);
+  BruteForceFeatureMatcher matcher(options);
   matcher.AddImage("1", keypoints1, descriptor1);
   matcher.AddImage("2", keypoints2, descriptor2);
 

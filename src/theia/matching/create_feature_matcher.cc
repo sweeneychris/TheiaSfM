@@ -44,14 +44,14 @@
 
 namespace theia {
 
-std::unique_ptr<FeatureMatcher<L2>> CreateFeatureMatcher(
+std::unique_ptr<FeatureMatcher> CreateFeatureMatcher(
     const MatchingStrategy& matching_strategy,
     const FeatureMatcherOptions& options) {
-  std::unique_ptr<FeatureMatcher<L2>> matcher;
+  std::unique_ptr<FeatureMatcher> matcher;
   if (matching_strategy == MatchingStrategy::CASCADE_HASHING) {
     matcher.reset(new CascadeHashingFeatureMatcher(options));
   } else if (matching_strategy == MatchingStrategy::BRUTE_FORCE) {
-    matcher.reset(new BruteForceFeatureMatcher<L2>(options));
+    matcher.reset(new BruteForceFeatureMatcher(options));
   } else {
     LOG(FATAL) << "Invalid matching strategy specified.";
   }
