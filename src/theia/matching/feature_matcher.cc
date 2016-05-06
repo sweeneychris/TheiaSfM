@@ -61,37 +61,35 @@
 
 namespace theia {
 
-FeatureMatcher::FeatureMatcher(
-    const FeatureMatcherOptions& options)
-    : matcher_options_(options), verify_image_pairs_(true) {
+FeatureMatcher::FeatureMatcher(const FeatureMatcherOptions& options)
+    : options_(options) {
   // Initialize the LRU cache. NOTE: even though the Fetch method will be set up
   // to retreive files from disk, it will only do so if
-  // matcher_options_.match_out_of_core is set to true.
+  // options_.match_out_of_core is set to true.
   keypoints_and_descriptors_cache_.reset(new KeypointAndDescriptorCache(
       &FeatureMatcher::FetchKeypointsAndDescriptorsFromDisk,
-      matcher_options_.cache_capacity));
+      options_.cache_capacity));
 
-  if (matcher_options_.match_out_of_core) {
-    CHECK_GT(matcher_options_.cache_capacity, 2)
+  if (options_.match_out_of_core) {
+    CHECK_GT(options_.cache_capacity, 2)
         << "The cache capacity must be greater than 2 in order to perform out "
            "of core matching.";
     // Determine if the directory for writing out feature exists. If not, try to
     // create it.
     if (!DirectoryExists(
-            matcher_options_.keypoints_and_descriptors_output_dir)) {
+            options_.keypoints_and_descriptors_output_dir)) {
       CHECK(CreateNewDirectory(
-          matcher_options_.keypoints_and_descriptors_output_dir))
+          options_.keypoints_and_descriptors_output_dir))
           << "Could not create the directory for storing features during "
              "matching: "
-          << matcher_options_.keypoints_and_descriptors_output_dir;
+          << options_.keypoints_and_descriptors_output_dir;
     }
   } else {
     // If we want to perform all-in-memory matching then set the cache size to
     // the maximum.
-    matcher_options_.cache_capacity = std::numeric_limits<int>::max();
+    options_.cache_capacity = std::numeric_limits<int>::max();
   }
 }
-
 
 void FeatureMatcher::AddImage(
     const std::string& image_name,
@@ -101,7 +99,7 @@ void FeatureMatcher::AddImage(
 
   // Write the features file to disk.
   const std::string features_file = FeatureFilenameFromImage(image_name);
-  if (matcher_options_.match_out_of_core) {
+  if (options_.match_out_of_core) {
     CHECK(WriteKeypointsAndDescriptors(features_file,
                                        keypoints,
                                        descriptors))
@@ -119,7 +117,6 @@ void FeatureMatcher::AddImage(
                                            keypoints_and_descriptors);
 }
 
-
 void FeatureMatcher::AddImage(
     const std::string& image_name,
     const std::vector<Keypoint>& keypoints,
@@ -129,11 +126,9 @@ void FeatureMatcher::AddImage(
   intrinsics_[image_name] = intrinsics;
 }
 
-
 void FeatureMatcher::AddImage(const std::string& image_name) {
   image_names_.push_back(image_name);
 }
-
 
 void FeatureMatcher::AddImage(
     const std::string& image_name, const CameraIntrinsicsPrior& intrinsics) {
@@ -141,18 +136,15 @@ void FeatureMatcher::AddImage(
   intrinsics_[image_name] = intrinsics;
 }
 
-
 std::string FeatureMatcher::FeatureFilenameFromImage(
     const std::string& image) {
-  std::string output_dir =
-      matcher_options_.keypoints_and_descriptors_output_dir;
+  std::string output_dir = options_.keypoints_and_descriptors_output_dir;
   // Add a trailing slash if one does not exist.
   if (output_dir.back() != '/') {
     output_dir = output_dir + "/";
   }
   return output_dir + image + ".features";
 }
-
 
 std::shared_ptr<KeypointsAndDescriptors>
 FeatureMatcher::FetchKeypointsAndDescriptorsFromDisk(
@@ -168,29 +160,12 @@ FeatureMatcher::FetchKeypointsAndDescriptorsFromDisk(
   return keypoints_and_descriptors;
 }
 
-
 void FeatureMatcher::SetImagePairsToMatch(
     const std::vector<std::pair<std::string, std::string> >& pairs_to_match) {
   pairs_to_match_ = pairs_to_match;
 }
 
-
-void FeatureMatcher::MatchImages(
-    std::vector<ImagePairMatch>* matches) {
-  // Set image verification to false so that it will be skipped.
-  verify_image_pairs_ = false;
-  VerifyTwoViewMatchesOptions verification_options;
-  MatchImagesWithGeometricVerification(verification_options, matches);
-  // Reset the value to true.
-  verify_image_pairs_ = true;
-}
-
-
-void FeatureMatcher::MatchImagesWithGeometricVerification(
-    const VerifyTwoViewMatchesOptions& verification_options,
-    std::vector<ImagePairMatch>* matches) {
-  verification_options_ = verification_options;
-
+void FeatureMatcher::MatchImages(std::vector<ImagePairMatch>* matches) {
   // If SetImagePairsToMatch has not been called, match all image-to-image
   // pairs.
   if (pairs_to_match_.size() == 0) {
@@ -214,7 +189,7 @@ void FeatureMatcher::MatchImagesWithGeometricVerification(
   // threads fairly efficiently.
   const int num_matches = pairs_to_match_.size();
   const int num_threads =
-      std::min(matcher_options_.num_threads, static_cast<int>(num_matches));
+      std::min(options_.num_threads, static_cast<int>(num_matches));
   std::unique_ptr<ThreadPool> pool(new ThreadPool(num_threads));
   const int interval_step =
       std::min(this->kMaxThreadingStepSize_, num_matches / num_threads);
@@ -232,7 +207,6 @@ void FeatureMatcher::MatchImagesWithGeometricVerification(
   VLOG(1) << "Matched " << matches->size() << " image pairs out of "
           << num_matches << " possible image pairs.";
 }
-
 
 void FeatureMatcher::MatchAndVerifyImagePairs(
     const int start_index,
@@ -271,7 +245,7 @@ void FeatureMatcher::MatchAndVerifyImagePairs(
     }
 
     // Add images to the valid matches if no geometric verification is required.
-    if (!verify_image_pairs_) {
+    if (!options_.perform_geometric_verification) {
       VLOG(1) << image_pair_match.correspondences.size()
               << " putative matches between images " << image1_name << " and "
               << image2_name;
@@ -287,7 +261,7 @@ void FeatureMatcher::MatchAndVerifyImagePairs(
     std::vector<int> inliers;
     // Do not add this image pair as a verified match if the verification does
     // not pass.
-    if (!VerifyTwoViewMatches(verification_options_,
+    if (!VerifyTwoViewMatches(options_.geometric_verification_options,
                               intrinsics1,
                               intrinsics2,
                               image_pair_match.correspondences,
@@ -318,6 +292,5 @@ void FeatureMatcher::MatchAndVerifyImagePairs(
     }
   }
 }
-
 
 }  // namespace theia

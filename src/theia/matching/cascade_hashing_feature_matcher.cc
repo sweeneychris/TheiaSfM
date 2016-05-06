@@ -143,9 +143,8 @@ bool CascadeHashingFeatureMatcher::MatchImagePair(
     const KeypointsAndDescriptors& features1,
     const KeypointsAndDescriptors& features2,
     std::vector<FeatureCorrespondence>* matched_features) {
-  const double lowes_ratio = (this->matcher_options_.use_lowes_ratio)
-                                 ? this->matcher_options_.lowes_ratio
-                                 : 1.0;
+  const double lowes_ratio =
+      (this->options_.use_lowes_ratio) ? this->options_.lowes_ratio : 1.0;
 
   // Get references to the hashed images for each set of features.
   HashedImage& hashed_features1 =
@@ -159,8 +158,8 @@ bool CascadeHashingFeatureMatcher::MatchImagePair(
                                hashed_features2, features2.descriptors,
                                lowes_ratio, &matches);
   // Only do symmetric matching if enough matches exist to begin with.
-  if (matches.size() >= this->matcher_options_.min_num_feature_matches &&
-      this->matcher_options_.keep_only_symmetric_matches) {
+  if (matches.size() >= this->options_.min_num_feature_matches &&
+      this->options_.keep_only_symmetric_matches) {
     std::vector<IndexedFeatureMatch> backwards_matches;
     cascade_hasher_->MatchImages(hashed_features2,
                                  features2.descriptors,
@@ -171,7 +170,7 @@ bool CascadeHashingFeatureMatcher::MatchImagePair(
     IntersectMatches(backwards_matches, &matches);
   }
 
-  if (matches.size() < this->matcher_options_.min_num_feature_matches) {
+  if (matches.size() < this->options_.min_num_feature_matches) {
     return false;
   }
 

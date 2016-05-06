@@ -125,13 +125,6 @@ class FeatureMatcher {
   // min_num_feature_matches are returned.
   virtual void MatchImages(std::vector<ImagePairMatch>* matches);
 
-  // Matches features between all images. Only the matches that pass the
-  // geometric verification are returned. Camera intrinsics are used for
-  // geometric verification if the image was added with known intrinsics.
-  virtual void MatchImagesWithGeometricVerification(
-      const VerifyTwoViewMatchesOptions& verification_options,
-      std::vector<ImagePairMatch>* matches);
-
   // Set the image pairs that will be matched when MatchImages or
   // MatchImagesWithGeometricVerification is called. This is an optional method;
   // if it is not called, then all possible image-to-image pairs will be
@@ -169,11 +162,7 @@ class FeatureMatcher {
   // dynamic schedule in that it is able to balance threads fairly efficiently.
   const int kMaxThreadingStepSize_ = 20;
 
-  FeatureMatcherOptions matcher_options_;
-  VerifyTwoViewMatchesOptions verification_options_;
-
-  // Will be set to true if geometric verification is enabled.
-  bool verify_image_pairs_;
+  FeatureMatcherOptions options_;
 
   // A container for the image names.
   std::vector<std::string> image_names_;

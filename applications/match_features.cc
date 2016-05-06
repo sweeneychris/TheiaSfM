@@ -81,9 +81,7 @@ DEFINE_int32(num_threads, 1,
 DEFINE_string(output_matches_file, "",
               "Filepath that the matches file should be written to.");
 
-void SetMatchingOptions(
-    theia::FeatureMatcherOptions* matching_options,
-    theia::VerifyTwoViewMatchesOptions* geometric_verification_options) {
+void SetMatchingOptions(theia::FeatureMatcherOptions* matching_options) {
   matching_options->match_out_of_core = FLAGS_match_out_of_core;
   theia::GetDirectoryFromFilepath(
       FLAGS_input_features,
@@ -95,9 +93,11 @@ void SetMatchingOptions(
   matching_options->num_threads = FLAGS_num_threads;
   matching_options->min_num_feature_matches =
       FLAGS_min_num_inliers_for_valid_match;
-  geometric_verification_options->estimate_twoview_info_options
+  matching_options->perform_geometric_verification =
+      FLAGS_geometrically_verifiy_matches;
+  matching_options->geometric_verification_options.estimate_twoview_info_options
       .max_sampson_error_pixels = FLAGS_max_sampson_error_for_verified_match;
-  geometric_verification_options->bundle_adjustment =
+  matching_options->geometric_verification_options.bundle_adjustment =
       FLAGS_bundle_adjust_two_view_geometry;
 }
 
@@ -151,8 +151,7 @@ int main(int argc, char *argv[]) {
 
   // Create the feature matcher.
   theia::FeatureMatcherOptions matching_options;
-  theia::VerifyTwoViewMatchesOptions verification_options;
-  SetMatchingOptions(&matching_options, &verification_options);
+  SetMatchingOptions(&matching_options);
   const theia::MatchingStrategy matching_strategy =
       StringToMatchingStrategyType(FLAGS_matching_strategy);
   std::unique_ptr<theia::FeatureMatcher> matcher =
@@ -169,12 +168,7 @@ int main(int argc, char *argv[]) {
 
   // Match the images with optional geometric verification.
   std::vector<theia::ImagePairMatch> matches;
-  if (FLAGS_geometrically_verifiy_matches) {
-    matcher->MatchImagesWithGeometricVerification(verification_options,
-                                                  &matches);
-  } else {
-    matcher->MatchImages(&matches);
-  }
+  matcher->MatchImages(&matches);
 
   // Write the matches out.
   LOG(INFO) << "Writing matches to file: " << FLAGS_output_matches_file;
