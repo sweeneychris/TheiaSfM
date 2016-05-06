@@ -57,7 +57,7 @@ bool BruteForceFeatureMatcher::MatchImagePair(
   const std::vector<Keypoint>& keypoints2 = features2.keypoints;
 
   const double sq_lowes_ratio =
-      this->matcher_options_.lowes_ratio * this->matcher_options_.lowes_ratio;
+      this->options_.lowes_ratio * this->options_.lowes_ratio;
 
   L2 distance;
   std::vector<IndexedFeatureMatch> matches;
@@ -78,18 +78,18 @@ bool BruteForceFeatureMatcher::MatchImagePair(
 
     // Add to the matches vector if lowes ratio test is turned off or it is
     // turned on and passes the test.
-    if (!this->matcher_options_.use_lowes_ratio ||
+    if (!this->options_.use_lowes_ratio ||
         temp_matches[0].distance < sq_lowes_ratio * temp_matches[1].distance) {
       matches.emplace_back(temp_matches[0]);
     }
   }
 
-  if (matches.size() < this->matcher_options_.min_num_feature_matches) {
+  if (matches.size() < this->options_.min_num_feature_matches) {
     return false;
   }
 
   // Compute the symmetric matches, if applicable.
-  if (this->matcher_options_.keep_only_symmetric_matches) {
+  if (this->options_.keep_only_symmetric_matches) {
     std::vector<IndexedFeatureMatch> reverse_matches;
     temp_matches.resize(descriptors1.size());
     // Only compute the distances for the valid matches.
@@ -107,7 +107,7 @@ bool BruteForceFeatureMatcher::MatchImagePair(
 
       // Add to the matches vector if lowes ratio test is turned off or it is
       // turned on and passes the test.
-      if (!this->matcher_options_.use_lowes_ratio ||
+      if (!this->options_.use_lowes_ratio ||
           temp_matches[0].distance <
               sq_lowes_ratio * temp_matches[1].distance) {
         reverse_matches.emplace_back(temp_matches[0]);
@@ -116,7 +116,7 @@ bool BruteForceFeatureMatcher::MatchImagePair(
     IntersectMatches(reverse_matches, &matches);
   }
 
-  if (matches.size() < this->matcher_options_.min_num_feature_matches) {
+  if (matches.size() < this->options_.min_num_feature_matches) {
     return false;
   }
 
