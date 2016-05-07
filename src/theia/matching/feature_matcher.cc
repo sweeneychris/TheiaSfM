@@ -136,6 +136,18 @@ void FeatureMatcher::AddImage(
   intrinsics_[image_name] = intrinsics;
 }
 
+void FeatureMatcher::AddImages(
+    const std::vector<std::string>& image_names,
+    const std::vector<CameraIntrinsicsPrior>& intrinsics) {
+  image_names_.reserve(image_names.size() + image_names_.size());
+  image_names_.insert(image_names_.end(),
+                      image_names.begin(),
+                      image_names.end());
+  for (int i = 0; i < image_names.size(); ++i) {
+    intrinsics_[image_names[i]] = intrinsics[i];
+  }
+}
+
 std::string FeatureMatcher::FeatureFilenameFromImage(
     const std::string& image) {
   std::string output_dir = options_.keypoints_and_descriptors_output_dir;

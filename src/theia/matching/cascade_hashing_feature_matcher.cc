@@ -38,18 +38,61 @@
 #include <glog/logging.h>
 
 #include <memory>
+#include <mutex>  // NOLINT
 #include <string>
+#include <thread>  // NOLINT
 #include <vector>
 
 #include "theia/matching/cascade_hasher.h"
 #include "theia/matching/feature_matcher.h"
 #include "theia/matching/feature_matcher_utils.h"
 #include "theia/matching/indexed_feature_match.h"
+#include "theia/util/lru_cache.h"
 #include "theia/util/map_util.h"
 #include "theia/util/threadpool.h"
 #include "theia/util/util.h"
 
 namespace theia {
+namespace {
+// An LRU cache that will manage the keypoints and descriptors of interest.
+typedef LRUCache<std::string, std::shared_ptr<KeypointsAndDescriptors> >
+KeypointAndDescriptorCache;
+
+// A unique pointer to a keypoint and descriptor cache.
+typedef std::unique_ptr<KeypointAndDescriptorCache>
+KeypointAndDescriptorCachePtr;
+
+void CreateHashedImage(
+    const std::string& image_name,
+    const std::string& feature_filename,
+    const std::unique_ptr<CascadeHasher>& cascade_hasher,
+    const KeypointAndDescriptorCachePtr& kpts_and_descriptors_cache,
+    std::mutex* hashed_images_mutex,
+    std::unordered_map<std::string, HashedImage>* hashed_images) {
+  // Get the features from the cache and create hashed descriptors.
+  std::shared_ptr<KeypointsAndDescriptors> features =
+      kpts_and_descriptors_cache->Fetch(feature_filename);
+  // Create the hashing information.
+  {
+    std::lock_guard<std::mutex> lock(*hashed_images_mutex);
+    (*hashed_images)[image_name] =
+        cascade_hasher->CreateHashedSiftDescriptors(features->descriptors);
+    VLOG(1) << "Created the hashed descriptors for image: " << image_name;
+  }
+}
+
+}  // namespace
+
+// Initializes the cascade hasher (only if needed).
+void CascadeHashingFeatureMatcher::InitializeCascadeHasher(
+    int descriptor_dimension) {
+  // Initialize the cascade hasher if needed.
+  if (cascade_hasher_.get() == nullptr && descriptor_dimension > 0) {
+    cascade_hasher_.reset(new CascadeHasher());
+    CHECK(cascade_hasher_->Initialize(descriptor_dimension))
+        << "Could not initialize the cascade hasher.";
+  }
+}
 
 void CascadeHashingFeatureMatcher::AddImage(
     const std::string& image,
@@ -105,11 +148,7 @@ void CascadeHashingFeatureMatcher::AddImage(const std::string& image_name) {
           FeatureFilenameFromImage(image_name));
 
   // Initialize the cascade hasher if needed.
-  if (cascade_hasher_.get() == nullptr && features->descriptors.size() > 0) {
-    cascade_hasher_.reset(new CascadeHasher());
-    CHECK(cascade_hasher_->Initialize(features->descriptors[0].size()))
-        << "Could not initialize the cascade hasher.";
-  }
+  InitializeCascadeHasher(features->descriptors[0].size());
 
   // Create the hashing information.
   hashed_images_[image_name] =
@@ -127,16 +166,49 @@ void CascadeHashingFeatureMatcher::AddImage(
           FeatureFilenameFromImage(image_name));
 
   // Initialize the cascade hasher if needed.
-  if (cascade_hasher_.get() == nullptr && features->descriptors.size() > 0) {
-    cascade_hasher_.reset(new CascadeHasher());
-    CHECK(cascade_hasher_->Initialize(features->descriptors[0].size()))
-        << "Could not initialize the cascade hasher.";
-  }
+  InitializeCascadeHasher(features->descriptors[0].size());
 
   // Create the hashing information.
   hashed_images_[image_name] =
       cascade_hasher_->CreateHashedSiftDescriptors(features->descriptors);
   VLOG(1) << "Created the hashed descriptors for image: " << image_name;
+}
+
+void CascadeHashingFeatureMatcher::CreateHashedImagesInParallel(
+    const std::vector<std::string>& image_names,
+    const std::vector<std::string>& feature_filenames) {
+  ThreadPool thread_pool(options_.num_threads);
+  for (int i = 0; i < image_names.size(); ++i) {
+    thread_pool.Add(CreateHashedImage,
+                    std::cref(image_names[i]),
+                    std::cref(feature_filenames[i]),
+                    std::cref(cascade_hasher_),
+                    std::cref(this->keypoints_and_descriptors_cache_),
+                    &hashed_images_lock_,
+                    &hashed_images_);
+  }
+}
+
+void CascadeHashingFeatureMatcher::AddImages(
+    const std::vector<std::string>& image_names,
+    const std::vector<CameraIntrinsicsPrior>& intrinsics) {
+  CHECK_EQ(image_names.size(), intrinsics.size())
+      << "Number of images and intrinsic parameters mismatches.";
+  image_names_.reserve(image_names.size() + image_names_.size());
+  image_names_.insert(image_names_.end(),
+                      image_names.begin(),
+                      image_names.end());
+  std::vector<std::string> feature_filenames(image_names.size());
+  for (int i = 0; i < image_names.size(); ++i) {
+    intrinsics_[image_names[i]] = intrinsics[i];
+    feature_filenames[i] = FeatureFilenameFromImage(image_names[i]);
+  }
+  // Initialize cascade hasher (if needed).
+  std::shared_ptr<KeypointsAndDescriptors> features =
+      this->keypoints_and_descriptors_cache_->Fetch(feature_filenames[0]);
+  InitializeCascadeHasher(features->descriptors[0].size());
+  // Create the hashed images.
+  CreateHashedImagesInParallel(image_names, feature_filenames);
 }
 
 bool CascadeHashingFeatureMatcher::MatchImagePair(
