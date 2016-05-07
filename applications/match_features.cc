@@ -162,9 +162,7 @@ int main(int argc, char *argv[]) {
   ReadIntrinsicsFromCalibrationFile(image_filenames, &intrinsics);
 
   // Add all the features to the matcher.
-  for (int i = 0; i < features_filepaths.size(); i++) {
-    matcher->AddImage(image_filenames[i], intrinsics[i]);
-  }
+  matcher->AddImages(image_filenames, intrinsics);
 
   // Match the images with optional geometric verification.
   std::vector<theia::ImagePairMatch> matches;
