@@ -69,6 +69,10 @@ class CascadeHashingFeatureMatcher : public FeatureMatcher {
   void AddImage(const std::string& image_name) override;
   void AddImage(const std::string& image_name,
                 const CameraIntrinsicsPrior& intrinsics) override;
+  // This method is essentially the same as AddImage() but run in batch and in
+  // parallel.
+  void AddImages(const std::vector<std::string>& image_names,
+                 const std::vector<CameraIntrinsicsPrior>& intrinsics) override;
 
  private:
   bool MatchImagePair(
@@ -76,8 +80,19 @@ class CascadeHashingFeatureMatcher : public FeatureMatcher {
       const KeypointsAndDescriptors& features2,
       std::vector<IndexedFeatureMatch>* matches) override;
 
+  // Initializes the cascade hasher (only if needed).
+  void InitializeCascadeHasher(int descriptor_dimension);
+
+  // Creates the hashed images in parallel.
+  void CreateHashedImagesInParallel(
+      const std::vector<std::string>& image_names,
+      const std::vector<std::string>& feature_filenames);
+
   std::unordered_map<std::string, HashedImage> hashed_images_;
   std::unique_ptr<CascadeHasher> cascade_hasher_;
+
+  // Guard for the hashed images map.
+  std::mutex hashed_images_lock_;
 
   DISALLOW_COPY_AND_ASSIGN(CascadeHashingFeatureMatcher);
 };

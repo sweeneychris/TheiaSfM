@@ -111,6 +111,9 @@ class FeatureMatcher {
   virtual void AddImage(const std::string& image_name);
   virtual void AddImage(const std::string& image_name,
                         const CameraIntrinsicsPrior& intrinsics);
+  // This method is essentially the same as AddImage() but run in batch.
+  virtual void AddImages(const std::vector<std::string>& image_names,
+                         const std::vector<CameraIntrinsicsPrior>& intrinsics);
 
   // Matches features between all images. No geometric verification is
   // performed. Only the matches which pass the have greater than
