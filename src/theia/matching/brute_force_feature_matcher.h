@@ -37,8 +37,8 @@
 
 #include <vector>
 
-#include "theia/matching/feature_correspondence.h"
 #include "theia/matching/feature_matcher.h"
+#include "theia/matching/indexed_feature_match.h"
 
 namespace theia {
 
@@ -54,7 +54,7 @@ class BruteForceFeatureMatcher : public FeatureMatcher{
   bool MatchImagePair(
       const KeypointsAndDescriptors& features1,
       const KeypointsAndDescriptors& features2,
-      std::vector<FeatureCorrespondence>* matched_featuers) override;
+      std::vector<IndexedFeatureMatch>* matched_featuers) override;
 
   DISALLOW_COPY_AND_ASSIGN(BruteForceFeatureMatcher);
 };

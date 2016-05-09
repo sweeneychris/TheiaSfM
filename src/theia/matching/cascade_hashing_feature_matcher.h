@@ -43,6 +43,7 @@
 #include "theia/matching/cascade_hasher.h"
 #include "theia/matching/distance.h"
 #include "theia/matching/feature_matcher.h"
+#include "theia/matching/indexed_feature_match.h"
 #include "theia/util/hash.h"
 
 namespace theia {
@@ -73,7 +74,7 @@ class CascadeHashingFeatureMatcher : public FeatureMatcher {
   bool MatchImagePair(
       const KeypointsAndDescriptors& features1,
       const KeypointsAndDescriptors& features2,
-      std::vector<FeatureCorrespondence>* matched_features) override;
+      std::vector<IndexedFeatureMatch>* matches) override;
 
   std::unordered_map<std::string, HashedImage> hashed_images_;
   std::unique_ptr<CascadeHasher> cascade_hasher_;

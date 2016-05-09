@@ -46,7 +46,7 @@
 #include "theia/sfm/camera_intrinsics_prior.h"
 #include "theia/sfm/estimate_twoview_info.h"
 #include "theia/sfm/exif_reader.h"
-#include "theia/sfm/verify_two_view_matches.h"
+#include "theia/sfm/two_view_match_geometric_verification.h"
 
 namespace theia {
 
@@ -79,10 +79,6 @@ class FeatureExtractorAndMatcher {
 
     // Matching options for determining which feature matches are good matches.
     FeatureMatcherOptions feature_matcher_options;
-
-    // Options for estimating the relative pose that is used for geometric
-    // verification.
-    VerifyTwoViewMatchesOptions geometric_verification_options;
   };
 
   explicit FeatureExtractorAndMatcher(const Options& options);
