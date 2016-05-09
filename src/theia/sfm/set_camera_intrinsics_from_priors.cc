@@ -44,17 +44,16 @@
 
 namespace theia {
 
-void SetViewCameraIntrinsicsFromPriors(View* view) {
-  Camera* camera = view->MutableCamera();
-  const CameraIntrinsicsPrior prior = view->CameraIntrinsicsPrior();
-
+void SetCameraIntrinsicsFromPriors(const CameraIntrinsicsPrior& prior,
+                                   const bool set_focal_length_from_median_fov,
+                                   Camera* camera) {
   // Set the image dimensions.
   camera->SetImageSize(prior.image_width, prior.image_height);
 
   // Set the focal length.
   if (prior.focal_length.is_set) {
     camera->SetFocalLength(prior.focal_length.value);
-  } else {
+  } else if (set_focal_length_from_median_fov) {
     camera->SetFocalLength(1.2 * static_cast<double>(std::max(
         prior.image_width, prior.image_height)));
   }
@@ -94,7 +93,9 @@ void SetCameraIntrinsicsFromPriors(Reconstruction* reconstruction) {
   const auto& view_ids = reconstruction->ViewIds();
   for (const ViewId view_id : view_ids) {
     View* view = CHECK_NOTNULL(reconstruction->MutableView(view_id));
-    SetViewCameraIntrinsicsFromPriors(view);
+    SetCameraIntrinsicsFromPriors(view->MutableCamera(),
+                                  true,
+                                  view->MutableCameraIntrinsicsPrior());
   }
 }
 
