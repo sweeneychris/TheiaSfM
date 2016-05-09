@@ -35,16 +35,22 @@
 #ifndef THEIA_SFM_SET_CAMERA_INTRINSICS_FROM_PRIORS_H_
 #define THEIA_SFM_SET_CAMERA_INTRINSICS_FROM_PRIORS_H_
 
+#include "theia/sfm/camera_intrinsics_prior.h"
+
 namespace theia {
 
+class Camera;
 class Reconstruction;
 class View;
 
-// Sets the camera intrinsics from the CameraIntrinsicsPrior of a view. If the
-// view does not have a focal length prior will set a value corresponding to a
-// median viewing angle. Principal points that are not provided by the priors
-// are simply initialized as half of the corresponding image size dimension.
-void SetViewCameraIntrinsicsFromPriors(View* view);
+// Sets the camera intrinsics from the CameraIntrinsicsPrior.. If the prior does
+// not have a focal length prior and focal_length_from_median_fov is true, then
+// the focal length will be set to a value corresponding to a median viewing
+// angle. Principal points that are not provided by the priors are simply
+// initialized as half of the corresponding image size dimension.
+void SetCameraIntrinsicsFromPriors(const CameraIntrinsicsPrior& prior,
+                                   const bool focal_length_from_median_fov,
+                                   const Camera* camera);
 
 // Sets the camera intrinsics for every view in the reconstruction.
 void SetCameraIntrinsicsFromPriors(Reconstruction* reconstruction);

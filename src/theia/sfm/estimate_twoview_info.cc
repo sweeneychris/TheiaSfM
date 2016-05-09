@@ -46,6 +46,7 @@
 #include "theia/sfm/estimators/estimate_relative_pose.h"
 #include "theia/sfm/estimators/estimate_uncalibrated_relative_pose.h"
 #include "theia/sfm/pose/util.h"
+#include "theia/sfm/set_camera_intrinsics_from_priors.h"
 #include "theia/sfm/triangulation/triangulation.h"
 #include "theia/sfm/twoview_info.h"
 #include "theia/sfm/types.h"
@@ -60,43 +61,6 @@ using Eigen::Vector3d;
 
 namespace {
 
-void SetCameraIntrinsics(const CameraIntrinsicsPrior& prior,
-                         Camera* camera) {
-  // Set the image dimensions.
-  camera->SetImageSize(prior.image_width, prior.image_height);
-
-  // Set the focal length.
-  if (prior.focal_length.is_set) {
-    camera->SetFocalLength(prior.focal_length.value);
-  }
-
-  // Set the principal point.
-  if (prior.principal_point[0].is_set && prior.principal_point[1].is_set) {
-    camera->SetPrincipalPoint(prior.principal_point[0].value,
-                              prior.principal_point[1].value);
-  } else {
-    camera->SetPrincipalPoint(prior.image_width / 2.0,
-                              prior.image_height / 2.0);
-  }
-
-  // Set aspect ratio if available.
-  if (prior.aspect_ratio.is_set) {
-    camera->SetAspectRatio(prior.aspect_ratio.value);
-  }
-
-  // Set skew if available.
-  if (prior.skew.is_set) {
-    camera->SetSkew(prior.skew.value);
-  }
-
-  // Set radial distortion if available.
-  if (prior.radial_distortion[0].is_set &&
-      prior.radial_distortion[1].is_set) {
-    camera->SetRadialDistortion(prior.radial_distortion[0].value,
-                                prior.radial_distortion[1].value);
-  }
-}
-
 // Normalizes the image features by the camera intrinsics.
 void NormalizeFeatures(
     const CameraIntrinsicsPrior& prior1,
@@ -104,10 +68,11 @@ void NormalizeFeatures(
     const std::vector<FeatureCorrespondence>& correspondences,
     std::vector<FeatureCorrespondence>* normalized_correspondences) {
   CHECK_NOTNULL(normalized_correspondences)->clear();
+  static const bool kSetFocalLengthFromMedianFOV = false;
 
   Camera camera1, camera2;
-  SetCameraIntrinsics(prior1, &camera1);
-  SetCameraIntrinsics(prior2, &camera2);
+  SetCameraIntrinsicsFromPriors(prior1, kSetFocalLengthFromMedianFOV, &camera1);
+  SetCameraIntrinsicsFromPriors(prior2, kSetFocalLengthFromMedianFOV, &camera2);
   normalized_correspondences->reserve(correspondences.size());
   for (const FeatureCorrespondence& correspondence : correspondences) {
     FeatureCorrespondence normalized_correspondence;
