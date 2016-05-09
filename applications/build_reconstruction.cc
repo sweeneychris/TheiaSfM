@@ -244,6 +244,8 @@ ReconstructionBuilderOptions SetReconstructionBuilderOptions() {
       .triangulation_max_reprojection_error =
       FLAGS_triangulation_reprojection_error_pixels;
   options.matching_options.geometric_verification_options
+      .min_triangulation_angle_degrees = FLAGS_min_triangulation_angle_degrees;
+  options.matching_options.geometric_verification_options
       .final_max_reprojection_error = FLAGS_max_reprojection_error_pixels;
 
   options.max_track_length = FLAGS_max_track_length;

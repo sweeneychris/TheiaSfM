@@ -79,6 +79,10 @@ class TwoViewMatchGeometricVerification {
     // is in pixels.
     double triangulation_max_reprojection_error = 15.0;
 
+    // The minimum triangulation angle required between the cameras and 3D point
+    // for 2-view bundle adjustment.
+    double min_triangulation_angle_degrees = 4.0;
+
     // If performing bundle adjustment, the 3D points are only considered
     // inliers if the reprojection error after bundle adjustment is less than
     // this. This value is in pixels.
