@@ -183,6 +183,16 @@ void TwoViewMatchGeometricVerification::TriangulatePoints(
     const Feature feature1(keypoint1.x(), keypoint1.y());
     const Feature feature2(keypoint2.x(), keypoint2.y());
 
+    // Make sure that there is enough baseline between the point so that the
+    // triangulation is well-constrained.
+    std::vector<Eigen::Vector3d> ray_directions(2);
+    ray_directions[0] = camera1.PixelToUnitDepthRay(feature1).normalized();
+    ray_directions[1] = camera2.PixelToUnitDepthRay(feature2).normalized();
+    if (!SufficientTriangulationAngle(
+            ray_directions, options_.min_triangulation_angle_degrees)) {
+      continue;
+    }
+
     Eigen::Vector4d point3d;
     if (!Triangulate(projection_matrix1, projection_matrix2, feature1, feature2,
                      &point3d)) {

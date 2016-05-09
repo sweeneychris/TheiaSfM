@@ -78,6 +78,8 @@ DEFINE_int32(min_num_inliers_for_valid_match, 30,
              "match.");
 DEFINE_bool(bundle_adjust_two_view_geometry, true,
             "Set to false to turn off 2-view BA.");
+DEFINE_double(min_triangulation_angle_degrees, 4.0,
+              "Minimum angle between views for triangulation.");
 
 using theia::DescriptorExtractorType;
 using theia::MatchingStrategy;
@@ -107,6 +109,8 @@ ReconstructionBuilderOptions SetReconstructionBuilderOptions() {
   options.matching_options.geometric_verification_options
       .triangulation_max_reprojection_error =
       FLAGS_triangulation_reprojection_error_pixels;
+  options.matching_options.geometric_verification_options
+      .min_triangulation_angle_degrees = FLAGS_min_triangulation_angle_degrees;
   options.matching_options.geometric_verification_options
       .final_max_reprojection_error = FLAGS_max_reprojection_error_pixels;
 
