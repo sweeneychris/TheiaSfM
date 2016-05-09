@@ -50,6 +50,11 @@ struct FeatureCorrespondence {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   Feature feature1;
   Feature feature2;
+
+  FeatureCorrespondence() {}
+  FeatureCorrespondence(const Feature& feature1, const Feature& feature2)
+      : feature1(feature1), feature2(feature2) {}
+
   bool operator==(const FeatureCorrespondence& other) const {
     return (feature1 == other.feature1 && feature2 == other.feature1);
   }

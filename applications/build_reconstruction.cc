@@ -234,10 +234,17 @@ ReconstructionBuilderOptions SetReconstructionBuilderOptions() {
   options.matching_options.keep_only_symmetric_matches =
       FLAGS_keep_only_symmetric_matches;
   options.min_num_inlier_matches = FLAGS_min_num_inliers_for_valid_match;
-  options.geometric_verification_options.estimate_twoview_info_options
-      .max_sampson_error_pixels = FLAGS_max_sampson_error_for_verified_match;
-  options.geometric_verification_options.bundle_adjustment =
+  options.matching_options.perform_geometric_verification = true;
+  options.matching_options.geometric_verification_options
+      .estimate_twoview_info_options.max_sampson_error_pixels =
+      FLAGS_max_sampson_error_for_verified_match;
+  options.matching_options.geometric_verification_options.bundle_adjustment =
       FLAGS_bundle_adjust_two_view_geometry;
+  options.matching_options.geometric_verification_options
+      .triangulation_max_reprojection_error =
+      FLAGS_triangulation_reprojection_error_pixels;
+  options.matching_options.geometric_verification_options
+      .final_max_reprojection_error = FLAGS_max_reprojection_error_pixels;
 
   options.max_track_length = FLAGS_max_track_length;
 

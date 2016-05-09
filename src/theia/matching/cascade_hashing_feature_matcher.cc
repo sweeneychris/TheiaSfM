@@ -142,7 +142,7 @@ void CascadeHashingFeatureMatcher::AddImage(
 bool CascadeHashingFeatureMatcher::MatchImagePair(
     const KeypointsAndDescriptors& features1,
     const KeypointsAndDescriptors& features2,
-    std::vector<FeatureCorrespondence>* matched_features) {
+    std::vector<IndexedFeatureMatch>* matches) {
   const double lowes_ratio =
       (this->options_.use_lowes_ratio) ? this->options_.lowes_ratio : 1.0;
 
@@ -153,12 +153,11 @@ bool CascadeHashingFeatureMatcher::MatchImagePair(
   HashedImage& hashed_features2 =
       FindOrDie(hashed_images_, features2.image_name);
 
-  std::vector<IndexedFeatureMatch> matches;
   cascade_hasher_->MatchImages(hashed_features1, features1.descriptors,
                                hashed_features2, features2.descriptors,
-                               lowes_ratio, &matches);
+                               lowes_ratio, matches);
   // Only do symmetric matching if enough matches exist to begin with.
-  if (matches.size() >= this->options_.min_num_feature_matches &&
+  if (matches->size() >= this->options_.min_num_feature_matches &&
       this->options_.keep_only_symmetric_matches) {
     std::vector<IndexedFeatureMatch> backwards_matches;
     cascade_hasher_->MatchImages(hashed_features2,
@@ -167,24 +166,10 @@ bool CascadeHashingFeatureMatcher::MatchImagePair(
                                  features1.descriptors,
                                  lowes_ratio,
                                  &backwards_matches);
-    IntersectMatches(backwards_matches, &matches);
+    IntersectMatches(backwards_matches, matches);
   }
 
-  if (matches.size() < this->options_.min_num_feature_matches) {
-    return false;
-  }
-
-  // Convert to FeatureCorrespondences and return true;
-  const std::vector<Keypoint>& keypoints1 = features1.keypoints;
-  const std::vector<Keypoint>& keypoints2 = features2.keypoints;
-  matched_features->resize(matches.size());
-  for (int i = 0; i < matches.size(); i++) {
-    const Keypoint& keypoint1 = keypoints1[matches[i].feature1_ind];
-    const Keypoint& keypoint2 = keypoints2[matches[i].feature2_ind];
-    matched_features->at(i).feature1 = Feature(keypoint1.x(), keypoint1.y());
-    matched_features->at(i).feature2 = Feature(keypoint2.x(), keypoint2.y());
-  }
-  return true;
+  return matches->size() >= this->options_.min_num_feature_matches;
 }
 
 }  // namespace theia

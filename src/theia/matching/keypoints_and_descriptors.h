@@ -1,4 +1,4 @@
-// Copyright (C) 2015 The Regents of the University of California (Regents).
+// Copyright (C) 2016 The Regents of the University of California (Regents).
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -32,46 +32,25 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#ifndef THEIA_SFM_VERIFY_TWO_VIEW_MATCHES_H_
-#define THEIA_SFM_VERIFY_TWO_VIEW_MATCHES_H_
+#ifndef THEIA_MATCHING_KEYPOINTS_AND_DESCRIPTORS_H_
+#define THEIA_MATCHING_KEYPOINTS_AND_DESCRIPTORS_H_
 
+#include <Eigen/Core>
+#include <string>
 #include <vector>
 
-#include "theia/matching/feature_correspondence.h"
-#include "theia/sfm/camera_intrinsics_prior.h"
-#include "theia/sfm/estimate_twoview_info.h"
-#include "theia/sfm/twoview_info.h"
+#include "theia/image/keypoint_detector/keypoint.h"
 
 namespace theia {
 
-struct VerifyTwoViewMatchesOptions {
-  // Parameters for estimating the two view geometry.
-  EstimateTwoViewInfoOptions estimate_twoview_info_options;
-
-  // Minimum number of inlier matches in order to return true.
-  int min_num_inlier_matches = 30;
-
-  // Bundle adjust the two view geometry using inliers.
-  bool bundle_adjustment = true;
-
-  // If performing bundle adjustment, the 3D points are only considered inliers
-  // if the initial triangulation error is less than this. This value is in
-  // pixels.
-  double triangulation_sq_max_reprojection_error = 15.0;
-  // If performing bundle adjustment, the 3D points are only considered inliers
-  // if the reprojection error after bundle adjustment is less than this. This
-  // value is in pixels.
-  double final_sq_max_reprojection_error = 5.0;
+// This struct is used by the internal cache to hold keypoints and descriptors
+// when the are retrieved from the cache.
+struct KeypointsAndDescriptors {
+  std::string image_name;
+  std::vector<Keypoint> keypoints;
+  std::vector<Eigen::VectorXf> descriptors;
 };
-
-bool VerifyTwoViewMatches(
-    const VerifyTwoViewMatchesOptions& options,
-    const CameraIntrinsicsPrior& intrinsics1,
-    const CameraIntrinsicsPrior& intrinsics2,
-    const std::vector<FeatureCorrespondence>& correspondences,
-    TwoViewInfo* twoview_info,
-    std::vector<int>* inlier_indices);
 
 }  // namespace theia
 
-#endif  // THEIA_SFM_VERIFY_TWO_VIEW_MATCHES_H_
+#endif  // THEIA_MATCHING_KEYPOINTS_AND_DESCRIPTORS_H_

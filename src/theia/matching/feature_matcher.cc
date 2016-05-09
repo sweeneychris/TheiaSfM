@@ -51,8 +51,9 @@
 #include "theia/matching/feature_correspondence.h"
 #include "theia/matching/feature_matcher_options.h"
 #include "theia/matching/image_pair_match.h"
+#include "theia/matching/keypoints_and_descriptors.h"
 #include "theia/sfm/camera_intrinsics_prior.h"
-#include "theia/sfm/verify_two_view_matches.h"
+#include "theia/sfm/two_view_match_geometric_verification.h"
 #include "theia/util/filesystem.h"
 #include "theia/util/lru_cache.h"
 #include "theia/util/map_util.h"
@@ -235,56 +236,42 @@ void FeatureMatcher::MatchAndVerifyImagePairs(
             FeatureFilenameFromImage(image2_name));
     features2->image_name = image2_name;
 
-    if (!MatchImagePair(*features1,
-                        *features2,
-                        &image_pair_match.correspondences)) {
+    // Compute the visual matches from feature descriptors.
+    std::vector<IndexedFeatureMatch> putative_matches;
+    if (!MatchImagePair(*features1, *features2, &putative_matches)) {
       VLOG(2)
           << "Could not match a sufficient number of features between images "
           << image1_name << " and " << image2_name;
       continue;
     }
 
-    // Add images to the valid matches if no geometric verification is required.
-    if (!options_.perform_geometric_verification) {
-      VLOG(1) << image_pair_match.correspondences.size()
-              << " putative matches between images " << image1_name << " and "
-              << image2_name;
-      std::lock_guard<std::mutex> lock(mutex_);
-      matches->push_back(image_pair_match);
-      continue;
-    }
-
-    const CameraIntrinsicsPrior intrinsics1 =
+    // Perform geometric verification if applicable.
+    if (options_.perform_geometric_verification) {
+      const CameraIntrinsicsPrior intrinsics1 =
         FindWithDefault(intrinsics_, image1_name, CameraIntrinsicsPrior());
-    const CameraIntrinsicsPrior intrinsics2 =
+      const CameraIntrinsicsPrior intrinsics2 =
         FindWithDefault(intrinsics_, image2_name, CameraIntrinsicsPrior());
-    std::vector<int> inliers;
-    // Do not add this image pair as a verified match if the verification does
-    // not pass.
-    if (!VerifyTwoViewMatches(options_.geometric_verification_options,
-                              intrinsics1,
-                              intrinsics2,
-                              image_pair_match.correspondences,
-                              &image_pair_match.twoview_info,
-                              &inliers)) {
-      VLOG(2) << "Geometric verification between images " << image1_name
-              << " and " << image2_name << " failed.";
-      continue;
+
+      TwoViewMatchGeometricVerification geometric_verification(
+          options_.geometric_verification_options, intrinsics1, intrinsics2,
+          *features1, *features2, putative_matches);
+
+      // If geometric verification fails, do not add the match to the output.
+      if (!geometric_verification.VerifyMatches(
+              &image_pair_match.correspondences,
+              &image_pair_match.twoview_info)) {
+        VLOG(2) << "Geometric verification between images " << image1_name
+                << " and " << image2_name << " failed.";
+        continue;
+      }
     }
 
-    // Output only the inliers.
-    const std::vector<FeatureCorrespondence> old_correspondences =
-        std::move(image_pair_match.correspondences);
-    image_pair_match.correspondences.reserve(inliers.size());
-    for (int j = 0; j < inliers.size(); ++j) {
-      image_pair_match.correspondences.emplace_back(
-          old_correspondences[inliers[j]]);
-    }
+    // Log information about the matching results.
     VLOG(1) << "Images " << image1_name << " and " << image2_name
-            << " were matched with " << inliers.size()
+            << " were matched with " << image_pair_match.correspondences.size()
             << " verified matches and "
             << image_pair_match.twoview_info.num_homography_inliers
-            << " homography matches out of " << old_correspondences.size()
+            << " homography matches out of " << putative_matches.size()
             << " putative matches.";
     {
       std::lock_guard<std::mutex> lock(mutex_);

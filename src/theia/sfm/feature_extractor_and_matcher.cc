@@ -51,7 +51,7 @@
 #include "theia/sfm/camera_intrinsics_prior.h"
 #include "theia/sfm/estimate_twoview_info.h"
 #include "theia/sfm/exif_reader.h"
-#include "theia/sfm/verify_two_view_matches.h"
+#include "theia/sfm/two_view_match_geometric_verification.h"
 #include "theia/util/filesystem.h"
 #include "theia/util/threadpool.h"
 
@@ -107,8 +107,6 @@ FeatureExtractorAndMatcher::FeatureExtractorAndMatcher(
   matcher_options.num_threads = options_.num_threads;
   matcher_options.min_num_feature_matches = options_.min_num_inlier_matches;
   matcher_options.perform_geometric_verification = true;
-  matcher_options.geometric_verification_options =
-      options.geometric_verification_options;
   matcher_options.geometric_verification_options.min_num_inlier_matches =
       options_.min_num_inlier_matches;
 

@@ -89,14 +89,10 @@ struct ReconstructionBuilderOptions {
   // See //theia/matching/create_feature_matcher.h
   MatchingStrategy matching_strategy = MatchingStrategy::BRUTE_FORCE;
 
-  // Options for computing matches between images.
+  // Options for computing matches between images. Two view geometric
+  // verification options are also part of these options.
   // See //theia/matching/feature_matcher_options.h
   FeatureMatcherOptions matching_options;
-
-  // Settings for estimating the relative pose between two images to perform
-  // geometric verification.
-  // See //theia/sfm/verify_two_view_matches.h
-  VerifyTwoViewMatchesOptions geometric_verification_options;
 
   // Options for estimating the reconstruction.
   // See //theia/sfm/reconstruction_estimator_options.h

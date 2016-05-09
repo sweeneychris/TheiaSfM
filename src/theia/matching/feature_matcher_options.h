@@ -37,7 +37,7 @@
 
 #include <string>
 
-#include "theia/sfm/verify_two_view_matches.h"
+#include "theia/sfm/two_view_match_geometric_verification.h"
 
 namespace theia {
 
@@ -80,7 +80,7 @@ struct FeatureMatcherOptions {
   bool perform_geometric_verification = true;
 
   // The parameter settings for geometric verification.
-  VerifyTwoViewMatchesOptions geometric_verification_options;
+  TwoViewMatchGeometricVerification::Options geometric_verification_options;
 
   // Only images that contain more feature matches than this number will be
   // returned.
