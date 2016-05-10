@@ -427,6 +427,7 @@ void GlobalReconstructionEstimator::EstimateStructure() {
       options_.min_triangulation_angle_degrees;
   triangulation_options.bundle_adjustment = options_.bundle_adjust_tracks;
   triangulation_options.ba_options = SetBundleAdjustmentOptions(options_, 0);
+  triangulation_options.ba_options.num_threads = 1;
   triangulation_options.ba_options.verbose = false;
   triangulation_options.num_threads = options_.num_threads;
   TrackEstimator track_estimator(triangulation_options, reconstruction_);
