@@ -35,6 +35,7 @@
 #ifndef THEIA_UTIL_HASH_H_
 #define THEIA_UTIL_HASH_H_
 
+#include <Eigen/Core>
 #include <utility>
 
 // This file defines hash functions for stl containers.
@@ -59,6 +60,13 @@ template <typename T1, typename T2> struct hash<std::pair<T1, T2> > {
     HashCombine(e.first, &seed);
     HashCombine(e.second, &seed);
     return seed;
+  }
+};
+
+template <> struct hash<Eigen::Vector2i> {
+  size_t operator()(const Eigen::Vector2i& point) const {
+    hash<std::pair<int, int> > h1;
+    return h1(std::make_pair(point.x(), point.y()));
   }
 };
 
