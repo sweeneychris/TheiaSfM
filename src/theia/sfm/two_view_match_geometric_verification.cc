@@ -37,13 +37,14 @@
 #include <glog/logging.h>
 #include <vector>
 
-#include "theia/sfm/bundle_adjustment/bundle_adjustment.h"
+#include "theia/matching/feature_correspondence.h"
+#include "theia/matching/guided_epipolar_matcher.h"
 #include "theia/sfm/bundle_adjustment/bundle_adjust_two_views.h"
+#include "theia/sfm/bundle_adjustment/bundle_adjustment.h"
 #include "theia/sfm/camera_intrinsics_prior.h"
 #include "theia/sfm/estimate_twoview_info.h"
 #include "theia/sfm/estimators/estimate_homography.h"
 #include "theia/sfm/set_camera_intrinsics_from_priors.h"
-#include "theia/matching/feature_correspondence.h"
 #include "theia/sfm/triangulation/triangulation.h"
 #include "theia/sfm/twoview_info.h"
 
@@ -132,8 +133,12 @@ bool TwoViewMatchGeometricVerification::VerifyMatches(
     return false;
   }
   VLOG(2) << inlier_indices.size()
-          << " matches passed initial geometric verification out of"
-          << matches_.size() << "putative matches.";
+          << " matches passed initial geometric verification out of "
+          << matches_.size() << " putative matches.";
+
+  if (inlier_indices.size() < options_.min_num_inlier_matches) {
+    return false;
+  }
 
   // Update the current set of matches.
   std::vector<IndexedFeatureMatch> new_matches;
@@ -143,12 +148,30 @@ bool TwoViewMatchGeometricVerification::VerifyMatches(
   }
   matches_.swap(new_matches);
 
-  // TODO(csweeney): Perform guided matching if applicable.
+  // Get Camera objects for guided matching, triangulation, and bundle
+  // adjustment.
+  SetupCameras(intrinsics1_, intrinsics2_, *twoview_info, &camera1_, &camera2_);
 
-  // Perform BA if applicable.
+  // Perform guided matching if desired.
+  if (options_.guided_matching) {
+    GuidedEpipolarMatcher::Options guided_matching_options;
+    guided_matching_options.guided_matching_max_distance_pixels =
+      options_.guided_matching_max_distance_pixels;
+    guided_matching_options.lowes_ratio = options_.guided_matching_lowes_ratio;
+
+    GuidedEpipolarMatcher guided_matcher(guided_matching_options,
+                                         camera1_,
+                                         camera2_,
+                                         features1_,
+                                         features2_);
+    if (!guided_matcher.GetMatches(&matches_)) {
+      return false;
+    }
+  }
+
+  // Perform BA if desired.
   if (options_.bundle_adjustment &&
       matches_.size() > options_.min_num_inlier_matches) {
-    // Modify this to use the internal matches_ member variable.
     if (!BundleAdjustRelativePose(twoview_info)) {
       return false;
     }
@@ -162,8 +185,6 @@ bool TwoViewMatchGeometricVerification::VerifyMatches(
 
 // Triangulates the points and updates the matches_
 void TwoViewMatchGeometricVerification::TriangulatePoints(
-    const Camera& camera1,
-    const Camera& camera2,
     std::vector<Eigen::Vector4d>* triangulated_points) {
   CHECK_NOTNULL(triangulated_points)->reserve(matches_.size());
   const double triangulation_sq_max_reprojection_error_pixels =
@@ -173,8 +194,8 @@ void TwoViewMatchGeometricVerification::TriangulatePoints(
   // Triangulate all points, throwing out the ones with bad initial reprojection
   // errors.
   Matrix3x4d projection_matrix1, projection_matrix2;
-  camera1.GetProjectionMatrix(&projection_matrix1);
-  camera2.GetProjectionMatrix(&projection_matrix2);
+  camera1_.GetProjectionMatrix(&projection_matrix1);
+  camera2_.GetProjectionMatrix(&projection_matrix2);
   std::vector<IndexedFeatureMatch> triangulated_matches;
   triangulated_matches.reserve(matches_.size());
   for (int i = 0; i < matches_.size(); i++) {
@@ -186,8 +207,8 @@ void TwoViewMatchGeometricVerification::TriangulatePoints(
     // Make sure that there is enough baseline between the point so that the
     // triangulation is well-constrained.
     std::vector<Eigen::Vector3d> ray_directions(2);
-    ray_directions[0] = camera1.PixelToUnitDepthRay(feature1).normalized();
-    ray_directions[1] = camera2.PixelToUnitDepthRay(feature2).normalized();
+    ray_directions[0] = camera1_.PixelToUnitDepthRay(feature1).normalized();
+    ray_directions[1] = camera2_.PixelToUnitDepthRay(feature2).normalized();
     if (!SufficientTriangulationAngle(
             ray_directions, options_.min_triangulation_angle_degrees)) {
       continue;
@@ -201,9 +222,9 @@ void TwoViewMatchGeometricVerification::TriangulatePoints(
 
     // Only consider triangulation a success if the initial triangulation has a
     // small enough reprojection error.
-    if (AcceptableReprojectionError(camera1, feature1, point3d,
+    if (AcceptableReprojectionError(camera1_, feature1, point3d,
             triangulation_sq_max_reprojection_error_pixels) &&
-        AcceptableReprojectionError(camera2, feature2, point3d,
+        AcceptableReprojectionError(camera2_, feature2, point3d,
             triangulation_sq_max_reprojection_error_pixels)) {
       triangulated_points->emplace_back(point3d);
       triangulated_matches.emplace_back(matches_[i]);
@@ -222,14 +243,10 @@ bool TwoViewMatchGeometricVerification::BundleAdjustRelativePose(
       options_.final_max_reprojection_error *
       options_.final_max_reprojection_error;
 
-  // Get Camera objects for triangulation and bundle adjustment.
-  Camera camera1, camera2;
-  SetupCameras(intrinsics1_, intrinsics2_, *twoview_info, &camera1, &camera2);
-
   // Triangulate the points. This updates the matches_ container with only the
   // points that could be accurately triangulated.
   std::vector<Eigen::Vector4d> triangulated_points;
-  TriangulatePoints(camera1, camera2, &triangulated_points);
+  TriangulatePoints(&triangulated_points);
 
   // Exit early if there are not enough inliers left.
   if (matches_.size() < options_.min_num_inlier_matches) {
@@ -250,7 +267,7 @@ bool TwoViewMatchGeometricVerification::BundleAdjustRelativePose(
   CreateCorrespondencesFromIndexedMatches(&triangulated_correspondences);
   BundleAdjustmentSummary summary =
       BundleAdjustTwoViews(two_view_ba_options, triangulated_correspondences,
-                           &camera1, &camera2, &triangulated_points);
+                           &camera1_, &camera2_, &triangulated_points);
 
   if (!summary.success) {
     return false;
@@ -262,9 +279,9 @@ bool TwoViewMatchGeometricVerification::BundleAdjustRelativePose(
   for (int i = 0; i < triangulated_correspondences.size(); i++) {
     const auto& correspondence = triangulated_correspondences[i];
     const Eigen::Vector4d& point3d = triangulated_points[i];
-    if (AcceptableReprojectionError(camera1, correspondence.feature1, point3d,
+    if (AcceptableReprojectionError(camera1_, correspondence.feature1, point3d,
                                     final_sq_max_reprojection_error_pixels) &&
-        AcceptableReprojectionError(camera2, correspondence.feature2, point3d,
+        AcceptableReprojectionError(camera2_, correspondence.feature2, point3d,
                                     final_sq_max_reprojection_error_pixels)) {
       inliers_after_ba.emplace_back(matches_[i]);
     }
@@ -274,11 +291,11 @@ bool TwoViewMatchGeometricVerification::BundleAdjustRelativePose(
   matches_.swap(inliers_after_ba);
 
   // Update the relative pose.
-  twoview_info->rotation_2 = camera2.GetOrientationAsAngleAxis();
-  twoview_info->position_2 = camera2.GetPosition();
+  twoview_info->rotation_2 = camera2_.GetOrientationAsAngleAxis();
+  twoview_info->position_2 = camera2_.GetPosition();
   twoview_info->position_2.normalize();
-  twoview_info->focal_length_1 = camera1.FocalLength();
-  twoview_info->focal_length_2 = camera2.FocalLength();
+  twoview_info->focal_length_1 = camera1_.FocalLength();
+  twoview_info->focal_length_2 = camera2_.FocalLength();
 
   return true;
 }

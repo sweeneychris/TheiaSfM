@@ -67,6 +67,7 @@ set(THEIA_SRC
   matching/create_feature_matcher.cc
   matching/feature_matcher.cc
   matching/feature_matcher_utils.cc
+  matching/guided_epipolar_matcher.cc
   math/closed_form_polynomial_solver.cc
   math/find_polynomial_roots_companion_matrix.cc
   math/find_polynomial_roots_jenkins_traub.cc

@@ -57,8 +57,6 @@ class TwoViewMatchGeometricVerification {
     // Minimum number of inlier matches in order to return true.
     int min_num_inlier_matches = 30;
 
-    // TODO(csweeney): Guided matching.
-    //
     // Perform guided matching to find more matches after initial geometry
     // estimation. Guided matching uses the current estimate for two-view
     // geometry to perform a constrained search along epipolar lines
@@ -66,10 +64,14 @@ class TwoViewMatchGeometricVerification {
     // for all features in the second image that lie near f's epipolar line
     // l. Among features close to l, we choose the feature with the smallest
     // descriptor distance as the match.
-    // bool guided_matching = true;
+    bool guided_matching = true;
+
     // For guided matching, features that are closer than this threshold to the
     // epipolar line will be considered for matching.
-    // double guided_matching_max_distance_pixels = 2.0;
+    double guided_matching_max_distance_pixels = 2.0;
+
+    // Lowes ratio to use for guided matching.
+    float guided_matching_lowes_ratio = 0.8;
 
     // Bundle adjust the two view geometry using inliers.
     bool bundle_adjustment = true;
@@ -109,12 +111,10 @@ class TwoViewMatchGeometricVerification {
   void CreateCorrespondencesFromIndexedMatches(
       std::vector<FeatureCorrespondence>* correspondences);
 
-  // Triangulates the current matches (given the cameras) and removes any
-  // matches that do not have a small enough reprojection error after initial
-  // triangulation (based on the options passed in).
-  void TriangulatePoints(const Camera& camera1,
-                         const Camera& camera2,
-                         std::vector<Eigen::Vector4d>* triangulated_points);
+  // Triangulates the current matches and removes any matches that do not have a
+  // small enough reprojection error after initial triangulation (based on the
+  // options passed in).
+  void TriangulatePoints(std::vector<Eigen::Vector4d>* triangulated_points);
 
   // Bundle adjusts the relative pose by triangulating 3D points. Points are
   // removed before and after bundle adjustment according to their reprojection
@@ -128,6 +128,7 @@ class TwoViewMatchGeometricVerification {
   const CameraIntrinsicsPrior& intrinsics1_, intrinsics2_;
   const KeypointsAndDescriptors& features1_, features2_;
 
+  Camera camera1_, camera2_;
   // We keep a local copy of the matches so that we may add and remove matches
   // to it.
   std::vector<IndexedFeatureMatch> matches_;
