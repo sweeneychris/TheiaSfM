@@ -39,7 +39,7 @@
 
 #include <limits>
 #include <list>
-#include <mutex>
+#include <mutex>  // NOLINT
 #include <unordered_map>
 #include <utility>
 
@@ -56,9 +56,20 @@ class LRUCache {
  public:
   // Pass a function that performs the cache miss lookup (e.g., a read from
   // disk) that takes a key and returns a value.
-  LRUCache(ValueType (*CacheMissLookup)(const KeyType&),
+  //
+  // NOTE: If the function is a member function, then you must first bind it to
+  // a std::function such with the object points in this way:
+  //
+  //   std::function<ValueType(const KeyType&)> fn =
+  //       std::bind(MyClass::MyFunction, this, _1);
+  //
+  // This ties fn to your specific object. Further, the _1 is in the namespace
+  // std::placeholders and specify that the function will take in a
+  // to-be-specified argument. If your function takes in multiple arguments you
+  // should use _2, etc. to specify that more arguments will be passed.
+  LRUCache(const std::function<ValueType(const KeyType&)>& fetch_entry,
            const int max_cache_entries)
-      : FetchEntryNotInCache(CacheMissLookup),
+      : fetch_entry_(fetch_entry),
         max_cache_entries_(max_cache_entries) {
     CHECK_GT(max_cache_entries_, 0)
         << "The maximum number of cache entries must be greater than 0.";
@@ -77,7 +88,7 @@ class LRUCache {
       ++cache_misses_;
 
       // Fetch the value for this key since it is not in the cache.
-      const ValueType value = FetchEntryNotInCache(key);
+      const ValueType value = fetch_entry_(key);
       InsertIntoCache(key, value);
       return value;
     } else {
@@ -150,7 +161,7 @@ class LRUCache {
 
   // A function that takes in a KeyType as input and returns the ValueType. This
   // is utilized for cache misses and e.g., can implement a read from disk.
-  ValueType (*FetchEntryNotInCache)(const KeyType&);
+  const std::function<ValueType(const KeyType&)> fetch_entry_;
 
   // An ordered list that maintains the order in which cache entries have been
   // most recently added. The entries are oldest at the front and newest at the

@@ -142,8 +142,8 @@ class FeatureMatcher {
 
   // Fetches keypoints and descriptors from disk. This function is utilized by
   // the internal cache to preserve memory.
-  static std::shared_ptr<KeypointsAndDescriptors>
-  FetchKeypointsAndDescriptorsFromDisk(const std::string& features_file);
+  std::shared_ptr<KeypointsAndDescriptors> FetchKeypointsAndDescriptorsFromDisk(
+      const std::string& features_file);
 
   // Returns the filepath of the feature file given the image name.
   std::string FeatureFilenameFromImage(const std::string& image);
