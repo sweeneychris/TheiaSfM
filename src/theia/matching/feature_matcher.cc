@@ -270,6 +270,19 @@ void FeatureMatcher::MatchAndVerifyImagePairs(
                 << " and " << image2_name << " failed.";
         continue;
       }
+    } else {
+      // If no geometric verification is performed then the putative matches are
+      // output.
+      image_pair_match.correspondences.reserve(putative_matches.size());
+      for (int i = 0; i < putative_matches.size(); i++) {
+        const Keypoint& keypoint1 =
+            features1->keypoints[putative_matches[i].feature1_ind];
+        const Keypoint& keypoint2 =
+            features2->keypoints[putative_matches[i].feature2_ind];
+        image_pair_match.correspondences.emplace_back(
+            Feature(keypoint1.x(), keypoint1.y()),
+            Feature(keypoint2.x(), keypoint2.y()));
+      }
     }
 
     // Log information about the matching results.

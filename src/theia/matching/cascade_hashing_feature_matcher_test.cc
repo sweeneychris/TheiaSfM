@@ -68,6 +68,7 @@ TEST(CascadeHashingFeatureMatcherTest, NoOptionsInCore) {
   options.min_num_feature_matches = 0;
   options.keep_only_symmetric_matches = false;
   options.use_lowes_ratio = false;
+  options.perform_geometric_verification = false;
 
   // Add features.
   std::vector<Keypoint> keypoints1(descriptor1.size());
@@ -106,6 +107,7 @@ TEST(CascadeHashingFeatureMatcherTest, RatioTestInCore) {
   options.min_num_feature_matches = 0;
   options.keep_only_symmetric_matches = false;
   options.use_lowes_ratio = true;
+  options.perform_geometric_verification = false;
 
   // Add features.
   std::vector<Keypoint> keypoints1(descriptor1.size());
@@ -141,6 +143,7 @@ TEST(CascadeHashingFeatureMatcherTest, NoOptionsOutOfCore) {
   options.min_num_feature_matches = 0;
   options.keep_only_symmetric_matches = false;
   options.use_lowes_ratio = false;
+  options.perform_geometric_verification = false;
 
   // Add features.
   std::vector<Keypoint> keypoints1(descriptor1.size());
@@ -179,6 +182,7 @@ TEST(CascadeHashingFeatureMatcherTest, RatioTestOutOfCore) {
   options.min_num_feature_matches = 0;
   options.keep_only_symmetric_matches = false;
   options.use_lowes_ratio = true;
+  options.perform_geometric_verification = false;
 
   // Add features.
   std::vector<Keypoint> keypoints1(descriptor1.size());
@@ -213,6 +217,7 @@ TEST(CascadeHashingFeatureMatcherTest, NoDescriptorsInCore) {
   options.min_num_feature_matches = 30;
   options.keep_only_symmetric_matches = true;
   options.use_lowes_ratio = true;
+  options.perform_geometric_verification = false;
 
   // Add features.
   std::vector<Keypoint> keypoints1(descriptor1.size());

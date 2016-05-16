@@ -68,6 +68,7 @@ TEST(BruteForceFeatureMatcherTest, NoOptionsInCore) {
   options.min_num_feature_matches = 0;
   options.keep_only_symmetric_matches = false;
   options.use_lowes_ratio = false;
+  options.perform_geometric_verification = false;
 
   // Add features.
   std::vector<Keypoint> keypoints1(descriptor1.size());
@@ -106,6 +107,7 @@ TEST(BruteForceFeatureMatcherTest, RatioTestInCore) {
   options.min_num_feature_matches = 0;
   options.keep_only_symmetric_matches = false;
   options.use_lowes_ratio = true;
+  options.perform_geometric_verification = false;
 
   // Add features.
   std::vector<Keypoint> keypoints1(descriptor1.size());
@@ -147,6 +149,7 @@ TEST(BruteForceFeatureMatcherTest, SymmetricMatchesInCore) {
   options.min_num_feature_matches = 0;
   options.keep_only_symmetric_matches = true;
   options.use_lowes_ratio = false;
+  options.perform_geometric_verification = false;
 
   // Add features.
   std::vector<Keypoint> keypoints1(descriptor1.size());
@@ -182,6 +185,7 @@ TEST(BruteForceFeatureMatcherTest, NoOptionsOutOfCore) {
   options.min_num_feature_matches = 0;
   options.keep_only_symmetric_matches = false;
   options.use_lowes_ratio = false;
+  options.perform_geometric_verification = false;
 
   // Add features.
   std::vector<Keypoint> keypoints1(descriptor1.size());
@@ -220,6 +224,7 @@ TEST(BruteForceFeatureMatcherTest, RatioTestOutOfCore) {
   options.min_num_feature_matches = 0;
   options.keep_only_symmetric_matches = false;
   options.use_lowes_ratio = true;
+  options.perform_geometric_verification = false;
 
   // Add features.
   std::vector<Keypoint> keypoints1(descriptor1.size());
@@ -261,6 +266,7 @@ TEST(BruteForceFeatureMatcherTest, SymmetricMatchesOutOfCore) {
   options.min_num_feature_matches = 0;
   options.keep_only_symmetric_matches = true;
   options.use_lowes_ratio = false;
+  options.perform_geometric_verification = false;
 
   // Add features.
   std::vector<Keypoint> keypoints1(descriptor1.size());
