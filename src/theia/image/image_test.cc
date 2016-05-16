@@ -161,4 +161,33 @@ TEST(Image, IntegralImage) {
   }
 }
 
+float Interpolate(const FloatImage& image,
+                  const double x,
+                  const double y,
+                  const int c) {
+  const int left = std::floor(x);
+  const int right = std::ceil(x);
+  const int top = std::floor(y);
+  const int bottom = std::ceil(y);
+  return image(left, top, c) * (right - x) * (bottom - y) +
+         image(left, bottom, c) * (right - x) * (y - top) +
+         image(right, top, c) * (x - left) * (bottom - y) +
+         image(right, bottom, c) * (x - left) * (y - top);
+}
+
+TEST(Image, BillinearInterpolate) {
+  static const int kNumTrials = 10;
+  static const float kTolerance = 1e-2;
+
+  FloatImage theia_img(img_filename);
+  InitRandomGenerator();
+  for (int i = 0; i < kNumTrials; i++) {
+    const double x = RandDouble(1.0, theia_img.Width() - 2);
+    const double y = RandDouble(1.0, theia_img.Height() - 2);
+    const float pixel = Interpolate(theia_img, x, y, 0);
+    const float pixel2 = theia_img.BillinearInterpolate(x, y, 0);
+    EXPECT_NEAR(pixel, pixel2, kTolerance);
+  }
+}
+
 }  // namespace theia
