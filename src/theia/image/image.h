@@ -84,6 +84,8 @@ template <typename T> class Image {
   T& operator()(const int x, const int y, const int c = 0);
   const T& operator()(const int x, const int y, const int c = 0) const;
 
+  T BillinearInterpolate(const double x, const double y, const int c = 0) const;
+
   // Convert to other image types.
   Image<T> AsGrayscaleImage() const;
   Image<T> AsRGBImage() const;
@@ -180,6 +182,13 @@ T& Image<T>::operator()(const int x, const int y, const int c) {
 template <typename T>
 const T& Image<T>::operator()(const int x, const int y, const int c) const {
   return image_(x, y, 0, c);
+}
+
+template <typename T>
+T Image<T>::BillinearInterpolate(const double x,
+                                 const double y,
+                                 const int c) const {
+  return image_.linear_atXY(x, y, 0, c);
 }
 
 template <typename T> void Image<T>::ConvertToGrayscaleImage() {
