@@ -186,8 +186,8 @@ const T& Image<T>::operator()(const int x, const int y, const int c) const {
 
 template <typename T>
 T Image<T>::BilinearInterpolate(const double x,
-                                 const double y,
-                                 const int c) const {
+                                const double y,
+                                const int c) const {
   return image_.linear_atXY(x, y, 0, c);
 }
 
