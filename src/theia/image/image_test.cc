@@ -185,7 +185,7 @@ TEST(Image, BillinearInterpolate) {
     const double x = RandDouble(1.0, theia_img.Width() - 2);
     const double y = RandDouble(1.0, theia_img.Height() - 2);
     const float pixel = Interpolate(theia_img, x, y, 0);
-    const float pixel2 = theia_img.BillinearInterpolate(x, y, 0);
+    const float pixel2 = theia_img.BilinearInterpolate(x, y, 0);
     EXPECT_NEAR(pixel, pixel2, kTolerance);
   }
 }
