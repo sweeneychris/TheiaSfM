@@ -106,7 +106,7 @@ void AddCameraToReconstruction(const std::string& camera_filepath,
   Eigen::Matrix3d rotation_matrix;
   for (int i = 0; i < 3; i++) {
     for (int j = 0; j < 3; j++) {
-      ifs >> rotation_matrix(i, j);
+      ifs >> rotation_matrix(j, i);
     }
   }
   camera->SetOrientationFromRotationMatrix(rotation_matrix);
