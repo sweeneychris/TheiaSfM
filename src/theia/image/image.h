@@ -83,6 +83,8 @@ template <typename T> class Image {
   // the color channel.
   T& operator()(const int x, const int y, const int c = 0);
   const T& operator()(const int x, const int y, const int c = 0) const;
+  T& AtRowCol(const int row, const int col, const int channel = 0);
+  const T& AtRowCol(const int row, const int col, const int channel = 0) const;
 
   T BilinearInterpolate(const double x, const double y, const int c = 0) const;
 
@@ -182,6 +184,18 @@ T& Image<T>::operator()(const int x, const int y, const int c) {
 template <typename T>
 const T& Image<T>::operator()(const int x, const int y, const int c) const {
   return image_(x, y, 0, c);
+}
+
+template <typename T>
+T& Image<T>::AtRowCol(const int row, const int col, const int channel) {
+  return image_(col, row, channel);
+}
+
+template <typename T>
+const T& Image<T>::AtRowCol(const int row,
+                            const int col,
+                            const int channel) const {
+  return image_(col, row, channel);
 }
 
 template <typename T>
