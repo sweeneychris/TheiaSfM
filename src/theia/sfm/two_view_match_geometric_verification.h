@@ -64,7 +64,7 @@ class TwoViewMatchGeometricVerification {
     // for all features in the second image that lie near f's epipolar line
     // l. Among features close to l, we choose the feature with the smallest
     // descriptor distance as the match.
-    bool guided_matching = true;
+    bool guided_matching = false;
 
     // For guided matching, features that are closer than this threshold to the
     // epipolar line will be considered for matching.
