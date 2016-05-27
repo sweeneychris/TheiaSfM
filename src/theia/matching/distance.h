@@ -52,8 +52,7 @@ struct L2 {
   DistanceType operator()(const Eigen::VectorXf& descriptor_a,
                           const Eigen::VectorXf& descriptor_b) const {
     DCHECK_EQ(descriptor_a.size(), descriptor_b.size());
-    const DistanceType dist = 2.0 - 2.0 * descriptor_a.dot(descriptor_b);
-    return dist;
+    return (descriptor_a - descriptor_b).squaredNorm();
   }
 };
 
