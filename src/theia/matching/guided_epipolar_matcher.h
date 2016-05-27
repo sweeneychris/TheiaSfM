@@ -81,6 +81,9 @@ class GuidedEpipolarMatcher {
   // Creates the grid structure for the fast epipolar lookup.
   bool Initialize(const std::vector<IndexedFeatureMatch>& matches);
 
+  void FindEpipolarLineIntersection(const Eigen::Vector3d& epipolar_line,
+                                    std::vector<Eigen::Vector2d>* lines);
+
   Eigen::Matrix3d ComputeFundamentalMatrix();
 
   // Finds the closest grid cell among all image grids and returns the keypoints
@@ -88,20 +91,29 @@ class GuidedEpipolarMatcher {
   void FindClosestCellAndKeypoints(const Eigen::Vector2d& point,
                                    std::vector<int>* new_keypoints);
 
+  // Given the query descriptor (in features1) and the candidate matches (in
+  // features2), return the top 2 nearest neighbors as a pair of
+  // <distance, index> where index is the index in features2 of the match.
+  void FindKNearestNeighbors(const Eigen::VectorXf& query_descriptor,
+                             const std::vector<int>& candidate_matches,
+                             std::vector<std::pair<int, float> >* matches);
+
   // This helper class provides quick and easy access to the image grids that
   // are used to rapidly find features near epipolar lines.
   class ImageGrid {
    public:
     ImageGrid(const double cell_size,
               const double cell_offset_x,
-              const double cell_offset_y)
-        : cell_size_(cell_size),
-          cell_offset_x_(cell_offset_x),
-          cell_offset_y_(cell_offset_y) {}
+              const double cell_offset_y);
 
+    // Add a feature the the grid and assign it to a cell.
     void AddFeature(const int feature_index, const double x, const double y);
+
+    // Retrieve the closest cell center to the point.
     void GetClosestGridCenter(const double x, const double y,
                               Eigen::Vector2i* grid_center);
+
+    // Get all features that lie within the cell specified by the center.
     void GetFeaturesFromCell(const Eigen::Vector2i& cell_center,
                              std::vector<int>* feature_indices);
 
