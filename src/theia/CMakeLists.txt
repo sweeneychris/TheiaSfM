@@ -169,6 +169,7 @@ set(THEIA_LIBRARY_DEPENDENCIES
   ${CIMG_LIBRARIES}
   ${SUITESPARSE_LIBRARIES}
   easyexif
+  flann
   statx
   stlplus3
   vlfeat
@@ -212,6 +213,7 @@ if (BUILD_TESTING)
   gtest(matching/cascade_hashing_feature_matcher)
   gtest(matching/distance)
   gtest(matching/feature_matcher_utils)
+  gtest(matching/guided_epipolar_matcher)
   gtest(math/closed_form_polynomial_solver)
   gtest(math/find_polynomial_roots_companion_matrix)
   gtest(math/find_polynomial_roots_jenkins_traub)
