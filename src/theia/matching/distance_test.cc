@@ -70,7 +70,7 @@ TEST(L2Distance, KnownDistance) {
     descriptor2.normalize();
     L2 l2_dist;
     const float dist =
-        static_cast<float>(2.0 - 2.0 * descriptor1.dot(descriptor2));
+        static_cast<float>((descriptor1 - descriptor2).squaredNorm());
     ASSERT_DOUBLE_EQ(l2_dist(descriptor1, descriptor2), dist);
   }
 }

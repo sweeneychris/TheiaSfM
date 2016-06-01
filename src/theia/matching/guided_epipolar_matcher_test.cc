@@ -96,11 +96,14 @@ void TestGuidedEpipolarMatcher(const int num_valid_matches,
   }
 
   // Add bogus features to the image that have no matches.
+  const double max_image_bound = 2.0 * kPrincipalPoint;
   for (int i = 0; i < num_invalid_matches; i++) {
-    features1.keypoints.emplace_back(
-        RandDouble(0, 1000.0), RandDouble(0, 1000.0), Keypoint::OTHER);
-    features2.keypoints.emplace_back(
-        RandDouble(0, 1000.0), RandDouble(0, 1000.0), Keypoint::OTHER);
+    features1.keypoints.emplace_back(RandDouble(0, max_image_bound),
+                                     RandDouble(0, max_image_bound),
+                                     Keypoint::OTHER);
+    features2.keypoints.emplace_back(RandDouble(0, max_image_bound),
+                                     RandDouble(0, max_image_bound),
+                                     Keypoint::OTHER);
     features1.descriptors.emplace_back(
         Eigen::VectorXf::Random(kNumDescriptorDimensions).normalized());
     features2.descriptors.emplace_back(
@@ -114,7 +117,7 @@ void TestGuidedEpipolarMatcher(const int num_valid_matches,
     match.feature1_ind = i;
     match.feature2_ind = i;
     match.distance =
-        (features1.descriptors[i] - features2.descriptors[i]).norm();
+        (features1.descriptors[i] - features2.descriptors[i]).squaredNorm();
     matches.emplace_back(match);
   }
 
@@ -126,9 +129,8 @@ void TestGuidedEpipolarMatcher(const int num_valid_matches,
   // Ensure that the guided matching returns true.
   EXPECT_TRUE(matcher.GetMatches(&matches));
 
-  // Ensure enough matches were found. Due to the randomness of point generation
-  // we set this to be 90% of the known number of valid matches.
-  EXPECT_GT(matches.size(), 0.9 * num_valid_matches);
+  // Ensure enough matches were found.
+  EXPECT_GT(matches.size(), num_provided_matches);
 
   // Ensure that all matches are valid matches.
   for (const IndexedFeatureMatch match : matches) {
@@ -139,20 +141,19 @@ void TestGuidedEpipolarMatcher(const int num_valid_matches,
 }
 
 TEST(GuidedEpipolarMatcherTest, NoInputMatchesSmall) {
-  //TestGuidedEpipolarMatcher(1000, 500, 0);
-  TestGuidedEpipolarMatcher(10, 0, 0);
+  TestGuidedEpipolarMatcher(100, 50, 0);
 }
 
 TEST(GuidedEpipolarMatcherTest, NoInputMatchesLarge) {
-  TestGuidedEpipolarMatcher(1000, 5000, 0);
+  TestGuidedEpipolarMatcher(2000, 500, 0);
 }
 
 TEST(GuidedEpipolarMatcherTest, WithInputMatchesSmall) {
-  TestGuidedEpipolarMatcher(1000, 5000, 500);
+  TestGuidedEpipolarMatcher(100, 50, 10);
 }
 
 TEST(GuidedEpipolarMatcherTest, WithInputMatchesLarge) {
-  TestGuidedEpipolarMatcher(2000, 5000, 1000);
+  TestGuidedEpipolarMatcher(2000, 500, 1000);
 }
 
 }  // namespace theia

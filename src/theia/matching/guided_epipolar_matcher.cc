@@ -183,6 +183,7 @@ bool GuidedEpipolarMatcher::GetMatches(
       << num_input_matches << " existing matches out of "
       << (std::min(features1_.keypoints.size(), features2_.keypoints.size()))
       << " possible matches.";
+
   return true;
 }
 
@@ -244,6 +245,7 @@ void GuidedEpipolarMatcher::GroupEpipolarLines(
     if (i == 0 ||
         (epiline_groups->back().endpoints[0] - line_endpoints[0])
                 .squaredNorm() > sq_max_distance_pixels) {
+      // Create a new epiline group.
       EpilineGroup epiline_group;
       epiline_group.endpoints = line_endpoints;
       epiline_groups->emplace_back(epiline_group);
@@ -251,13 +253,23 @@ void GuidedEpipolarMatcher::GroupEpipolarLines(
 
     // Assign the feature to the most recent epipolar line.
     epiline_groups->back().features.emplace_back(sorted_endpoints[i].second);
+    // Set the endpoints of the epiline group to be the current mean endpoint of
+    // the group.
+    const double weight_of_current_match =
+        1.0 / epiline_groups->back().features.size();
+    epiline_groups->back().endpoints[0] =
+        (1.0 - weight_of_current_match) * epiline_groups->back().endpoints[0] +
+        weight_of_current_match * line_endpoints[0];
+    epiline_groups->back().endpoints[1] =
+        (1.0 - weight_of_current_match) * epiline_groups->back().endpoints[1] +
+        weight_of_current_match * line_endpoints[1];
   }
 }
 
 void GuidedEpipolarMatcher::FindFeaturesNearEpipolarLines(
     const EpilineGroup& epiline_group,
     std::vector<int>* candidate_keypoint_indices) {
-  static const int kMinNumMatchesFound = 25;
+  static const int kMinNumMatchesFound = 50;
 
   const std::vector<Eigen::Vector2d>& line_endpoints = epiline_group.endpoints;
 
