@@ -169,7 +169,7 @@ set(THEIA_LIBRARY_DEPENDENCIES
   ${CIMG_LIBRARIES}
   ${SUITESPARSE_LIBRARIES}
   easyexif
-  flann
+  flann_cpp
   statx
   stlplus3
   vlfeat
