@@ -78,26 +78,6 @@ class GuidedEpipolarMatcher {
   bool GetMatches(std::vector<IndexedFeatureMatch>* matches);
 
  private:
-  // Creates the grid structure for the fast epipolar lookup.
-  bool Initialize(const std::vector<IndexedFeatureMatch>& matches);
-
-  void FindEpipolarLineIntersection(const Eigen::Vector3d& epipolar_line,
-                                    std::vector<Eigen::Vector2d>* lines);
-
-  Eigen::Matrix3d ComputeFundamentalMatrix();
-
-  // Finds the closest grid cell among all image grids and returns the keypoints
-  // in that cell.
-  void FindClosestCellAndKeypoints(const Eigen::Vector2d& point,
-                                   std::vector<int>* new_keypoints);
-
-  // Given the query descriptor (in features1) and the candidate matches (in
-  // features2), return the top 2 nearest neighbors as a pair of
-  // <distance, index> where index is the index in features2 of the match.
-  void FindKNearestNeighbors(const Eigen::VectorXf& query_descriptor,
-                             const std::vector<int>& candidate_matches,
-                             std::vector<std::pair<int, float> >* matches);
-
   // This helper class provides quick and easy access to the image grids that
   // are used to rapidly find features near epipolar lines.
   class ImageGrid {
@@ -123,6 +103,47 @@ class GuidedEpipolarMatcher {
     std::unordered_map<Eigen::Vector2i, std::vector<int>> cells_;
     double cell_size_, cell_offset_x_, cell_offset_y_;
   };
+
+  // Holds a group of features with similar epiplines as a single epiline.
+  struct EpilineGroup {
+    std::vector<Eigen::Vector2d> endpoints;
+    std::vector<int> features;
+  };
+
+  // Creates the grid structure for the fast epipolar lookup.
+  bool Initialize(const std::vector<IndexedFeatureMatch>& matches);
+
+  // Groups similar epipolar lines into groups so that the computational
+  // workload may be reduced.
+  void GroupEpipolarLines(std::vector<EpilineGroup>* epiline_groups);
+
+  // Finds all features near a given epipolar line.
+  void FindFeaturesNearEpipolarLines(
+      const EpilineGroup& epiline_group,
+      std::vector<int>* candidate_keypoint_indices);
+
+  // Finds the intersection of an epipolar line with the bounding box of the
+  // features.
+  void FindEpipolarLineIntersection(const Eigen::Vector3d& epipolar_line,
+                                    std::vector<Eigen::Vector2d>* lines);
+
+  // Computes a fundamental matrix from the cameras.
+  Eigen::Matrix3d ComputeFundamentalMatrix();
+
+  // Finds the closest grid cell among all image grids and returns the keypoints
+  // in that cell.
+  void FindClosestCellAndKeypoints(const Eigen::Vector2d& point,
+                                   std::vector<int>* new_keypoints);
+
+  // Given the set of query descriptors (in features1) and the candidate matches
+  // (in features2), return the top 2 nearest neighbor distances and indices
+  // where the index is the index in features2 of the match. The format is
+  // nn_distances[query_feature_index][nn_number] where nn_number == 0 is the
+  // closest neighbor by descriptor distance.
+  void FindKNearestNeighbors(const std::vector<int>& query_feature_indices,
+                             const std::vector<int>& candidate_feature_indices,
+                             std::vector<std::vector<float> >* nn_distances,
+                             std::vector<std::vector<int> >* nn_indices);
 
   const Options options_;
   const Camera& camera1_, camera2_;
