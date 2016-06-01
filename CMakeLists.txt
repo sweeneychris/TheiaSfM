@@ -216,8 +216,8 @@ include_directories(
   ${cimg_SOURCE_DIR}
   ${cimg_INCLUDE_DIR}
   ${easyexif_INCLUDE_DIR}
-  ${flann_INCLUDE_DIR}
-  ${flann_INCLUDE_DIR}/src/cpp
+  ${flann_SOURCE_DIR}
+  ${flann_SOURCE_DIR}/src/cpp
   ${gtest_SOURCE_DIR}/include
   ${gtest_SOURCE_DIR}
   ${optimo_SOURCE_DIR}
