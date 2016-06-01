@@ -35,6 +35,7 @@
 #include "theia/matching/guided_epipolar_matcher.h"
 
 #include <Eigen/Core>
+#include <stdint.h>
 #include <algorithm>
 #include <limits>
 #include <vector>
@@ -53,6 +54,39 @@
 #include "theia/util/random.h"
 
 namespace theia {
+namespace {
+
+// Encodes the line endpoints into an uint64_t for fast sorting.
+uint64_t EncodeLineEndpoints(const std::vector<Eigen::Vector2d>& endpoints) {
+  uint64_t encoded_endpoint = 0;
+  const uint16_t x1 = static_cast<uint16_t>(endpoints[0].x());
+  const uint16_t y1 = static_cast<uint16_t>(endpoints[0].y());
+  const uint16_t x2 = static_cast<uint16_t>(endpoints[1].x());
+  const uint16_t y2 = static_cast<uint16_t>(endpoints[1].y());
+  encoded_endpoint |= static_cast<uint64_t>(x1) << 48;
+  encoded_endpoint |= static_cast<uint64_t>(y1) << 32;
+  encoded_endpoint |= static_cast<uint64_t>(x2) << 16;
+  encoded_endpoint |= static_cast<uint64_t>(y2) << 0;
+  return encoded_endpoint;
+}
+
+void DecodeLineEndpoints(const uint64_t encoded_endpoint,
+                         std::vector<Eigen::Vector2d>* endpoints) {
+  // Create a bitmask to isolate the last 16 bits.
+  uint64_t s = 0;
+  s = ~s;
+  s = s >> 48;
+
+  const uint16_t x1 = static_cast<uint16_t>(s & (encoded_endpoint >> 48));
+  const uint16_t y1 = static_cast<uint16_t>(s & (encoded_endpoint >> 32));
+  const uint16_t x2 = static_cast<uint16_t>(s & (encoded_endpoint >> 16));
+  const uint16_t y2 = static_cast<uint16_t>(s & (encoded_endpoint >> 0));
+
+  endpoints->emplace_back(static_cast<double>(x1), static_cast<double>(y1));
+  endpoints->emplace_back(static_cast<double>(x2), static_cast<double>(y2));
+}
+
+}  // namespace
 
 // Creates the grid structure for the fast epipolar lookup. This method must
 // be called before calling GetMatches();
@@ -105,12 +139,54 @@ bool GuidedEpipolarMatcher::Initialize(
 
 bool GuidedEpipolarMatcher::GetMatches(
     std::vector<IndexedFeatureMatch>* matches) {
-  static const int kMinNumMatchesFound = 25;
   const int num_input_matches = matches->size();
   const double lowes_ratio_sq = options_.lowes_ratio * options_.lowes_ratio;
 
   Initialize(*matches);
 
+  // Group all epipolar lines.
+  std::vector<EpilineGroup> epiline_groups;
+  GroupEpipolarLines(&epiline_groups);
+
+  for (const EpilineGroup& epiline_group : epiline_groups) {
+    // Find all features close to this epiline.
+    std::vector<int> candidate_keypoint_indices;
+    FindFeaturesNearEpipolarLines(epiline_group, &candidate_keypoint_indices);
+
+    // Build a KD-tree for those features and query the tree to get the nearest
+    // neighbor matches.
+    std::vector<std::vector<float> > nn_distances;
+    std::vector<std::vector<int> > nn_indices;
+    FindKNearestNeighbors(epiline_group.features, candidate_keypoint_indices,
+                          &nn_distances, &nn_indices);
+
+    // For each of the nearest neighbor matches, check the Lowes ratio to
+    // determine if the match is valid.
+    for (int i = 0; i < nn_distances.size(); i++) {
+      // If the top 2 distance pass lowes ratio test then add the match to the
+      // output.
+      if (nn_distances[i][0] < nn_distances[i][1] * lowes_ratio_sq) {
+        IndexedFeatureMatch match;
+        match.feature1_ind = epiline_group.features[i];
+        match.feature2_ind = nn_indices[i][0];
+        match.distance = nn_distances[i][0];
+        matches->emplace_back(match);
+      }
+    }
+  }
+
+  const int num_added_matches = matches->size() - num_input_matches;
+  LOG_IF(INFO, num_added_matches > 0)
+      << "Guided matching added " << num_added_matches << " features to "
+      << num_input_matches << " existing matches out of "
+      << (std::min(features1_.keypoints.size(), features2_.keypoints.size()))
+      << " possible matches.";
+  return true;
+}
+
+
+void GuidedEpipolarMatcher::GroupEpipolarLines(
+    std::vector<EpilineGroup>* epiline_groups) {
   // Compute the fundamental matrix based on the relative pose. The fundamental
   // matrix will map points in image 1 to lines in image 2.
   Eigen::Matrix<double, 3, 4> projection_matrix1, projection_matrix2;
@@ -121,17 +197,20 @@ bool GuidedEpipolarMatcher::GetMatches(
                                           projection_matrix1.data(),
                                           fundamental_matrix.data());
 
-  // Perform guided matching for each feature.
+  // Sort the endpoints by encoding x1, y1, x2, y2 into a long long int. This
+  // way, sorting the encoded endpoint sorts in order of x1, y1, x2, y2
+  // efficiently.
+  std::vector<std::pair<uint64_t, int> > sorted_endpoints;
+  sorted_endpoints.reserve(features1_.keypoints.size());
   for (int i = 0; i < features1_.keypoints.size(); i++) {
     if (ContainsKey(matched_features1_, i)) {
       continue;
     }
 
-    const Eigen::Vector3d point1(features1_.keypoints[i].x(),
-                                 features1_.keypoints[i].y(),
-                                 1.0);
+    const Eigen::Vector2d point(features1_.keypoints[i].x(),
+                                features1_.keypoints[i].y());
     // Compute the epipolar line.
-    Eigen::Vector3d epipolar_line = fundamental_matrix * point1;
+    Eigen::Vector3d epipolar_line = fundamental_matrix * point.homogeneous();
     // Normalize the homogeneous line.
     epipolar_line /= epipolar_line.head<2>().norm();
 
@@ -148,71 +227,80 @@ bool GuidedEpipolarMatcher::GetMatches(
     if (line_endpoints.size() != 2) {
       continue;
     }
-    const int num_steps =
-        static_cast<int>((line_endpoints[1] - line_endpoints[0]).norm() /
-                         options_.guided_matching_max_distance_pixels);
 
-    // Sample the epipolar line equally between the points where it intersects
-    // the features bounding box.
-    std::vector<int> candidate_keypoint_indices;
-    candidate_keypoint_indices.reserve(features2_.keypoints.size());
-    for (int j = 0; j < num_steps; j++) {
-      const Eigen::Vector2d sample_point =
-          (j * line_endpoints[0] + (num_steps - j) * line_endpoints[1]) /
-          num_steps;
-
-      // Find the cell center among all grids that is closest.
-      std::vector<int> new_keypoints;
-      FindClosestCellAndKeypoints(sample_point, &new_keypoints);
-      candidate_keypoint_indices.insert(candidate_keypoint_indices.end(),
-                                        new_keypoints.begin(),
-                                        new_keypoints.end());
-    }
-
-    // If we do not have enough features then the lowes ratio test below is not
-    // meaningful. Add some random features here so that lowes ratio is more
-    // informative of whether we have a good match or not.
-    if (candidate_keypoint_indices.size() < kMinNumMatchesFound) {
-      const int num_current_keypoints = candidate_keypoint_indices.size();
-      for (int i = num_current_keypoints; i < kMinNumMatchesFound; i++) {
-        candidate_keypoint_indices.emplace_back(
-            RandInt(0, features2_.keypoints.size() - 1));
-      }
-    }
-
-    // Remove duplicate entires in the candidate keypoints.
-    std::sort(candidate_keypoint_indices.begin(),
-              candidate_keypoint_indices.end());
-    candidate_keypoint_indices.erase(
-        std::unique(candidate_keypoint_indices.begin(),
-                    candidate_keypoint_indices.end()),
-        candidate_keypoint_indices.end());
-
-    // Find the top 2 nearest neighbors.
-    std::vector<std::pair<int, float> > nearest_neighbors;
-    FindKNearestNeighbors(features1_.descriptors[i],
-                          candidate_keypoint_indices,
-                          &nearest_neighbors);
-
-    // If the top 2 distance pass lowes ratio test then add the match to the
-    // output.
-    if (nearest_neighbors[0].second <
-        nearest_neighbors[1].second * lowes_ratio_sq) {
-      IndexedFeatureMatch match;
-      match.feature1_ind = i;
-      match.feature2_ind = nearest_neighbors[0].first;
-      match.distance = nearest_neighbors[0].second;
-      matches->emplace_back(match);
-    }
+    sorted_endpoints.emplace_back(EncodeLineEndpoints(line_endpoints), i);
   }
 
-  const int num_added_matches = matches->size() - num_input_matches;
-  LOG_IF(INFO, num_added_matches > 0)
-      << "Guided matching added " << num_added_matches << " features to "
-      << num_input_matches << " existing matches out of "
-      << (std::min(features1_.keypoints.size(), features2_.keypoints.size()))
-      << " possible matches.";
-  return true;
+  // Sort the endpoints.
+  std::sort(sorted_endpoints.begin(), sorted_endpoints.end());
+
+  // Cluster the epilines basd on the epipolar line endpoints.
+  const double sq_max_distance_pixels =
+      options_.guided_matching_max_distance_pixels *
+      options_.guided_matching_max_distance_pixels;
+
+  for (int i = 0; i < sorted_endpoints.size(); i++) {
+    std::vector<Eigen::Vector2d> line_endpoints;
+    DecodeLineEndpoints(sorted_endpoints[i].first, &line_endpoints);
+
+    // See if an epipolar endpoint exists nearby. If it does not, then add a new
+    // endpoint group.
+    if (i == 0 ||
+        (epiline_groups->back().endpoints[0] - line_endpoints[0])
+                .squaredNorm() > sq_max_distance_pixels) {
+      EpilineGroup epiline_group;
+      epiline_group.endpoints = line_endpoints;
+      epiline_groups->emplace_back(epiline_group);
+    }
+
+    // Assign the feature to the most recent epipolar line.
+    epiline_groups->back().features.emplace_back(sorted_endpoints[i].second);
+  }
+  LOG(INFO) << "Created " << epiline_groups->size() << " groups from "
+            << sorted_endpoints.size() << " original epilines.";
+}
+
+void GuidedEpipolarMatcher::FindFeaturesNearEpipolarLines(
+    const EpilineGroup& epiline_group,
+    std::vector<int>* candidate_keypoint_indices) {
+  static const int kMinNumMatchesFound = 25;
+
+  const std::vector<Eigen::Vector2d>& line_endpoints = epiline_group.endpoints;
+
+  // The number of steps required to "walk" between the line endpoints.
+  const int num_steps =
+    static_cast<int>((line_endpoints[1] - line_endpoints[0]).norm() /
+                     options_.guided_matching_max_distance_pixels);
+
+  // Sample the epipolar line equally between the points where it intersects
+  // the features bounding box.
+  std::unordered_set<int> candidate_keypoints;
+  const Eigen::Vector2d line_delta =
+      (line_endpoints[0] - line_endpoints[1]) / static_cast<double>(num_steps);
+  Eigen::Vector2d sample_point = line_endpoints[1];
+
+  for (int i = 0; i < num_steps; i++) {
+    sample_point += line_delta;
+
+    // Find the cell center among all grids that is closest and add the
+    // keypoints belonging to that cell.
+    std::vector<int> new_keypoints;
+    FindClosestCellAndKeypoints(sample_point, &new_keypoints);
+    candidate_keypoints.insert(new_keypoints.begin(), new_keypoints.end());
+  }
+
+  // If we do not have enough features then the lowes ratio test is not
+  // meaningful. Add some random features here so that lowes ratio is more
+  // informative of whether we have a good match or not.
+  if (candidate_keypoints.size() < kMinNumMatchesFound) {
+    const int num_current_keypoints = candidate_keypoints.size();
+    for (int i = num_current_keypoints; i < kMinNumMatchesFound; i++) {
+      candidate_keypoints.insert(RandInt(0, features2_.keypoints.size() - 1));
+    }
+  }
+  candidate_keypoint_indices->insert(candidate_keypoint_indices->end(),
+                                     candidate_keypoints.begin(),
+                                     candidate_keypoints.end());
 }
 
 void GuidedEpipolarMatcher::FindEpipolarLineIntersection(
@@ -254,50 +342,61 @@ void GuidedEpipolarMatcher::FindEpipolarLineIntersection(
 }
 
 void GuidedEpipolarMatcher::FindKNearestNeighbors(
-    const Eigen::VectorXf& query_descriptor,
-    const std::vector<int>& candidate_keypoint_indices,
-    std::vector<std::pair<int, float> >* matches) {
-  static const int kNumQueryDescriptors = 1;
+    const std::vector<int>& query_feature_indices,
+    const std::vector<int>& candidate_feature_indices,
+    std::vector<std::vector<float> >* nn_distances,
+    std::vector<std::vector<int> >* nn_indices) {
   static const int kNumNearestNeighbors = 2;
   static const int kMinNumLeafsVisited = 50;
+  const int num_descriptor_dimensions = features1_.descriptors[0].size();
+
+  // Gather the query descriptors.
+  Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
+      query_descriptors(query_feature_indices.size(),
+                        num_descriptor_dimensions);
+  for (int i = 0; i < query_feature_indices.size(); i++) {
+    const int match_index = query_feature_indices[i];
+    query_descriptors.row(i) = features1_.descriptors[match_index];
+  }
+  flann::Matrix<float> flann_query_descriptors(query_descriptors.data(),
+                                               query_descriptors.rows(),
+                                               query_descriptors.cols());
 
   // Gather the candidate matching descriptors.
   Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>
-      candidate_descriptors(candidate_keypoint_indices.size(),
-                            query_descriptor.size());
-  for (int i = 0; i < candidate_keypoint_indices.size(); i++) {
-    const int match_index = candidate_keypoint_indices[i];
+      candidate_descriptors(candidate_feature_indices.size(),
+                            num_descriptor_dimensions);
+  for (int i = 0; i < candidate_feature_indices.size(); i++) {
+    const int match_index = candidate_feature_indices[i];
     candidate_descriptors.row(i) = features2_.descriptors[match_index];
   }
 
   // Create the searchable KD-tree with FLANN.
-  flann::Matrix<float> flann_descriptors(candidate_descriptors.data(),
-                                         candidate_descriptors.rows(),
-                                         candidate_descriptors.cols());
+  flann::Matrix<float> flann_candidate_descriptors(
+      candidate_descriptors.data(), candidate_descriptors.rows(),
+      candidate_descriptors.cols());
 
   flann::Index<flann::L2<float> > flann_kd_tree(
-      flann_descriptors, flann::KDTreeSingleIndexParams());
+      flann_candidate_descriptors, flann::KDTreeSingleIndexParams());
   flann_kd_tree.buildIndex();
 
   // Query the KD-tree to get the top 2 nearest neighbors.
-  Eigen::RowVectorXf eig_query_descriptor = query_descriptor;
-  const flann::Matrix<float> flann_query(eig_query_descriptor.data(),
-                                         kNumQueryDescriptors,
-                                         eig_query_descriptor.size());
-  std::vector<std::vector<int> > nn_indices;
-  std::vector<std::vector<float> > nn_distances;
   const int max_leafs_to_check =
       std::max(static_cast<int>(candidate_descriptors.rows() * 0.2),
                kMinNumLeafsVisited);
-  flann_kd_tree.knnSearch(flann_query, nn_indices, nn_distances,
+  flann_kd_tree.knnSearch(flann_query_descriptors, *nn_indices, *nn_distances,
                           kNumNearestNeighbors,
                           flann::SearchParams(max_leafs_to_check));
 
   // Output the top 2 matches.
-  matches->emplace_back(candidate_keypoint_indices[nn_indices[0][0]],
-                        nn_distances[0][0]);
-  matches->emplace_back(candidate_keypoint_indices[nn_indices[0][1]],
-                        nn_distances[0][1]);
+  for (int i = 0; i < query_feature_indices.size(); i++) {
+    // Change the NN indices to be the feature index instead of the index of the
+    // FLANN matrix.
+    for (int j = 0; j < kNumNearestNeighbors; j++) {
+      const int flann_index = (*nn_indices)[i][j];
+      (*nn_indices)[i][j] = candidate_feature_indices[flann_index];
+    }
+  }
 }
 
 void GuidedEpipolarMatcher::FindClosestCellAndKeypoints(
