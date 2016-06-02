@@ -48,17 +48,13 @@ set(THEIA_SRC
   io/read_calibration.cc
   io/read_keypoints_and_descriptors.cc
   io/read_matches.cc
-  io/read_matches_deprecated.cc
   io/reconstruction_reader.cc
-  io/reconstruction_reader_deprecated.cc
   io/reconstruction_writer.cc
-  io/reconstruction_writer_deprecated.cc
   io/sift_binary_file.cc
   io/sift_text_file.cc
   io/write_bundler_files.cc
   io/write_keypoints_and_descriptors.cc
   io/write_matches.cc
-  io/write_matches_deprecated.cc
   io/write_nvm_file.cc
   io/write_ply_file.cc
   matching/brute_force_feature_matcher.cc

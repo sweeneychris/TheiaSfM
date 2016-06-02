@@ -242,8 +242,6 @@ TrackId Reconstruction::AddTrack(
       << new_track_id;
 
   class Track new_track;
-
-  std::vector<ViewId> views_to_add;
   for (const auto& observation : track) {
     // Make sure the view exists in the model.
     CHECK(ContainsKey(views_, observation.first))
