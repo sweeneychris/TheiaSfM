@@ -36,7 +36,9 @@
 #define THEIA_MATCHING_FEATURE_CORRESPONDENCE_H_
 
 #include <cereal/access.hpp>
+#include <cereal/cereal.hpp>
 #include <Eigen/Core>
+#include <stdint.h>
 
 #include "theia/alignment/alignment.h"
 #include "theia/sfm/feature.h"
@@ -64,11 +66,13 @@ struct FeatureCorrespondence {
   // data members should be used when reading/writing to/from disk.
   friend class cereal::access;
   template <class Archive>
-  void serialize(Archive& ar) {  // NOLINT
+  void serialize(Archive& ar, const std::uint32_t version) {  // NOLINT
     ar(feature1, feature2);
   }
 };
 
 }  // namespace theia
+
+CEREAL_CLASS_VERSION(theia::FeatureCorrespondence, 0);
 
 #endif  // THEIA_MATCHING_FEATURE_CORRESPONDENCE_H_

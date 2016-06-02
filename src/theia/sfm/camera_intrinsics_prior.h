@@ -36,6 +36,8 @@
 #define THEIA_SFM_CAMERA_INTRINSICS_PRIOR_H_
 
 #include <cereal/access.hpp>
+#include <cereal/cereal.hpp>
+#include <stdint.h>
 
 namespace theia {
 
@@ -51,7 +53,7 @@ struct Prior {
   // data members should be used when reading/writing to/from disk.
   friend class cereal::access;
   template <class Archive>
-  void serialize(Archive& ar) {  // NOLINT
+  void serialize(Archive& ar, const std::uint32_t version) {  // NOLINT
     ar(is_set, value);
   }
 };
@@ -76,7 +78,7 @@ struct CameraIntrinsicsPrior {
   // data members should be used when reading/writing to/from disk.
   friend class cereal::access;
   template <class Archive>
-  void serialize(Archive& ar) {  // NOLINT
+  void serialize(Archive& ar, const std::uint32_t version) {  // NOLINT
     ar(focal_length,
        principal_point[0],
        principal_point[1],
@@ -88,5 +90,8 @@ struct CameraIntrinsicsPrior {
 };
 
 }  // namespace theia
+
+CEREAL_CLASS_VERSION(theia::Prior, 0);
+CEREAL_CLASS_VERSION(theia::CameraIntrinsicsPrior, 0);
 
 #endif  // THEIA_SFM_CAMERA_INTRINSICS_PRIOR_H_

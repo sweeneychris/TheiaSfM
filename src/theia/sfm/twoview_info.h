@@ -36,6 +36,8 @@
 #define THEIA_SFM_TWOVIEW_INFO_H_
 
 #include <cereal/access.hpp>
+#include <cereal/cereal.hpp>
+#include <stdint.h>
 #include <Eigen/Core>
 
 #include "theia/io/eigen_serializable.h"
@@ -45,7 +47,7 @@ namespace theia {
 
 // A struct to hold match and projection data between two views. It is assumed
 // that the first view is at the origin with an identity rotation.
-struct TwoViewInfo {
+class TwoViewInfo {
  public:
   TwoViewInfo()
       : focal_length_1(0.0),
@@ -74,7 +76,7 @@ struct TwoViewInfo {
   // data members should be used when reading/writing to/from disk.
   friend class cereal::access;
   template <class Archive>
-  void serialize(Archive& ar) {  // NOLINT
+  void serialize(Archive& ar, const std::uint32_t version) {  // NOLINT
     ar(focal_length_1,
        focal_length_2,
        position_2,
@@ -89,5 +91,7 @@ struct TwoViewInfo {
 void SwapCameras(TwoViewInfo* twoview_info);
 
 }  // namespace theia
+
+CEREAL_CLASS_VERSION(theia::TwoViewInfo, 0);
 
 #endif  // THEIA_SFM_TWOVIEW_INFO_H_

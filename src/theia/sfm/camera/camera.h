@@ -35,8 +35,9 @@
 #ifndef THEIA_SFM_CAMERA_CAMERA_H_
 #define THEIA_SFM_CAMERA_CAMERA_H_
 
-#include <cereal/cereal.hpp>
 #include <cereal/access.hpp>
+#include <cereal/cereal.hpp>
+#include <stdint.h>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <vector>
@@ -199,7 +200,7 @@ class Camera {
   // data members should be used when reading/writing to/from disk.
   friend class cereal::access;
   template <class Archive>
-  void serialize(Archive& ar) {  // NOLINT
+  void serialize(Archive& ar, const std::uint32_t version) {  // NOLINT
     ar(cereal::binary_data(camera_parameters_, sizeof(double) * kParameterSize),
        cereal::binary_data(image_size_, sizeof(int) * 2));
   }
@@ -211,5 +212,7 @@ class Camera {
 };
 
 }  // namespace theia
+
+CEREAL_CLASS_VERSION(theia::Camera, 0);
 
 #endif  // THEIA_SFM_CAMERA_CAMERA_H_

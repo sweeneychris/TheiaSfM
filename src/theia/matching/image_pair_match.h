@@ -36,7 +36,9 @@
 #define THEIA_MATCHING_IMAGE_PAIR_MATCH_H_
 
 #include <cereal/access.hpp>
+#include <cereal/cereal.hpp>
 #include <cereal/types/vector.hpp>
+#include <stdint.h>
 #include <string>
 #include <vector>
 
@@ -64,35 +66,13 @@ struct ImagePairMatch {
   // data members should be used when reading/writing to/from disk.
   friend class cereal::access;
   template <class Archive>
-  void serialize(Archive& ar) {  // NOLINT
+  void serialize(Archive& ar, const std::uint32_t version) {  // NOLINT
     ar(image1, image2, twoview_info, correspondences);
   }
 };
 
-struct ImagePairMatchDeprecated {
- public:
-  // Indices of the matches image pair with respect to the input vectors.
-  int image1_index;
-  int image2_index;
-
-  // If the matches are verified matches then the two view info contains the
-  // relative pose information between the images.
-  TwoViewInfo twoview_info;
-
-  // Feature locations in pixel coordinates. If the match is a verified match
-  // then this only contains inlier correspondences.
-  std::vector<FeatureCorrespondence> correspondences;
-
- private:
-  // Templated method for disk I/O with cereal. This method tells cereal which
-  // data members should be used when reading/writing to/from disk.
-  friend class cereal::access;
-  template <class Archive>
-  void serialize(Archive& ar) {  // NOLINT
-    ar(image1_index, image2_index, twoview_info, correspondences);
-  }
-};
-
 }  // namespace theia
+
+CEREAL_CLASS_VERSION(theia::ImagePairMatch, 0);
 
 #endif  // THEIA_MATCHING_IMAGE_PAIR_MATCH_H_

@@ -36,8 +36,10 @@
 #define THEIA_IMAGE_KEYPOINT_DETECTOR_KEYPOINT_H_
 
 #include <cereal/access.hpp>
+#include <cereal/cereal.hpp>
 #include <cereal/types/common.hpp>
 #include <cereal/types/vector.hpp>
+#include <stdint.h>
 #include <vector>
 
 namespace theia {
@@ -107,11 +109,13 @@ class Keypoint {
   // data members should be used when reading/writing to/from disk.
   friend class cereal::access;
   template <class Archive>
-  void serialize(Archive& ar) {  // NOLINT
+  void serialize(Archive& ar, const std::uint32_t version) {  // NOLINT
     ar(x_, y_, keypoint_type_, strength_, scale_, orientation_);
   }
 };
 
 }  // namespace theia
+
+CEREAL_CLASS_VERSION(theia::Keypoint, 0);
 
 #endif  // THEIA_IMAGE_KEYPOINT_DETECTOR_KEYPOINT_H_
