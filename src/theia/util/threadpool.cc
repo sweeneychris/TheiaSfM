@@ -103,15 +103,22 @@ ThreadPool::ThreadPool(const int num_threads) : stop(false) {
 }
 
 
-// the destructor joins all threads
+// The destructor joins all threads
 ThreadPool::~ThreadPool() {
+  WaitForTasksToFinish();
+}
+
+void ThreadPool::WaitForTasksToFinish() {
   {
     std::unique_lock<std::mutex> lock(queue_mutex);
     stop = true;
   }
   condition.notify_all();
-  for (std::thread& worker : workers)
-    worker.join();
+  for (std::thread& worker : workers) {
+    if (worker.joinable()) {
+      worker.join();
+    }
+  }
 }
 
 }  // namespace theia

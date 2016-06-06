@@ -266,17 +266,17 @@ void FilterViewPairsFromRelativeTranslation(
                       &translation_mean,
                       &translation_variance);
 
-  std::unique_ptr<ThreadPool> pool(new ThreadPool(options.num_threads));
+  ThreadPool pool(options.num_threads);
   std::mutex mutex;
   for (int i = 0; i < options.num_iterations; i++) {
-    pool->Add(TranslationFilteringIteration,
-              rotated_translations,
-              translation_mean,
-              translation_variance,
-              &mutex,
-              &bad_edge_weight);
+    pool.Add(TranslationFilteringIteration,
+             rotated_translations,
+             translation_mean,
+             translation_variance,
+             &mutex,
+             &bad_edge_weight);
   }
-  pool.reset(nullptr);
+  pool.WaitForTasksToFinish();
 
   // Remove all the bad edges.
   const double max_aggregated_projection_tolerance =

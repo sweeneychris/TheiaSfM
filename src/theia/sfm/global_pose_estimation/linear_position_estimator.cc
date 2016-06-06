@@ -225,15 +225,15 @@ bool LinearPositionEstimator::EstimatePositions(
   // Baselines where (x, y, z) corresponds to the baseline of the first, second,
   // and third view pair in the triplet.
   std::vector<Vector3d> baselines(triplets_.size());
-  std::unique_ptr<ThreadPool> pool(new ThreadPool(options_.num_threads));
+  ThreadPool pool(options_.num_threads);
   for (int i = 0; i < triplets_.size(); i++) {
-    pool->Add(&LinearPositionEstimator::ComputeBaselineRatioForTriplet,
-              this,
-              triplets_[i],
-              &baselines[i]);
+    pool.Add(&LinearPositionEstimator::ComputeBaselineRatioForTriplet,
+             this,
+             triplets_[i],
+             &baselines[i]);
   }
   // Wait for the baseline ratio computation to finish.
-  pool.reset(nullptr);
+  pool.WaitForTasksToFinish();
 
   VLOG(2) << "Building the constraint matrix...";
   // Create the linear system based on triplet constraints.

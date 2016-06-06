@@ -96,7 +96,7 @@ void ColorizeReconstruction(const std::string& image_directory,
   CHECK_GT(num_threads, 0);
   CHECK_NOTNULL(reconstruction);
 
-  std::unique_ptr<ThreadPool> pool(new ThreadPool(num_threads));
+  ThreadPool pool(num_threads);
   std::mutex mutex_lock;
 
   // Initialize the colors to be (0, 0, 0).
@@ -114,13 +114,13 @@ void ColorizeReconstruction(const std::string& image_directory,
     const std::string image_filepath = image_directory + view->Name();
     CHECK(FileExists(image_filepath)) << "The image file: " << image_filepath
                                       << " does not exist!";
-    pool->Add(ExtractColorsFromImage,
-              image_filepath,
-              *view,
-              &colors,
-              &mutex_lock);
+    pool.Add(ExtractColorsFromImage,
+             image_filepath,
+             *view,
+             &colors,
+             &mutex_lock);
   }
-  pool.reset(nullptr);
+  pool.WaitForTasksToFinish();
 
   // The colors map now contains a sum of all colors, so to get the mean we must
   // divide by the number of observations in each track.
