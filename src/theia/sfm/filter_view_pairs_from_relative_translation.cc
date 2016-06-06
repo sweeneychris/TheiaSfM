@@ -234,9 +234,8 @@ void TranslationFilteringIteration(
     // to the aggregate bad weight.
     if ((ordering_diff < 0 && projection_weight_of_edge > 0) ||
         (ordering_diff > 0 && projection_weight_of_edge < 0)) {
-      mutex->lock();
+      std::lock_guard<std::mutex> lock(*mutex);
       edge.second += std::abs(projection_weight_of_edge);
-      mutex->unlock();
     }
   }
 }

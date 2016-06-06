@@ -175,9 +175,8 @@ void FeatureExtractorAndMatcher::ProcessImage(
   if (!ContainsKey(intrinsics_, image_filepath)) {
     CameraIntrinsicsPrior intrinsics;
     CHECK(exif_reader_.ExtractEXIFMetadata(image_filepath, &intrinsics));
-    intrinsics_mutex_.lock();
+    std::lock_guard<std::mutex> lock(intrinsics_mutex_);
     intrinsics_.emplace(image_filepath, intrinsics);
-    intrinsics_mutex_.unlock();
   }
 
   // Early exit if no EXIF calibration exists and we are only processing
@@ -208,9 +207,8 @@ void FeatureExtractorAndMatcher::ProcessImage(
   // disk and read them back as needed.
   std::string image_filename;
   CHECK(GetFilenameFromFilepath(image_filepath, true, &image_filename));
-  matcher_mutex_.lock();
+  std::lock_guard<std::mutex> lock(matcher_mutex_);
   matcher_->AddImage(image_filename, keypoints, descriptors, intrinsics);
-  matcher_mutex_.unlock();
 }
 
 }  // namespace theia
