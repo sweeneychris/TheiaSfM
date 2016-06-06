@@ -104,7 +104,8 @@ class ThreadPool {
 
   // Synchronization
   std::mutex queue_mutex;
-  std::condition_variable condition;
+  std::condition_variable task_condition, finished_condition;
+  std::atomic_uint busy;
   bool stop;
 
   DISALLOW_COPY_AND_ASSIGN(ThreadPool);
@@ -131,7 +132,7 @@ auto ThreadPool::Add(F&& f, Args&& ... args)
       (*task)();
     });
   }
-  condition.notify_one();
+  task_condition.notify_one();
   return res;
 }
 

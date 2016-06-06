@@ -78,25 +78,27 @@
 
 namespace theia {
 
-ThreadPool::ThreadPool(const int num_threads) : stop(false) {
+ThreadPool::ThreadPool(const int num_threads) : stop(false), busy(0) {
   CHECK_GE(num_threads, 1)
       << "The number of threads specified to the ThreadPool is insufficient.";
   for (size_t i = 0; i < num_threads; ++i) {
     workers.emplace_back([this] {
       for (;;) {
         std::function<void()> task;
-
         {
           std::unique_lock<std::mutex> lock(this->queue_mutex);
-          this->condition.wait(lock, [this] {
+          this->task_condition.wait(lock, [this] {
             return this->stop || !this->tasks.empty();
           });
           if (this->stop && this->tasks.empty()) return;
+          ++busy;
           task = std::move(this->tasks.front());
           this->tasks.pop();
         }
 
         task();
+        --busy;
+        finished_condition.notify_one();
       }
       });
   }
@@ -105,20 +107,22 @@ ThreadPool::ThreadPool(const int num_threads) : stop(false) {
 
 // The destructor joins all threads
 ThreadPool::~ThreadPool() {
-  WaitForTasksToFinish();
-}
-
-void ThreadPool::WaitForTasksToFinish() {
   {
     std::unique_lock<std::mutex> lock(queue_mutex);
     stop = true;
   }
-  condition.notify_all();
+  task_condition.notify_all();
   for (std::thread& worker : workers) {
     if (worker.joinable()) {
       worker.join();
     }
   }
+}
+
+void ThreadPool::WaitForTasksToFinish() {
+  std::unique_lock<std::mutex> lock(queue_mutex);
+  finished_condition.wait(lock,
+                          [this](){ return tasks.empty() && (busy == 0); });
 }
 
 }  // namespace theia
