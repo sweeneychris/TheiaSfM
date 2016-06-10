@@ -69,7 +69,8 @@ DEFINE_bool(reconstruct_largest_connected_component, false,
 DEFINE_bool(only_calibrated_views, false,
             "Set to true to only reconstruct the views where calibration is "
             "provided or can be extracted from EXIF");
-DEFINE_int32(max_track_length, 20, "Maximum length of a track.");
+DEFINE_int32(min_track_length, 2, "Minimum length of a track.");
+DEFINE_int32(max_track_length, 50, "Maximum length of a track.");
 DEFINE_string(intrinsics_to_optimize,
               "NONE",
               "Set to control which intrinsics parameters are optimized during "
@@ -153,6 +154,7 @@ using theia::ReconstructionBuilderOptions;
 ReconstructionBuilderOptions SetReconstructionBuilderOptions() {
   ReconstructionBuilderOptions options;
   options.num_threads = FLAGS_num_threads;
+  options.min_track_length = FLAGS_min_track_length;
   options.max_track_length = FLAGS_max_track_length;
 
   // Reconstruction Estimator Options.

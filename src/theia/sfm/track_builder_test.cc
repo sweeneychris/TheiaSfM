@@ -46,6 +46,7 @@
 #include "theia/sfm/types.h"
 
 namespace theia {
+static const int kMinTrackLength = 2;
 
 // Ensure that each track has been added to every view.
 void VerifyTracks(const Reconstruction& reconstruction) {
@@ -68,7 +69,7 @@ TEST(TrackBuilder, ConsistentTracks) {
     { 0, 1 }, { 0, 1 }, { 1, 2 }, { 1, 2 }
   };
 
-  TrackBuilder track_builder(kMaxTrackLength);
+  TrackBuilder track_builder(kMinTrackLength, kMaxTrackLength);
   for (int i = 0; i < kNumCorrespondences; i++) {
     track_builder.AddFeatureCorrespondence(view_ids[i][0],
                                            Feature(i, i),
@@ -94,7 +95,7 @@ TEST(TrackBuilder, SingletonTracks) {
   const ViewId view_ids[kNumCorrespondences][2] = {
     { 0, 1 }, { 1, 2 } };
 
-  TrackBuilder track_builder(kMaxTrackLength);
+  TrackBuilder track_builder(kMinTrackLength, kMaxTrackLength);
   for (int i = 0; i < kNumCorrespondences; i++) {
     track_builder.AddFeatureCorrespondence(
         view_ids[i][0], Feature(0, 0),
@@ -120,7 +121,7 @@ TEST(TrackBuilder, InconsistentTracks) {
     { 0, 1 }, { 0, 1 }, { 1, 2 }, { 1, 2 }
   };
 
-  TrackBuilder track_builder(kMaxTrackLength);
+  TrackBuilder track_builder(kMinTrackLength, kMaxTrackLength);
   for (int i = 0; i < kNumCorrespondences; i++) {
     track_builder.AddFeatureCorrespondence(
         view_ids[i][0], Feature(0, 0),
@@ -144,7 +145,7 @@ TEST(TrackBuilder, MaxTrackLength) {
 
   const ViewId view_ids[kNumViews] = { 0, 1, 2, 3, 4, 5 };
 
-  TrackBuilder track_builder(kMaxTrackLength);
+  TrackBuilder track_builder(kMinTrackLength, kMaxTrackLength);
   for (int i = 0; i < kNumViews - 1; i++) {
     track_builder.AddFeatureCorrespondence(
         view_ids[i], Feature(0, 0),
@@ -162,6 +163,39 @@ TEST(TrackBuilder, MaxTrackLength) {
   track_builder.BuildTracks(&reconstruction);
   VerifyTracks(reconstruction);
   EXPECT_EQ(reconstruction.NumTracks(), 3);
+}
+
+TEST(TrackBuilder, MinTrackLength) {
+  static const int kMaxTrackLength = 10;
+  static const int min_track_length = 3;
+  static const int kNumViews = 6;
+
+  const ViewId view_ids[kNumViews] = { 0, 1, 2, 3, 4, 5 };
+
+  TrackBuilder track_builder(min_track_length, kMaxTrackLength);
+
+  // Add one track that is larger than the min track length.
+  for (int i = 0; i < kNumViews - 1; i++) {
+    track_builder.AddFeatureCorrespondence(
+        view_ids[i], Feature(0, 0),
+        view_ids[i + 1], Feature(0, 0));
+  }
+
+  // Add another track that is smaller than the min track length.
+  track_builder.AddFeatureCorrespondence(view_ids[0], Feature(1, 1),
+                                         view_ids[1], Feature(1, 1));
+
+  Reconstruction reconstruction;
+  reconstruction.AddView("0");
+  reconstruction.AddView("1");
+  reconstruction.AddView("2");
+  reconstruction.AddView("3");
+  reconstruction.AddView("4");
+  reconstruction.AddView("5");
+
+  track_builder.BuildTracks(&reconstruction);
+  VerifyTracks(reconstruction);
+  EXPECT_EQ(reconstruction.NumTracks(), 1);
 }
 
 }  // namespace theia

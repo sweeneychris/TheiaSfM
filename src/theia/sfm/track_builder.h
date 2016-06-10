@@ -57,7 +57,7 @@ class Reconstruction;
 // that the tracks are consistent.
 class TrackBuilder {
  public:
-  explicit TrackBuilder(const int max_track_length);
+  TrackBuilder(const int min_track_length, const int max_track_length);
 
   ~TrackBuilder();
 
@@ -74,6 +74,7 @@ class TrackBuilder {
   std::unordered_map<std::pair<ViewId, Feature>, uint64_t> features_;
   std::unique_ptr<ConnectedComponents<uint64_t> > connected_components_;
   uint64_t num_features_;
+  const int min_track_length_;
 };
 
 }  // namespace theia

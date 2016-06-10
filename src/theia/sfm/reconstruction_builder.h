@@ -69,9 +69,13 @@ struct ReconstructionBuilderOptions {
   // added to the reconstruction builder they are ignored with a LOG warning.
   bool only_calibrated_views = false;
 
+  // Minimum allowable track length. Tracks that are too short are often not
+  // well-constrained for triangulation and bundle adjustment.
+  int min_track_length = 2;
+
   // Maximum allowable track length. Tracks that are too long are exceedingly
   // likely to contain outliers.
-  int max_track_length = 20;
+  int max_track_length = 50;
 
   // Minimum number of geometrically verified inliers that a view pair must have
   // in order to be considered a good match.

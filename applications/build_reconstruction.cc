@@ -108,7 +108,8 @@ DEFINE_bool(shared_calibration, false,
 DEFINE_bool(only_calibrated_views, false,
             "Set to true to only reconstruct the views where calibration is "
             "provided or can be extracted from EXIF");
-DEFINE_int32(max_track_length, 20, "Maximum length of a track.");
+DEFINE_int32(min_track_length, 2, "Minimum length of a track.");
+DEFINE_int32(max_track_length, 50, "Maximum length of a track.");
 DEFINE_string(intrinsics_to_optimize,
               "NONE",
               "Set to control which intrinsics parameters are optimized during "
@@ -248,6 +249,7 @@ ReconstructionBuilderOptions SetReconstructionBuilderOptions() {
   options.matching_options.geometric_verification_options
       .final_max_reprojection_error = FLAGS_max_reprojection_error_pixels;
 
+  options.min_track_length = FLAGS_min_track_length;
   options.max_track_length = FLAGS_max_track_length;
 
   // Reconstruction Estimator Options.

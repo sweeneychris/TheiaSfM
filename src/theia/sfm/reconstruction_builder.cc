@@ -151,7 +151,8 @@ ReconstructionBuilder::ReconstructionBuilder(
 
   reconstruction_.reset(new Reconstruction());
   view_graph_.reset(new ViewGraph());
-  track_builder_.reset(new TrackBuilder(options.max_track_length));
+  track_builder_.reset(
+      new TrackBuilder(options.min_track_length, options.max_track_length));
 
   // Set up feature extraction and matching.
   FeatureExtractorAndMatcher::Options feam_options;
