@@ -102,6 +102,10 @@ template <typename T> class Image {
   T* Data() { return image_.data(); }
   const T* Data() const { return image_.data(); }
 
+  // Computes the gradient in x and y and returns the summation to obtain the
+  // gradient magnitude at each pixel.
+  Image<T> ComputeGradient() const;
+
   // Sampling techniques.
   void HalfSample(Image<T>* dest) const;
   void TwoThirdsSample(Image<T>* dest) const;
@@ -254,6 +258,12 @@ template <typename T> void Image<T>::Read(const std::string& filename) {
 
 template <typename T> void Image<T>::Write(const std::string& filename) const {
   image_.save(filename.c_str());
+}
+
+template <typename T>
+Image<T> Image<T>::ComputeGradient() const {
+  cimg_library::CImgList<T> gradient = image_.get_gradient("xy");
+  return Image<T>(gradient[0] + gradient[1]);
 }
 
 template <typename T> void Image<T>::HalfSample(Image<T>* dest) const {
