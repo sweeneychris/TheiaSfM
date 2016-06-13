@@ -211,6 +211,8 @@ add_subdirectory(libraries)
 include_directories(
   libraries
   libraries/spectra
+  ${akaze_SOURCE_DIR}
+  ${akaze_INCLUDE_DIR}
   ${cereal_SOURCE_DIR}
   ${cereal_SOURCE_DIR}/include
   ${cimg_SOURCE_DIR}

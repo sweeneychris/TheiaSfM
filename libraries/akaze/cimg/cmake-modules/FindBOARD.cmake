@@ -1,0 +1,46 @@
+# - Find BOARD
+# Find the native BOARD includes and library
+# This module defines
+#  BOARD_INCLUDE_DIR, where to find jpeglib.h, etc.
+#  BOARD_LIBRARIES, the libraries needed to use BOARD.
+#  BOARD_FOUND, If false, do not try to use BOARD.
+# also defined, but not for general use are
+#  BOARD_LIBRARY, where to find the BOARD library.
+
+FIND_PATH(BOARD_INCLUDE_DIR board.h
+/usr/local/include
+/usr/include
+)
+
+SET(BOARD_NAMES ${BOARD_NAMES} board)
+FIND_LIBRARY(BOARD_LIBRARY
+  NAMES ${BOARD_NAMES}
+  PATHS /usr/lib /usr/local/lib
+  )
+
+IF (BOARD_LIBRARY AND BOARD_INCLUDE_DIR)
+    SET(BOARD_LIBRARIES ${BOARD_LIBRARY})
+    SET(BOARD_FOUND "YES")
+ELSE (BOARD_LIBRARY AND BOARD_INCLUDE_DIR)
+  SET(BOARD_FOUND "NO")
+ENDIF (BOARD_LIBRARY AND BOARD_INCLUDE_DIR)
+
+
+IF (BOARD_FOUND)
+   IF (NOT BOARD_FIND_QUIETLY)
+      MESSAGE(STATUS "Found BOARD: ${BOARD_LIBRARIES}")
+   ENDIF (NOT BOARD_FIND_QUIETLY)
+ELSE (BOARD_FOUND)
+   IF (BOARD_FIND_REQUIRED)
+      MESSAGE(FATAL_ERROR "Could not find BOARD library")
+   ENDIF (BOARD_FIND_REQUIRED)
+ENDIF (BOARD_FOUND)
+
+# Deprecated declarations.
+SET (NATIVE_BOARD_INCLUDE_PATH ${BOARD_INCLUDE_DIR} )
+GET_FILENAME_COMPONENT (NATIVE_BOARD_LIB_PATH ${BOARD_LIBRARY} PATH)
+
+MARK_AS_ADVANCED(
+  BOARD_LIBRARY
+  BOARD_INCLUDE_DIR
+  )

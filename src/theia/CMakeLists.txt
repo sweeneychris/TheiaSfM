@@ -37,6 +37,7 @@ file(GLOB THEIA_HDRS *.h)
 
 # Add sources
 set(THEIA_SRC
+  image/descriptor/akaze_descriptor.cc
   image/descriptor/create_descriptor_extractor.cc
   image/descriptor/descriptor_extractor.cc
   image/descriptor/sift_descriptor.cc
@@ -164,6 +165,7 @@ set(THEIA_LIBRARY_DEPENDENCIES
   ${GLOG_LIBRARIES}
   ${CIMG_LIBRARIES}
   ${SUITESPARSE_LIBRARIES}
+  akaze
   easyexif
   flann_cpp
   statx
@@ -202,6 +204,7 @@ if (BUILD_TESTING)
       COMMAND ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/${TEST_NAME}_test)
   endmacro (GTEST)
 
+  gtest(image/descriptor/akaze_descriptor)
   gtest(image/descriptor/sift_descriptor)
   gtest(image/image)
   gtest(image/keypoint_detector/sift_detector)

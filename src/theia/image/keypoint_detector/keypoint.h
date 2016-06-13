@@ -52,7 +52,8 @@ class Keypoint {
   enum KeypointType {
     INVALID = -1,
     OTHER = 0,
-    SIFT,
+    SIFT = 1,
+    AKAZE = 2,
   };
 
   Keypoint(double x, double y, KeypointType type)
