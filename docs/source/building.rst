@@ -28,7 +28,7 @@ Theia relies on a number of open source libraries. Luckily, most of the will be 
 **NOTE**: Theia also depends on the following libraries, but they are included in the installation of Ceres so it is likely that you do not need to reinstall them.
 
 
-6. `google-glog <http://http://code.google.com/p/google-glog>`_ is used for error checking and logging. Ceres needs glog version 0.3.1 or later. Version 0.3 (which ships with Fedora 16) has a namespace bug which prevents Ceres from building.
+6. `google-glog <http://code.google.com/p/google-glog>`_ is used for error checking and logging. Ceres needs glog version 0.3.1 or later. Version 0.3 (which ships with Fedora 16) has a namespace bug which prevents Ceres from building.
 
 
 7. `gflags <http://code.google.com/p/gflags>`_ is a library for processing command line flags. It is used by some of the examples and tests.
