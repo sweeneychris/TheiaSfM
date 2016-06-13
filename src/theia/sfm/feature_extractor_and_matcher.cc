@@ -72,13 +72,9 @@ void ExtractFeatures(
   //
   // TODO(cmsweeney): Change this so that each thread in the threadpool receives
   // exactly one object.
-  CreateDescriptorExtractorOptions descriptor_options;
-  descriptor_options.descriptor_extractor_type =
-      options.descriptor_extractor_type;
-  descriptor_options.sift_options = options.sift_parameters;
-
   std::unique_ptr<DescriptorExtractor> descriptor_extractor =
-      CreateDescriptorExtractor(descriptor_options);
+      CreateDescriptorExtractor(options.descriptor_extractor_type,
+                                options.feature_density);
 
   // Exit if the descriptor extraction fails.
   if (!descriptor_extractor->DetectAndExtractDescriptors(*image,

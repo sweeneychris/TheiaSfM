@@ -85,9 +85,10 @@ struct ReconstructionBuilderOptions {
   // See //theia/image/descriptor/create_descriptor_extractor.h
   DescriptorExtractorType descriptor_type = DescriptorExtractorType::SIFT;
 
-  // Sift parameters controlling keypoint detection and description options.
-  // See //theia/image/keypoint_detector/sift_parameters.h
-  SiftParameters sift_parameters;
+  // The density of features to extract. DENSE means more features are
+  // extracted per image and SPARSE means fewer features per image are
+  // extracted.
+  FeatureDensity feature_density = FeatureDensity::NORMAL;
 
   // Matching strategy type.
   // See //theia/matching/create_feature_matcher.h

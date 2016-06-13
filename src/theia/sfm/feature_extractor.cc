@@ -109,12 +109,9 @@ bool FeatureExtractor::ExtractFeatures(
   //
   // TODO(cmsweeney): Change this so that each thread in the threadpool receives
   // exactly one object.
-  CreateDescriptorExtractorOptions options;
-  options.descriptor_extractor_type = options_.descriptor_extractor_type;
-  options.sift_options = options_.sift_parameters;
-
   std::unique_ptr<DescriptorExtractor> descriptor_extractor =
-      CreateDescriptorExtractor(options);
+      CreateDescriptorExtractor(options_.descriptor_extractor_type,
+                                options_.feature_density);
 
   // Exit if the descriptor extraction fails.
   if (!descriptor_extractor->DetectAndExtractDescriptors(*image,

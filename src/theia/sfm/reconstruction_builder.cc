@@ -161,7 +161,7 @@ ReconstructionBuilder::ReconstructionBuilder(
   feam_options.num_threads = options_.num_threads;
   feam_options.descriptor_extractor_type =
       options_.descriptor_type;
-  feam_options.sift_parameters = options_.sift_parameters;
+  feam_options.feature_density = options_.feature_density;
   feam_options.min_num_inlier_matches = options_.min_num_inlier_matches;
   feam_options.matching_strategy = options_.matching_strategy;
   feam_options.feature_matcher_options = options_.matching_options;

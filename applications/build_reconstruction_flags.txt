@@ -21,14 +21,7 @@
 
 ############### Feature Extraction ###############
 --descriptor=SIFT
-# Sift blob detector parameters.
---sift_num_octaves=-1
---sift_num_levels=3
---sift_first_octave=-1
---sift_edge_threshold=10.0
---sift_peak_threshold=1.7
-# Disable if regular sift descriptor is desired.
---root_sift=true
+--feature_density=NORMAL
 
 ############### Matching Options ###############
 # Perform matching out-of-core. If set to true, the matching_working_directory

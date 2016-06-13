@@ -55,8 +55,12 @@ class FeatureExtractor {
     int num_threads = 1;
     DescriptorExtractorType descriptor_extractor_type =
         DescriptorExtractorType::SIFT;
-    // Sift parameters.
-    SiftParameters sift_parameters;
+
+    // The density of features to extract. DENSE means more features are
+    // extracted per image and SPARSE means fewer features per image are
+    // extracted.
+    FeatureDensity feature_density = FeatureDensity::NORMAL;
+
     // The features returned will be no larger than this size.
     int max_num_features = 16384;
 

@@ -37,6 +37,7 @@
 
 #include <memory>
 
+#include "theia/image/descriptor/akaze_descriptor.h"
 #include "theia/image/descriptor/descriptor_extractor.h"
 #include "theia/image/keypoint_detector/sift_parameters.h"
 
@@ -48,19 +49,24 @@ namespace theia {
 // features and custom descriptors) is needed then a new class may be developed.
 enum class DescriptorExtractorType {
   SIFT = 0,
+  AKAZE = 1,
 };
 
-// Options for creating the feature extractor.
-struct CreateDescriptorExtractorOptions {
-  DescriptorExtractorType descriptor_extractor_type =
-      DescriptorExtractorType::SIFT;
-
-  SiftParameters sift_options;
+// Users may specify feature density to target their specific
+// application. Certain datasets do not need many features, and so they may be
+// interested in extracting a smaller number of features per image. Other
+// projects (e.g., photogrammetry) may be interested in very dense
+// reconstructions and so will want to extract many features (DENSE).
+enum class FeatureDensity {
+  SPARSE = 0,
+  NORMAL = 1,
+  DENSE = 2
 };
 
 // Factory method to create the keypoint detector and descriptor extractor.
 std::unique_ptr<DescriptorExtractor> CreateDescriptorExtractor(
-    const CreateDescriptorExtractorOptions& options);
+    const DescriptorExtractorType& descriptor_type,
+    const FeatureDensity& feature_density);
 
 }  // namespace theia
 

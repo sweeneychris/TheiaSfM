@@ -43,6 +43,7 @@
 #include <sstream>
 
 using theia::DescriptorExtractorType;
+using theia::FeatureDensity;
 using theia::GlobalPositionEstimatorType;
 using theia::GlobalRotationEstimatorType;
 using theia::LossFunctionType;
@@ -54,9 +55,26 @@ inline DescriptorExtractorType StringToDescriptorExtractorType(
     const std::string& descriptor) {
   if (descriptor == "SIFT") {
     return DescriptorExtractorType::SIFT;
+  } else if (descriptor == "AKAZE") {
+    return DescriptorExtractorType::AKAZE;
   } else {
     LOG(FATAL) << "Invalid DescriptorExtractor specified. Using SIFT instead.";
     return DescriptorExtractorType::SIFT;
+  }
+}
+
+inline FeatureDensity StringToFeatureDensity(
+    const std::string& feature_density) {
+  if (feature_density == "SPARSE") {
+    return FeatureDensity::SPARSE;
+  } else if (feature_density == "NORMAL") {
+    return FeatureDensity::NORMAL;
+  } else if (feature_density == "DENSE") {
+    return FeatureDensity::DENSE;
+  } else {
+    LOG(FATAL) << "Invalid feature density requested. Please use SPARSE, "
+                  "NORMAL, or DENSE.";
+    return FeatureDensity::NORMAL;
   }
 }
 

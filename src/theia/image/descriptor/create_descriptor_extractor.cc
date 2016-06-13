@@ -37,18 +37,63 @@
 #include <glog/logging.h>
 #include <memory>
 
+#include "theia/image/descriptor/akaze_descriptor.h"
 #include "theia/image/descriptor/descriptor_extractor.h"
 #include "theia/image/descriptor/sift_descriptor.h"
+#include "theia/image/keypoint_detector/sift_parameters.h"
 
 namespace theia {
+namespace {
+inline SiftParameters FeatureDensityToSiftParameters(
+    const FeatureDensity& density) {
+  SiftParameters sift_params;
+  if (density == FeatureDensity::DENSE) {
+    sift_params.edge_threshold *= 2.0;
+    sift_params.peak_threshold /= 2.0;
+  } else if (density == FeatureDensity::SPARSE) {
+    sift_params.edge_threshold /= 2.0;
+    sift_params.peak_threshold *= 2.0;
+  } else if (density != FeatureDensity::NORMAL) {
+    // If the setting is to normal, then just use the default
+    // parameters. Otherwise, this statement will be reached, indicating that an
+    // invalid option was used.
+    LOG(FATAL) << "Invalid feature extraction density. Please use DENSE, "
+                  "NORMAL, or SPARSE.";
+  }
+  return sift_params;
+}
+
+inline AkazeParameters FeatureDensityToAkazeParameters(
+    const FeatureDensity& density) {
+  AkazeParameters akaze_params;
+  if (density == FeatureDensity::DENSE) {
+    akaze_params.hessian_threshold /= 10.0;
+  } else if (density == FeatureDensity::SPARSE) {
+    akaze_params.hessian_threshold *= 10.0;
+  } else if (density != FeatureDensity::NORMAL) {
+    // If the setting is to normal, then just use the default
+    // parameters. Otherwise, this statement will be reached, indicating that an
+    // invalid option was used.
+    LOG(FATAL) << "Invalid feature extraction density. Please use DENSE, "
+                  "NORMAL, or SPARSE.";
+  }
+  return akaze_params;
+}
+
+}  // namespace
 
 std::unique_ptr<DescriptorExtractor> CreateDescriptorExtractor(
-    const CreateDescriptorExtractorOptions& options) {
+    const DescriptorExtractorType& descriptor_type,
+    const FeatureDensity& feature_density) {
   std::unique_ptr<DescriptorExtractor> descriptor_extractor;
-  switch (options.descriptor_extractor_type) {
+  switch (descriptor_type) {
     case DescriptorExtractorType::SIFT:
-      descriptor_extractor.reset(
-          new SiftDescriptorExtractor(options.sift_options));
+      descriptor_extractor.reset(new SiftDescriptorExtractor(
+          FeatureDensityToSiftParameters(feature_density)));
+      break;
+    case DescriptorExtractorType::AKAZE:
+      descriptor_extractor.reset(new AkazeDescriptorExtractor(
+          FeatureDensityToAkazeParameters(feature_density)));
       break;
     default:
       LOG(ERROR) << "Invalid Descriptor Extractor specified.";
