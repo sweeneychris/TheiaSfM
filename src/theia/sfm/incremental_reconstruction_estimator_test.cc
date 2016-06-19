@@ -37,14 +37,15 @@
 
 #include "gtest/gtest.h"
 
-#include "theia/io/reconstruction_reader.h"
 #include "theia/io/read_matches.h"
+#include "theia/io/reconstruction_reader.h"
 #include "theia/matching/image_pair_match.h"
+#include "theia/sfm/find_common_views_by_name.h"
 #include "theia/sfm/incremental_reconstruction_estimator.h"
 #include "theia/sfm/reconstruction.h"
-#include "theia/sfm/view_graph/view_graph.h"
-#include "theia/sfm/find_common_views_by_name.h"
+#include "theia/sfm/reconstruction_estimator_utils.h"
 #include "theia/sfm/transformation/align_reconstructions.h"
+#include "theia/sfm/view_graph/view_graph.h"
 
 namespace theia {
 void ReadInput(Reconstruction* gt_reconstruction,
@@ -180,6 +181,47 @@ TEST(IncrementalReconstructionEstimator, VariableIntrinsics) {
       ReconstructionEstimatorType::INCREMENTAL;
   options.intrinsics_to_optimize = OptimizeIntrinsicsType::FOCAL_LENGTH;
   BuildAndVerifyReconstruction(kPositionToleranceMeters, options);
+}
+
+TEST(IncrementalReconstructionEstimator, InitializedReconstruction) {
+  static const double kPositionToleranceMeters = 1e-2;
+
+  ReconstructionEstimatorOptions options;
+  options.reconstruction_estimator_type =
+      ReconstructionEstimatorType::INCREMENTAL;
+  options.intrinsics_to_optimize = OptimizeIntrinsicsType::NONE;
+
+  ViewGraph view_graph;
+  Reconstruction gt_reconstruction, reconstruction;
+  ReadInput(&gt_reconstruction, &reconstruction, &view_graph);
+
+  // Set several of the views to be estimated so that the reconstruction is
+  // initialized.
+  const std::vector<std::string> initialized_views = {"0000.png", "0001.png",
+                                                      "0002.png", "0003.png"};
+  for (const std::string& view_name : initialized_views) {
+    const ViewId view_id = reconstruction.ViewIdFromName(view_name);
+    reconstruction.MutableView(view_id)->SetEstimated(true);
+  }
+  // Set all tracks as "estimated" that are seen within the initialized views.
+  const auto track_ids = reconstruction.TrackIds();
+  for (const TrackId track_id : track_ids) {
+    reconstruction.MutableTrack(track_id)->SetEstimated(true);
+  }
+  SetUnderconstrainedTracksToUnestimated(&reconstruction);
+
+  // Estimate the remaining camera and point parameters with incremental SfM.
+  IncrementalReconstructionEstimator reconstruction_estimator(options);
+  const ReconstructionEstimatorSummary summary =
+      reconstruction_estimator.Estimate(&view_graph, &reconstruction);
+
+  // Ensure all views were estimated.
+  EXPECT_EQ(summary.estimated_views.size(), reconstruction.NumViews());
+
+  // Ensure that the reconstruction is somewhat sane.
+  EvaluateAlignedPoseError(kPositionToleranceMeters,
+                           gt_reconstruction,
+                           &reconstruction);
 }
 
 }  // namespace theia
