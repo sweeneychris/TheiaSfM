@@ -63,7 +63,7 @@ class ViewGraph;
 // quality reconstructions and to avoid drift.
 //
 // The incremental SfM pipeline is as follows:
-//   1) Choose an initial camera pair to reconstruct.
+//   1) Choose an initial camera pair to reconstruct (if necessary).
 //   2) Estimate 3D structure of the scene.
 //   3) Bundle adjustment on the 2-view reconstruction.
 //   4) Localize a new camera to the current 3D points. Choose the camera that
@@ -73,6 +73,10 @@ class ViewGraph;
 //      bundle adjustment.
 //   7) Repeat steps 4-6 until all cameras have been added.
 //
+// Note that steps 1-3 are skipped if an "initialized" reconstruction (one that
+// already contains estimated views and tracks) is passed into the Estimate
+// function.
+//
 // Incremental SfM is generally considered to be more robust than global SfM
 // methods; hwoever, it requires many more instances of bundle adjustment (which
 // is very costly) and so incremental SfM is not as efficient or scalable.
@@ -81,6 +85,9 @@ class IncrementalReconstructionEstimator : public ReconstructionEstimator {
   IncrementalReconstructionEstimator(
       const ReconstructionEstimatorOptions& options);
 
+  // Estimates the camera parameters and 3D points from the view graph and
+  // tracks. The reconstruction may or may not contain estimated views and
+  // tracks upon input.
   ReconstructionEstimatorSummary Estimate(ViewGraph* view_graph,
                                           Reconstruction* reconstruction);
 

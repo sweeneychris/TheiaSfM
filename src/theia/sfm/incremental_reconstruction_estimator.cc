@@ -136,7 +136,7 @@ IncrementalReconstructionEstimator::IncrementalReconstructionEstimator(
 // quality reconstructions and to avoid drift.
 //
 // The incremental SfM pipeline is as follows:
-//   1) Choose an initial camera pair to reconstruct.
+//   1) Choose an initial camera pair to reconstruct (if necessary).
 //   2) Estimate 3D structure of the scene.
 //   3) Bundle adjustment on the 2-view reconstruction.
 //   4) Localize a new camera to the current 3D points. Choose the camera that
@@ -145,6 +145,10 @@ IncrementalReconstructionEstimator::IncrementalReconstructionEstimator(
 //   6) Bundle adjustment if the model has grown by more than 5% since the last
 //      bundle adjustment.
 //   7) Repeat steps 4-6 until all cameras have been added.
+//
+// Note that steps 1-3 are skipped if an "initialized" reconstruction (one that
+// already contains estimated views and tracks) is passed into the Estimate
+// function.
 //
 // Incremental SfM is generally considered to be more robust than global SfM
 // methods; however, it requires many more instances of bundle adjustment (which
@@ -158,7 +162,10 @@ ReconstructionEstimatorSummary IncrementalReconstructionEstimator::Estimate(
   const auto& view_ids = reconstruction_->ViewIds();
   unlocalized_views_.reserve(view_ids.size());
   for (const ViewId view_id : view_ids) {
-    unlocalized_views_.insert(view_id);
+    const View* view = reconstruction_->View(view_id);
+    if (!view->IsEstimated()) {
+      unlocalized_views_.insert(view_id);
+    }
   }
 
   Timer total_timer;
@@ -170,15 +177,21 @@ ReconstructionEstimatorSummary IncrementalReconstructionEstimator::Estimate(
   SetCameraIntrinsicsFromPriors(reconstruction_);
   summary_.camera_intrinsics_calibration_time = timer.ElapsedTimeInSeconds();
 
-  // Steps 1 - 3: Choose an initial camera pair to reconstruct.
-  timer.Reset();
-  if (!ChooseInitialViewPair()) {
-    LOG(ERROR) << "Could not find a suitable initial pair for starting "
-                  "incremental SfM!";
-    summary_.success = false;
-    return summary_;
+  // Steps 1 - 3: Choose an initial camera pair to reconstruct if the
+  // reconstruction is not already initialized.
+  const int num_estimated_tracks = NumEstimatedTracks(*reconstruction_);
+  const int num_estimated_views = NumEstimatedViews(*reconstruction_);
+  if (num_estimated_tracks < options_.min_num_absolute_pose_inliers ||
+      num_estimated_tracks < 2) {
+    timer.Reset();
+    if (!ChooseInitialViewPair()) {
+      LOG(ERROR) << "Could not find a suitable initial pair for starting "
+        "incremental SfM!";
+      summary_.success = false;
+      return summary_;
+    }
+    time_to_find_initial_seed = timer.ElapsedTimeInSeconds();
   }
-  time_to_find_initial_seed = timer.ElapsedTimeInSeconds();
 
   // Try to add as many views as possible to the reconstruction until no more
   // views can be localized.

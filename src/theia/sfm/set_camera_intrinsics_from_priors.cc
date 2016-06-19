@@ -93,9 +93,11 @@ void SetCameraIntrinsicsFromPriors(Reconstruction* reconstruction) {
   const auto& view_ids = reconstruction->ViewIds();
   for (const ViewId view_id : view_ids) {
     View* view = CHECK_NOTNULL(reconstruction->MutableView(view_id));
-    SetCameraIntrinsicsFromPriors(view->CameraIntrinsicsPrior(),
-                                  true,
-                                  view->MutableCamera());
+    if (!view->IsEstimated()) {
+      SetCameraIntrinsicsFromPriors(view->CameraIntrinsicsPrior(),
+                                    true,
+                                    view->MutableCamera());
+    }
   }
 }
 
