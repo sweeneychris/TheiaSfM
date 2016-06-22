@@ -61,24 +61,11 @@ namespace {
 
 // Accumulate all two view feature matches between the input views. The features
 // are normalized according to the camera intrinsics.
-void GetFeatureCorrespondences(const View& view1, const View& view2,
-                               std::vector<FeatureCorrespondence>* matches) {
-  Eigen::Matrix3d calibration1, calibration2;
-  view1.Camera().GetCalibrationMatrix(&calibration1);
-  view2.Camera().GetCalibrationMatrix(&calibration2);
-  Eigen::Matrix3d inv_calibration1, inv_calibration2;
-  bool view1_invertible, view2_invertible;
-  double determinant;
-  calibration1.computeInverseAndDetWithCheck(inv_calibration1, determinant,
-                                             view1_invertible);
-  calibration2.computeInverseAndDetWithCheck(inv_calibration2, determinant,
-                                             view2_invertible);
-  if (!view1_invertible || !view2_invertible) {
-    LOG(FATAL) << "Calibration matrices are ill formed. Cannot optimize "
-                  "epipolar constraints.";
-    return;
-  }
-
+void GetNormalizedFeatureCorrespondences(
+    const View& view1, const View& view2,
+    std::vector<FeatureCorrespondence>* matches) {
+  const Camera& camera1 = view1.Camera();
+  const Camera& camera2 = view2.Camera();
   const std::vector<TrackId>& tracks = view1.TrackIds();
   for (const TrackId track_id : tracks) {
     const Feature* feature2 = view2.GetFeature(track_id);
@@ -95,9 +82,9 @@ void GetFeatureCorrespondences(const View& view1, const View& view2,
 
     // Normalize for camera intrinsics.
     match.feature1 =
-        (inv_calibration1 * match.feature1.homogeneous()).eval().hnormalized();
+        camera1.PixelToNormalizedCoordinates(match.feature1).hnormalized();
     match.feature2 =
-        (inv_calibration2 * match.feature2.homogeneous()).eval().hnormalized();
+        camera2.PixelToNormalizedCoordinates(match.feature2).hnormalized();
     matches->emplace_back(match);
   }
 }
@@ -253,7 +240,7 @@ void RefineRelativeTranslationsWithKnownRotations(
     std::vector<FeatureCorrespondence> matches;
     const View* view1 = reconstruction.View(view_pair.first.first);
     const View* view2 = reconstruction.View(view_pair.first.second);
-    GetFeatureCorrespondences(*view1, *view2, &matches);
+    GetNormalizedFeatureCorrespondences(*view1, *view2, &matches);
 
     TwoViewInfo* info = view_graph->GetMutableEdge(view_pair.first.first,
                                                    view_pair.first.second);

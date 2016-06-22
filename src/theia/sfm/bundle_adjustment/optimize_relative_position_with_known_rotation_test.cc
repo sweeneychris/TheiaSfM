@@ -62,22 +62,6 @@ Camera RandomCamera() {
   return camera;
 }
 
-void GetInverseCalibrationMatrix(const Camera& camera,
-                                 Eigen::Matrix3d* inv_calibration) {
-  Eigen::Matrix3d calibration;
-  camera.GetCalibrationMatrix(&calibration);
-  bool invertible;
-  double determinant;
-  calibration.computeInverseAndDetWithCheck(*inv_calibration,
-                                            determinant,
-                                            invertible);
-  if (!invertible) {
-    LOG(FATAL) << "Calibration matrices are ill formed. Cannot optimize "
-                  "epipolar constraints.";
-    return;
-  }
-}
-
 void GetRelativeTranslationFromCameras(const Camera& camera1,
                                        const Camera& camera2,
                                        Eigen::Vector3d* relative_position) {
@@ -95,10 +79,6 @@ void TestOptimization(const Camera& camera1,
                       const double kPixelNoise,
                       const double kTranslationNoise,
                       const double kTolerance) {
-  Eigen::Matrix3d inv_calibration1, inv_calibration2;
-  GetInverseCalibrationMatrix(camera1, &inv_calibration1);
-  GetInverseCalibrationMatrix(camera2, &inv_calibration2);
-
   // Project points and create feature correspondences.
   std::vector<FeatureCorrespondence> matches;
   for (int i = 0; i < world_points.size(); i++) {
@@ -111,9 +91,9 @@ void TestOptimization(const Camera& camera1,
 
     // Undo the calibration.
     match.feature1 =
-        (inv_calibration1 * match.feature1.homogeneous()).eval().hnormalized();
+        camera1.PixelToNormalizedCoordinates(match.feature1).hnormalized();
     match.feature2 =
-        (inv_calibration2 * match.feature2.homogeneous()).eval().hnormalized();
+        camera2.PixelToNormalizedCoordinates(match.feature2).hnormalized();
     matches.emplace_back(match);
   }
 
