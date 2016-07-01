@@ -19,7 +19,7 @@
 --only_calibrated_views=false
 
 ############### Global SfM Options ###############
---global_position_estimator=NONLINEAR
+--global_position_estimator=LEAST_UNSQUARED_DEVIATION
 --global_rotation_estimator=ROBUST_L1L2
 --post_rotation_filtering_degrees=15.0
 
@@ -54,7 +54,7 @@
 # Set this parameter to a value other than NONE if you want to utilize a robust
 # cost function during bundle adjustment. This can increase robustness to outliers
 # during the optimization.
---bundle_adjustment_robust_loss_function=NONE
+--bundle_adjustment_robust_loss_function=HUBER
 
 # Set this value to the determine the reprojection error in pixelst at which
 # robustness begins (if a robust cost function is being used).
