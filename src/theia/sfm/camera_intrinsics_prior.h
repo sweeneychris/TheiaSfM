@@ -79,6 +79,10 @@ struct CameraIntrinsicsPrior {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& ar, const std::uint32_t version) {  // NOLINT
+    if (version >= 1) {
+      ar(image_width, image_height);
+    }
+    
     ar(focal_length,
        principal_point[0],
        principal_point[1],
@@ -92,6 +96,6 @@ struct CameraIntrinsicsPrior {
 }  // namespace theia
 
 CEREAL_CLASS_VERSION(theia::Prior, 0);
-CEREAL_CLASS_VERSION(theia::CameraIntrinsicsPrior, 0);
+CEREAL_CLASS_VERSION(theia::CameraIntrinsicsPrior, 1);
 
 #endif  // THEIA_SFM_CAMERA_INTRINSICS_PRIOR_H_
