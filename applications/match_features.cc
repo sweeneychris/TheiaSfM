@@ -122,14 +122,19 @@ void ReadIntrinsicsFromCalibrationFile(
     std::vector<theia::CameraIntrinsicsPrior>* intrinsics) {
   intrinsics->resize(image_filenames.size());
 
+  // Read in the calibration file if supplied.
   std::unordered_map<std::string, theia::CameraIntrinsicsPrior> intrinsics_map;
   if (!theia::ReadCalibration(FLAGS_calibration_file, &intrinsics_map)) {
-    return;
+    intrinsics_map.clear();
   }
 
+  // Add all previously read intrinsics to the map.
+  theia::ExifReader exif_reader;
   for (int i = 0; i < image_filenames.size(); i++) {
     if (theia::ContainsKey(intrinsics_map, image_filenames[i])) {
       intrinsics->at(i) = theia::FindOrDie(intrinsics_map, image_filenames[i]);
+    } else {
+      exif_reader.ExtractEXIFMetadata(image_filenames[i], &((*intrinsics)[i]));
     }
   }
 }
