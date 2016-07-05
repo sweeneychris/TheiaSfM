@@ -59,10 +59,13 @@ DEFINE_string(
     descriptor, "SIFT",
     "Type of feature descriptor to use. Must be one of the following: "
     "SIFT");
-DEFINE_string(matching_strategy, "BRUTE_FORCE",
+DEFINE_string(feature_density, "NORMAL",
+              "Set to SPARSE, NORMAL, or DENSE to extract fewer or more "
+              "features from each image.");
+DEFINE_string(matching_strategy, "CASCADE_HASHING",
               "Strategy used to match features. Must be BRUTE_FORCE, "
               "or CASCADE_HASHING");
-DEFINE_double(lowes_ratio, 0.8, "Lowes ratio used for feature matching.");
+DEFINE_double(lowes_ratio, 0.75, "Lowes ratio used for feature matching.");
 DEFINE_double(
     max_sampson_error_for_verified_match, 4.0,
     "Maximum sampson error for a match to be considered geometrically valid.");
@@ -97,6 +100,7 @@ ReconstructionBuilderOptions SetReconstructionBuilderOptions() {
   options.output_matches_file = FLAGS_output_matches_file;
 
   options.descriptor_type = StringToDescriptorExtractorType(FLAGS_descriptor);
+  options.feature_density = StringToFeatureDensity(FLAGS_feature_density);
   options.matching_strategy =
       StringToMatchingStrategyType(FLAGS_matching_strategy);
   options.matching_options.lowes_ratio = FLAGS_lowes_ratio;

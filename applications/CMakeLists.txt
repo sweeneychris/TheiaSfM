@@ -1,7 +1,4 @@
 # Basic programs
-add_executable(match_features match_features.cc)
-target_link_libraries(match_features theia ${GFLAGS_LIBRARIES})
-
 add_executable(extract_features extract_features.cc)
 target_link_libraries(extract_features theia ${GFLAGS_LIBRARIES})
 

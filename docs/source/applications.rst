@@ -23,18 +23,6 @@ them to disk.
 
   ./bin/extract_features --input_images=/path/to/images/*.jpg --features_output_director=/path/to/output --num_threads=4 --descriptor=SIFT --logtostderr
 
-Match Features
---------------
-
-Given an input set of features (created with the extract_features program
-above), this program will match descriptors between all images and optionally
-perform geometric verification. Many parameters can be set at runtime, and the
-match file is written out. This is useful for when you want to tune the matching parameters for performance without having to recompute all of the descriptors.
-
-.. code-block:: bash
-
-  ./bin/match_features --input_features=/path/to/features/*.features --output_matches_file=/path/to/output --num_threads=4 --matcher=CASCADE_HASHING --lowes_ratio=0.8 --logtostderr --v=1
-
 Reconstructions
 ===============
 
