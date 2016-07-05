@@ -241,8 +241,8 @@ void halfsample_image(const RowMatrixXf& src, RowMatrixXf& dst) {
   const double y_kernel_clamped_size = static_cast<int>(ceil(y_kernel_size));
 
   // Set up precomputed factor matrices.
-  Eigen::RowVectorXf x_kernel_mul(x_kernel_clamped_size),
-      y_kernel_mul(y_kernel_clamped_size);
+  Eigen::RowVectorXf x_kernel_mul(static_cast<int>(x_kernel_clamped_size)),
+      y_kernel_mul(static_cast<int>(y_kernel_clamped_size));
   y_kernel_mul.setConstant(1.0);
 
   Eigen::RowVectorXf temp_row(src.cols());
