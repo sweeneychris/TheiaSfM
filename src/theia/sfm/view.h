@@ -39,6 +39,7 @@
 #include <cereal/cereal.hpp>
 #include <cereal/types/string.hpp>
 #include <cereal/types/unordered_map.hpp>
+#include <memory>
 #include <stdint.h>
 #include <string>
 #include <unordered_map>
@@ -59,6 +60,7 @@ class View {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   View();
+  View(const View& view);
   explicit View(const std::string& name);
 
   ~View() {}
@@ -90,12 +92,12 @@ class View {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& ar, const std::uint32_t version) {  // NOLINT
-    ar(name_, is_estimated_, camera_, camera_intrinsics_prior_, features_);
+    ar(name_, is_estimated_, *camera_, camera_intrinsics_prior_, features_);
   }
 
   std::string name_;
   bool is_estimated_;
-  class Camera camera_;
+  std::unique_ptr<class Camera> camera_;
   struct CameraIntrinsicsPrior camera_intrinsics_prior_;
   std::unordered_map<TrackId, Feature> features_;
 };
