@@ -46,22 +46,10 @@
 
 namespace theia {
 
-View::View() : name_(""), is_estimated_(false) {
-  camera_.reset(new class Camera());
-}
-
-View::View(const View& view) {
-  name_ = view.name_;
-  is_estimated_ = view.is_estimated_;
-  camera_.reset(new class Camera(*view.camera_));
-  camera_intrinsics_prior_ = view.camera_intrinsics_prior_;
-  features_ = view.features_;
-}
+View::View() : name_(""), is_estimated_(false) {}
 
 View::View(const std::string& name)
-    : name_(name), is_estimated_(false) {
-  camera_.reset(new class Camera());
-}
+    : name_(name), is_estimated_(false) {}
 
 const std::string& View::Name() const {
   return name_;
@@ -76,11 +64,11 @@ bool View::IsEstimated() const {
 }
 
 const class Camera& View::Camera() const {
-  return *camera_;
+  return camera_;
 }
 
 class Camera* View::MutableCamera() {
-  return camera_.get();
+  return &camera_;
 }
 
 const struct CameraIntrinsicsPrior& View::CameraIntrinsicsPrior() const {

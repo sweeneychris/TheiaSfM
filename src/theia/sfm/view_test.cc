@@ -50,31 +50,6 @@ TEST(View, Name) {
   EXPECT_EQ(view.Name(), kName);
 }
 
-TEST(View, CopyConstructor) {
-  static const double kView1FocalLength = 500.0;
-  static const double kView2FocalLength = 1500.0;
-  View view1("view_0");
-  view1.MutableCamera()->SetFocalLength(kView1FocalLength);
-  const std::vector<TrackId> track_ids = {0, 1, 2};
-  const std::vector<Feature> features = {Feature(0, 0),
-                                         Feature(1, 1),
-                                         Feature(2, 2)};
-  // Add features.
-  for (int i = 0; i < track_ids.size(); i++) {
-    view1.AddFeature(track_ids[i], features[i]);
-  }
-
-  // Use the copy constructor and test that some internal variables are equal.
-  View view2(view1);
-  EXPECT_EQ(view1.Camera().FocalLength(), view2.Camera().FocalLength());
-  EXPECT_EQ(view1.NumFeatures(), view2.NumFeatures());
-
-  // Alter the view2 camera parameters and ensure this does not affect view1's
-  // camera parameters.
-  view2.MutableCamera()->SetFocalLength(kView2FocalLength);
-  EXPECT_NE(view1.Camera().FocalLength(), view2.Camera().FocalLength());
-}
-
 TEST(View, Estimated) {
   View view;
   EXPECT_TRUE(!view.IsEstimated());
