@@ -57,8 +57,6 @@ Camera RandomCamera() {
   camera.SetOrientationFromAngleAxis(0.2 * Eigen::Vector3d::Random());
   camera.SetImageSize(1000, 1000);
   camera.SetFocalLength(kFocalLength);
-  camera.SetAspectRatio(1.0);
-  camera.SetSkew(0.0);
   camera.SetPrincipalPoint(kFocalLength / 2.0, kFocalLength / 2.0);
   return camera;
 }

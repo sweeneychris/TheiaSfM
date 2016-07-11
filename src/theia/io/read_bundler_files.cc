@@ -46,6 +46,7 @@
 #include <vector>
 
 #include "theia/sfm/camera/camera.h"
+#include "theia/sfm/camera/pinhole_camera_model.h"
 #include "theia/sfm/reconstruction.h"
 #include "theia/sfm/track.h"
 #include "theia/sfm/types.h"
@@ -217,7 +218,11 @@ bool ReadBundlerFiles(const std::string& lists_file,
     p = p2;
 
     camera->SetFocalLength(focal_length);
-    camera->SetRadialDistortion(k1, k2);
+    camera->MutableCameraIntrinsics()->SetParameter(
+        PinholeCameraModel::RADIAL_DISTORTION_1, k1);
+    camera->MutableCameraIntrinsics()->SetParameter(
+        PinholeCameraModel::RADIAL_DISTORTION_2, k2);
+
     // These cameras (and the features below) already have the principal point
     // removed.
     camera->SetPrincipalPoint(0, 0);

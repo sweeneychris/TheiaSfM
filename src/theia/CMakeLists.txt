@@ -77,6 +77,8 @@ set(THEIA_SRC
   sfm/bundle_adjustment/create_loss_function.cc
   sfm/bundle_adjustment/optimize_relative_position_with_known_rotation.cc
   sfm/camera/camera.cc
+  sfm/camera/camera_intrinsics_model.cc
+  sfm/camera/pinhole_camera_model.cc
   sfm/camera/projection_matrix_utils.cc
   sfm/camera/radial_distortion.cc
   sfm/colorize_reconstruction.cc
@@ -228,6 +230,7 @@ if (BUILD_TESTING)
   gtest(math/qp_solver)
   gtest(sfm/bundle_adjustment/optimize_relative_position_with_known_rotation)
   gtest(sfm/camera/camera)
+  gtest(sfm/camera/pinhole_camera_model)
   gtest(sfm/camera/projection_matrix_utils)
   gtest(sfm/camera/radial_distortion)
   gtest(sfm/estimators/estimate_calibrated_absolute_pose)

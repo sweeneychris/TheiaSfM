@@ -31,7 +31,6 @@
 //
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
-//         Torsten Sattler (sattlert@inf.ethz.ch)
 
 #include <Eigen/Dense>
 
@@ -40,9 +39,11 @@
 #include "gtest/gtest.h"
 
 #include "theia/alignment/alignment.h"
+#include "theia/sfm/camera/camera.h"
+#include "theia/sfm/camera/camera_intrinsics_model.h"
+#include "theia/sfm/camera/pinhole_camera_model.h"
 #include "theia/test/test_utils.h"
 #include "theia/util/random.h"
-#include "theia/sfm/camera/camera.h"
 
 namespace theia {
 
@@ -76,30 +77,28 @@ TEST(Camera, ProjectionMatrix) {
 TEST(Camera, InternalParameterGettersAndSetters) {
   Camera camera;
 
+  CameraIntrinsicsModel* intrinsics = camera.MutableCameraIntrinsics();
+  PinholeCameraModel pinhole_intrinsics;
+
   // Check that default values are set
   EXPECT_EQ(camera.FocalLength(), 1.0);
-  EXPECT_EQ(camera.AspectRatio(), 1.0);
-  EXPECT_EQ(camera.Skew(), 0.0);
   EXPECT_EQ(camera.PrincipalPointX(), 0.0);
   EXPECT_EQ(camera.PrincipalPointY(), 0.0);
-  EXPECT_EQ(camera.RadialDistortion1(), 0.0);
-  EXPECT_EQ(camera.RadialDistortion2(), 0.0);
+
+  // Make sure the default intrinsics are sets for pinhole cameras.
+  EXPECT_EQ(camera.CameraIntrinsicsType(), CameraModelType::PINHOLE);
+  for (int i = 0; i < intrinsics->NumParameters(); i++) {
+    EXPECT_EQ(intrinsics->GetParameter(i), pinhole_intrinsics.GetParameter(i));
+  }
 
   // Set parameters to different values.
   camera.SetFocalLength(600.0);
-  camera.SetAspectRatio(0.9);
-  camera.SetSkew(0.01);
   camera.SetPrincipalPoint(300.0, 400.0);
-  camera.SetRadialDistortion(0.01, 0.001);
 
   // Check that the values were updated.
   EXPECT_EQ(camera.FocalLength(), 600.0);
-  EXPECT_EQ(camera.AspectRatio(), 0.9);
-  EXPECT_EQ(camera.Skew(), 0.01);
   EXPECT_EQ(camera.PrincipalPointX(), 300.0);
   EXPECT_EQ(camera.PrincipalPointY(), 400.0);
-  EXPECT_EQ(camera.RadialDistortion1(), 0.01);
-  EXPECT_EQ(camera.RadialDistortion2(), 0.001);
 }
 
 TEST(Camera, ExternalParameterGettersAndSetters) {
@@ -180,7 +179,7 @@ void ReprojectionTest(const Camera& camera) {
   }
 }
 
-TEST(Camera, ReprojectionNoDistortion) {
+TEST(Camera, Reprojection) {
   InitRandomGenerator();
   Camera camera;
   const double image_size = 600;
@@ -189,38 +188,6 @@ TEST(Camera, ReprojectionNoDistortion) {
     camera.InitializeFromProjectionMatrix(image_size, image_size,
                                           Matrix3x4d::Random());
 
-    // Initialize random positive radial distortion parameters.
-    camera.SetRadialDistortion(0, 0);
-    ReprojectionTest(camera);
-  }
-}
-
-TEST(Camera, ReprojectionOneDistortion) {
-  InitRandomGenerator();
-  Camera camera;
-  const double image_size = 600;
-  for (int i = 0; i < 1; i++) {
-    // Initialize a random camera.
-    camera.InitializeFromProjectionMatrix(image_size, image_size,
-                                          Matrix3x4d::Random());
-
-    camera.SetRadialDistortion(RandDouble(0.0, 0.2), 0.0);
-    ReprojectionTest(camera);
-  }
-}
-
-TEST(Camera, ReprojectionTwoDistortion) {
-    InitRandomGenerator();
-  Camera camera;
-  const double image_size = 600;
-  for (int i = 0; i < 1; i++) {
-    // Initialize a random camera.
-    camera.InitializeFromProjectionMatrix(image_size, image_size,
-                                          Matrix3x4d::Random());
-
-    // Initialize random positive radial distortion parameters.
-    camera.SetRadialDistortion(RandDouble(0.0, 0.2),
-                               RandDouble(0.0, 0.02));
     ReprojectionTest(camera);
   }
 }

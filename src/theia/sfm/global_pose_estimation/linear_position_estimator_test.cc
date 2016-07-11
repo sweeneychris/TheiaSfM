@@ -65,8 +65,6 @@ Camera RandomCamera() {
   camera.SetOrientationFromAngleAxis(0.2 * Vector3d::Random());
   camera.SetImageSize(1000, 1000);
   camera.SetFocalLength(800);
-  camera.SetAspectRatio(1.0);
-  camera.SetSkew(0.0);
   camera.SetPrincipalPoint(500.0, 500.0);
   return camera;
 }
@@ -192,6 +190,7 @@ class EstimatePositionsLinearTest : public ::testing::Test {
         const View* view = reconstruction_.View(view_ids[j]);
         Eigen::Vector2d pixel;
         view->Camera().ProjectPoint(point, &pixel);
+        LOG(INFO) << "Focal length = " << view->Camera().FocalLength();
         features.emplace_back(view_ids[j], pixel);
       }
       Track* track =
