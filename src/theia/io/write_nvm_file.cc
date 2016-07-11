@@ -40,6 +40,7 @@
 #include <unordered_map>
 
 #include "theia/sfm/reconstruction.h"
+#include "theia/sfm/camera/pinhole_camera_model.h"
 #include "theia/sfm/track.h"
 #include "theia/sfm/view.h"
 #include "theia/util/map_util.h"
@@ -78,7 +79,10 @@ bool WriteNVMFile(const std::string& nvm_filepath,
     nvm_file << view.Name() << " " << camera.FocalLength() << " " << quat.w()
              << " " << quat.x() << " " << quat.y() << " " << quat.z() << " "
              << position.x() << " " << position.y() << " " << position.z()
-             << " " << camera.RadialDistortion1() << " 0" << std::endl;
+             << " "
+             << camera.CameraIntrinsics().GetParameter(
+                    PinholeCameraModel::RADIAL_DISTORTION_1)
+             << " 0" << std::endl;
 
     // Assign each feature in this view to a unique feature index (unique within
     // each image, not unique to the reconstruction).

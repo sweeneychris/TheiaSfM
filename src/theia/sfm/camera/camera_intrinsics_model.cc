@@ -1,4 +1,4 @@
-// Copyright (C) 2015 The Regents of the University of California (Regents).
+// Copyright (C) 2016 The Regents of the University of California (Regents).
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -32,32 +32,38 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#include "theia/sfm/set_camera_intrinsics_from_priors.h"
+#include "theia/sfm/camera/camera_intrinsics_model.h"
 
-#include <glog/logging.h>
+#include <memory>
 
-#include "theia/sfm/camera_intrinsics_prior.h"
-#include "theia/sfm/camera/camera.h"
-#include "theia/sfm/reconstruction.h"
-#include "theia/sfm/types.h"
-#include "theia/sfm/view.h"
+#include "theia/sfm/camera/pinhole_camera_model.h"
 
 namespace theia {
-
-// Sets the camera intrinsics from the CameraIntrinsicsPrior of each view. Views
-// that do not have a focal length prior will set a value corresponding to a
-// median viewing angle. Principal points that are not provided by the priors
-// are simply initialized as half of the corresponding image size dimension.
-void SetCameraIntrinsicsFromPriors(Reconstruction* reconstruction) {
-  const auto& view_ids = reconstruction->ViewIds();
-  for (const ViewId view_id : view_ids) {
-    View* view = CHECK_NOTNULL(reconstruction->MutableView(view_id));
-    if (!view->IsEstimated()) {
-      view->MutableCamera()
-          ->MutableCameraIntrinsics()
-          ->SetFromCameraIntrinsicsPriors(view->CameraIntrinsicsPrior());
-    }
+// Creates a camera model object based on the model type.
+std::unique_ptr<CameraIntrinsicsModel>
+CameraIntrinsicsModel::Create(const CameraModelType& camera_type) {
+  std::unique_ptr<CameraIntrinsicsModel> camera_model;
+  if (camera_type == CameraModelType::PINHOLE) {
+    camera_model.reset(new PinholeCameraModel());
+  } else {
+    LOG(FATAL) << "Invalid Camera model chosen.";
   }
+
+  return camera_model;
+}
+
+CameraIntrinsicsModel& CameraIntrinsicsModel::operator=(
+    const CameraIntrinsicsModel& camera) {
+  CHECK(this->Type() == camera.Type())
+      << "Cannot assign camera intrinsics model of type "
+      << static_cast<int>(camera.Type()) << " to a camera model of type "
+      << static_cast<int>(this->Type())
+      << " See camera_intrinsics_model.h for more information.";
+
+  std::copy(camera.parameters(),
+            camera.parameters() + camera.NumParameters(),
+            this->mutable_parameters());
+  return *this;
 }
 
 }  // namespace theia

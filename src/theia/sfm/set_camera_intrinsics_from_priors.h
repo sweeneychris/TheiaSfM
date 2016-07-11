@@ -43,16 +43,11 @@ class Camera;
 class Reconstruction;
 class View;
 
-// Sets the camera intrinsics from the CameraIntrinsicsPrior.. If the prior does
-// not have a focal length prior and focal_length_from_median_fov is true, then
-// the focal length will be set to a value corresponding to a median viewing
+// Sets the camera intrinsics from the CameraIntrinsicsPrior for every view in
+// the reconstruction. If the prior does not have a focal length prior then the
+// focal length will be set to a value corresponding to a median viewing
 // angle. Principal points that are not provided by the priors are simply
 // initialized as half of the corresponding image size dimension.
-void SetCameraIntrinsicsFromPriors(const CameraIntrinsicsPrior& prior,
-                                   const bool focal_length_from_median_fov,
-                                   Camera* camera);
-
-// Sets the camera intrinsics for every view in the reconstruction.
 void SetCameraIntrinsicsFromPriors(Reconstruction* reconstruction);
 
 }  // namespace theia

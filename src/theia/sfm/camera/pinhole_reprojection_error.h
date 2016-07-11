@@ -37,7 +37,7 @@
 
 #include <ceres/ceres.h>
 #include "theia/sfm/feature.h"
-#include "theia/sfm/camera/camera.h"
+#include "theia/sfm/camera/pinhole_camera_model.h"
 #include "theia/sfm/camera/project_point_to_image.h"
 
 namespace theia {
@@ -52,8 +52,8 @@ struct PinholeReprojectionError {
                                        const T* point_parameters,
                                        T* reprojection_error) const {
     // Do not evaluate invalid camera configurations.
-    if (camera_intrinsics[Camera::FOCAL_LENGTH] < T(0.0) ||
-        camera_intrinsics[Camera::ASPECT_RATIO] < T(0.0)) {
+    if (camera_intrinsics[PinholeCameraModel::FOCAL_LENGTH] < T(0.0) ||
+        camera_intrinsics[PinholeCameraModel::ASPECT_RATIO] < T(0.0)) {
       return false;
     }
 

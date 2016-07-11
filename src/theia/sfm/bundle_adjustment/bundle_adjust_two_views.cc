@@ -73,9 +73,12 @@ void SetSolverOptions(const BundleAdjustmentOptions& options,
 // keep all intrinsics constant except for focal length by default.
 void AddCameraParametersToProblem(const bool constant_extrinsic_parameters,
                                   const bool constant_intrinsic_parameters,
-                                  double* camera_extrinsics,
-                                  double* camera_intrinsics,
+                                  Camera* camera,
                                   ceres::Problem* problem) {
+  double* camera_extrinsics = camera->mutable_extrinsics();
+  double* camera_intrinsics = camera->mutable_intrinsics();
+  const int num_intrinsics = camera->CameraIntrinsics().NumParameters();
+
   // Add extrinsics to problem
   problem->AddParameterBlock(camera_extrinsics, Camera::kExtrinsicsSize);
   if (constant_extrinsic_parameters) {
@@ -84,21 +87,21 @@ void AddCameraParametersToProblem(const bool constant_extrinsic_parameters,
 
   // Keep the intrinsics constant if desired.
   if (constant_intrinsic_parameters) {
-    problem->AddParameterBlock(camera_intrinsics, Camera::kIntrinsicsSize);
+    problem->AddParameterBlock(camera_intrinsics, num_intrinsics);
     problem->SetParameterBlockConstant(camera_intrinsics);
   } else {
     // NOTE: We start at index 1 because the focal length is considered
     // variable.
-    std::vector<int> constant_intrinsics(Camera::kIntrinsicsSize - 1);
+    std::vector<int> constant_intrinsics(num_intrinsics - 1);
     std::iota(constant_intrinsics.begin(),
               constant_intrinsics.end(),
               1);
 
     ceres::SubsetParameterization* subset_parameterization =
-        new ceres::SubsetParameterization(Camera::kIntrinsicsSize,
+        new ceres::SubsetParameterization(num_intrinsics,
                                           constant_intrinsics);
     problem->AddParameterBlock(camera_intrinsics,
-                               Camera::kIntrinsicsSize,
+                               num_intrinsics,
                                subset_parameterization);
   }
 }
@@ -136,13 +139,11 @@ BundleAdjustmentSummary BundleAdjustTwoViews(
   // Add the two cameras as parameter blocks.
   AddCameraParametersToProblem(true,
                                options.constant_camera1_intrinsics,
-                               camera1->mutable_extrinsics(),
-                               camera1->mutable_intrinsics(),
+                               camera1,
                                &problem);
   AddCameraParametersToProblem(false,
                                options.constant_camera2_intrinsics,
-                               camera2->mutable_extrinsics(),
-                               camera2->mutable_intrinsics(),
+                               camera2,
                                &problem);
   parameter_ordering->AddElementToGroup(camera1->mutable_extrinsics(), 2);
   parameter_ordering->AddElementToGroup(camera1->mutable_intrinsics(), 1);
