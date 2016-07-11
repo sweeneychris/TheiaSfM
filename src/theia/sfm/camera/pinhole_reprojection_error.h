@@ -1,4 +1,4 @@
-// Copyright (C) 2014 The Regents of the University of California (Regents).
+// Copyright (C) 2016 The Regents of the University of California (Regents).
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -32,27 +32,39 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#ifndef THEIA_SFM_CAMERA_REPROJECTION_ERROR_H_
-#define THEIA_SFM_CAMERA_REPROJECTION_ERROR_H_
+#ifndef THEIA_SFM_CAMERA_PINHOLE_REPROJECTION_ERROR_H_
+#define THEIA_SFM_CAMERA_PINHOLE_REPROJECTION_ERROR_H_
 
 #include <ceres/ceres.h>
 #include "theia/sfm/feature.h"
-#include "theia/sfm/camera/pinhole_reprojection_error.h"
+#include "theia/sfm/camera/camera.h"
+#include "theia/sfm/camera/project_point_to_image.h"
 
 namespace theia {
 
-struct ReprojectionError {
+struct PinholeReprojectionError {
  public:
-  explicit ReprojectionError(const Feature& feature) : feature_(feature) {}
+  explicit PinholeReprojectionError(const Feature& feature)
+      : feature_(feature) {}
 
-  static ceres::CostFunction* Create(const Feature& feature) {
-    static const int kPointSize = 4;
-    return new ceres::AutoDiffCostFunction<PinholeReprojectionError,
-                                           2,
-                                           Camera::kExtrinsicsSize,
-                                           Camera::kIntrinsicsSize,
-                                           kPointSize>(
-        new PinholeReprojectionError(feature));
+  template<typename T> bool operator()(const T* camera_extrinsics,
+                                       const T* camera_intrinsics,
+                                       const T* point_parameters,
+                                       T* reprojection_error) const {
+    // Do not evaluate invalid camera configurations.
+    if (camera_intrinsics[Camera::FOCAL_LENGTH] < T(0.0) ||
+        camera_intrinsics[Camera::ASPECT_RATIO] < T(0.0)) {
+      return false;
+    }
+
+    T reprojection[2];
+    ProjectPointToImage(camera_extrinsics,
+                        camera_intrinsics,
+                        point_parameters,
+                        reprojection);
+    reprojection_error[0] = reprojection[0] - T(feature_.x());
+    reprojection_error[1] = reprojection[1] - T(feature_.y());
+    return true;
   }
 
  private:
@@ -61,4 +73,4 @@ struct ReprojectionError {
 
 }  // namespace theia
 
-#endif  // THEIA_SFM_CAMERA_REPROJECTION_ERROR_H_
+#endif  // THEIA_SFM_CAMERA_PINHOLE_REPROJECTION_ERROR_H_
