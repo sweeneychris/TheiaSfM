@@ -40,6 +40,7 @@
 #include <ceres/rotation.h>
 
 #include "theia/sfm/camera/camera.h"
+#include "theia/sfm/camera/pinhole_camera_model.h"
 #include "theia/sfm/camera/radial_distortion.h"
 
 namespace theia {
@@ -81,19 +82,24 @@ T ProjectPointToImage(const T* extrinsic_parameters,
 
   // Apply radial distortion.
   T distorted_pixel[2];
-  RadialDistortPoint(normalized_pixel[0],
-                     normalized_pixel[1],
-                     intrinsic_parameters[Camera::RADIAL_DISTORTION_1],
-                     intrinsic_parameters[Camera::RADIAL_DISTORTION_2],
-                     distorted_pixel,
-                     distorted_pixel + 1);
+  RadialDistortPoint(
+      normalized_pixel[0],
+      normalized_pixel[1],
+      intrinsic_parameters[PinholeCameraModel::RADIAL_DISTORTION_1],
+      intrinsic_parameters[PinholeCameraModel::RADIAL_DISTORTION_2],
+      distorted_pixel,
+      distorted_pixel + 1);
 
   // Apply calibration parameters to transform normalized units into pixels.
-  const T& focal_length = intrinsic_parameters[Camera::FOCAL_LENGTH];
-  const T& skew = intrinsic_parameters[Camera::SKEW];
-  const T& aspect_ratio = intrinsic_parameters[Camera::ASPECT_RATIO];
-  const T& principal_point_x = intrinsic_parameters[Camera::PRINCIPAL_POINT_X];
-  const T& principal_point_y = intrinsic_parameters[Camera::PRINCIPAL_POINT_Y];
+  const T& focal_length =
+      intrinsic_parameters[PinholeCameraModel::FOCAL_LENGTH];
+  const T& skew = intrinsic_parameters[PinholeCameraModel::SKEW];
+  const T& aspect_ratio =
+      intrinsic_parameters[PinholeCameraModel::ASPECT_RATIO];
+  const T& principal_point_x =
+      intrinsic_parameters[PinholeCameraModel::PRINCIPAL_POINT_X];
+  const T& principal_point_y =
+      intrinsic_parameters[PinholeCameraModel::PRINCIPAL_POINT_Y];
 
   pixel[0] = focal_length * distorted_pixel[0] + skew * distorted_pixel[1] +
              principal_point_x;

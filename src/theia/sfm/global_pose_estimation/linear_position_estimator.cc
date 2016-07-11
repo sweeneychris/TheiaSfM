@@ -357,15 +357,11 @@ void LinearPositionEstimator::CreateLinearSystem(
 
 Feature LinearPositionEstimator::GetNormalizedFeature(const View& view,
                                                       const TrackId track_id) {
-  Feature normalized_feature = *view.GetFeature(track_id);
+  Feature feature = *view.GetFeature(track_id);
   const Camera& camera = view.Camera();
-  normalized_feature.y() = (normalized_feature.y() - camera.PrincipalPointY()) /
-                           (camera.FocalLength() * camera.AspectRatio());
-  normalized_feature.x() =
-      (normalized_feature.x() - camera.Skew() * normalized_feature.y() -
-       camera.PrincipalPointX()) /
-      camera.FocalLength();
-  return normalized_feature;
+  Eigen::Vector3d normalized_feature =
+      camera.PixelToNormalizedCoordinates(feature);
+  return normalized_feature.hnormalized();
 }
 
 void LinearPositionEstimator::FlipSignOfPositionsIfNecessary(

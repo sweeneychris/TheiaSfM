@@ -77,6 +77,7 @@ set(THEIA_SRC
   sfm/bundle_adjustment/create_loss_function.cc
   sfm/bundle_adjustment/optimize_relative_position_with_known_rotation.cc
   sfm/camera/camera.cc
+  sfm/camera/pinhole_camera_model.cc
   sfm/camera/projection_matrix_utils.cc
   sfm/camera/radial_distortion.cc
   sfm/colorize_reconstruction.cc
