@@ -195,7 +195,6 @@ ReconstructionEstimatorSummary IncrementalReconstructionEstimator::Estimate(
 
   // Try to add as many views as possible to the reconstruction until no more
   // views can be localized.
-  RansacSummary unused_ransac_summary;
   std::vector<ViewId> views_to_localize;
   int failed_localization_attempts = -1;
   while (!unlocalized_views_.empty() &&
@@ -215,6 +214,7 @@ ReconstructionEstimatorSummary IncrementalReconstructionEstimator::Estimate(
     // on the current state of the reconstruction.
     for (int i = 0; i < views_to_localize.size(); i++) {
       timer.Reset();
+      RansacSummary unused_ransac_summary;
       if (!LocalizeViewToReconstruction(views_to_localize[i],
                                         localization_options_,
                                         reconstruction_,
