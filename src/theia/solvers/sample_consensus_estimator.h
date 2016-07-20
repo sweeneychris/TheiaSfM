@@ -249,6 +249,7 @@ bool SampleConsensusEstimator<ModelEstimator>::Estimate(
   CHECK_NOTNULL(sampler_.get());
   CHECK_NOTNULL(quality_measurement_.get());
   CHECK_NOTNULL(summary);
+  summary->inliers.clear();
   CHECK_NOTNULL(best_model);
 
   const double log_failure_prob = log(ransac_params_.failure_probability);
