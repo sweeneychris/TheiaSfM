@@ -51,7 +51,7 @@ struct SiftParameters {
 
   SiftParameters(int num_octaves, int num_levels, int first_octave) :
       SiftParameters(num_octaves, num_levels, first_octave,
-                     5.0f, 0.5f) {}
+                     10.0f, 0.7f) {}
 
   ~SiftParameters() {}
 
@@ -59,9 +59,9 @@ struct SiftParameters {
   // Blob feature detector params.
   int num_octaves = -1;
   int num_levels = 3;
-  int first_octave = 0;
-  float edge_threshold = 5.0f;
-  float peak_threshold = 0.5f;
+  int first_octave = -1;
+  float edge_threshold = 10.0f;
+  float peak_threshold = 0.7f;
   // Descriptor parameters.
   bool root_sift = true;
   // Upright sift enables only a single descriptor to be extracted at a given
