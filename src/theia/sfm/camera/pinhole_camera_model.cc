@@ -76,8 +76,8 @@ void PinholeCameraModel::GetCalibrationMatrix(Matrix3d* kmatrix) const {
 
 
 // Returns the camera model type of the object.
-CameraModelType PinholeCameraModel::Type() const {
-  return CameraModelType::PINHOLE;
+CameraIntrinsicsModelType PinholeCameraModel::Type() const {
+  return CameraIntrinsicsModelType::PINHOLE;
 }
 
 // Set the intrinsic camera parameters from the priors.

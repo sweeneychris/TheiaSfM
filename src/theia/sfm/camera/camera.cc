@@ -38,6 +38,7 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <glog/logging.h>
+#include <algorithm>
 
 #include "theia/sfm/camera/camera_intrinsics_model.h"
 #include "theia/sfm/camera/projection_matrix_utils.h"
@@ -63,7 +64,7 @@ Camera::Camera() {
   image_size_[1] = 0;
 }
 
-Camera::Camera(const CameraModelType& camera_type) {
+Camera::Camera(const CameraIntrinsicsModelType& camera_type) {
   // Set rotation and position to zero (i.e. identity).
   Map<Matrix<double, 1, 6> >(mutable_extrinsics()).setZero();
   camera_intrinsics_ = CameraIntrinsicsModel::Create(camera_type);
@@ -79,7 +80,7 @@ Camera::Camera(const Camera& camera) {
             camera_parameters_);
 
   camera_intrinsics_ =
-      CameraIntrinsicsModel::Create(camera.CameraIntrinsicsType());
+      CameraIntrinsicsModel::Create(camera.GetCameraIntrinsicsModelType());
   const CameraIntrinsicsModel& other_camera_intrinsics =
       camera.CameraIntrinsics();
   std::copy(other_camera_intrinsics.parameters(),
@@ -98,7 +99,7 @@ Camera& Camera::operator=(const Camera& camera) {
             camera_parameters_);
 
   camera_intrinsics_ =
-      CameraIntrinsicsModel::Create(camera.CameraIntrinsicsType());
+      CameraIntrinsicsModel::Create(camera.GetCameraIntrinsicsModelType());
   const CameraIntrinsicsModel& other_camera_intrinsics =
       camera.CameraIntrinsics();
   std::copy(other_camera_intrinsics.parameters(),
@@ -111,8 +112,17 @@ Camera& Camera::operator=(const Camera& camera) {
   return *this;
 }
 
-CameraModelType Camera::CameraIntrinsicsType() const {
+CameraIntrinsicsModelType Camera::GetCameraIntrinsicsModelType() const {
   return camera_intrinsics_->Type();
+}
+
+void Camera::SetCameraIntrinsicsModelType(
+    const CameraIntrinsicsModelType& camera_model_type) {
+  // Only reset and change the camera model if the camera intrinsics model type
+  // has changed.
+  if (GetCameraIntrinsicsModelType() != camera_model_type) {
+    camera_intrinsics_ = CameraIntrinsicsModel::Create(camera_model_type);
+  }
 }
 
 bool Camera::InitializeFromProjectionMatrix(

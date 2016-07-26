@@ -48,7 +48,7 @@ namespace theia {
 // Each camera model implemented through this interface should have a type
 // listed here. The Create method below should create an instance to the
 // respective camera model based on the type provided.
-enum class CameraModelType {
+enum class CameraIntrinsicsModelType {
   PINHOLE = 0,
 };
 
@@ -72,8 +72,8 @@ enum class CameraModelType {
 //   1) Create a derived class from this one, and implement all of the virtual
 //   methods.
 //
-//   2) Add an enum to CameraModelType and add an "else if" to the Create method
-//   in this class to allow your camera model to be created.
+//   2) Add an enum to CameraIntrinsicsModelType and add an "else if" to the
+//   Create method in this class to allow your camera model to be created.
 //
 //   3) Create a reprojection error model for the camera model that can be used
 //   as a cost function in Ceres for bundle adjustment. See
@@ -94,12 +94,12 @@ class CameraIntrinsicsModel {
 
   // Creates a camera model object based on the model type.
   static std::unique_ptr<CameraIntrinsicsModel> Create(
-      const CameraModelType& camera_type);
+      const CameraIntrinsicsModelType& camera_type);
 
   virtual int NumParameters() const = 0;
 
   // Returns the camera model type of the object.
-  virtual CameraModelType Type() const = 0;
+  virtual CameraIntrinsicsModelType Type() const = 0;
 
   // Set the intrinsic camera parameters from the priors.
   virtual void SetFromCameraIntrinsicsPriors(

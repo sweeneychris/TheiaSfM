@@ -81,6 +81,8 @@ void AddCameraToReconstruction(const std::string& camera_filepath,
       << " could not be added to the reconstruction.";
 
   Camera* camera = reconstruction->MutableView(view_id)->MutableCamera();
+  camera->SetCameraIntrinsicsModelType(
+      theia::CameraIntrinsicsModelType::PINHOLE);
 
   // The first three rows are the calibration matrix.
   Eigen::Matrix3d calibration_matrix;

@@ -74,7 +74,8 @@ bool WriteNVMFile(const std::string& nvm_filepath,
 
     const View& view = *reconstruction.View(view_id);
     const Camera& camera = view.Camera();
-    if (camera.CameraIntrinsicsType() != CameraModelType::PINHOLE) {
+    if (camera.GetCameraIntrinsicsModelType() !=
+        CameraIntrinsicsModelType::PINHOLE) {
       LOG(FATAL) << "Could not add camera " << view.Name()
                  << " to the NVM output file because nvm files only "
                     "support pinhole camera models. Please remove non-pinhole "

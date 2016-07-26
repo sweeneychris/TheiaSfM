@@ -98,7 +98,8 @@ bool WriteBundleFile(const Reconstruction& reconstruction,
 
     // Output the camera information to the bundle file.
     const Camera& camera = view->Camera();
-    if (camera.CameraIntrinsicsType() != CameraModelType::PINHOLE) {
+    if (camera.GetCameraIntrinsicsModelType() !=
+        CameraIntrinsicsModelType::PINHOLE) {
       LOG(FATAL) << "Could not add camera " << view->Name()
                  << " to the bundler output file because bundler files only "
                     "support pinhole camera models. Please remove non-pinhole "
