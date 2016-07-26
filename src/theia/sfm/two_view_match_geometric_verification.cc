@@ -57,13 +57,15 @@ void SetupCameras(const CameraIntrinsicsPrior& intrinsics1,
                   const TwoViewInfo& info,
                   Camera* camera1,
                   Camera* camera2) {
+  camera1->MutableCameraIntrinsics()->SetFromCameraIntrinsicsPriors(
+      intrinsics1);
   camera1->SetFocalLength(info.focal_length_1);
-  SetCameraIntrinsicsFromPriors(intrinsics1, false, camera1);
 
   camera2->SetOrientationFromAngleAxis(info.rotation_2);
   camera2->SetPosition(info.position_2);
+  camera2->MutableCameraIntrinsics()->SetFromCameraIntrinsicsPriors(
+      intrinsics2);
   camera2->SetFocalLength(info.focal_length_2);
-  SetCameraIntrinsicsFromPriors(intrinsics2, false, camera2);
 }
 
 // Returns false if the reprojection error of the triangulated point is greater

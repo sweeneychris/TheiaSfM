@@ -68,11 +68,10 @@ void NormalizeFeatures(
     const std::vector<FeatureCorrespondence>& correspondences,
     std::vector<FeatureCorrespondence>* normalized_correspondences) {
   CHECK_NOTNULL(normalized_correspondences)->clear();
-  static const bool kSetFocalLengthFromMedianFOV = false;
 
   Camera camera1, camera2;
-  SetCameraIntrinsicsFromPriors(prior1, kSetFocalLengthFromMedianFOV, &camera1);
-  SetCameraIntrinsicsFromPriors(prior2, kSetFocalLengthFromMedianFOV, &camera2);
+  camera1.MutableCameraIntrinsics()->SetFromCameraIntrinsicsPriors(prior1);
+  camera2.MutableCameraIntrinsics()->SetFromCameraIntrinsicsPriors(prior2);
   normalized_correspondences->reserve(correspondences.size());
   for (const FeatureCorrespondence& correspondence : correspondences) {
     FeatureCorrespondence normalized_correspondence;

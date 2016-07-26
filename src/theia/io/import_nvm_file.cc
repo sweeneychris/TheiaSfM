@@ -100,6 +100,7 @@ bool ImportNVMFile(const std::string& nvm_filepath,
     // Set the camera intrinsic parameters.
     const CameraT& vsfm_camera = vsfm_reconstruction.camera_data[i];
     Camera* camera = view->MutableCamera();
+    CHECK(camera->CameraIntrinsicsType() == CameraModelType::PINHOLE);
     camera->SetFocalLength(vsfm_camera.GetFocalLength());
 
     // Set the camera extrinsic parameters. The rotation matrix is retreived
