@@ -205,7 +205,7 @@ bool ReadBundlerFiles(const std::string& lists_file,
   for (int i = 0; i < num_cameras; i++) {
     reconstruction->MutableView(i)->SetEstimated(true);
     Camera* camera = reconstruction->MutableView(i)->MutableCamera();
-    CHECK(camera->CameraIntrinsicsType() == CameraModelType::PINHOLE);
+    camera->SetCameraIntrinsicsModelType(CameraIntrinsicsModelType::PINHOLE);
 
     // Read in focal length, radial distortion.
     std::string internal_params;

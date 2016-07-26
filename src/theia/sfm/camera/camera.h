@@ -81,7 +81,7 @@ class Camera {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   Camera();
-  explicit Camera(const CameraModelType& camera_type);
+  explicit Camera(const CameraIntrinsicsModelType& camera_type);
   Camera(const Camera& camera);
   ~Camera() {}
 
@@ -99,7 +99,15 @@ class Camera {
 
   // Returns the type corresponding to the camera intrinsics model used the
   // describe the lens of this camera.
-  CameraModelType CameraIntrinsicsType() const;
+  enum CameraIntrinsicsModelType GetCameraIntrinsicsModelType() const;
+
+  // Sets the camera to use the designated camera intrinsics model type. If the
+  // camera model type is the same as what is currently being used then this is
+  // a no-op. Otherwise, the camera intrinsics parameters are cleared and the
+  // camera intrinsics model that is used by this camera is appropriately
+  // changed.
+  void SetCameraIntrinsicsModelType(
+      const enum CameraIntrinsicsModelType& camera_model_type);
 
   // ---------------------------- Helper methods ---------------------------- //
   // Returns the projection matrix. Does not include radial distortion.
@@ -203,7 +211,8 @@ class Camera {
          camera_intrinsics_,
          cereal::binary_data(image_size_, sizeof(int) * 2));
     } else {
-      CHECK(CameraIntrinsicsType() == CameraModelType::PINHOLE)
+      CHECK(GetCameraIntrinsicsModelType() ==
+            CameraIntrinsicsModelType::PINHOLE)
           << "the theia::Camera class version " << version
           << " can only serialize Pinhole cameras. Please make sure all "
              "cameras are set as pinhole cameras";

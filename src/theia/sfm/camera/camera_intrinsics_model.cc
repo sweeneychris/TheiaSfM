@@ -41,9 +41,9 @@
 namespace theia {
 // Creates a camera model object based on the model type.
 std::unique_ptr<CameraIntrinsicsModel>
-CameraIntrinsicsModel::Create(const CameraModelType& camera_type) {
+CameraIntrinsicsModel::Create(const CameraIntrinsicsModelType& camera_type) {
   std::unique_ptr<CameraIntrinsicsModel> camera_model;
-  if (camera_type == CameraModelType::PINHOLE) {
+  if (camera_type == CameraIntrinsicsModelType::PINHOLE) {
     camera_model.reset(new PinholeCameraModel());
   } else {
     LOG(FATAL) << "Invalid Camera model chosen.";

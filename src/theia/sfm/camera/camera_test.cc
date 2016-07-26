@@ -86,7 +86,8 @@ TEST(Camera, InternalParameterGettersAndSetters) {
   EXPECT_EQ(camera.PrincipalPointY(), 0.0);
 
   // Make sure the default intrinsics are sets for pinhole cameras.
-  EXPECT_EQ(camera.CameraIntrinsicsType(), CameraModelType::PINHOLE);
+  EXPECT_EQ(camera.GetCameraIntrinsicsModelType(),
+            CameraIntrinsicsModelType::PINHOLE);
   for (int i = 0; i < intrinsics->NumParameters(); i++) {
     EXPECT_EQ(intrinsics->GetParameter(i), pinhole_intrinsics.GetParameter(i));
   }
@@ -190,6 +191,22 @@ TEST(Camera, Reprojection) {
 
     ReprojectionTest(camera);
   }
+}
+
+TEST(Camera, SetCameraIntrinsicsModelType) {
+  static const double kFocalLength = 100.0;
+
+  Camera camera;
+  EXPECT_EQ(camera.GetCameraIntrinsicsModelType(),
+            CameraIntrinsicsModelType::PINHOLE);
+  // Set a camera intrinsics parameter.
+  camera.SetFocalLength(kFocalLength);
+  // Set the camera intrinsics type to be the same as it currently is. This
+  // should produce a no-op and the focal length value should be preserved.
+  camera.SetCameraIntrinsicsModelType(CameraIntrinsicsModelType::PINHOLE);
+  EXPECT_EQ(camera.FocalLength(), kFocalLength);
+  EXPECT_EQ(camera.GetCameraIntrinsicsModelType(),
+            CameraIntrinsicsModelType::PINHOLE);
 }
 
 }  // namespace theia
