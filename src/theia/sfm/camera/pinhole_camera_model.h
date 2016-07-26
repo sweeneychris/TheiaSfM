@@ -37,7 +37,6 @@
 
 #include <cereal/access.hpp>
 #include <cereal/cereal.hpp>
-#include <cereal/archives/portable_binary.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <stdint.h>
 #include <Eigen/Core>
@@ -167,10 +166,12 @@ class PinholeCameraModel : public CameraIntrinsicsModel {
 
 }  // namespace theia
 
-CEREAL_CLASS_VERSION(theia::PinholeCameraModel, 0);
+#include <cereal/archives/portable_binary.hpp>
+
+CEREAL_CLASS_VERSION(theia::PinholeCameraModel, 0)
 // Register the polymorphic relationship for serialization.
-// CEREAL_REGISTER_TYPE(theia::PinholeCameraModel)
-// CEREAL_REGISTER_POLYMORPHIC_RELATION(theia::CameraIntrinsicsModel,
-//                                      theia::PinholeCameraModel)
+CEREAL_REGISTER_TYPE(theia::PinholeCameraModel)
+CEREAL_REGISTER_POLYMORPHIC_RELATION(theia::CameraIntrinsicsModel,
+                                     theia::PinholeCameraModel)
 
 #endif  // THEIA_SFM_CAMERA_PINHOLE_CAMERA_MODEL_H_

@@ -40,6 +40,7 @@
 #include <unordered_map>
 
 #include "theia/sfm/reconstruction.h"
+#include "theia/sfm/camera/pinhole_camera_model.h"
 #include "theia/sfm/track.h"
 #include "theia/sfm/view.h"
 #include "theia/util/map_util.h"
@@ -73,12 +74,23 @@ bool WriteNVMFile(const std::string& nvm_filepath,
 
     const View& view = *reconstruction.View(view_id);
     const Camera& camera = view.Camera();
+    if (camera.CameraIntrinsicsType() != CameraModelType::PINHOLE) {
+      LOG(FATAL) << "Could not add camera " << view.Name()
+                 << " to the NVM output file because nvm files only "
+                    "support pinhole camera models. Please remove non-pinhole "
+                    "cameras from the reconstruction and try again.";
+      continue;
+    }
+
     const Eigen::Quaterniond quat(camera.GetOrientationAsRotationMatrix());
     const Eigen::Vector3d position(camera.GetPosition());
     nvm_file << view.Name() << " " << camera.FocalLength() << " " << quat.w()
              << " " << quat.x() << " " << quat.y() << " " << quat.z() << " "
              << position.x() << " " << position.y() << " " << position.z()
-             << " " << camera.RadialDistortion1() << " 0" << std::endl;
+             << " "
+             << camera.CameraIntrinsics().GetParameter(
+                    PinholeCameraModel::RADIAL_DISTORTION_1)
+             << " 0" << std::endl;
 
     // Assign each feature in this view to a unique feature index (unique within
     // each image, not unique to the reconstruction).

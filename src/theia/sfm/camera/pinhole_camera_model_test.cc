@@ -138,11 +138,11 @@ TEST(PinholeCameraModel, ReprojectionTwoDistortion) {
   static const double kFocalLength = 1200;
   InitRandomGenerator();
   PinholeCameraModel camera;
-  for (int i = 0; i < 1; i++) {
+  for (int i = 0; i < 100; i++) {
     // Initialize a random camera.
     camera.SetFocalLength(kFocalLength);
     camera.SetPrincipalPoint(kPrincipalPoint[0], kPrincipalPoint[1]);
-    camera.SetRadialDistortion(0.01, 0.01);
+    camera.SetRadialDistortion(0.01, 0.001);
     ReprojectionTest(camera);
   }
 }

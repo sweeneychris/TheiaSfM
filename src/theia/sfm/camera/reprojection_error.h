@@ -37,6 +37,8 @@
 
 #include <ceres/ceres.h>
 #include "theia/sfm/feature.h"
+#include "theia/sfm/camera/camera.h"
+#include "theia/sfm/camera/pinhole_camera_model.h"
 #include "theia/sfm/camera/pinhole_reprojection_error.h"
 
 namespace theia {
@@ -50,7 +52,7 @@ struct ReprojectionError {
     return new ceres::AutoDiffCostFunction<PinholeReprojectionError,
                                            2,
                                            Camera::kExtrinsicsSize,
-                                           Camera::kIntrinsicsSize,
+                                           PinholeCameraModel::kIntrinsicsSize,
                                            kPointSize>(
         new PinholeReprojectionError(feature));
   }
