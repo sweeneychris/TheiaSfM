@@ -108,7 +108,7 @@ bool EstimateTwoViewInfoCalibrated(
   ransac_options.max_iterations = options.max_ransac_iterations;
   ransac_options.error_thresh =
       options.max_sampson_error_pixels * options.max_sampson_error_pixels /
-      (intrinsics1.focal_length.value * intrinsics2.focal_length.value);
+      (intrinsics1.focal_length.value[0] * intrinsics2.focal_length.value[0]);
   ransac_options.use_mle = options.use_mle;
 
   RelativePose relative_pose;
@@ -126,8 +126,8 @@ bool EstimateTwoViewInfoCalibrated(
   // Set the twoview info.
   twoview_info->rotation_2 = rotation.angle() * rotation.axis();
   twoview_info->position_2 = relative_pose.position;
-  twoview_info->focal_length_1 = intrinsics1.focal_length.value;
-  twoview_info->focal_length_2 = intrinsics2.focal_length.value;
+  twoview_info->focal_length_1 = intrinsics1.focal_length.value[0];
+  twoview_info->focal_length_2 = intrinsics2.focal_length.value[0];
   twoview_info->num_verified_matches = summary.inliers.size();
 
   *inlier_indices = summary.inliers;

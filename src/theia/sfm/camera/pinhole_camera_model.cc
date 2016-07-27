@@ -84,35 +84,34 @@ void PinholeCameraModel::SetFromCameraIntrinsicsPriors(
     const CameraIntrinsicsPrior& prior) {
   // Set the focal length.
   if (prior.focal_length.is_set) {
-    SetFocalLength(prior.focal_length.value);
+    SetFocalLength(prior.focal_length.value[0]);
   } else {
     SetFocalLength(1.2 * static_cast<double>(std::max(
         prior.image_width, prior.image_height)));
   }
 
   // Set the principal point.
-  if (prior.principal_point[0].is_set && prior.principal_point[1].is_set) {
-    SetPrincipalPoint(prior.principal_point[0].value,
-                      prior.principal_point[1].value);
+  if (prior.principal_point.is_set) {
+    SetPrincipalPoint(prior.principal_point.value[0],
+                      prior.principal_point.value[1]);
   } else {
     SetPrincipalPoint(prior.image_width / 2.0, prior.image_height / 2.0);
   }
 
   // Set aspect ratio if available.
   if (prior.aspect_ratio.is_set) {
-    SetAspectRatio(prior.aspect_ratio.value);
+    SetAspectRatio(prior.aspect_ratio.value[0]);
   }
 
   // Set skew if available.
   if (prior.skew.is_set) {
-    SetSkew(prior.skew.value);
+    SetSkew(prior.skew.value[0]);
   }
 
   // Set radial distortion if available.
-  if (prior.radial_distortion[0].is_set &&
-      prior.radial_distortion[1].is_set) {
-    SetRadialDistortion(prior.radial_distortion[0].value,
-                        prior.radial_distortion[1].value);
+  if (prior.radial_distortion.is_set) {
+    SetRadialDistortion(prior.radial_distortion.value[0],
+                        prior.radial_distortion.value[1]);
   }
 }
 

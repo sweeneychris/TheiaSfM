@@ -64,29 +64,25 @@ bool ReadCalibration(const std::string& calibration_file,
     // Read camera_intrinsics_prior.
     CameraIntrinsicsPrior temp_camera_intrinsics_prior;
     temp_camera_intrinsics_prior.focal_length.is_set = true;
-    ifs >> temp_camera_intrinsics_prior.focal_length.value;
+    ifs >> temp_camera_intrinsics_prior.focal_length.value[0];
 
-    temp_camera_intrinsics_prior.principal_point[0].is_set = true;
-    ifs >> temp_camera_intrinsics_prior.principal_point[0].value;
+    temp_camera_intrinsics_prior.principal_point.is_set = true;
+    ifs >> temp_camera_intrinsics_prior.principal_point.value[0];
+    ifs >> temp_camera_intrinsics_prior.principal_point.value[1];
     temp_camera_intrinsics_prior.image_width =
-        2.0 * temp_camera_intrinsics_prior.principal_point[0].value;
-
-    temp_camera_intrinsics_prior.principal_point[1].is_set = true;
-    ifs >> temp_camera_intrinsics_prior.principal_point[1].value;
+        2.0 * temp_camera_intrinsics_prior.principal_point.value[0];
     temp_camera_intrinsics_prior.image_height =
-        2.0 * temp_camera_intrinsics_prior.principal_point[1].value;
+        2.0 * temp_camera_intrinsics_prior.principal_point.value[1];
 
     temp_camera_intrinsics_prior.aspect_ratio.is_set = true;
-    ifs >> temp_camera_intrinsics_prior.aspect_ratio.value;
+    ifs >> temp_camera_intrinsics_prior.aspect_ratio.value[0];
 
     temp_camera_intrinsics_prior.skew.is_set = true;
-    ifs >> temp_camera_intrinsics_prior.skew.value;
+    ifs >> temp_camera_intrinsics_prior.skew.value[0];
 
-    temp_camera_intrinsics_prior.radial_distortion[0].is_set = true;
-    ifs >> temp_camera_intrinsics_prior.radial_distortion[0].value;
-
-    temp_camera_intrinsics_prior.radial_distortion[1].is_set = true;
-    ifs >> temp_camera_intrinsics_prior.radial_distortion[1].value;
+    temp_camera_intrinsics_prior.radial_distortion.is_set = true;
+    ifs >> temp_camera_intrinsics_prior.radial_distortion.value[0];
+    ifs >> temp_camera_intrinsics_prior.radial_distortion.value[1];
 
     (*camera_intrinsics_prior)[filename] = temp_camera_intrinsics_prior;
   }

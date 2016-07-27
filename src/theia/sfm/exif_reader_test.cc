@@ -47,7 +47,7 @@ TEST(ExtractEXIFMetadata, FocalLengthEXIF) {
   EXPECT_TRUE(exif_reader.ExtractEXIFMetadata(exif_img_filename,
                                               &camera_intrinsics_prior));
   EXPECT_TRUE(camera_intrinsics_prior.focal_length.is_set);
-  EXPECT_NEAR(camera_intrinsics_prior.focal_length.value, 1304.84, 0.1);
+  EXPECT_NEAR(camera_intrinsics_prior.focal_length.value[0], 1304.84, 0.1);
   EXPECT_EQ(camera_intrinsics_prior.image_width, 960);
   EXPECT_EQ(camera_intrinsics_prior.image_height, 1280);
 }

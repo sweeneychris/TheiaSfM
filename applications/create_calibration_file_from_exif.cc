@@ -80,7 +80,7 @@ int main(int argc, char *argv[]) {
       if (FLAGS_initialize_uncalibrated_images_with_median_viewing_angle) {
         // Set the focal length based on a median viewing angle.
         prior.focal_length.is_set = true;
-        prior.focal_length.value =
+        prior.focal_length.value[0] =
             1.2 * static_cast<double>(
                       std::max(prior.image_width, prior.image_height));
       } else {
@@ -92,10 +92,10 @@ int main(int argc, char *argv[]) {
     // We write the default values for aspect ratio, skew, and radial distortion
     // since those cannot be recovered from EXIF.
     LOG(INFO) << image_name << " has an EXIF focal length of "
-              << prior.focal_length.value;
-    ofs << image_name << " " << prior.focal_length.value << " "
-        << prior.principal_point[0].value << " "
-        << prior.principal_point[1].value << " 1.0 0.0 0.0 0.0\n";
+              << prior.focal_length.value[0];
+    ofs << image_name << " " << prior.focal_length.value[0] << " "
+        << prior.principal_point.value[0] << " "
+        << prior.principal_point.value[1] << " 1.0 0.0 0.0 0.0\n";
   }
   ofs.close();
 }

@@ -111,7 +111,7 @@ bool ReadListsFile(const std::string& list_filename,
     if (focal_length != 0) {
       reconstruction->MutableView(view_id)
           ->MutableCameraIntrinsicsPrior()
-          ->focal_length.value = focal_length;
+          ->focal_length.value[0] = focal_length;
       reconstruction->MutableView(view_id)
           ->MutableCameraIntrinsicsPrior()
           ->focal_length.is_set = true;

@@ -152,11 +152,10 @@ bool ExifReader::ExtractEXIFMetadata(
   camera_intrinsics_prior->image_height = image.Height();
 
   // Set principal point.
-  camera_intrinsics_prior->principal_point[0].is_set = true;
-  camera_intrinsics_prior->principal_point[0].value =
+  camera_intrinsics_prior->principal_point.is_set = true;
+  camera_intrinsics_prior->principal_point.value[0] =
       camera_intrinsics_prior->image_width / 2.0;
-  camera_intrinsics_prior->principal_point[1].is_set = true;
-  camera_intrinsics_prior->principal_point[1].value =
+  camera_intrinsics_prior->principal_point.value[1] =
       camera_intrinsics_prior->image_height / 2.0;
 
   // If the exif focal length (in mm) is not set, then the focal length in
@@ -183,7 +182,7 @@ bool ExifReader::ExtractEXIFMetadata(
         camera_intrinsics_prior);
   }
 
-  if (camera_intrinsics_prior->focal_length.value > kMinFocalLength) {
+  if (camera_intrinsics_prior->focal_length.value[0] > kMinFocalLength) {
     camera_intrinsics_prior->focal_length.is_set = true;
   }
 
@@ -231,7 +230,7 @@ void ExifReader::SetFocalLengthFromExif(
 
   // Normalize for the image size in case the original size is different
   // than the current size.
-  camera_intrinsics_prior->focal_length.value =
+  camera_intrinsics_prior->focal_length.value[0] =
       (focal_length_x + focal_length_y) / 2.0;
   camera_intrinsics_prior->focal_length.is_set = true;
 }
@@ -253,7 +252,7 @@ void ExifReader::SetFocalLengthFromSensorDatabase(
   }
 
   if (sensor_width != 0) {
-    camera_intrinsics_prior->focal_length.value =
+    camera_intrinsics_prior->focal_length.value[0] =
         max_image_dimension * exif_parser.FocalLength / sensor_width;
   }
 }
