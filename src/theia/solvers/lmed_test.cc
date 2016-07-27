@@ -45,10 +45,9 @@
 
 namespace theia {
 namespace {
-// Number of synthetic points. Note that the points have a 0.5 contamination
-// rate, which is the maximum contamination rate that LMeds can take.
+// Number of synthetic points.
 const int kNumInlierPoints = 5000;
-const int kNumOutlierPoints = 5000;
+const int kNumOutlierPoints = 2500;
 
 // TODO(vfragoso): These classes below  (Point, Line, and LineEstimator) can be
 // put in a single file. Several tests such as ransac_test.cc and prosac_test.cc
@@ -134,7 +133,7 @@ TEST_F(LmedTest, ComputingQualityMeasureOfCorrectModel) {
   EXPECT_LT(lmed_quality_measurement.ComputeCost(residuals, &inliers), 0.5);
   const double inlier_ratio = static_cast<double>(inliers.size()) /
                               static_cast<double>(residuals.size());
-  EXPECT_NEAR(inlier_ratio, 0.5, 0.1);
+  EXPECT_NEAR(inlier_ratio, 0.666, 0.1);
 }
 
 // Tests the Lmed estimator by fitting a line to the input_points.
@@ -150,7 +149,7 @@ TEST_F(LmedTest, LineFitting) {
   CHECK(lmed_line.Estimate(*input_points, &line, &summary));
   EXPECT_LT(fabs(line.m - 1.0), 0.1);
   EXPECT_NEAR(static_cast<double>(summary.inliers.size()) /
-              input_points->size(), 0.5, 0.1);
+              input_points->size(), 0.666, 0.1);
 }
 
 }  // namespace theia
