@@ -32,6 +32,8 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
+#include <glog/logging.h>
+
 #include "gtest/gtest.h"
 
 #include "theia/sfm/camera_intrinsics_prior.h"
@@ -40,6 +42,8 @@
 namespace theia {
 
 std::string exif_img_filename = THEIA_DATA_DIR + std::string("/image/exif.jpg");
+std::string gps_exif_img_filename =
+    THEIA_DATA_DIR + std::string("/image/gps_exif.jpg");
 
 TEST(ExtractEXIFMetadata, FocalLengthEXIF) {
   CameraIntrinsicsPrior camera_intrinsics_prior;
@@ -50,6 +54,25 @@ TEST(ExtractEXIFMetadata, FocalLengthEXIF) {
   EXPECT_NEAR(camera_intrinsics_prior.focal_length.value[0], 1304.84, 0.1);
   EXPECT_EQ(camera_intrinsics_prior.image_width, 960);
   EXPECT_EQ(camera_intrinsics_prior.image_height, 1280);
+}
+
+TEST(ExtractEXIFMetadata, GPS) {
+  static const double kLatLonTolerance = 1e-6;
+  static const double kAltitudeTolerance = 1e-6;
+
+  CameraIntrinsicsPrior camera_intrinsics_prior;
+  ExifReader exif_reader;
+  EXPECT_TRUE(exif_reader.ExtractEXIFMetadata(gps_exif_img_filename,
+                                              &camera_intrinsics_prior));
+  EXPECT_TRUE(camera_intrinsics_prior.latitude.is_set);
+  EXPECT_NEAR(camera_intrinsics_prior.latitude.value[0], 33.875461,
+              kLatLonTolerance);
+  EXPECT_TRUE(camera_intrinsics_prior.longitude.is_set);
+  EXPECT_NEAR(camera_intrinsics_prior.longitude.value[0], -116.301620,
+              kLatLonTolerance);
+  EXPECT_TRUE(camera_intrinsics_prior.altitude.is_set);
+  EXPECT_NEAR(camera_intrinsics_prior.altitude.value[0], 304,
+              kAltitudeTolerance);
 }
 
 }  // namespace theia

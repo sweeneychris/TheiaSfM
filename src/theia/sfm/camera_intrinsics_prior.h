@@ -47,7 +47,7 @@ template <int N>
 class Prior {
  public:
   bool is_set = false;
-  double value[N];
+  double value[N] = {0.0};
 
  private:
   // Templated method for disk I/O with cereal. This method tells cereal which
@@ -81,6 +81,11 @@ struct CameraIntrinsicsPrior {
   Prior<3> position;
   Prior<3> orientation;
 
+  // GPS priors. The altitude is measured as meters above sea level.
+  Prior<1> latitude;
+  Prior<1> longitude;
+  Prior<1> altitude;
+
  private:
   // Templated method for disk I/O with cereal. This method tells cereal which
   // data members should be used when reading/writing to/from disk.
@@ -89,7 +94,8 @@ struct CameraIntrinsicsPrior {
   void serialize(Archive& ar, const std::uint32_t version) {  // NOLINT
     if (version >= 2) {
       ar(image_width, image_height, focal_length, aspect_ratio, skew,
-         radial_distortion, tangential_distortion, position, orientation);
+         radial_distortion, tangential_distortion, position, orientation,
+         latitude, longitude, altitude);
     } else {
       if (version >= 1) {
         ar(image_width, image_height);

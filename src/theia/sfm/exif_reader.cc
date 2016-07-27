@@ -186,6 +186,23 @@ bool ExifReader::ExtractEXIFMetadata(
     camera_intrinsics_prior->focal_length.is_set = true;
   }
 
+  // Set GPS latitude, longitude, and altitude.
+  if (exif_parser.GeoLocation.Latitude != 0) {
+    camera_intrinsics_prior->latitude.is_set = true;
+    camera_intrinsics_prior->latitude.value[0] =
+        exif_parser.GeoLocation.Latitude;
+  }
+  if (exif_parser.GeoLocation.Longitude != 0) {
+    camera_intrinsics_prior->longitude.is_set = true;
+    camera_intrinsics_prior->longitude.value[0] =
+        exif_parser.GeoLocation.Longitude;
+  }
+  if (exif_parser.GeoLocation.Altitude != 0) {
+    camera_intrinsics_prior->altitude.is_set = true;
+    camera_intrinsics_prior->altitude.value[0] =
+        exif_parser.GeoLocation.Altitude;
+  }
+
   return true;
 }
 
