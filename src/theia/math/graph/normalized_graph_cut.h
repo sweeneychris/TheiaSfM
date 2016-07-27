@@ -259,11 +259,11 @@ class NormalizedGraphCut {
       // The sum of all edge weights connected to node i is equal to the sum of
       // col(i) in the edge weight matrix.
       const double d_i = edge_weight_.col(node.second).sum();
-      node_weight_coefficients.emplace_back(node.first, node.first, d_i);
+      node_weight_coefficients.emplace_back(node.second, node.second, d_i);
 
       // Create D^{-1/2}. Since D is a diagonal matrix the inverse is simply the
       // reciprical of each diagonal matrix.
-      node_weight_inv_sqrt_coefficients.emplace_back(node.first, node.first,
+      node_weight_inv_sqrt_coefficients.emplace_back(node.second, node.second,
                                                      std::sqrt(1.0 / d_i));
     }
 
