@@ -124,7 +124,8 @@ template <typename T> class Image {
   void ApproximateGaussianBlur(const double sigma);
 
   // Resize using a Lanczos 3 filter.
-  void Resize(int new_rows, int new_cols);
+  void Resize(int new_width, int new_height);
+  void ResizeRowsCols(int new_rows, int new_cols);
   void Resize(double scale);
 
  protected:
@@ -279,7 +280,7 @@ template <typename T> void Image<T>::TwoThirdsSample(Image<T>* dest) const {
 template <typename T>
 template <typename D>
 void Image<T>::Integrate(Image<D>* integral) const {
-  integral->Resize(Rows() + 1, Cols() + 1);
+  integral->ResizeRowsCols(Rows() + 1, Cols() + 1);
 
   for (int i = 0; i < Channels(); i++) {
     // Fill the first row with zeros.
@@ -304,7 +305,11 @@ void Image<T>::ApproximateGaussianBlur(const double sigma) {
   image_.blur(sigma);
 }
 
-template <typename T> void Image<T>::Resize(int new_rows, int new_cols) {
+template <typename T> void Image<T>::Resize(int new_width, int new_height) {
+  image_.resize(new_width, new_height);
+}
+
+template <typename T> void Image<T>::ResizeRowsCols(int new_rows, int new_cols) {
   image_.resize(new_cols, new_rows);
 }
 
