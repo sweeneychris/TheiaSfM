@@ -85,4 +85,21 @@ TEST(NormalizedGraphCut, SimpleGraph) {
   EXPECT_NE(node_0_subgraph, node_3_subgraph);
 }
 
+TEST(NormalizedGraphCut, SimpleGraph1) {
+  typedef std::pair<int, int> IntPair;
+  std::unordered_map<std::pair<int, int>, double> edge_weights;
+  edge_weights.emplace(IntPair(1, 7), 100);
+  edge_weights.emplace(IntPair(1, 4), 1);
+  edge_weights.emplace(IntPair(1, 3), 100);
+  edge_weights.emplace(IntPair(7, 3), 100);
+  edge_weights.emplace(IntPair(3, 8), 1);
+  edge_weights.emplace(IntPair(5, 4), 100);
+  edge_weights.emplace(IntPair(5, 8), 100);
+  edge_weights.emplace(IntPair(4, 8), 100);
+  NormalizedGraphCut<int>::Options options;
+  NormalizedGraphCut<int> ncut(options);
+  std::unordered_set<int> subgraph1, subgraph2;
+  EXPECT_TRUE(ncut.ComputeCut(edge_weights, &subgraph1, &subgraph2, NULL));
+}
+
 }  // namespace theia
