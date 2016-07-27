@@ -143,6 +143,7 @@
 #include "theia/sfm/global_pose_estimation/robust_rotation_estimator.h"
 #include "theia/sfm/global_pose_estimation/rotation_estimator.h"
 #include "theia/sfm/global_reconstruction_estimator.h"
+#include "theia/sfm/gps_converter.h"
 #include "theia/sfm/incremental_reconstruction_estimator.h"
 #include "theia/sfm/localize_view_to_reconstruction.h"
 #include "theia/sfm/pose/dls_impl.h"
