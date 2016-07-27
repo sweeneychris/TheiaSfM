@@ -42,7 +42,6 @@
 #include "theia/sfm/bundle_adjustment/bundle_adjustment.h"
 #include "theia/sfm/camera_intrinsics_prior.h"
 #include "theia/sfm/camera/projection_matrix_utils.h"
-#include "theia/sfm/camera/project_point_to_image.h"
 #include "theia/sfm/camera/radial_distortion.h"
 
 namespace theia {

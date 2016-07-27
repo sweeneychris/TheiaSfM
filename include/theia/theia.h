@@ -102,7 +102,7 @@
 #include "theia/sfm/camera/camera_intrinsics_model.h"
 #include "theia/sfm/camera/pinhole_camera_model.h"
 #include "theia/sfm/camera/pinhole_reprojection_error.h"
-#include "theia/sfm/camera/project_point_to_image.h"
+#include "theia/sfm/camera/pinhole_project_point_to_image.h"
 #include "theia/sfm/camera/projection_matrix_utils.h"
 #include "theia/sfm/camera/radial_distortion.h"
 #include "theia/sfm/camera/reprojection_error.h"
