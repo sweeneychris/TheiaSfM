@@ -31,7 +31,6 @@
 //
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
-//         Torsten Sattler (sattlert@inf.ethz.ch)
 
 #include <Eigen/Dense>
 
@@ -111,7 +110,7 @@ TEST(PinholeCameraModel, ReprojectionNoDistortion) {
   static const double kFocalLength = 1200;
   InitRandomGenerator();
   PinholeCameraModel camera;
-  for (int i = 0; i < 1; i++) {
+  for (int i = 0; i < 100; i++) {
     camera.SetFocalLength(kFocalLength);
     camera.SetPrincipalPoint(kPrincipalPoint[0], kPrincipalPoint[1]);
     camera.SetRadialDistortion(0, 0);
@@ -124,7 +123,7 @@ TEST(PinholeCameraModel, ReprojectionOneDistortion) {
   static const double kFocalLength = 1200;
   InitRandomGenerator();
   PinholeCameraModel camera;
-  for (int i = 0; i < 1; i++) {
+  for (int i = 0; i < 100; i++) {
     // Initialize a random camera.
     camera.SetFocalLength(kFocalLength);
     camera.SetPrincipalPoint(kPrincipalPoint[0], kPrincipalPoint[1]);

@@ -55,24 +55,16 @@ using Eigen::Vector3d;
 using Eigen::Vector4d;
 
 PinholeCameraModel::PinholeCameraModel() {
+  parameters_.resize(kIntrinsicsSize);
   SetFocalLength(1.0);
-  SetAspectRatio(1.0);
-  SetSkew(0.0);
   SetPrincipalPoint(0.0, 0.0);
-  SetRadialDistortion(0.0, 0.0);
+  SetParameter(ASPECT_RATIO, 1.0);
+  SetParameter(SKEW, 0.0);
+  SetParameter(RADIAL_DISTORTION_1, 0.0);
+  SetParameter(RADIAL_DISTORTION_2, 0.0);
 }
 
 int PinholeCameraModel::NumParameters() const {return kIntrinsicsSize;}
-
-void PinholeCameraModel::GetCalibrationMatrix(Matrix3d* kmatrix) const {
-  IntrinsicsToCalibrationMatrix(FocalLength(),
-                                Skew(),
-                                AspectRatio(),
-                                PrincipalPointX(),
-                                PrincipalPointY(),
-                                kmatrix);
-}
-
 
 // Returns the camera model type of the object.
 CameraIntrinsicsModelType PinholeCameraModel::Type() const {
@@ -100,18 +92,18 @@ void PinholeCameraModel::SetFromCameraIntrinsicsPriors(
 
   // Set aspect ratio if available.
   if (prior.aspect_ratio.is_set) {
-    SetAspectRatio(prior.aspect_ratio.value[0]);
+    SetParameter(ASPECT_RATIO, prior.aspect_ratio.value[0]);
   }
 
   // Set skew if available.
   if (prior.skew.is_set) {
-    SetSkew(prior.skew.value[0]);
+    SetParameter(SKEW, prior.skew.value[0]);
   }
 
   // Set radial distortion if available.
   if (prior.radial_distortion.is_set) {
-    SetRadialDistortion(prior.radial_distortion.value[0],
-                        prior.radial_distortion.value[1]);
+    SetParameter(RADIAL_DISTORTION_1, prior.radial_distortion.value[0]);
+    SetParameter(RADIAL_DISTORTION_2, prior.radial_distortion.value[1]);
   }
 }
 
@@ -149,115 +141,44 @@ std::vector<int> PinholeCameraModel::GetSubsetFromOptimizeIntrinsicsType(
   return constant_intrinsics;
 }
 
-Eigen::Vector2d PinholeCameraModel::CameraToImageCoordinates(
-    const Eigen::Vector3d& point) const {
-  const Eigen::Vector2d normalized_pixel = point.hnormalized();
-  Eigen::Vector2d distorted_pixel;
-  RadialDistortPoint(normalized_pixel.x(),
-                     normalized_pixel.y(),
-                     camera_parameters_[RADIAL_DISTORTION_1],
-                     camera_parameters_[RADIAL_DISTORTION_2],
-                     distorted_pixel.data(),
-                     distorted_pixel.data() + 1);
-
-  Eigen::Vector2d pixel;
-  pixel.x() = FocalLength() * distorted_pixel[0] + Skew() * distorted_pixel[1] +
-              PrincipalPointX();
-  pixel.y() =
-      FocalLength() * AspectRatio() * distorted_pixel[1] + PrincipalPointY();
-  return pixel;
-}
-
-Vector3d PinholeCameraModel::ImageToCameraCoordinates(
-    const Vector2d& pixel) const {
-  // First, undo the calibration.
-  const double focal_length_y = FocalLength() * AspectRatio();
-  const double y_normalized = (pixel[1] - PrincipalPointY()) / focal_length_y;
-  const double x_normalized =
-      (pixel[0] - PrincipalPointX() - y_normalized * Skew()) / FocalLength();
-
-  // Undo radial distortion.
-  const Vector2d normalized_point(x_normalized, y_normalized);
-  Vector2d undistorted_pixel;
-  RadialUndistortPoint(normalized_point,
-                       RadialDistortion1(),
-                       RadialDistortion2(),
-                       &undistorted_pixel);
-  const Vector3d undistorted_point = undistorted_pixel.homogeneous();
-  return undistorted_point;
+void PinholeCameraModel::GetCalibrationMatrix(Matrix3d* kmatrix) const {
+  IntrinsicsToCalibrationMatrix(parameters_[FOCAL_LENGTH],
+                                parameters_[SKEW],
+                                parameters_[ASPECT_RATIO],
+                                parameters_[PRINCIPAL_POINT_X],
+                                parameters_[PRINCIPAL_POINT_Y],
+                                kmatrix);
 }
 
 // ----------------------- Getter and Setter methods ---------------------- //
-void PinholeCameraModel::SetFocalLength(const double focal_length) {
-  camera_parameters_[FOCAL_LENGTH] = focal_length;
-}
-
-double PinholeCameraModel::FocalLength() const {
-  return camera_parameters_[FOCAL_LENGTH];
-}
 
 void PinholeCameraModel::SetAspectRatio(const double aspect_ratio) {
-  camera_parameters_[ASPECT_RATIO] = aspect_ratio;
+  parameters_[ASPECT_RATIO] = aspect_ratio;
 }
 double PinholeCameraModel::AspectRatio() const {
-  return camera_parameters_[ASPECT_RATIO];
+  return parameters_[ASPECT_RATIO];
 }
 
 void PinholeCameraModel::SetSkew(const double skew) {
-  camera_parameters_[SKEW] = skew;
+  parameters_[SKEW] = skew;
 }
 
 double PinholeCameraModel::Skew() const {
-  return camera_parameters_[SKEW];
-}
-
-void PinholeCameraModel::SetPrincipalPoint(const double principal_point_x,
-                               const double principal_point_y) {
-  camera_parameters_[PRINCIPAL_POINT_X] = principal_point_x;
-  camera_parameters_[PRINCIPAL_POINT_Y] = principal_point_y;
-}
-
-double PinholeCameraModel::PrincipalPointX() const {
-  return camera_parameters_[PRINCIPAL_POINT_X];
-}
-
-double PinholeCameraModel::PrincipalPointY() const {
-  return camera_parameters_[PRINCIPAL_POINT_Y];
+  return parameters_[SKEW];
 }
 
 void PinholeCameraModel::SetRadialDistortion(const double radial_distortion_1,
-                                 const double radial_distortion_2) {
-  camera_parameters_[RADIAL_DISTORTION_1] = radial_distortion_1;
-  camera_parameters_[RADIAL_DISTORTION_2] = radial_distortion_2;
+                                             const double radial_distortion_2) {
+  parameters_[RADIAL_DISTORTION_1] = radial_distortion_1;
+  parameters_[RADIAL_DISTORTION_2] = radial_distortion_2;
 }
 
 double PinholeCameraModel::RadialDistortion1() const {
-  return camera_parameters_[RADIAL_DISTORTION_1];
+  return parameters_[RADIAL_DISTORTION_1];
 }
 
 double PinholeCameraModel::RadialDistortion2() const {
-  return camera_parameters_[RADIAL_DISTORTION_2];
+  return parameters_[RADIAL_DISTORTION_2];
 }
-
-// Directly get and set the parameters directly. Each derived class will
-// define a set of indices for the intrinsic parameters as a public enum.
-void PinholeCameraModel::SetParameter(const int parameter_index,
-                                      const double parameter_value) {
-  CHECK_GE(parameter_index, 0);
-  CHECK_LT(parameter_index, kIntrinsicsSize);
-  camera_parameters_[parameter_index] = parameter_value;
-}
-
-const double PinholeCameraModel::GetParameter(
-    const int parameter_index) const {
-  CHECK_GE(parameter_index, 0);
-  CHECK_LT(parameter_index, kIntrinsicsSize);
-  return camera_parameters_[parameter_index];
-}
-
-const double* PinholeCameraModel::parameters() const {
-  return camera_parameters_;
-}
-double* PinholeCameraModel::mutable_parameters() { return camera_parameters_; }
 
 }  // namespace theia
