@@ -182,7 +182,7 @@ void FeatureExtractorAndMatcher::ProcessImage(
   if (intrinsics.focal_length.is_set) {
     LOG(INFO) << "Image " << image_filepath
               << " contained an EXIF focal length: "
-              << intrinsics.focal_length.value;
+              << intrinsics.focal_length.value[0];
   } else if (!options_.only_calibrated_views) {
     LOG(INFO) << "Image " << image_filepath
               << " did not contain an EXIF focal length.";

@@ -92,7 +92,7 @@ bool WriteBundleFile(const Reconstruction& reconstruction,
     ofs_lists << view->Name();
     const auto& prior = view->CameraIntrinsicsPrior();
     if (prior.focal_length.is_set) {
-      ofs_lists << " 0 " << prior.focal_length.value;
+      ofs_lists << " 0 " << prior.focal_length.value[0];
     }
     ofs_lists << std::endl;
 
