@@ -42,6 +42,7 @@
 #include <stdint.h>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
+#include <algorithm>
 #include <vector>
 
 #include "theia/sfm/camera/camera_intrinsics_model.h"

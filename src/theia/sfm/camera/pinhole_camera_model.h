@@ -37,6 +37,7 @@
 
 #include <cereal/access.hpp>
 #include <cereal/cereal.hpp>
+#include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
 #include <stdint.h>
 #include <Eigen/Core>
@@ -80,64 +81,7 @@ class PinholeCameraModel : public CameraIntrinsicsModel {
   PinholeCameraModel();
   ~PinholeCameraModel() {}
 
-  int NumParameters() const;
-
-  // ---------------------------- Helper methods ---------------------------- //
-  // Returns the calibration matrix in the form specified above.
-  void GetCalibrationMatrix(Eigen::Matrix3d* kmatrix) const;
-
-  // Returns the camera model type of the object.
-  CameraIntrinsicsModelType Type() const;
-
-  // Set the intrinsic camera parameters from the priors.
-  void SetFromCameraIntrinsicsPriors(
-      const CameraIntrinsicsPrior& prior);
-
-  // Returns the indices of the parameters that will be optimized during bundle
-  // adjustment.
-  std::vector<int> GetSubsetFromOptimizeIntrinsicsType(
-      const OptimizeIntrinsicsType& intrinsics_to_optimize);
-
-  // Projects the homogeneous 3D point into the image plane and undistorts the
-  // point according to the radial distortion parameters. The function returns
-  // the depth of the point so that points that project behind the camera (i.e.,
-  // negative depth) can be determined. Points at infinity return a depth of
-  // infinity.
-  Eigen::Vector2d CameraToImageCoordinates(
-      const Eigen::Vector3d& point) const;
-
-  // Converts image pixel coordinates to normalized coordinates in the camera
-  // coordinates by removing the effect of camera intrinsics/calibration.
-  Eigen::Vector3d ImageToCameraCoordinates(
-      const Eigen::Vector2d& pixel) const;
-
-  // ----------------------- Getter and Setter methods ---------------------- //
-  void SetFocalLength(const double focal_length);
-  double FocalLength() const;
-
-  void SetPrincipalPoint(const double principal_point_x,
-                                 const double principal_point_y);
-  double PrincipalPointX() const;
-  double PrincipalPointY() const;
-
-  void SetAspectRatio(const double aspect_ratio);
-  double AspectRatio() const;
-
-  void SetSkew(const double skew);
-  double Skew() const;
-
-  void SetRadialDistortion(const double radial_distortion_1,
-                           const double radial_distortion_2);
-  double RadialDistortion1() const;
-  double RadialDistortion2() const;
-
-  // Directly get and set the parameters directly. Each derived class will
-  // define a set of indices for the intrinsic parameters as a public enum.
-  void SetParameter(const int parameter_index, double parameter_value);
-  const double GetParameter(const int parameter_index) const;
-
-  const double* parameters() const;
-  double* mutable_parameters();
+  static const int kIntrinsicsSize = 7;
 
   enum InternalParametersIndex{
     FOCAL_LENGTH = 0,
@@ -149,7 +93,70 @@ class PinholeCameraModel : public CameraIntrinsicsModel {
     RADIAL_DISTORTION_2 = 6
   };
 
-  static const int kIntrinsicsSize = 7;
+  int NumParameters() const override;
+
+  // Returns the camera model type of the object.
+  CameraIntrinsicsModelType Type() const override;
+
+  // Set the intrinsic camera parameters from the priors.
+  void SetFromCameraIntrinsicsPriors(
+      const CameraIntrinsicsPrior& prior) override;
+
+  // Returns the indices of the parameters that will be optimized during bundle
+  // adjustment.
+  std::vector<int> GetSubsetFromOptimizeIntrinsicsType(
+      const OptimizeIntrinsicsType& intrinsics_to_optimize) const override;
+
+  // Returns the calibration matrix in the form specified above.
+  void GetCalibrationMatrix(Eigen::Matrix3d* kmatrix) const override;
+
+  // Given a point in the camera coordinate system, apply the camera intrinsics
+  // (e.g., focal length, principal point, distortion) to transform the point
+  // into pixel coordinates.
+  //
+  // NOTE: This method should transform to pixel coordinates and so lens
+  // distortion should be applied.
+  template <typename T>
+  static void CameraToPixelCoordinates(const T* intrinsic_parameters,
+                                       const T* point,
+                                       T* pixel);
+
+  // Given a pixel in the image coordinates, remove the effects of camera
+  // intrinsics parameters and lens distortion to produce a point in the camera
+  // coordinate system. The point output by this method is effectively a ray in
+  // the direction of the pixel in the camera coordinate system.
+  template <typename T>
+  static void PixelToCameraCoordinates(const T* intrinsic_parameters,
+                                       const T* pixel,
+                                       T* point);
+
+  // Given an undistorted pixel, apply lens distortion to the pixel to get a
+  // distorted pixel. The type of distortion (i.e. radial, tangential, fisheye,
+  // etc.) will depend on the camera intrinsics model.
+  template <typename T>
+  static void DistortPoint(const T* intrinsic_parameters,
+                           const T* undistorted_point,
+                           T* distorted_point);
+
+  // Given an undistorted pixel, apply lens distortion to the pixel to get a
+  // distorted pixel. The type of distortion (i.e. radial, tangential, fisheye,
+  // etc.) will depend on the camera intrinsics model.
+  template <typename T>
+  static void UndistortPoint(const T* intrinsic_parameters,
+                             const T* distorted_point,
+                             T* undistorted_point);
+
+  // ----------------------- Getter and Setter methods ---------------------- //
+  void SetAspectRatio(const double aspect_ratio);
+  double AspectRatio() const;
+
+  void SetSkew(const double skew);
+  double Skew() const;
+
+  void SetRadialDistortion(const double radial_distortion_1,
+                           const double radial_distortion_2);
+  double RadialDistortion1() const;
+  double RadialDistortion2() const;
 
  private:
   // Templated method for disk I/O with cereal. This method tells cereal which
@@ -157,18 +164,157 @@ class PinholeCameraModel : public CameraIntrinsicsModel {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& ar, const std::uint32_t version) {  // NOLINT
-    ar(cereal::binary_data(camera_parameters_,
-                           sizeof(double) * kIntrinsicsSize));
+    if (version > 0) {
+      ar(cereal::base_class<CameraIntrinsicsModel>(this));
+    } else {
+      CHECK_EQ(this->parameters_.size(), NumParameters());
+      ar(cereal::binary_data(this->parameters_.data(),
+                             sizeof(double) * NumParameters()));
+    }
   }
-
-  double camera_parameters_[kIntrinsicsSize];
 };
+
+// Implementation of the static templated methods.
+// Given a point in the camera coordinate system, apply the camera intrinsics
+// (e.g., focal length, principal point) to transform the point into
+// undistorted pixel coordinates.
+//
+// NOTE: This method should transform to UNDISTORTED pixel coordinates and no
+// lens distortion should be applied.
+template <typename T>
+void PinholeCameraModel::CameraToPixelCoordinates(
+    const T* intrinsic_parameters, const T* point, T* pixel) {
+  // Get normalized pixel projection at image plane depth = 1.
+  const T& depth = point[2];
+  const T normalized_pixel[2] = { point[0] / depth,
+                                  point[1] / depth };
+
+  // Apply radial distortion.
+  T distorted_pixel[2];
+  PinholeCameraModel::DistortPoint(intrinsic_parameters,
+                                   normalized_pixel,
+                                   distorted_pixel);
+
+  // Apply calibration parameters to transform normalized units into pixels.
+  const T& focal_length =
+      intrinsic_parameters[PinholeCameraModel::FOCAL_LENGTH];
+  const T& skew = intrinsic_parameters[PinholeCameraModel::SKEW];
+  const T& aspect_ratio =
+      intrinsic_parameters[PinholeCameraModel::ASPECT_RATIO];
+  const T& principal_point_x =
+      intrinsic_parameters[PinholeCameraModel::PRINCIPAL_POINT_X];
+  const T& principal_point_y =
+      intrinsic_parameters[PinholeCameraModel::PRINCIPAL_POINT_Y];
+
+  pixel[0] = focal_length * distorted_pixel[0] + skew * distorted_pixel[1] +
+             principal_point_x;
+  pixel[1] = focal_length * aspect_ratio * distorted_pixel[1] +
+             principal_point_y;
+}
+
+// Given a point in the camera coordinate system, apply the camera intrinsics
+// (e.g., focal length, principal point) to transform the point into
+// undistorted pixel coordinates.
+//
+// NOTE: This method should transform to UNDISTORTED pixel coordinates and no
+// lens distortion should be applied.
+template <typename T>
+void PinholeCameraModel::PixelToCameraCoordinates(const T* intrinsic_parameters,
+                                                  const T* pixel,
+                                                  T* point) {
+  const T& focal_length =
+      intrinsic_parameters[PinholeCameraModel::FOCAL_LENGTH];
+  const T& aspect_ratio =
+      intrinsic_parameters[PinholeCameraModel::ASPECT_RATIO];
+  const T& focal_length_y = focal_length * aspect_ratio;
+  const T& skew = intrinsic_parameters[PinholeCameraModel::SKEW];
+  const T& principal_point_x =
+      intrinsic_parameters[PinholeCameraModel::PRINCIPAL_POINT_X];
+  const T& principal_point_y =
+      intrinsic_parameters[PinholeCameraModel::PRINCIPAL_POINT_Y];
+
+  // Normalize the y coordinate first.
+  T distorted_point[2];
+  distorted_point[1] = (pixel[1] - principal_point_y) / focal_length_y;
+  distorted_point[0] =
+      (pixel[0] - principal_point_x - distorted_point[1] * skew) / focal_length;
+
+  // Undo the radial distortion.
+  T undistorted_point[2];
+  PinholeCameraModel::UndistortPoint(intrinsic_parameters,
+                                     distorted_point,
+                                     point);
+  point[2] = T(1.0);
+}
+
+// Given an undistorted pixel, apply lens distortion to the pixel to get a
+// distorted pixel. The type of distortion (i.e. radial, tangential, fisheye,
+// etc.) will depend on the camera intrinsics model.
+template <typename T>
+void PinholeCameraModel::DistortPoint(const T* intrinsic_parameters,
+                                      const T* undistorted_point,
+                                      T* distorted_point) {
+  const T& radial_distortion1 =
+      intrinsic_parameters[PinholeCameraModel::RADIAL_DISTORTION_1];
+  const T& radial_distortion2 =
+      intrinsic_parameters[PinholeCameraModel::RADIAL_DISTORTION_2];
+
+  const T r_sq = undistorted_point[0] * undistorted_point[0] +
+                 undistorted_point[1] * undistorted_point[1];
+  const T d =
+      T(1.0) + r_sq * (radial_distortion1 + radial_distortion2 * r_sq);
+
+  distorted_point[0] = undistorted_point[0] * d;
+  distorted_point[1] = undistorted_point[1] * d;
+}
+
+// Given an undistorted pixel, apply lens distortion to the pixel to get a
+// distorted pixel. The type of distortion (i.e. radial, tangential, fisheye,
+// etc.) will depend on the camera intrinsics model.
+template <typename T>
+void PinholeCameraModel::UndistortPoint(const T* intrinsic_parameters,
+                                        const T* distorted_point,
+                                        T* undistorted_point) {
+  const int kNumUndistortionIterations = 100;
+  const T kUndistortionEpsilon = 1e-10;
+
+  T prev_undistorted_point[2];
+  undistorted_point[0] = distorted_point[0];
+  undistorted_point[1] = distorted_point[1];
+  for (size_t i = 0; i < kNumUndistortionIterations; ++i) {
+    prev_undistorted_point[0] = undistorted_point[0];
+    prev_undistorted_point[1] = undistorted_point[1];
+
+    // Compute an estimate of the radius of the undistorted point from the
+    // center of distortion (which is assumed to be the principal point).
+    const T r_sq = undistorted_point[0] * undistorted_point[0] +
+                   undistorted_point[1] * undistorted_point[1];
+    // Compute the distortion factor.
+    const T d = T(1.0) +
+                r_sq * (intrinsic_parameters[RADIAL_DISTORTION_1] +
+                        intrinsic_parameters[RADIAL_DISTORTION_2] * r_sq);
+
+    // We know that the distorted point = d * undistorted point, so we can solve
+    // for a better estimate of the undistorted point by taking the inverse of
+    // this equation: undistorted_point = distorted_point / d.
+    undistorted_point[0] = distorted_point[0] / d;
+    undistorted_point[1] = distorted_point[1] / d;
+
+    // Repeat until convergence.
+    if (std::abs(undistorted_point[0] - prev_undistorted_point[0]) <
+            kUndistortionEpsilon &&
+        std::abs(undistorted_point[1] - prev_undistorted_point[1]) <
+            kUndistortionEpsilon) {
+      break;
+    }
+  }
+}
 
 }  // namespace theia
 
 #include <cereal/archives/portable_binary.hpp>
 
-CEREAL_CLASS_VERSION(theia::PinholeCameraModel, 0)
+CEREAL_CLASS_VERSION(theia::PinholeCameraModel, 1)
 // Register the polymorphic relationship for serialization.
 CEREAL_REGISTER_TYPE(theia::PinholeCameraModel)
 CEREAL_REGISTER_POLYMORPHIC_RELATION(theia::CameraIntrinsicsModel,
