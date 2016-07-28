@@ -38,7 +38,7 @@
 #include <ceres/ceres.h>
 #include "theia/sfm/feature.h"
 #include "theia/sfm/camera/pinhole_camera_model.h"
-#include "theia/sfm/camera/project_point_to_image.h"
+#include "theia/sfm/camera/pinhole_project_point_to_image.h"
 
 namespace theia {
 
@@ -58,10 +58,10 @@ struct PinholeReprojectionError {
     }
 
     T reprojection[2];
-    ProjectPointToImage(camera_extrinsics,
-                        camera_intrinsics,
-                        point_parameters,
-                        reprojection);
+    PinholeProjectPointToImage(camera_extrinsics,
+                               camera_intrinsics,
+                               point_parameters,
+                               reprojection);
     reprojection_error[0] = reprojection[0] - T(feature_.x());
     reprojection_error[1] = reprojection[1] - T(feature_.y());
     return true;

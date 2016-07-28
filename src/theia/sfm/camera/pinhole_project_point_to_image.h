@@ -32,8 +32,8 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#ifndef THEIA_SFM_CAMERA_PROJECT_POINT_TO_IMAGE_H_
-#define THEIA_SFM_CAMERA_PROJECT_POINT_TO_IMAGE_H_
+#ifndef THEIA_SFM_CAMERA_PINHOLE_PROJECT_POINT_TO_IMAGE_H_
+#define THEIA_SFM_CAMERA_PINHOLE_PROJECT_POINT_TO_IMAGE_H_
 
 #include <Eigen/Core>
 #include <glog/logging.h>
@@ -57,10 +57,10 @@ namespace theia {
 // NOTE: The unit test for this method is included in
 // theia/sfm/camera/camera_test.cc
 template <typename T>
-T ProjectPointToImage(const T* extrinsic_parameters,
-                      const T* intrinsic_parameters,
-                      const T* point,
-                      T* pixel) {
+T PinholeProjectPointToImage(const T* extrinsic_parameters,
+                             const T* intrinsic_parameters,
+                             const T* point,
+                             T* pixel) {
   typedef Eigen::Matrix<T, 3, 1> Matrix3T;
   typedef Eigen::Map<const Matrix3T> ConstMap3T;
 
@@ -111,4 +111,4 @@ T ProjectPointToImage(const T* extrinsic_parameters,
 
 }  // namespace theia
 
-#endif  // THEIA_SFM_CAMERA_PROJECT_POINT_TO_IMAGE_H_
+#endif  // THEIA_SFM_CAMERA_PINHOLE_PROJECT_POINT_TO_IMAGE_H_
