@@ -267,7 +267,7 @@ TEST_F(EstimatePositionsLinearTest, SmallTestNoNoise) {
 }
 
 TEST_F(EstimatePositionsLinearTest, SmallTestWithNoise) {
-  static const double kTolerance = 0.1;
+  static const double kTolerance = 0.25;
   static const int kNumViews = 4;
   static const int kNumTracksPerView = 50;
   static const int kNumViewPairs = 6;
