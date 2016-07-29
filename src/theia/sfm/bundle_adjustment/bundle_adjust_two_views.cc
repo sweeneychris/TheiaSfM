@@ -43,7 +43,7 @@
 #include "theia/sfm/bundle_adjustment/bundle_adjustment.h"
 #include "theia/sfm/bundle_adjustment/unit_norm_three_vector_parameterization.h"
 #include "theia/sfm/camera/camera.h"
-#include "theia/sfm/camera/reprojection_error.h"
+#include "theia/sfm/camera/create_reprojection_error_cost_function.h"
 #include "theia/sfm/camera_intrinsics_prior.h"
 #include "theia/sfm/triangulation/triangulation.h"
 #include "theia/sfm/twoview_info.h"
@@ -153,18 +153,20 @@ BundleAdjustmentSummary BundleAdjustTwoViews(
 
   // Add triangulated points to the problem.
   for (int i = 0; i < points3d->size(); i++) {
-    problem.AddResidualBlock(
-        ReprojectionError::Create(correspondences[i].feature1),
-        NULL,
-        camera1->mutable_extrinsics(),
-        camera1->mutable_intrinsics(),
-        points3d->at(i).data());
-    problem.AddResidualBlock(
-        ReprojectionError::Create(correspondences[i].feature2),
-        NULL,
-        camera2->mutable_extrinsics(),
-        camera2->mutable_intrinsics(),
-        points3d->at(i).data());
+    problem.AddResidualBlock(CreateReprojectionErrorCostFunction(
+                                 camera1->GetCameraIntrinsicsModelType(),
+                                 correspondences[i].feature1),
+                             NULL,
+                             camera1->mutable_extrinsics(),
+                             camera1->mutable_intrinsics(),
+                             points3d->at(i).data());
+    problem.AddResidualBlock(CreateReprojectionErrorCostFunction(
+                                 camera2->GetCameraIntrinsicsModelType(),
+                                 correspondences[i].feature2),
+                             NULL,
+                             camera2->mutable_extrinsics(),
+                             camera2->mutable_intrinsics(),
+                             points3d->at(i).data());
 
     parameter_ordering->AddElementToGroup(points3d->at(i).data(), 0);
   }

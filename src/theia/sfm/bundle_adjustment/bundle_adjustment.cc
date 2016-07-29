@@ -45,7 +45,7 @@
 #include "theia/util/timer.h"
 #include "theia/sfm/bundle_adjustment/create_loss_function.h"
 #include "theia/sfm/camera/camera.h"
-#include "theia/sfm/camera/reprojection_error.h"
+#include "theia/sfm/camera/create_reprojection_error_cost_function.h"
 #include "theia/sfm/reconstruction.h"
 #include "theia/sfm/reconstruction_estimator_utils.h"
 #include "theia/sfm/types.h"
@@ -245,7 +245,8 @@ BundleAdjustmentSummary BundleAdjustPartialReconstruction(
       }
 
       problem.AddResidualBlock(
-          ReprojectionError::Create(*feature),
+          CreateReprojectionErrorCostFunction(
+              camera->GetCameraIntrinsicsModelType(), *feature),
           loss_function.get(),
           camera->mutable_extrinsics(),
           shared_intrinsics->mutable_parameters(),
@@ -299,7 +300,8 @@ BundleAdjustmentSummary BundleAdjustPartialReconstruction(
         shared_intrinsics = camera->MutableCameraIntrinsics();
       }
       problem.AddResidualBlock(
-          ReprojectionError::Create(*feature),
+          CreateReprojectionErrorCostFunction(
+              camera->GetCameraIntrinsicsModelType(), *feature),
           loss_function.get(),
           camera->mutable_extrinsics(),
           shared_intrinsics->mutable_parameters(),
