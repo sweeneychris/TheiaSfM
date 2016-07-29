@@ -39,6 +39,7 @@
 #include <cereal/cereal.hpp>
 #include <cereal/types/base_class.hpp>
 #include <cereal/types/polymorphic.hpp>
+#include <ceres/ceres.h>
 #include <stdint.h>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -300,9 +301,9 @@ void PinholeCameraModel::UndistortPoint(const T* intrinsic_parameters,
     undistorted_point[1] = distorted_point[1] / d;
 
     // Repeat until convergence.
-    if (std::abs(undistorted_point[0] - prev_undistorted_point[0]) <
+    if (ceres::abs(undistorted_point[0] - prev_undistorted_point[0]) <
             kUndistortionEpsilon &&
-        std::abs(undistorted_point[1] - prev_undistorted_point[1]) <
+        ceres::abs(undistorted_point[1] - prev_undistorted_point[1]) <
             kUndistortionEpsilon) {
       break;
     }
