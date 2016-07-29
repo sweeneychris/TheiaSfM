@@ -80,7 +80,6 @@ set(THEIA_SRC
   sfm/camera/camera_intrinsics_model.cc
   sfm/camera/pinhole_camera_model.cc
   sfm/camera/projection_matrix_utils.cc
-  sfm/camera/radial_distortion.cc
   sfm/colorize_reconstruction.cc
   sfm/estimate_track.cc
   sfm/estimate_twoview_info.cc
@@ -233,7 +232,6 @@ if (BUILD_TESTING)
   gtest(sfm/camera/camera)
   gtest(sfm/camera/pinhole_camera_model)
   gtest(sfm/camera/projection_matrix_utils)
-  gtest(sfm/camera/radial_distortion)
   gtest(sfm/estimators/estimate_calibrated_absolute_pose)
   gtest(sfm/estimators/estimate_dominant_plane_from_points)
   gtest(sfm/estimators/estimate_essential_matrix)

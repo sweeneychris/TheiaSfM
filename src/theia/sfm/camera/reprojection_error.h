@@ -36,25 +36,52 @@
 #define THEIA_SFM_CAMERA_REPROJECTION_ERROR_H_
 
 #include <ceres/ceres.h>
+#include <ceres/rotation.h>
 #include "theia/sfm/feature.h"
 #include "theia/sfm/camera/camera.h"
 #include "theia/sfm/camera/pinhole_camera_model.h"
-#include "theia/sfm/camera/pinhole_reprojection_error.h"
 
 namespace theia {
 
+template <class CameraModel>
 struct ReprojectionError {
  public:
   explicit ReprojectionError(const Feature& feature) : feature_(feature) {}
 
-  static ceres::CostFunction* Create(const Feature& feature) {
-    static const int kPointSize = 4;
-    return new ceres::AutoDiffCostFunction<PinholeReprojectionError,
-                                           2,
-                                           Camera::kExtrinsicsSize,
-                                           PinholeCameraModel::kIntrinsicsSize,
-                                           kPointSize>(
-        new PinholeReprojectionError(feature));
+  template <typename T>
+  bool operator()(const T* extrinsic_parameters,
+                  const T* intrinsic_parameters,
+                  const T* point,
+                  T* reprojection_error) const {
+    typedef Eigen::Matrix<T, 3, 1> Matrix3T;
+    typedef Eigen::Map<const Matrix3T> ConstMap3T;
+
+    // Remove the translation.
+    Eigen::Matrix<T, 3, 1> adjusted_point =
+        ConstMap3T(point) -
+        point[3] * ConstMap3T(extrinsic_parameters + Camera::POSITION);
+
+    // Rotate the point to obtain the point in the camera coordinate system.
+    T rotated_point[3];
+    ceres::AngleAxisRotatePoint(extrinsic_parameters + Camera::ORIENTATION,
+                                adjusted_point.data(),
+                                rotated_point);
+
+    // TODO(csweeney): The depth of the point here is rotated_point[2] /
+    // point[3]. Should we cause a large error or perhaps a failure if the point
+    // is behind the image? The filtering after triangulation should preven this
+    // from ever happening.
+
+    // Apply the camera intrinsics to get the reprojected pixel.
+    T reprojection[2];
+    CameraModel::CameraToPixelCoordinates(intrinsic_parameters,
+                                          rotated_point,
+                                          reprojection);
+
+    // Compute the reprojection error.
+    reprojection_error[0] = reprojection[0] - T(feature_.x());
+    reprojection_error[1] = reprojection[1] - T(feature_.y());
+    return true;
   }
 
  private:

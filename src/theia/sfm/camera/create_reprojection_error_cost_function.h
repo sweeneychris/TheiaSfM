@@ -32,45 +32,38 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#ifndef THEIA_SFM_CAMERA_PINHOLE_REPROJECTION_ERROR_H_
-#define THEIA_SFM_CAMERA_PINHOLE_REPROJECTION_ERROR_H_
+#ifndef THEIA_SFM_CAMERA_CREATE_REPROJECTION_ERROR_COST_FUNCTION_H_
+#define THEIA_SFM_CAMERA_CREATE_REPROJECTION_ERROR_COST_FUNCTION_H_
 
-#include <ceres/ceres.h>
-#include "theia/sfm/feature.h"
+#include "theia/sfm/camera/camera_intrinsics_model.h"
 #include "theia/sfm/camera/pinhole_camera_model.h"
-#include "theia/sfm/camera/pinhole_project_point_to_image.h"
+#include "theia/sfm/camera/reprojection_error.h"
 
 namespace theia {
-
-struct PinholeReprojectionError {
- public:
-  explicit PinholeReprojectionError(const Feature& feature)
-      : feature_(feature) {}
-
-  template<typename T> bool operator()(const T* camera_extrinsics,
-                                       const T* camera_intrinsics,
-                                       const T* point_parameters,
-                                       T* reprojection_error) const {
-    // Do not evaluate invalid camera configurations.
-    if (camera_intrinsics[PinholeCameraModel::FOCAL_LENGTH] < T(0.0) ||
-        camera_intrinsics[PinholeCameraModel::ASPECT_RATIO] < T(0.0)) {
-      return false;
-    }
-
-    T reprojection[2];
-    PinholeProjectPointToImage(camera_extrinsics,
-                               camera_intrinsics,
-                               point_parameters,
-                               reprojection);
-    reprojection_error[0] = reprojection[0] - T(feature_.x());
-    reprojection_error[1] = reprojection[1] - T(feature_.y());
-    return true;
+// Create the appropriate reprojection error cost function based on the camera
+// intrinsics model that is passed in. The ReprojectionError struct is templated
+// on the camera intrinsics model class and so it will automatically model the
+// reprojection error appropriately.
+inline ceres::CostFunction* CreateReprojectionErrorCostFunction(
+    const CameraIntrinsicsModelType& camera_model_type,
+    const Feature& feature) {
+  static const int kPointSize = 4;
+  // Return the appropriate reprojection error cost function based on the camera
+  // model type.
+  switch (camera_model_type) {
+    case CameraIntrinsicsModelType::PINHOLE:
+      return new ceres::AutoDiffCostFunction<
+          ReprojectionError<PinholeCameraModel>, 2, Camera::kExtrinsicsSize,
+          PinholeCameraModel::kIntrinsicsSize, kPointSize>(
+          new ReprojectionError<PinholeCameraModel>(feature));
+      break;
+    default:
+      LOG(FATAL) << "Invalid camera type. Please see camera_intrinsics_model.h "
+                    "for a list of valid camera models.";
+      break;
   }
-
- private:
-  const Feature feature_;
-};
+}
 
 }  // namespace theia
 
-#endif  // THEIA_SFM_CAMERA_PINHOLE_REPROJECTION_ERROR_H_
+#endif  // THEIA_SFM_CAMERA_CREATE_REPROJECTION_ERROR_COST_FUNCTION_H_
