@@ -43,7 +43,6 @@
 #include "theia/sfm/camera/camera_intrinsics_model.h"
 #include "theia/sfm/camera/pinhole_camera_model.h"
 #include "theia/sfm/camera/projection_matrix_utils.h"
-#include "theia/sfm/camera/radial_distortion.h"
 
 namespace theia {
 
