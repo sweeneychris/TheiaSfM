@@ -49,12 +49,10 @@
 
 namespace theia {
 
-// This class contains the full camera pose information including extrinsic
-// parameters as well as intrinsic parameters. Extrinsic parameters include the
-// camera orientation (as angle-axis) and position, and intrinsic parameters
-// include focal length, aspect ratio, skew, principal points, and (up to
-// 2-parameter) radial distortion. Methods are provided for common
-// transformations and projections.
+// This class contains the camera pose information pertaining to intrinsics
+// camera parameters.  This includes focal length, aspect ratio, skew, principal
+// points, and (up to 2-parameter) radial distortion. Methods are provided for
+// common transformations and projections.
 //
 // Intrinsics of the camera are modeled such that:
 //
@@ -65,8 +63,9 @@ namespace theia {
 // where f = focal length, px and py is the principal point, s = skew, and
 // a = aspect ratio.
 //
-// Extrinsic parametser transform the homogeneous 3D point X to the image point
-// p such that:
+// Extrinsic and intrinsic parameters transform the homogeneous 3D point X to
+// the image point p such that:
+//
 //   p = R * (X[0..2] / X[3] - C);
 //   p = p[0,1] / p[2];
 //   r = p[0] * p[0] + p[1] * p[1];
