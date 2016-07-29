@@ -46,13 +46,16 @@ namespace theia {
 std::unique_ptr<CameraIntrinsicsModel>
 CameraIntrinsicsModel::Create(const CameraIntrinsicsModelType& camera_type) {
   std::unique_ptr<CameraIntrinsicsModel> camera_model;
-  if (camera_type == CameraIntrinsicsModelType::PINHOLE) {
-    camera_model.reset(new PinholeCameraModel());
-  } else if (camera_type ==
-             CameraIntrinsicsModelType::PINHOLE_RADIAL_TANGENTIAL) {
-    camera_model.reset(new PinholeRadialTangentialCameraModel());
-  } else {
-    LOG(FATAL) << "Invalid Camera model chosen.";
+  switch (camera_type) {
+    case CameraIntrinsicsModelType::PINHOLE:
+      camera_model.reset(new PinholeCameraModel());
+      break;
+    case CameraIntrinsicsModelType::PINHOLE_RADIAL_TANGENTIAL:
+      camera_model.reset(new PinholeRadialTangentialCameraModel());
+      break;
+    default:
+      LOG(FATAL) << "Invalid Camera model chosen.";
+      break;
   }
 
   return camera_model;
