@@ -47,15 +47,16 @@ namespace theia {
 inline ceres::CostFunction* CreateReprojectionErrorCostFunction(
     const CameraIntrinsicsModelType& camera_model_type,
     const Feature& feature) {
+  static const int kResidualSize = 2;
   static const int kPointSize = 4;
   // Return the appropriate reprojection error cost function based on the camera
   // model type.
   switch (camera_model_type) {
     case CameraIntrinsicsModelType::PINHOLE:
       return new ceres::AutoDiffCostFunction<
-          ReprojectionError<PinholeCameraModel>, 2, Camera::kExtrinsicsSize,
-          PinholeCameraModel::kIntrinsicsSize, kPointSize>(
-          new ReprojectionError<PinholeCameraModel>(feature));
+          ReprojectionError<PinholeCameraModel>, kResidualSize,
+          Camera::kExtrinsicsSize, PinholeCameraModel::kIntrinsicsSize,
+          kPointSize>(new ReprojectionError<PinholeCameraModel>(feature));
       break;
     default:
       LOG(FATAL) << "Invalid camera type. Please see camera_intrinsics_model.h "

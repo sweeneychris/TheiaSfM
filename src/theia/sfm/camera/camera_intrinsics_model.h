@@ -82,8 +82,8 @@ enum class CameraIntrinsicsModelType {
 //   3) Add the new class and its CameraIntrinsicsType to the
 //   CAMERA_MODEL_SWITCH_STATEMENT macro in camera_intrinsics_model.cc
 //
-//   4) Add a switch/case in reprojection_error.h to the Create function to
-//   handle the new camera model.
+//   4) Add a switch/case in create_reprojection_error_cost_function.h to handle
+//   the new camera model.
 //
 //   5) Create unit tests to ensure that your new camera model is functioning
 //   properly!
