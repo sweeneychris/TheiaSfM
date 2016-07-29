@@ -55,6 +55,8 @@ using Eigen::Vector4d;
 TEST(PinholeCameraModel, InternalParameterGettersAndSetters) {
   PinholeCameraModel camera;
 
+  EXPECT_EQ(camera.Type(), CameraIntrinsicsModelType::PINHOLE);
+
   // Check that default values are set
   EXPECT_EQ(camera.FocalLength(), 1.0);
   EXPECT_EQ(camera.AspectRatio(), 1.0);
@@ -79,6 +81,135 @@ TEST(PinholeCameraModel, InternalParameterGettersAndSetters) {
   EXPECT_EQ(camera.PrincipalPointY(), 400.0);
   EXPECT_EQ(camera.RadialDistortion1(), 0.01);
   EXPECT_EQ(camera.RadialDistortion2(), 0.001);
+}
+
+// Test to ensure that the camera intrinsics are being set appropriately.
+void TestSetFromCameraintrinsicsPrior(const CameraIntrinsicsPrior& prior) {
+  const PinholeCameraModel default_camera;
+  PinholeCameraModel camera;
+  camera.SetFromCameraIntrinsicsPriors(prior);
+
+  if (prior.focal_length.is_set) {
+    EXPECT_EQ(camera.FocalLength(), prior.focal_length.value[0]);
+  } else {
+    EXPECT_EQ(camera.FocalLength(), default_camera.FocalLength());
+  }
+
+  if (prior.principal_point.is_set) {
+    EXPECT_EQ(camera.PrincipalPointX(), prior.principal_point.value[0]);
+    EXPECT_EQ(camera.PrincipalPointY(), prior.principal_point.value[1]);
+  } else {
+    EXPECT_EQ(camera.PrincipalPointX(), default_camera.PrincipalPointX());
+    EXPECT_EQ(camera.PrincipalPointY(), default_camera.PrincipalPointY());
+  }
+
+  if (prior.aspect_ratio.is_set) {
+    EXPECT_EQ(camera.AspectRatio(), prior.aspect_ratio.value[0]);
+  } else {
+    EXPECT_EQ(camera.AspectRatio(), default_camera.AspectRatio());
+  }
+
+  if (prior.skew.is_set) {
+    EXPECT_EQ(camera.Skew(), prior.skew.value[0]);
+  } else {
+    EXPECT_EQ(camera.Skew(), default_camera.Skew());
+  }
+
+  if (prior.radial_distortion.is_set) {
+    EXPECT_EQ(camera.RadialDistortion1(), prior.radial_distortion.value[0]);
+    EXPECT_EQ(camera.RadialDistortion2(), prior.radial_distortion.value[1]);
+  } else {
+    EXPECT_EQ(camera.RadialDistortion1(), default_camera.RadialDistortion1());
+    EXPECT_EQ(camera.RadialDistortion2(), default_camera.RadialDistortion2());
+  }
+}
+
+// Gradually add one prior at a time and ensure that the method still works. We
+// test before and after setting the "is_set" member variable to true to ensure
+// that setting the value of priors when is_set=false is handled properly.
+TEST(PinholeCameraModel, SetFromCameraIntrinsicsPriors) {
+  CameraIntrinsicsPrior prior;
+  prior.focal_length.value[0] = 1000.0;
+  prior.principal_point.value[0] = 400.0;
+  prior.principal_point.value[1] = 300.0;
+  prior.aspect_ratio.value[0] = 1.01;
+  prior.skew.value[0] = 0.01;
+  prior.radial_distortion.value[0] = 0.01;
+  prior.radial_distortion.value[1] = 0.001;
+
+  TestSetFromCameraintrinsicsPrior(prior);
+
+  prior.focal_length.is_set = true;
+  TestSetFromCameraintrinsicsPrior(prior);
+
+  prior.principal_point.is_set = true;
+  TestSetFromCameraintrinsicsPrior(prior);
+
+  prior.aspect_ratio.is_set = true;
+  TestSetFromCameraintrinsicsPrior(prior);
+
+  prior.skew.is_set = true;
+  TestSetFromCameraintrinsicsPrior(prior);
+
+  prior.radial_distortion.is_set = true;
+  TestSetFromCameraintrinsicsPrior(prior);
+}
+
+TEST(PinholeCameraModel, GetSubsetFromOptimizeIntrinsicsType) {
+  PinholeCameraModel camera;
+  std::vector<int> constant_subset;
+
+  constant_subset =
+      camera.GetSubsetFromOptimizeIntrinsicsType(OptimizeIntrinsicsType::NONE);
+  EXPECT_EQ(constant_subset.size(), camera.NumParameters());
+
+  // Test that optimizing for focal length works correctly.
+  constant_subset = camera.GetSubsetFromOptimizeIntrinsicsType(
+      OptimizeIntrinsicsType::FOCAL_LENGTH);
+  EXPECT_EQ(constant_subset.size(), camera.NumParameters() - 1);
+  for (int i = 0; i < constant_subset.size(); i++) {
+    EXPECT_NE(constant_subset[i], PinholeCameraModel::FOCAL_LENGTH);
+  }
+
+  // Test that optimizing for principal_points works correctly.
+  constant_subset = camera.GetSubsetFromOptimizeIntrinsicsType(
+      OptimizeIntrinsicsType::PRINCIPAL_POINTS);
+  EXPECT_EQ(constant_subset.size(), camera.NumParameters() - 2);
+  for (int i = 0; i < constant_subset.size(); i++) {
+    EXPECT_NE(constant_subset[i], PinholeCameraModel::PRINCIPAL_POINT_X);
+    EXPECT_NE(constant_subset[i], PinholeCameraModel::PRINCIPAL_POINT_Y);
+  }
+
+  // Test that optimizing for aspect ratio works correctly.
+  constant_subset = camera.GetSubsetFromOptimizeIntrinsicsType(
+      OptimizeIntrinsicsType::ASPECT_RATIO);
+  EXPECT_EQ(constant_subset.size(), camera.NumParameters() - 1);
+  for (int i = 0; i < constant_subset.size(); i++) {
+    EXPECT_NE(constant_subset[i], PinholeCameraModel::ASPECT_RATIO);
+  }
+
+  // Test that optimizing for skew works correctly.
+  constant_subset = camera.GetSubsetFromOptimizeIntrinsicsType(
+      OptimizeIntrinsicsType::SKEW);
+  EXPECT_EQ(constant_subset.size(), camera.NumParameters() - 1);
+  for (int i = 0; i < constant_subset.size(); i++) {
+    EXPECT_NE(constant_subset[i], PinholeCameraModel::SKEW);
+  }
+
+  // Test that optimizing for radial distortion works correctly.
+  constant_subset = camera.GetSubsetFromOptimizeIntrinsicsType(
+      OptimizeIntrinsicsType::RADIAL_DISTORTION);
+  EXPECT_EQ(constant_subset.size(), camera.NumParameters() - 2);
+  for (int i = 0; i < constant_subset.size(); i++) {
+    EXPECT_NE(constant_subset[i], PinholeCameraModel::RADIAL_DISTORTION_1);
+    EXPECT_NE(constant_subset[i], PinholeCameraModel::RADIAL_DISTORTION_2);
+  }
+
+  // Test that optimizing for tangential distortion does not optimize any
+  // parameters.
+  constant_subset = camera.GetSubsetFromOptimizeIntrinsicsType(
+      OptimizeIntrinsicsType::TANGENTIAL_DISTORTION);
+  EXPECT_EQ(constant_subset.size(), camera.NumParameters());
 }
 
 void ReprojectionTest(const PinholeCameraModel& camera) {
