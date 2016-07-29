@@ -54,6 +54,7 @@ namespace theia {
 enum class CameraIntrinsicsModelType {
   INVALID = -1,
   PINHOLE = 0,
+  PINHOLE_RADIAL_TANGENTIAL = 1,
 };
 
 // This class encapsulates the camera lens model used for projecting points in
@@ -61,7 +62,7 @@ enum class CameraIntrinsicsModelType {
 //
 //   1) Camera coordinate system: This is the 3D coordinate system centered at
 //      the camera with the z-axis pointing directly forward (i.e. identity
-//      orientaiton).
+//      orientation).
 //
 //   2) Image/pixel coordinate system: This 2D coordinate system has the origin
 //      at the top-right of the image with the positive x-axis going towards the
@@ -69,7 +70,7 @@ enum class CameraIntrinsicsModelType {
 //
 // The CameraIntrinsicsModel describes the mapping between camera and image
 // coordinate systems. This may include parameters such as focal length,
-// principal point, radial distortion, and others.
+// principal point, lens distortion, and others.
 //
 // To implement a new camera model please take the following steps:
 //

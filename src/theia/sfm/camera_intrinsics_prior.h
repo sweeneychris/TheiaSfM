@@ -68,12 +68,16 @@ struct CameraIntrinsicsPrior {
   int image_width;
   int image_height;
 
+  // TODO(csweeney): Should we add a variable for the camera model type?
+
   // Camera intrinsics parameters.
   Prior<1> focal_length;
   Prior<2> principal_point;
   Prior<1> aspect_ratio;
   Prior<1> skew;
-  Prior<2> radial_distortion;
+  // Up to 4 radial distortion parameters. For fisheye cameras, the fisheye
+  // distortion parameters would be set as radial_distortion.
+  Prior<4> radial_distortion;
   Prior<2> tangential_distortion;
 
   // Extrinsics that may be available from EXIF or elsewhere. Position is
@@ -92,10 +96,19 @@ struct CameraIntrinsicsPrior {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& ar, const std::uint32_t version) {  // NOLINT
-    if (version >= 2) {
+    if (version >= 3) {
       ar(image_width, image_height, focal_length, aspect_ratio, skew,
          radial_distortion, tangential_distortion, position, orientation,
          latitude, longitude, altitude);
+    } else if (version == 2) {
+      Prior<2> old_radial_distortion;
+      ar(image_width, image_height, focal_length, aspect_ratio, skew,
+         old_radial_distortion, tangential_distortion, position, orientation,
+         latitude, longitude, altitude);
+      radial_distortion.is_set = old_radial_distortion.is_set;
+      radial_distortion.value[0] = old_radial_distortion.value[0];
+      radial_distortion.value[1] = old_radial_distortion.value[1];
+
     } else {
       if (version >= 1) {
         ar(image_width, image_height);
@@ -120,6 +133,6 @@ struct CameraIntrinsicsPrior {
 // Note that this version will correspond to both the Prior class and the
 // CameraIntrinsiscPrior class until we figure out how to pass templated classes
 // to the cereal macro.
-CEREAL_CLASS_VERSION(theia::CameraIntrinsicsPrior, 2);
+CEREAL_CLASS_VERSION(theia::CameraIntrinsicsPrior, 3);
 
 #endif  // THEIA_SFM_CAMERA_INTRINSICS_PRIOR_H_

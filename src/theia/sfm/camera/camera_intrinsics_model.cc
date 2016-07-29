@@ -34,9 +34,11 @@
 
 #include "theia/sfm/camera/camera_intrinsics_model.h"
 
+#include <Eigen/Core>
 #include <memory>
 
 #include "theia/sfm/camera/pinhole_camera_model.h"
+#include "theia/sfm/camera/pinhole_radial_tangential_camera_model.h"
 
 namespace theia {
 
@@ -46,6 +48,9 @@ CameraIntrinsicsModel::Create(const CameraIntrinsicsModelType& camera_type) {
   std::unique_ptr<CameraIntrinsicsModel> camera_model;
   if (camera_type == CameraIntrinsicsModelType::PINHOLE) {
     camera_model.reset(new PinholeCameraModel());
+  } else if (camera_type ==
+             CameraIntrinsicsModelType::PINHOLE_RADIAL_TANGENTIAL) {
+    camera_model.reset(new PinholeRadialTangentialCameraModel());
   } else {
     LOG(FATAL) << "Invalid Camera model chosen.";
   }
@@ -74,6 +79,8 @@ CameraIntrinsicsModel& CameraIntrinsicsModel::operator=(
 #define CAMERA_MODEL_SWITCH_STATEMENT                                     \
   switch (this->Type()) {                                                 \
     CAMERA_MODEL_CASE(PINHOLE, PinholeCameraModel)                        \
+    CAMERA_MODEL_CASE(PINHOLE_RADIAL_TANGENTIAL,                          \
+                      PinholeRadialTangentialCameraModel)                 \
     default:                                                              \
       LOG(FATAL)                                                          \
           << "Invalid camera type. Please see camera_intrinsics_model.h " \

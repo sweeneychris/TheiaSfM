@@ -174,6 +174,8 @@ inline OptimizeIntrinsicsType StringToOptimizeIntrinsicsType(
       intrinsic_params |= OptimizeIntrinsicsType::PRINCIPAL_POINTS;
     } else if (intrinsics[i] == "RADIAL_DISTORTION") {
       intrinsic_params |= OptimizeIntrinsicsType::RADIAL_DISTORTION;
+    } else if (intrinsics[i] == "TANGENTIAL_DISTORTION") {
+      intrinsic_params |= OptimizeIntrinsicsType::TANGENTIAL_DISTORTION;
     } else {
       LOG(FATAL) << "Invalid option for intrinsics_to_optimize: "
                  << intrinsics[i];

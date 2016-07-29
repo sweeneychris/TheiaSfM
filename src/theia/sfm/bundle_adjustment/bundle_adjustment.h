@@ -51,10 +51,13 @@ class Reconstruction;
 //   - Aspect ratio
 //   - Skew
 //   - Principal points (x and y)
-//   - Radial distortion (2-parameter model)
-// It is often known for instance that skew is 0 and aspect ratio is 1, and so
-// we do not always desire to optimize all camera intrinsics. In many cases, the
-// focal length is the only parameter we care to optimize.
+//   - Radial distortion
+//   - Tangential distortion
+// These intrinsic parameters may or may not be present for a given camera model
+// and only the relevant intrinsics will be optimized per camera. It is often
+// known for instance that skew is 0 and aspect ratio is 1, and so we do not
+// always desire to optimize all camera intrinsics. In many cases, the focal
+// length is the only parameter we care to optimize.
 //
 // Users can specify which intrinsics to optimize by using a bitmask. For
 // instance FOCAL_LENGTH|PRINCIPAL_POINTS will optimize the focal length and
@@ -66,8 +69,9 @@ enum class OptimizeIntrinsicsType {
   SKEW = 0x04,
   PRINCIPAL_POINTS = 0x08,
   RADIAL_DISTORTION = 0x10,
-  ALL =
-    FOCAL_LENGTH | ASPECT_RATIO | SKEW | PRINCIPAL_POINTS | RADIAL_DISTORTION,
+  TANGENTIAL_DISTORTION = 0x20,
+  ALL = FOCAL_LENGTH | ASPECT_RATIO | SKEW | PRINCIPAL_POINTS |
+        RADIAL_DISTORTION | TANGENTIAL_DISTORTION,
 };
 ENABLE_ENUM_BITMASK_OPERATORS(OptimizeIntrinsicsType)
 
