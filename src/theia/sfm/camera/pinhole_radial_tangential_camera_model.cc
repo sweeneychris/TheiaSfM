@@ -81,7 +81,7 @@ void PinholeRadialTangentialCameraModel::SetFromCameraIntrinsicsPriors(
   // Set the focal length.
   if (prior.focal_length.is_set) {
     SetFocalLength(prior.focal_length.value[0]);
-  } else {
+  } else if (prior.image_width != 0.0 && prior.image_height != 0.0) {
     SetFocalLength(1.2 * static_cast<double>(std::max(
         prior.image_width, prior.image_height)));
   }
@@ -90,7 +90,7 @@ void PinholeRadialTangentialCameraModel::SetFromCameraIntrinsicsPriors(
   if (prior.principal_point.is_set) {
     SetPrincipalPoint(prior.principal_point.value[0],
                       prior.principal_point.value[1]);
-  } else {
+  } else if (prior.image_width != 0.0 && prior.image_height != 0.0) {
     SetPrincipalPoint(prior.image_width / 2.0, prior.image_height / 2.0);
   }
 
