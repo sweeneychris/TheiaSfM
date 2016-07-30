@@ -49,7 +49,12 @@
 
 namespace theia {
 
-// This class contains the camera intrinsic information for fisheye cameras. This camera model is more adept than the standard pinhole + radial model
+// This class contains the camera intrinsic information for fisheye
+// cameras. This camera model is more adept at modelling camera lenses with
+// large amounts of radial distortion (such as with GoPro cameras) than the
+// standard pinhole + radial distortion model. The 4-parameters lens distortion
+// model is based on OpenCV's fisheye lens distortion:
+//
 // http://docs.opencv.org/2.4/modules/calib3d/doc/camera_calibration_and_3d_reconstruction.html#fisheye
 class FisheyeCameraModel : public CameraIntrinsicsModel {
  public:
@@ -145,13 +150,7 @@ class FisheyeCameraModel : public CameraIntrinsicsModel {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& ar, const std::uint32_t version) {  // NOLINT
-    if (version > 0) {
-      ar(cereal::base_class<CameraIntrinsicsModel>(this));
-    } else {
-      CHECK_EQ(this->parameters_.size(), NumParameters());
-      ar(cereal::binary_data(this->parameters_.data(),
-                             sizeof(double) * NumParameters()));
-    }
+    ar(cereal::base_class<CameraIntrinsicsModel>(this));
   }
 };
 
@@ -323,7 +322,7 @@ void FisheyeCameraModel::UndistortPoint(const T* intrinsic_parameters,
 
 #include <cereal/archives/portable_binary.hpp>
 
-CEREAL_CLASS_VERSION(theia::FisheyeCameraModel, 1)
+CEREAL_CLASS_VERSION(theia::FisheyeCameraModel, 0)
 // Register the polymorphic relationship for serialization.
 CEREAL_REGISTER_TYPE(theia::FisheyeCameraModel)
 CEREAL_REGISTER_POLYMORPHIC_RELATION(theia::CameraIntrinsicsModel,
