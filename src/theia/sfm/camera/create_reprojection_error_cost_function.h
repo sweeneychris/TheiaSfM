@@ -36,7 +36,9 @@
 #define THEIA_SFM_CAMERA_CREATE_REPROJECTION_ERROR_COST_FUNCTION_H_
 
 #include "theia/sfm/camera/camera_intrinsics_model.h"
+#include "theia/sfm/camera/fisheye_camera_model.h"
 #include "theia/sfm/camera/pinhole_camera_model.h"
+#include "theia/sfm/camera/pinhole_radial_tangential_camera_model.h"
 #include "theia/sfm/camera/reprojection_error.h"
 
 namespace theia {
@@ -57,6 +59,19 @@ inline ceres::CostFunction* CreateReprojectionErrorCostFunction(
           ReprojectionError<PinholeCameraModel>, kResidualSize,
           Camera::kExtrinsicsSize, PinholeCameraModel::kIntrinsicsSize,
           kPointSize>(new ReprojectionError<PinholeCameraModel>(feature));
+      break;
+    case CameraIntrinsicsModelType::PINHOLE_RADIAL_TANGENTIAL:
+      return new ceres::AutoDiffCostFunction<
+          ReprojectionError<PinholeRadialTangentialCameraModel>, kResidualSize,
+          Camera::kExtrinsicsSize,
+          PinholeRadialTangentialCameraModel::kIntrinsicsSize, kPointSize>(
+          new ReprojectionError<PinholeRadialTangentialCameraModel>(feature));
+      break;
+    case CameraIntrinsicsModelType::FISHEYE:
+      return new ceres::AutoDiffCostFunction<
+          ReprojectionError<FisheyeCameraModel>, kResidualSize,
+          Camera::kExtrinsicsSize, FisheyeCameraModel::kIntrinsicsSize,
+          kPointSize>(new ReprojectionError<FisheyeCameraModel>(feature));
       break;
     default:
       LOG(FATAL) << "Invalid camera type. Please see camera_intrinsics_model.h "

@@ -55,6 +55,7 @@ enum class CameraIntrinsicsModelType {
   INVALID = -1,
   PINHOLE = 0,
   PINHOLE_RADIAL_TANGENTIAL = 1,
+  FISHEYE = 2,
 };
 
 // This class encapsulates the camera lens model used for projecting points in

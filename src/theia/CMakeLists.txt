@@ -78,6 +78,7 @@ set(THEIA_SRC
   sfm/bundle_adjustment/optimize_relative_position_with_known_rotation.cc
   sfm/camera/camera.cc
   sfm/camera/camera_intrinsics_model.cc
+  sfm/camera/fisheye_camera_model.cc
   sfm/camera/pinhole_camera_model.cc
   sfm/camera/pinhole_radial_tangential_camera_model.cc
   sfm/camera/projection_matrix_utils.cc
@@ -231,6 +232,7 @@ if (BUILD_TESTING)
   gtest(math/qp_solver)
   gtest(sfm/bundle_adjustment/optimize_relative_position_with_known_rotation)
   gtest(sfm/camera/camera)
+  gtest(sfm/camera/fisheye_camera_model)
   gtest(sfm/camera/pinhole_camera_model)
   gtest(sfm/camera/pinhole_radial_tangential_camera_model)
   gtest(sfm/camera/projection_matrix_utils)

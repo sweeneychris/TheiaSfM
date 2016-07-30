@@ -101,6 +101,7 @@
 #include "theia/sfm/camera/camera.h"
 #include "theia/sfm/camera/camera_intrinsics_model.h"
 #include "theia/sfm/camera/create_reprojection_error_cost_function.h"
+#include "theia/sfm/camera/fisheye_camera_model.h"
 #include "theia/sfm/camera/pinhole_camera_model.h"
 #include "theia/sfm/camera/pinhole_radial_tangential_camera_model.h"
 #include "theia/sfm/camera/projection_matrix_utils.h"

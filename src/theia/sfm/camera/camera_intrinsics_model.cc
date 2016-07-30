@@ -37,6 +37,7 @@
 #include <Eigen/Core>
 #include <memory>
 
+#include "theia/sfm/camera/fisheye_camera_model.h"
 #include "theia/sfm/camera/pinhole_camera_model.h"
 #include "theia/sfm/camera/pinhole_radial_tangential_camera_model.h"
 
@@ -52,6 +53,9 @@ CameraIntrinsicsModel::Create(const CameraIntrinsicsModelType& camera_type) {
       break;
     case CameraIntrinsicsModelType::PINHOLE_RADIAL_TANGENTIAL:
       camera_model.reset(new PinholeRadialTangentialCameraModel());
+      break;
+    case CameraIntrinsicsModelType::FISHEYE:
+      camera_model.reset(new FisheyeCameraModel());
       break;
     default:
       LOG(FATAL) << "Invalid Camera model chosen.";
@@ -84,6 +88,7 @@ CameraIntrinsicsModel& CameraIntrinsicsModel::operator=(
     CAMERA_MODEL_CASE(PINHOLE, PinholeCameraModel)                        \
     CAMERA_MODEL_CASE(PINHOLE_RADIAL_TANGENTIAL,                          \
                       PinholeRadialTangentialCameraModel)                 \
+    CAMERA_MODEL_CASE(FISHEYE, FisheyeCameraModel)                        \
     default:                                                              \
       LOG(FATAL)                                                          \
           << "Invalid camera type. Please see camera_intrinsics_model.h " \
