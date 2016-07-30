@@ -212,69 +212,89 @@ TEST(PinholeCameraModel, GetSubsetFromOptimizeIntrinsicsType) {
   EXPECT_EQ(constant_subset.size(), camera.NumParameters());
 }
 
+// Test the projection functions of the camera model by testing pixels on a grid
+// in the entire image to ensure that the effects of lens distortion at the
+// edges of the image are modeled correctly.
 void ReprojectionTest(const PinholeCameraModel& camera) {
-  const double kTolerance = 1e-5;
-  const double kImageWidth = 1200.0;
+  static const double kTolerance = 1e-5;
+  const double kNormalizedTolerance = kTolerance / camera.FocalLength();
+  static const int kImageWidth = 1200;
+  static const int kImageHeight = 980;
+  static const double kMinDepth = 2.0;
+  static const double kMaxDepth = 25.0;
 
-  for (int i = 0; i < 10; i++) {
-    // Get a random pixel within the image.
-    const Vector2d pixel =
-        kImageWidth * (Vector2d::Random() + Vector2d::Ones()) / 2.0;
+  // Ensure the image -> camera -> image transformation works.
+  for (double x = 0.0; x < kImageWidth; x += 10.0) {
+    for (double y = 0.0; y < kImageHeight; y += 10.0) {
+      const Eigen::Vector2d pixel(x, y);
+      // Get the normalized ray of that pixel.
+      const Vector3d normalized_ray = camera.ImageToCameraCoordinates(pixel);
 
-    // Get the normalized ray of that pixel.
-    const Vector3d normalized_ray = camera.ImageToCameraCoordinates(pixel);
+      // Test the reprojection at several depths.
+      for (double depth = kMinDepth; depth < kMaxDepth; depth += 1.0) {
+        // Convert it to a full 3D point in the camera coordinate system.
+        const Vector3d point = normalized_ray * depth;
+        const Vector2d reprojected_pixel =
+            camera.CameraToImageCoordinates(point);
 
-    const double random_depth = RandDouble(0.01, 100.0);
-    const Vector3d random_point = normalized_ray * random_depth;
-    const Vector2d reprojected_pixel =
-        camera.CameraToImageCoordinates(random_point);
+      // Expect the reprojection to be close.
+      EXPECT_LT((pixel - reprojected_pixel).norm(), kTolerance)
+          << "gt pixel: " << pixel.transpose()
+          << "\nreprojected pixel: " << reprojected_pixel.transpose();
+      }
+    }
+  }
 
-    // Expect the reprojection to be close.
-    EXPECT_LT((pixel - reprojected_pixel).norm(), kTolerance)
-        << "gt pixel: " << pixel.transpose()
-        << "\nreprojected pixel: " << reprojected_pixel.transpose();
+  // Ensure the camera -> image -> camera transformation works.
+  for (double x = -0.8; x < 0.8; x += 0.1) {
+    for (double y = -0.8; y < 0.8; y += 0.1) {
+      for (double depth = kMinDepth; depth < kMaxDepth; depth += 1.0) {
+        const Eigen::Vector3d point(x, y, depth);
+        const Vector2d pixel = camera.CameraToImageCoordinates(point);
+
+        // Get the normalized ray of that pixel.
+        const Vector3d normalized_ray = camera.ImageToCameraCoordinates(pixel);
+
+        // Convert it to a full 3D point in the camera coordinate system.
+        const Vector3d reprojected_point = normalized_ray * depth;
+
+        // Expect the reprojection to be close.
+        EXPECT_LT((point - reprojected_point).norm(), kNormalizedTolerance)
+            << "gt pixel: " << point.transpose()
+            << "\nreprojected pixel: " << reprojected_point.transpose();
+      }
+    }
   }
 }
 
 TEST(PinholeCameraModel, ReprojectionNoDistortion) {
   static const double kPrincipalPoint[2] = {600.0, 400.0};
   static const double kFocalLength = 1200;
-  InitRandomGenerator();
   PinholeCameraModel camera;
-  for (int i = 0; i < 100; i++) {
-    camera.SetFocalLength(kFocalLength);
-    camera.SetPrincipalPoint(kPrincipalPoint[0], kPrincipalPoint[1]);
-    camera.SetRadialDistortion(0, 0);
-    ReprojectionTest(camera);
-  }
+  camera.SetFocalLength(kFocalLength);
+  camera.SetPrincipalPoint(kPrincipalPoint[0], kPrincipalPoint[1]);
+  camera.SetRadialDistortion(0, 0);
+  ReprojectionTest(camera);
 }
 
 TEST(PinholeCameraModel, ReprojectionOneDistortion) {
   static const double kPrincipalPoint[2] = {600.0, 400.0};
   static const double kFocalLength = 1200;
-  InitRandomGenerator();
   PinholeCameraModel camera;
-  for (int i = 0; i < 100; i++) {
-    // Initialize a random camera.
-    camera.SetFocalLength(kFocalLength);
-    camera.SetPrincipalPoint(kPrincipalPoint[0], kPrincipalPoint[1]);
-    camera.SetRadialDistortion(0.01, 0.0);
-    ReprojectionTest(camera);
-  }
+  camera.SetFocalLength(kFocalLength);
+  camera.SetPrincipalPoint(kPrincipalPoint[0], kPrincipalPoint[1]);
+  camera.SetRadialDistortion(0.01, 0);
+  ReprojectionTest(camera);
 }
 
 TEST(PinholeCameraModel, ReprojectionTwoDistortion) {
   static const double kPrincipalPoint[2] = {600.0, 400.0};
   static const double kFocalLength = 1200;
-  InitRandomGenerator();
   PinholeCameraModel camera;
-  for (int i = 0; i < 100; i++) {
-    // Initialize a random camera.
-    camera.SetFocalLength(kFocalLength);
-    camera.SetPrincipalPoint(kPrincipalPoint[0], kPrincipalPoint[1]);
-    camera.SetRadialDistortion(0.01, 0.001);
-    ReprojectionTest(camera);
-  }
+  camera.SetFocalLength(kFocalLength);
+  camera.SetPrincipalPoint(kPrincipalPoint[0], kPrincipalPoint[1]);
+  camera.SetRadialDistortion(0.01, 0.001);
+  ReprojectionTest(camera);
 }
 
 }  // namespace theia

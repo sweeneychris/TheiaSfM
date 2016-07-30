@@ -234,6 +234,7 @@ template <typename T>
 void FisheyeCameraModel::DistortPoint(const T* intrinsic_parameters,
                                       const T* undistorted_point,
                                       T* distorted_point) {
+  static const T kVerySmallNumber = T(1e-8);
   const T& radial_distortion1 =
       intrinsic_parameters[FisheyeCameraModel::RADIAL_DISTORTION_1];
   const T& radial_distortion2 =
@@ -246,6 +247,16 @@ void FisheyeCameraModel::DistortPoint(const T* intrinsic_parameters,
   const T r_sq = undistorted_point[0] * undistorted_point[0] +
                  undistorted_point[1] * undistorted_point[1];
   const T r = ceres::sqrt(r_sq);
+
+  // If the radius of the undistorted is too small then the divide by r below is
+  // unstable. In this case, the point is very close to the center of distortion
+  // and so we can assume there is no distortion.
+  if (r < kVerySmallNumber) {
+    distorted_point[0] = undistorted_point[0];
+    distorted_point[1] = undistorted_point[1];
+    return;
+  }
+
   const T theta = ceres::atan2(r, T(1.0));
   const T theta_sq = theta * theta;
   const T theta_d =
@@ -265,6 +276,7 @@ template <typename T>
 void FisheyeCameraModel::UndistortPoint(const T* intrinsic_parameters,
                                         const T* distorted_point,
                                         T* undistorted_point) {
+  static const T kVerySmallNumber = T(1e-8);
   const int kNumUndistortionIterations = 100;
   const T kUndistortionEpsilon = 1e-10;
 
@@ -290,6 +302,16 @@ void FisheyeCameraModel::UndistortPoint(const T* intrinsic_parameters,
     const T r_sq = undistorted_point[0] * undistorted_point[0] +
                    undistorted_point[1] * undistorted_point[1];
     const T r = ceres::sqrt(r_sq);
+
+    // If the radius of the undistorted is too small then the divide by r below
+    // is unstable. In this case, the point is very close to the center of
+    // distortion and so we can assume there is no distortion.
+    if (r < kVerySmallNumber) {
+      undistorted_point[0] = distorted_point[0];
+      undistorted_point[1] = distorted_point[1];
+      return;
+    }
+
     const T theta = ceres::atan2(r, T(1.0));
     const T theta_sq = theta * theta;
 
