@@ -174,56 +174,6 @@ void BasicTest(const double noise, const double reproj_tolerance) {
                      reproj_tolerance);
 }
 
-void RandomTestWithNoise(const double noise, const double reproj_tolerance) {
-  // Seed random number generator.
-  srand(time(NULL));
-
-  const double kDepth = 0.5;
-  const double kBaseline = 0.1;
-
-  // focal length (values used in the ICCV paper)
-  std::default_random_engine generator;
-  std::uniform_real_distribution<double> distribution(0.0, 1.0);
-  const double focal_length = distribution(generator) * 2.0 + 0.5;
-  const double kFOV = atan(0.5 / focal_length) * 2.0;
-
-  // radial distortion (values used in the ICCV paper)
-  const double radial_distortion = distribution(generator) * -0.45;
-
-  // Rotation areound x, y, z axis.
-  const double x = distribution(generator)*0.5 - 0.25;
-  const double y = distribution(generator)*0.5 - 0.25;
-  const double z = distribution(generator)*0.5 - 0.25;
-
-  // Create a ground truth pose.
-  Matrix3d Rz, Ry, Rx;
-  Rz << cos(z), sin(z), 0,
-        -sin(z), cos(z), 0,
-        0, 0, 1;
-  Ry << cos(y), 0, -sin(y),
-        0, 1, 0,
-        sin(y), 0, cos(y);
-  Rx << 1, 0, 0,
-        0, cos(x), sin(x),
-        0, -sin(x), cos(x);
-  const Matrix3d gt_rotation = Rz * Ry * Rx;
-  const Vector3d gt_translation = Vector3d::Random() * kBaseline;
-
-  // Create 3D world points that are viable based on the camera intrinsics and
-  // extrinsics.
-  std::vector<Vector3d> world_points_vector(5);
-  Map<Matrix<double, 3, 5> > world_points(world_points_vector[0].data());
-  world_points.row(2) = kDepth * Matrix<double, 1, 5>::Random().array() + 1;
-  world_points.row(1) = 2.0 * (Matrix<double, 1, 5>::Random().array() - 0.5) *
-                        tan(kFOV / 2.0) * world_points.row(2).array();
-  world_points.row(0) = 2.0 * (Matrix<double, 1, 5>::Random().array() - 0.5) *
-                        tan(kFOV / 2.0) * world_points.row(2).array();
-
-  P5pfrTestWithNoise(gt_rotation, gt_translation, focal_length,
-                     radial_distortion, world_points_vector, noise,
-                     reproj_tolerance);
-}
-
 void PlanarTestWithNoise(const double noise, const double reproj_tolerance) {
   // Seed random number generator.
   srand(time(NULL));
@@ -276,9 +226,6 @@ TEST(P5Pfr, BasicNoiseTest) {
   BasicTest(0.5 / 800.0, 5 / 800.0);
 }
 
-TEST(P5Pfr, RandomTest) {
-  RandomTestWithNoise(0.0, 1e-8);
-}
 
 TEST(P5Pfr, PlanarTestNoNoise) {
   PlanarTestWithNoise(0.0, 1e-12);
