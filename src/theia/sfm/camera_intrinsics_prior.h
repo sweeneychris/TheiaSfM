@@ -65,8 +65,8 @@ struct CameraIntrinsicsPrior {
  public:
   // The image size *should* always be set, so we don't have to worry about
   // making it an Prior type.
-  int image_width;
-  int image_height;
+  int image_width = 0;
+  int image_height = 0;
 
   // TODO(csweeney): Should we add a variable for the camera model type?
 
