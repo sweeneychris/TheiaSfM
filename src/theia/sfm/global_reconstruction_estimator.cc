@@ -391,6 +391,11 @@ bool GlobalReconstructionEstimator::EstimatePosition() {
 
   // Choose the global position estimation type.
   switch (options_.global_position_estimator_type) {
+    case GlobalPositionEstimatorType::LEAST_UNSQUARED_DEVIATION: {
+      position_estimator.reset(new LeastUnsquaredDeviationPositionEstimator(
+          options_.least_unsquared_deviation_position_estimator_options));
+      break;
+    }
     case GlobalPositionEstimatorType::NONLINEAR: {
       position_estimator.reset(new NonlinearPositionEstimator(
           options_.nonlinear_position_estimator_options, *reconstruction_));
@@ -400,11 +405,6 @@ bool GlobalReconstructionEstimator::EstimatePosition() {
       position_estimator.reset(new LinearPositionEstimator(
           options_.linear_triplet_position_estimator_options,
           *reconstruction_));
-      break;
-    }
-    case GlobalPositionEstimatorType::LEAST_UNSQUARED_DEVIATION: {
-      position_estimator.reset(new LeastUnsquaredDeviationPositionEstimator(
-          options_.least_unsquared_deviation_position_estimator_options));
       break;
     }
     default: {
