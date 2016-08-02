@@ -190,4 +190,20 @@ TEST(Image, BillinearInterpolate) {
   }
 }
 
+TEST(Image, ScalePixels) {
+  static const float kTolerance = 1e-2;
+  static const float kScaleFactor = 1.1;
+
+  FloatImage theia_img(img_filename);
+  FloatImage scaled_img(img_filename);
+  scaled_img.ScalePixels(kScaleFactor);
+
+  for (int y = 0; y < theia_img.Height(); y++) {
+    for (int x = 0; x < theia_img.Width(); x++) {
+      EXPECT_DOUBLE_EQ(kScaleFactor * theia_img(x, y), scaled_img(x, y));
+    }
+  }
+}
+
+
 }  // namespace theia

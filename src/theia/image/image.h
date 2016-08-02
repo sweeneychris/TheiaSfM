@@ -94,6 +94,9 @@ template <typename T> class Image {
   void ConvertToGrayscaleImage();
   void ConvertToRGBImage();
 
+  // Scale all the pixel values by a scale factor.
+  void ScalePixels(float scale);
+
   // Write image to file.
   void Read(const std::string& filename);
   void Write(const std::string& filename) const;
@@ -251,6 +254,10 @@ template <typename T> Image<T> Image<T>::AsRGBImage() const {
   Image<T> rgb_image(*this);
   rgb_image.ConvertToRGBImage();
   return rgb_image;
+}
+
+template <typename T> void Image<T>::ScalePixels(float scale) {
+  image_ *= scale;
 }
 
 template <typename T> void Image<T>::Read(const std::string& filename) {
