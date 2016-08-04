@@ -70,8 +70,8 @@ void NormalizeFeatures(
   CHECK_NOTNULL(normalized_correspondences)->clear();
 
   Camera camera1, camera2;
-  camera1.MutableCameraIntrinsics()->SetFromCameraIntrinsicsPriors(prior1);
-  camera2.MutableCameraIntrinsics()->SetFromCameraIntrinsicsPriors(prior2);
+  camera1.SetFromCameraIntrinsicsPriors(prior1);
+  camera2.SetFromCameraIntrinsicsPriors(prior2);
   normalized_correspondences->reserve(correspondences.size());
   for (const FeatureCorrespondence& correspondence : correspondences) {
     FeatureCorrespondence normalized_correspondence;
