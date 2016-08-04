@@ -146,6 +146,36 @@ TEST(Camera, ExternalParameterGettersAndSetters) {
               kTolerance);
 }
 
+TEST(Camera, SetFromCameraIntrinsicsPrior) {
+  Camera camera;
+  CameraIntrinsicsPrior prior;
+  prior.image_width = 1920;
+  prior.image_height = 1080;
+  camera.SetFromCameraIntrinsicsPriors(prior);
+  EXPECT_EQ(camera.GetCameraIntrinsicsModelType(),
+            CameraIntrinsicsModelType::PINHOLE);
+  EXPECT_EQ(camera.ImageWidth(), prior.image_width);
+  EXPECT_EQ(camera.ImageHeight(), prior.image_height);
+
+  // Set the prior for intrinsics model to Pinhole.
+  prior.camera_intrinsics_model_type = CameraIntrinsicsModelType::PINHOLE;
+  camera.SetFromCameraIntrinsicsPriors(prior);
+  EXPECT_EQ(camera.GetCameraIntrinsicsModelType(),
+            CameraIntrinsicsModelType::PINHOLE);
+
+  // Set the prior for intrinsics model to PinholeRadialTangential.
+  prior.camera_intrinsics_model_type =
+      CameraIntrinsicsModelType::PINHOLE_RADIAL_TANGENTIAL;
+  camera.SetFromCameraIntrinsicsPriors(prior);
+  EXPECT_EQ(camera.GetCameraIntrinsicsModelType(),
+            CameraIntrinsicsModelType::PINHOLE_RADIAL_TANGENTIAL);
+
+  // Set the prior for intrinsics model to Fisheye.
+  prior.camera_intrinsics_model_type = CameraIntrinsicsModelType::FISHEYE;
+  camera.SetFromCameraIntrinsicsPriors(prior);
+  EXPECT_EQ(camera.GetCameraIntrinsicsModelType(),
+            CameraIntrinsicsModelType::FISHEYE);
+}
 
 void ReprojectionTest(const Camera& camera) {
   const double kTolerance = 1e-5;

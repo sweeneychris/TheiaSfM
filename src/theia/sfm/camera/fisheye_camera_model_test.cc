@@ -144,8 +144,8 @@ TEST(FisheyeCameraModel, SetFromCameraIntrinsicsPriors) {
   prior.skew.value[0] = 0.01;
   prior.radial_distortion.value[0] = 0.01;
   prior.radial_distortion.value[1] = 0.001;
+  prior.radial_distortion.value[2] = 0.001;
   prior.radial_distortion.value[3] = 0.001;
-  prior.radial_distortion.value[4] = 0.001;
 
   TestSetFromCameraintrinsicsPrior(prior);
 
