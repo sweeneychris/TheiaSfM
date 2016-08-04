@@ -151,6 +151,7 @@ set(THEIA_SRC
   sfm/triangulation/triangulation.cc
   sfm/twoview_info.cc
   sfm/two_view_match_geometric_verification.cc
+  sfm/undistort_image.cc
   sfm/view.cc
   sfm/view_graph/orientations_from_maximum_spanning_tree.cc
   sfm/view_graph/remove_disconnected_view_pairs.cc
