@@ -195,9 +195,8 @@ void TwoViewMatchGeometricVerification::TriangulatePoints(
 
   // Triangulate all points, throwing out the ones with bad initial reprojection
   // errors.
-  Matrix3x4d projection_matrix1, projection_matrix2;
-  camera1_.GetProjectionMatrix(&projection_matrix1);
-  camera2_.GetProjectionMatrix(&projection_matrix2);
+  const std::vector<Eigen::Vector3d> origins = {camera1_.GetPosition(),
+                                                camera2_.GetPosition()};
   std::vector<IndexedFeatureMatch> triangulated_matches;
   triangulated_matches.reserve(matches_.size());
   for (int i = 0; i < matches_.size(); i++) {
@@ -217,8 +216,7 @@ void TwoViewMatchGeometricVerification::TriangulatePoints(
     }
 
     Eigen::Vector4d point3d;
-    if (!Triangulate(projection_matrix1, projection_matrix2, feature1, feature2,
-                     &point3d)) {
+    if (!TriangulateMidpoint(origins, ray_directions, &point3d)) {
       continue;
     }
 
