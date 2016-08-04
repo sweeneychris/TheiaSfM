@@ -39,6 +39,8 @@
 #include <cereal/cereal.hpp>
 #include <stdint.h>
 
+#include "theia/sfm/camera/camera_intrinsics_model_type.h"
+
 namespace theia {
 
 // Weak calibration is not always available, so we need this helper struct to
@@ -68,7 +70,9 @@ struct CameraIntrinsicsPrior {
   int image_width = 0;
   int image_height = 0;
 
-  // TODO(csweeney): Should we add a variable for the camera model type?
+  // The camera intrinsics model type. Pinhole by default.
+  CameraIntrinsicsModelType camera_intrinsics_model_type =
+      CameraIntrinsicsModelType::PINHOLE;
 
   // Camera intrinsics parameters.
   Prior<1> focal_length;
@@ -97,9 +101,9 @@ struct CameraIntrinsicsPrior {
   template <class Archive>
   void serialize(Archive& ar, const std::uint32_t version) {  // NOLINT
     if (version >= 3) {
-      ar(image_width, image_height, focal_length, aspect_ratio, skew,
-         radial_distortion, tangential_distortion, position, orientation,
-         latitude, longitude, altitude);
+      ar(image_width, image_height, camera_intrinsics_model_type, focal_length,
+         aspect_ratio, skew, radial_distortion, tangential_distortion, position,
+         orientation, latitude, longitude, altitude);
     } else if (version == 2) {
       Prior<2> old_radial_distortion;
       ar(image_width, image_height, focal_length, aspect_ratio, skew,

@@ -43,20 +43,11 @@
 #include <vector>
 
 #include "theia/sfm/bundle_adjustment/bundle_adjustment.h"
+#include "theia/sfm/camera/camera_intrinsics_model_type.h"
 #include "theia/sfm/camera_intrinsics_prior.h"
 #include "theia/sfm/types.h"
 
 namespace theia {
-
-// Each camera model implemented through this interface should have a type
-// listed here. The Create method below should create an instance to the
-// respective camera model based on the type provided.
-enum class CameraIntrinsicsModelType {
-  INVALID = -1,
-  PINHOLE = 0,
-  PINHOLE_RADIAL_TANGENTIAL = 1,
-  FISHEYE = 2,
-};
 
 // This class encapsulates the camera lens model used for projecting points in
 // space onto the pixels in images. We utilize two coordinate systems:

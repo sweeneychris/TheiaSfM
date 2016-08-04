@@ -100,6 +100,7 @@
 #include "theia/sfm/bundle_adjustment/unit_norm_three_vector_parameterization.h"
 #include "theia/sfm/camera/camera.h"
 #include "theia/sfm/camera/camera_intrinsics_model.h"
+#include "theia/sfm/camera/camera_intrinsics_model_type.h"
 #include "theia/sfm/camera/create_reprojection_error_cost_function.h"
 #include "theia/sfm/camera/fisheye_camera_model.h"
 #include "theia/sfm/camera/pinhole_camera_model.h"

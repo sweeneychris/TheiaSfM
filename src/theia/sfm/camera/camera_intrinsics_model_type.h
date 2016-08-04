@@ -1,4 +1,4 @@
-// Copyright (C) 2015 The Regents of the University of California (Regents).
+// Copyright (C) 2016 The Regents of the University of California (Regents).
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -32,31 +32,21 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#include "theia/sfm/set_camera_intrinsics_from_priors.h"
-
-#include <glog/logging.h>
-
-#include "theia/sfm/camera_intrinsics_prior.h"
-#include "theia/sfm/camera/camera.h"
-#include "theia/sfm/reconstruction.h"
-#include "theia/sfm/types.h"
-#include "theia/sfm/view.h"
+#ifndef THEIA_SFM_CAMERA_CAMERA_INTRINSICS_MODEL_TYPE_H_
+#define THEIA_SFM_CAMERA_CAMERA_INTRINSICS_MODEL_TYPE_H_
 
 namespace theia {
 
-// Sets the camera intrinsics from the CameraIntrinsicsPrior of each view. Views
-// that do not have a focal length prior will set a value corresponding to a
-// median viewing angle. Principal points that are not provided by the priors
-// are simply initialized as half of the corresponding image size dimension.
-void SetCameraIntrinsicsFromPriors(Reconstruction* reconstruction) {
-  const auto& view_ids = reconstruction->ViewIds();
-  for (const ViewId view_id : view_ids) {
-    View* view = CHECK_NOTNULL(reconstruction->MutableView(view_id));
-    if (!view->IsEstimated()) {
-      view->MutableCamera()->SetFromCameraIntrinsicsPriors(
-          view->CameraIntrinsicsPrior());
-    }
-  }
-}
+// Each camera model implemented through this interface should have a type
+// listed here. The Create method below should create an instance to the
+// respective camera model based on the type provided.
+enum class CameraIntrinsicsModelType {
+  INVALID = -1,
+  PINHOLE = 0,
+  PINHOLE_RADIAL_TANGENTIAL = 1,
+  FISHEYE = 2,
+};
 
 }  // namespace theia
+
+#endif  // THEIA_SFM_CAMERA_CAMERA_INTRINSICS_MODEL_TYPE_H_

@@ -46,6 +46,7 @@
 #include <vector>
 
 #include "theia/sfm/camera/camera_intrinsics_model.h"
+#include "theia/sfm/camera_intrinsics_prior.h"
 #include "theia/sfm/types.h"
 
 namespace theia {
@@ -97,6 +98,9 @@ class Camera {
       const int image_width,
       const int image_height,
       const Matrix3x4d projection_matrix);
+
+  // Set the camera parameters (and camera intrinsics type) from the prior.
+  void SetFromCameraIntrinsicsPriors(const CameraIntrinsicsPrior& prior);
 
   // Returns the type corresponding to the camera intrinsics model used the
   // describe the lens of this camera.

@@ -43,6 +43,7 @@
 #include "theia/sfm/camera/camera_intrinsics_model.h"
 #include "theia/sfm/camera/pinhole_camera_model.h"
 #include "theia/sfm/camera/projection_matrix_utils.h"
+#include "theia/sfm/camera_intrinsics_prior.h"
 
 namespace theia {
 
@@ -109,6 +110,14 @@ Camera& Camera::operator=(const Camera& camera) {
   image_size_[0] = camera.image_size_[0];
   image_size_[1] = camera.image_size_[1];
   return *this;
+}
+
+void Camera::SetFromCameraIntrinsicsPriors(const CameraIntrinsicsPrior& prior) {
+  camera_intrinsics_ =
+      CameraIntrinsicsModel::Create(prior.camera_intrinsics_model_type);
+  image_size_[0] = prior.image_width;
+  image_size_[1] = prior.image_height;
+  camera_intrinsics_->SetFromCameraIntrinsicsPriors(prior);
 }
 
 CameraIntrinsicsModelType Camera::GetCameraIntrinsicsModelType() const {
