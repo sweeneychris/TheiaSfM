@@ -12,6 +12,9 @@ target_link_libraries(build_reconstruction theia ${GFLAGS_LIBRARIES} ${GLOG_LIBR
 add_executable(build_1dsfm_reconstruction build_1dsfm_reconstruction.cc)
 target_link_libraries(build_1dsfm_reconstruction theia ${GFLAGS_LIBRARIES} ${GLOG_LIBRARIES})
 
+add_executable(undistort_images undistort_images.cc)
+target_link_libraries(undistort_images theia ${GFLAGS_LIBRARIES} ${GLOG_LIBRARIES})
+
 # Reconstruction visualization.
 find_package(OpenGL REQUIRED)
 if (NOT MSVC)
