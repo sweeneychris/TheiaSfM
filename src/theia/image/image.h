@@ -128,7 +128,9 @@ template <typename T> class Image {
 
   // Resize using a Lanczos 3 filter.
   void Resize(int new_width, int new_height);
+  void Resize(int new_width, int new_height, int new_channels);
   void ResizeRowsCols(int new_rows, int new_cols);
+  void ResizeRowsCols(int new_rows, int new_cols, int new_channels);
   void Resize(double scale);
 
  protected:
@@ -312,12 +314,23 @@ void Image<T>::ApproximateGaussianBlur(const double sigma) {
   image_.blur(sigma);
 }
 
-template <typename T> void Image<T>::Resize(int new_width, int new_height) {
+template <typename T>
+void Image<T>::Resize(int new_width, int new_height) {
   image_.resize(new_width, new_height);
 }
 
-template <typename T> void Image<T>::ResizeRowsCols(int new_rows, int new_cols) {
+template <typename T>
+void Image<T>::Resize(int new_width, int new_height, int new_channels) {
+  image_.resize(new_width, new_height, 1, new_channels);
+}
+
+template <typename T>
+void Image<T>::ResizeRowsCols(int new_rows, int new_cols) {
   image_.resize(new_cols, new_rows);
+}
+template <typename T>
+void Image<T>::ResizeRowsCols(int new_rows, int new_cols, int new_channels) {
+  image_.resize(new_cols, new_rows, 1, new_channels);
 }
 
 }  // namespace theia
