@@ -145,7 +145,7 @@ void FeatureMatcher::AddImage(
 void FeatureMatcher::AddImages(
     const std::vector<std::string>& image_names,
     const std::vector<CameraIntrinsicsPrior>& intrinsics) {
-  CHECK_EQ(image_names_.size(), intrinsics.size());
+  CHECK_EQ(image_names.size(), intrinsics.size());
   image_names_.reserve(image_names.size() + image_names_.size());
   image_names_.insert(image_names_.end(),
                       image_names.begin(),
