@@ -275,7 +275,7 @@ class JenkinsTraubSolver {
   bool attempted_quadratic_shift_;
 
   // Number of zero-shift iterations to perform.
-  static const int kNumZeroShiftIterations = 5;
+  static const int kNumZeroShiftIterations = 20;
 
   // The number of fixed shift iterations is computed as
   //   # roots found * this multiplier.
@@ -531,7 +531,7 @@ bool JenkinsTraubSolver::ApplyQuadraticShiftToKPolynomial(
     // If the iteration is stalling at a root pair then apply a few fixed shift
     // iterations to help convergence.
     poly_at_root =
-        std::abs(a_ - roots[0].real() * b_) + std::abs(roots[i].imag() * b_);
+        std::abs(a_ - roots[0].real() * b_) + std::abs(roots[0].imag() * b_);
     const double rel_step = std::abs((sigma_(2) - prev_v) / sigma_(2));
     if (!tried_fixed_shifts && rel_step < kTinyRelativeStep &&
         prev_poly_at_root > poly_at_root) {
