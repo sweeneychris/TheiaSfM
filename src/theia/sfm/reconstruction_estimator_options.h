@@ -159,6 +159,11 @@ struct ReconstructionEstimatorOptions {
   LeastUnsquaredDeviationPositionEstimator::Options
       least_unsquared_deviation_position_estimator_options;
 
+  // For global SfM it may be advantageous to run a partial bundle adjustment
+  // optimizing only the camera positions and 3d points while holding camera
+  // orientation and intrinsics constant.
+  bool refine_camera_positions_and_points_after_estimation = true;
+
   // --------------------- Incremental SfM Options --------------------- //
 
   // If M is the maximum number of 3D points observed by any view, we want to

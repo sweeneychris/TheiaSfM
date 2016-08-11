@@ -129,7 +129,6 @@ void AddCameraExtrinsicsToProblem(const bool constant_camera_orientation,
                                  Camera::kExtrinsicsSize);
     }
   } else {
-    static const int kNumConstantExtrinsics = 3;
     std::vector<int> constant_extrinsics;
     if (constant_camera_position) {
       constant_extrinsics.emplace_back(Camera::POSITION + 0);
@@ -141,7 +140,7 @@ void AddCameraExtrinsicsToProblem(const bool constant_camera_orientation,
       constant_extrinsics.emplace_back(Camera::ORIENTATION + 2);
     }
     ceres::SubsetParameterization* subset_parameterization =
-        new ceres::SubsetParameterization(kNumConstantExtrinsics,
+        new ceres::SubsetParameterization(Camera::kExtrinsicsSize,
                                           constant_extrinsics);
     for (const ViewId view_id : view_ids) {
       View* view = reconstruction->MutableView(view_id);
