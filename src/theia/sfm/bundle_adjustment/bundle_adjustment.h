@@ -91,6 +91,12 @@ struct BundleAdjustmentOptions {
   // If true, ceres will log verbosely.
   bool verbose = false;
 
+  // If true, the camera orientations and/or positions will be set to
+  // constant. This may be desirable if, for instance, you have accurate
+  // positions from GPS but do not know camera orientations.
+  bool constant_camera_orientation = false;
+  bool constant_camera_position = false;
+
   // Indicates which intrinsics should be optimized as part of bundle
   // adjustment. By default, we do not optimize skew and aspect ratio since
   // these are almost universally constant.

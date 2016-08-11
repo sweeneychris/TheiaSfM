@@ -105,6 +105,54 @@ void AddCameraIntrinsicsToProblem(
   }
 }
 
+// Add camera extrinsics to the problem, setting certain values constant based
+// on the input settings.
+void AddCameraExtrinsicsToProblem(const bool constant_camera_orientation,
+                                  const bool constant_camera_position,
+                                  const std::unordered_set<ViewId>& view_ids,
+                                  Reconstruction* reconstruction,
+                                  ceres::Problem* problem) {
+  if (constant_camera_orientation && constant_camera_position) {
+    for (const ViewId view_id : view_ids) {
+      View* view = reconstruction->MutableView(view_id);
+      Camera* camera = view->MutableCamera();
+      problem->AddParameterBlock(camera->mutable_extrinsics(),
+                                 Camera::kExtrinsicsSize);
+      problem->SetParameterBlockConstant(camera->mutable_extrinsics());
+
+    }
+  } else if (!constant_camera_orientation && !constant_camera_position) {
+    for (const ViewId view_id : view_ids) {
+      View* view = reconstruction->MutableView(view_id);
+      Camera* camera = view->MutableCamera();
+      problem->AddParameterBlock(camera->mutable_extrinsics(),
+                                 Camera::kExtrinsicsSize);
+    }
+  } else {
+    static const int kNumConstantExtrinsics = 3;
+    std::vector<int> constant_extrinsics;
+    if (constant_camera_position) {
+      constant_extrinsics.emplace_back(Camera::POSITION + 0);
+      constant_extrinsics.emplace_back(Camera::POSITION + 1);
+      constant_extrinsics.emplace_back(Camera::POSITION + 2);
+    } else {
+      constant_extrinsics.emplace_back(Camera::ORIENTATION + 0);
+      constant_extrinsics.emplace_back(Camera::ORIENTATION + 1);
+      constant_extrinsics.emplace_back(Camera::ORIENTATION + 2);
+    }
+    ceres::SubsetParameterization* subset_parameterization =
+        new ceres::SubsetParameterization(kNumConstantExtrinsics,
+                                          constant_extrinsics);
+    for (const ViewId view_id : view_ids) {
+      View* view = reconstruction->MutableView(view_id);
+      Camera* camera = view->MutableCamera();
+      problem->AddParameterBlock(camera->mutable_extrinsics(),
+                                 Camera::kExtrinsicsSize,
+                                 subset_parameterization);
+    }
+  }
+}
+
 // For each camera intrinsics group, choose one view to use as the reference for
 // shared camera intrinsics.
 std::unordered_map<CameraIntrinsicsGroupId, CameraIntrinsicsModel*>
@@ -204,6 +252,14 @@ BundleAdjustmentSummary BundleAdjustPartialReconstruction(
                                  &problem);
   }
 
+  // Add all of the camera extrinsics to the problem, setting orientation and/or
+  // position constant as appropriate.
+  AddCameraExtrinsicsToProblem(options.constant_camera_orientation,
+                               options.constant_camera_position,
+                               view_ids,
+                               reconstruction,
+                               &problem);
+
   // Per recommendation of Ceres documentation we group the parameters by points
   // (group 0) and camera parameters (group 1) so that the points are eliminated
   // first then the cameras.
@@ -216,8 +272,6 @@ BundleAdjustmentSummary BundleAdjustPartialReconstruction(
 
     // Add the camera extrinsic parameters to the problem.
     Camera* camera = view->MutableCamera();
-    problem.AddParameterBlock(camera->mutable_extrinsics(),
-                              Camera::kExtrinsicsSize);
 
     // Get a pointer to the shared camera intrinsics.
     const CameraIntrinsicsGroupId intrinsics_group_id =
