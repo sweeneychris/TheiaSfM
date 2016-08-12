@@ -158,20 +158,19 @@ TEST(Camera, SetFromCameraIntrinsicsPrior) {
   EXPECT_EQ(camera.ImageHeight(), prior.image_height);
 
   // Set the prior for intrinsics model to Pinhole.
-  prior.camera_intrinsics_model_type = CameraIntrinsicsModelType::PINHOLE;
+  prior.camera_intrinsics_model_type = "PINHOLE";
   camera.SetFromCameraIntrinsicsPriors(prior);
   EXPECT_EQ(camera.GetCameraIntrinsicsModelType(),
             CameraIntrinsicsModelType::PINHOLE);
 
   // Set the prior for intrinsics model to PinholeRadialTangential.
-  prior.camera_intrinsics_model_type =
-      CameraIntrinsicsModelType::PINHOLE_RADIAL_TANGENTIAL;
+  prior.camera_intrinsics_model_type = "PINHOLE_RADIAL_TANGENTIAL";
   camera.SetFromCameraIntrinsicsPriors(prior);
   EXPECT_EQ(camera.GetCameraIntrinsicsModelType(),
             CameraIntrinsicsModelType::PINHOLE_RADIAL_TANGENTIAL);
 
   // Set the prior for intrinsics model to Fisheye.
-  prior.camera_intrinsics_model_type = CameraIntrinsicsModelType::FISHEYE;
+  prior.camera_intrinsics_model_type = "FISHEYE";
   camera.SetFromCameraIntrinsicsPriors(prior);
   EXPECT_EQ(camera.GetCameraIntrinsicsModelType(),
             CameraIntrinsicsModelType::FISHEYE);

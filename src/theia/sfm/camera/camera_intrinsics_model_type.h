@@ -35,6 +35,9 @@
 #ifndef THEIA_SFM_CAMERA_CAMERA_INTRINSICS_MODEL_TYPE_H_
 #define THEIA_SFM_CAMERA_CAMERA_INTRINSICS_MODEL_TYPE_H_
 
+#include <glog/logging.h>
+#include <string>
+
 namespace theia {
 
 // Each camera model implemented through this interface should have a type
@@ -46,6 +49,21 @@ enum class CameraIntrinsicsModelType {
   PINHOLE_RADIAL_TANGENTIAL = 1,
   FISHEYE = 2,
 };
+
+// Converts an input string to the corresponding camera intrinsics model type.
+inline CameraIntrinsicsModelType StringToCameraIntrinsicsModelType(
+    const std::string& camera_model_type_string) {
+  if (camera_model_type_string == "PINHOLE") {
+    return CameraIntrinsicsModelType::PINHOLE;
+  } else if (camera_model_type_string == "PINHOLE_RADIAL_TANGENTIAL") {
+    return CameraIntrinsicsModelType::PINHOLE_RADIAL_TANGENTIAL;
+  } else if (camera_model_type_string == "FISHEYE") {
+    return CameraIntrinsicsModelType::FISHEYE;
+  } else {
+    LOG(FATAL) << "Invalid camera model type supplied: "
+               << camera_model_type_string;
+  }
+}
 
 }  // namespace theia
 

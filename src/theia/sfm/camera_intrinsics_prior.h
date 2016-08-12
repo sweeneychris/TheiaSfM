@@ -37,6 +37,7 @@
 
 #include <cereal/access.hpp>
 #include <cereal/cereal.hpp>
+#include <cereal/types/string.hpp>
 #include <stdint.h>
 
 #include "theia/sfm/camera/camera_intrinsics_model_type.h"
@@ -71,8 +72,7 @@ struct CameraIntrinsicsPrior {
   int image_height = 0;
 
   // The camera intrinsics model type. Pinhole by default.
-  CameraIntrinsicsModelType camera_intrinsics_model_type =
-      CameraIntrinsicsModelType::PINHOLE;
+  std::string camera_intrinsics_model_type = "PINHOLE";
 
   // Camera intrinsics parameters.
   Prior<1> focal_length;

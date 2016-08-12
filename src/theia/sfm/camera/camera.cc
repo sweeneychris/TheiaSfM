@@ -113,8 +113,10 @@ Camera& Camera::operator=(const Camera& camera) {
 }
 
 void Camera::SetFromCameraIntrinsicsPriors(const CameraIntrinsicsPrior& prior) {
+  const CameraIntrinsicsModelType camera_intrinsics_model_type =
+      StringToCameraIntrinsicsModelType(prior.camera_intrinsics_model_type);
   camera_intrinsics_ =
-      CameraIntrinsicsModel::Create(prior.camera_intrinsics_model_type);
+      CameraIntrinsicsModel::Create(camera_intrinsics_model_type);
   image_size_[0] = prior.image_width;
   image_size_[1] = prior.image_height;
   camera_intrinsics_->SetFromCameraIntrinsicsPriors(prior);
