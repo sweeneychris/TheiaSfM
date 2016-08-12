@@ -69,7 +69,7 @@ DEFINE_string(
 DEFINE_string(feature_density, "NORMAL",
               "Set to SPARSE, NORMAL, or DENSE to extract fewer or more "
               "features from each image.");
-DEFINE_string(matching_strategy, "BRUTE_FORCE",
+DEFINE_string(matching_strategy, "CASCADE_HASHING",
               "Strategy used to match features. Must be BRUTE_FORCE "
               " or CASCADE_HASHING");
 DEFINE_bool(match_out_of_core, true,
@@ -140,6 +140,12 @@ DEFINE_bool(filter_relative_translations_with_1dsfm, true,
             "Filter relative translation estimations with the 1DSfM algorithm "
             "to potentially remove outlier relativep oses for position "
             "estimation.");
+DEFINE_bool(refine_camera_positions_and_points_after_estimation, true,
+            "After estimating positions in Global SfM we can refine only "
+            "camera positions and 3D point locations, holding camera "
+            "intrinsics and rotations constant. This often improves the "
+            "stability of bundle adjustment when the camera intrinsics are "
+            "inaccurate.");
 DEFINE_int32(num_retriangulation_iterations, 1,
              "Number of times to retriangulate any unestimated tracks. Bundle "
              "adjustment is performed after retriangulation.");
@@ -265,6 +271,9 @@ ReconstructionBuilderOptions SetReconstructionBuilderOptions() {
   reconstruction_estimator_options.nonlinear_position_estimator_options
       .min_num_points_per_view =
       FLAGS_position_estimation_min_num_tracks_per_view;
+  reconstruction_estimator_options
+      .refine_camera_positions_and_points_after_estimation =
+      FLAGS_refine_camera_positions_and_points_after_estimation;
 
   // Incremental SfM Options.
   reconstruction_estimator_options
