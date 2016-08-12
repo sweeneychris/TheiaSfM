@@ -234,7 +234,7 @@ ReconstructionEstimatorSummary GlobalReconstructionEstimator::Estimate(
     // 3D points are refined. This is only done for the very first bundle
     // adjustment iteration.
     if (i == 0 &&
-        options_.refine_camera_positions_and_points_after_estimation) {
+        options_.refine_camera_positions_and_points_after_position_estimation) {
       LOG(INFO) << "Performing partial bundle adjustment to optimize only the "
                    "camera positions and 3d points.";
       timer.Reset();

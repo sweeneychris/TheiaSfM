@@ -81,6 +81,11 @@
 --position_estimation_min_num_tracks_per_view=0
 --position_estimation_robust_loss_width=0.1
 
+# If true, perform a single iteration of bundle adjustment only on the camera
+# positions and 3D points (rotation and camera intrinsics are held
+# constant). This helps often to constrain inaccurate intrinsics.
+--refine_camera_positions_and_points_after_position_estimation=true
+
 # After estimating camera poses, we perform trianguation, then BA,
 # then filter out bad points. This controls how many times we repeat
 # this process.

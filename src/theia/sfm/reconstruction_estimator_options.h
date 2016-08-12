@@ -162,7 +162,7 @@ struct ReconstructionEstimatorOptions {
   // For global SfM it may be advantageous to run a partial bundle adjustment
   // optimizing only the camera positions and 3d points while holding camera
   // orientation and intrinsics constant.
-  bool refine_camera_positions_and_points_after_estimation = true;
+  bool refine_camera_positions_and_points_after_position_estimation = true;
 
   // --------------------- Incremental SfM Options --------------------- //
 
