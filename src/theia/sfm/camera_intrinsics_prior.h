@@ -129,6 +129,13 @@ struct CameraIntrinsicsPrior {
       radial_distortion.value[0] = rd1.value[0];
       radial_distortion.value[1] = rd2.value[0];
     }
+    // Validate intrinsic values read from the files.
+    CHECK_GT(focal_length.value[0], 0.0) << "Invalid focal length value.";
+    CHECK_GT(image_width, 0) << "Invalid image width.";
+    CHECK_GT(image_height, 0) << "Invalid image height.";
+    CHECK_GT(aspect_ratio.value[0], 0.0) << "Invalid aspect ratio.";
+    // TODO(vfragoso): Should we verify other values (e.g., skew or radial
+    // distortion)?
   }
 };
 
