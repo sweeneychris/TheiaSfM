@@ -184,6 +184,7 @@ void CameraIntrinsicsModel::SetFocalLength(const double focal_length) {
   // Define the functions that we want to execute in every case of the switch
   // statement. CameraModel will be filled in with the appropriate derived
   // class.
+  CHECK_GT(focal_length, 0.0) << "Invalid focal length value.";
 #define CAMERA_MODEL_CASE_BODY(CameraModel) \
   SetParameter(CameraModel::FOCAL_LENGTH, focal_length);
 

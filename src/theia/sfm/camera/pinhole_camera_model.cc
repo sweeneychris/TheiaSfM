@@ -152,6 +152,7 @@ void PinholeCameraModel::GetCalibrationMatrix(Matrix3d* kmatrix) const {
 // ----------------------- Getter and Setter methods ---------------------- //
 
 void PinholeCameraModel::SetAspectRatio(const double aspect_ratio) {
+  CHECK_GT(aspect_ratio, 0.0) << "Invalid aspect ratio.";
   parameters_[ASPECT_RATIO] = aspect_ratio;
 }
 double PinholeCameraModel::AspectRatio() const {
