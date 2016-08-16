@@ -35,7 +35,10 @@
 #ifndef THEIA_UTIL_RANDOM_H_
 #define THEIA_UTIL_RANDOM_H_
 
+#include <random>
+
 namespace theia {
+
 // Initializes the random generator to be based on the current time. Does not
 // have to be called before calling RandDouble, but it works best if it is.
 void InitRandomGenerator();
@@ -48,6 +51,29 @@ int RandInt(int lower, int upper);
 
 // Generate a number drawn from a gaussian distribution.
 double RandGaussian(double mean, double std_dev);
+
+// A wrapper around the c++11 random generator utilities. This allows for a
+// thread-safe random number generator that may be easily instantiated and
+// passed around as an object.
+class RandomNumberGenerator {
+  // Creates the random number generator using the current time as the seed.
+  RandomNumberGenerator();
+
+  // Creates the random number generator using the given seed.
+  explicit RandomNumberGenerator(const unsigned seed);
+
+  // Seeds the random number generator with the given value.
+  void Seed(const unsigned seed);
+
+  // Get a random double between lower and upper (inclusive).
+  double RandDouble(const double lower, const double upper);
+
+  // Get a random double between lower and upper (inclusive).
+  int RandInt(const int lower, const int upper);
+
+  // Generate a number drawn from a gaussian distribution.
+  double RandGaussian(const double mean, const double std_dev);
+};
 
 }  // namespace theia
 
