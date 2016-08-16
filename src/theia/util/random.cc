@@ -35,37 +35,99 @@
 #include "theia/util/random.h"
 
 #include <glog/logging.h>
-#include <chrono>
+#include <chrono>  // NOLINT
 #include <random>
+
+#include "theia/util/util.h"
 
 namespace theia {
 namespace {
-std::default_random_engine util_generator;
+// We must use a pointer here and cannot use a unique_ptr here because c++11
+// only allows thread_local for trivial types, meaning we cannot use
+// non-trivial objects that require a destructor.
+thread_local std::default_random_engine* util_generator;
 }  // namespace
 
 // Initializes the random generator to be based on the current time. Does not
 // have to be called before calling RandDouble, but it works best if it is.
 void InitRandomGenerator() {
+  if (util_generator == nullptr) {
+    delete util_generator;
+  }
   unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
-  util_generator.seed(seed);
+  util_generator = new std::default_random_engine(seed);
 }
 
 // Get a random double between lower and upper (inclusive).
 double RandDouble(double lower, double upper) {
+  if (util_generator == nullptr) {
+    InitRandomGenerator();
+  }
+
   std::uniform_real_distribution<double> distribution(lower, upper);
-  return distribution(util_generator);
+  return distribution(*util_generator);
 }
 
 // Get a random int between lower and upper (inclusive).
 int RandInt(int lower, int upper) {
+  if (util_generator == nullptr) {
+    InitRandomGenerator();
+  }
+
   std::uniform_int_distribution<int> distribution(lower, upper);
-  return distribution(util_generator);
+  return distribution(*util_generator);
 }
 
 // Gaussian Distribution with the corresponding mean and std dev.
 double RandGaussian(double mean, double std_dev) {
+  if (util_generator == nullptr) {
+    InitRandomGenerator();
+  }
+
   std::normal_distribution<double> distribution(mean, std_dev);
-  return distribution(util_generator);
+  return distribution(*util_generator);
+}
+
+RandomNumberGenerator::RandomNumberGenerator() {
+  if (util_generator == nullptr) {
+    delete util_generator;
+  }
+
+  const unsigned seed =
+      std::chrono::system_clock::now().time_since_epoch().count();
+  util_generator = new std::default_random_engine(seed);
+}
+
+RandomNumberGenerator::RandomNumberGenerator(const unsigned seed) {
+  if (util_generator == nullptr) {
+    delete util_generator;
+  }
+  util_generator = new std::default_random_engine(seed);
+}
+
+void RandomNumberGenerator::Seed(const unsigned seed) {
+  CHECK_NOTNULL(util_generator);
+  util_generator->seed(seed);
+}
+
+// Get a random double between lower and upper (inclusive).
+double RandomNumberGenerator::RandDouble(const double lower,
+                                         const double upper) {
+  std::uniform_real_distribution<double> distribution(lower, upper);
+  return distribution(*util_generator);
+}
+
+// Get a random int between lower and upper (inclusive).
+int RandomNumberGenerator::RandInt(const int lower, const int upper) {
+  std::uniform_int_distribution<int> distribution(lower, upper);
+  return distribution(*util_generator);
+}
+
+// Gaussian Distribution with the corresponding mean and std dev.
+double RandomNumberGenerator::RandGaussian(const double mean,
+                                           const double std_dev) {
+  std::normal_distribution<double> distribution(mean, std_dev);
+  return distribution(*util_generator);
 }
 
 }  // namespace theia
