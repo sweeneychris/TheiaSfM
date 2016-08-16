@@ -37,6 +37,7 @@
 
 #include <Eigen/Core>
 #include <functional>
+#include <memory>
 #include <vector>
 #include <unordered_map>
 #include <utility>
@@ -45,12 +46,18 @@
 #include "theia/matching/keypoints_and_descriptors.h"
 #include "theia/sfm/camera/camera.h"
 #include "theia/util/hash.h"
+#include "theia/util/random.h"
 
 namespace theia {
 
 class GuidedEpipolarMatcher {
  public:
   struct Options {
+    // When not enough matches are found in guided matching, we grab random
+    // features to use for the nearest neighbor test. If this is left null then
+    // it will be instantiated within the class.
+    std::shared_ptr<RandomNumberGenerator> rng;
+
     // For guided matching, features that are closer than this threshold to the
     // epipolar line will be considered for matching.
     double guided_matching_max_distance_pixels = 2.0;
@@ -148,6 +155,8 @@ class GuidedEpipolarMatcher {
   const Options options_;
   const Camera& camera1_, camera2_;
   const KeypointsAndDescriptors& features1_, features2_;
+
+  std::shared_ptr<RandomNumberGenerator> rng_;
 
   Eigen::Vector2d top_left_, bottom_right_;
   std::vector<ImageGrid> image_grids_;
