@@ -56,6 +56,7 @@ double RandGaussian(double mean, double std_dev);
 // thread-safe random number generator that may be easily instantiated and
 // passed around as an object.
 class RandomNumberGenerator {
+ public:
   // Creates the random number generator using the current time as the seed.
   RandomNumberGenerator();
 

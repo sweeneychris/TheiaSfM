@@ -61,26 +61,16 @@ void GetZeroMeanDescriptor(const std::vector<Eigen::VectorXf>& sift_desc,
   *mean /= static_cast<double>(sift_desc.size());
 }
 
-// Uses the Box-Muller transforma to get a random number from a normal
-// distribution.
-double GetNormRand() {
-  const double u1 = (rand() % 1000 + 1) / 1000.0;
-  const double u2 = (rand() % 1000 + 1) / 1000.0;
-  return sqrt(-2 * log(u1)) * cos(2 * acos(-1.0) * u2);
-}
-
 }  // namespace
 
 bool CascadeHasher::Initialize(const int num_dimensions_of_descriptor) {
   num_dimensions_of_descriptor_ = num_dimensions_of_descriptor;
   primary_hash_projection_.resize(kHashCodeSize, num_dimensions_of_descriptor_);
 
-  InitRandomGenerator();
-
   // Initialize primary hash projection.
   for (int i = 0; i < kHashCodeSize; i++) {
     for (int j = 0; j < num_dimensions_of_descriptor; j++) {
-      primary_hash_projection_(i, j) = GetNormRand();
+      primary_hash_projection_(i, j) = rng_->RandGaussian(0.0, 1.0);
     }
   }
 
@@ -90,7 +80,7 @@ bool CascadeHasher::Initialize(const int num_dimensions_of_descriptor) {
                                          num_dimensions_of_descriptor_);
     for (int j = 0; j < kNumBucketBits; j++) {
       for (int k = 0; k < num_dimensions_of_descriptor_; k++) {
-        secondary_hash_projection_[i](j, k) = GetNormRand();
+        secondary_hash_projection_[i](j, k) = rng_->RandGaussian(0.0, 1.0);
       }
     }
   }

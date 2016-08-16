@@ -59,7 +59,7 @@ TEST(L2Distance, ZeroDistance) {
 
 // Known distance.
 TEST(L2Distance, KnownDistance) {
-  InitRandomGenerator();
+  RandomNumberGenerator(62);
   const int num_dimensions = 128;
   Eigen::VectorXf descriptor1(num_dimensions);
   Eigen::VectorXf descriptor2(num_dimensions);

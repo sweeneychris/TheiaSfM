@@ -92,6 +92,13 @@ void DecodeLineEndpoints(const uint64_t encoded_endpoint,
 // be called before calling GetMatches();
 bool GuidedEpipolarMatcher::Initialize(
     const std::vector<IndexedFeatureMatch>& matches) {
+  // Use the supplied random number generator if one was supplied.
+  if (options_.rng.get() == nullptr) {
+    rng_ = std::make_shared<RandomNumberGenerator>();
+  } else {
+    rng_ = options_.rng;
+  }
+
   // Create a fast lookup for determining if a feature has already been matched.
   for (const IndexedFeatureMatch match : matches) {
     matched_features1_.insert(match.feature1_ind);
@@ -301,7 +308,8 @@ void GuidedEpipolarMatcher::FindFeaturesNearEpipolarLines(
   if (candidate_keypoints.size() < kMinNumMatchesFound) {
     const int num_current_keypoints = candidate_keypoints.size();
     for (int i = num_current_keypoints; i < kMinNumMatchesFound; i++) {
-      candidate_keypoints.insert(RandInt(0, features2_.keypoints.size() - 1));
+      candidate_keypoints.insert(
+          rng_->RandInt(0, features2_.keypoints.size() - 1));
     }
   }
   candidate_keypoint_indices->insert(candidate_keypoint_indices->end(),
