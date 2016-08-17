@@ -47,6 +47,8 @@ using Eigen::Matrix3d;
 using Eigen::RowMajor;
 using Eigen::Vector3d;
 
+RandomNumberGenerator rng(50);
+
 namespace {
 double kEpsilon = 1e-6;
 
@@ -116,20 +118,19 @@ void UmeyamaWithWeigthsAndNoise() {
   size_t succeeded = 0;
   for (size_t iteration = 0; iteration < kNumIterations; ++iteration) {
     // 4 pts required
-    const size_t num_points = static_cast<size_t>(theia::RandInt(4, 1000));
+    const size_t num_points = static_cast<size_t>(rng.RandInt(4, 1000));
     std::vector<Vector3d> left(num_points);
     std::vector<double> weights(num_points, 1.0);
 
     for (size_t i = 0; i < num_points; ++i) {
-      left[i] = Eigen::Vector3d::Random();
+      left[i] = rng.RandVector3d();
     }
 
     const Matrix3d rotation_mat =
-        Eigen::AngleAxisd(DegToRad(theia::RandDouble(0.0, 360.0)),
-                          Eigen::Vector3d::Random().normalized())
-            .toRotationMatrix();
-    const Vector3d translation_vec = Eigen::Vector3d::Random();
-    const double expected_scale = theia::RandDouble(0.001, 10);
+        Eigen::AngleAxisd(DegToRad(rng.RandDouble(0.0, 360.0)),
+                          rng.RandVector3d().normalized()).toRotationMatrix();
+    const Vector3d translation_vec = rng.RandVector3d();
+    const double expected_scale = rng.RandDouble(0.001, 10);
 
     // Transform the points.
     std::vector<Vector3d> right;
@@ -141,10 +142,10 @@ void UmeyamaWithWeigthsAndNoise() {
 
     // Add noise on scale, point and translation
     for (size_t i = 0, end = (size_t)(kNoiseRatio * num_points); i < end; ++i) {
-      const size_t k = static_cast<size_t>(theia::RandInt(0, num_points - 1));
-      const double noiseOnScale = expected_scale + theia::RandDouble(0, 10);
-      right[k] = noiseOnScale * rotation_mat * (left[k] + Vector3d::Random()) +
-                 translation_vec + Vector3d::Random();
+      const size_t k = static_cast<size_t>(rng.RandInt(0, num_points - 1));
+      const double noiseOnScale = expected_scale + rng.RandDouble(0, 10);
+      right[k] = noiseOnScale * rotation_mat * (left[k] + rng.RandVector3d()) +
+                 translation_vec + rng.RandVector3d();
     }
 
     // We need to find some weights

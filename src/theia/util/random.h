@@ -70,6 +70,9 @@ class RandomNumberGenerator {
   // Get a random double between lower and upper (inclusive).
   double RandDouble(const double lower, const double upper);
 
+  // Get a random float between lower and upper (inclusive).
+  float RandFloat(const float lower, const float upper);
+
   // Get a random double between lower and upper (inclusive).
   int RandInt(const int lower, const int upper);
 
@@ -95,6 +98,15 @@ class RandomNumberGenerator {
       data[i] = RandDouble(-1.0, 1.0);
     }
   }
+
+  template <int RowsT, int ColsT>
+  void SetRandom(Eigen::Matrix<float, RowsT, ColsT>* b) {
+    float* data = b->data();
+    for (int i = 0; i < b->size(); i++) {
+      data[i] = RandFloat(-1.0, 1.0);
+    }
+  }
+
 };
 
 }  // namespace theia

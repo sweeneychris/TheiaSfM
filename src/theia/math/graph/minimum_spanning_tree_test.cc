@@ -46,6 +46,8 @@
 
 namespace theia {
 
+RandomNumberGenerator rng(49);
+
 typedef std::pair<int, int> IntPair;
 
 void VerifyMST(const std::unordered_map<IntPair, double>& edges,
@@ -114,15 +116,15 @@ TEST(MinimumSpanningTree, RandomGraph) {
 
   // Add extra edges with a higher edge weight.
   while (edges.size() != num_edges) {
-    const int random_node1 = RandInt(0, num_vertices - 1);
-    const int random_node2 = RandInt(0, num_vertices - 1);
+    const int random_node1 = rng.RandInt(0, num_vertices - 1);
+    const int random_node2 = rng.RandInt(0, num_vertices - 1);
     if (random_node1 == random_node2 ||
         ContainsKey(edges, IntPair(random_node1, random_node2)) ||
         ContainsKey(edges, IntPair(random_node2, random_node1))) {
       continue;
     }
 
-    const double edge_weight = RandDouble(2.0, 10.0);
+    const double edge_weight = rng.RandDouble(2.0, 10.0);
     mst.AddEdge(random_node1, random_node2, edge_weight);
     edges.emplace(IntPair(random_node1, random_node2), edge_weight);
   }

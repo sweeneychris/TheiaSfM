@@ -35,13 +35,16 @@
 #include <Eigen/Core>
 
 #include "gtest/gtest.h"
-#include "theia/test/test_utils.h"
 #include "theia/sfm/camera/projection_matrix_utils.h"
+#include "theia/test/test_utils.h"
+#include "theia/util/random.h"
 
 namespace theia {
 
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
+
+RandomNumberGenerator rng(46);
 
 TEST(CameraIntrinsics, IntrinsicsToCalibrationMatrix) {
   const double focal_length = 800.0;
@@ -91,8 +94,10 @@ TEST(CameraIntrinsics, CalibrationMatrixToIntrinsics) {
 
 
 TEST(DecomposeProjectMatrix, Random) {
+  RandomNumberGenerator rng(94);
+  Matrix3x4d random_pmatrix;
   for (int i = 0; i < 1000; i++) {
-    const Matrix3x4d random_pmatrix = Matrix3x4d::Random();
+    rng.SetRandom(&random_pmatrix);
     Matrix3d calibration_matrix;
     Vector3d rotation, position;
     EXPECT_TRUE(DecomposeProjectionMatrix(random_pmatrix,
@@ -116,8 +121,8 @@ TEST(ComposeProjectionMatrix, Identity) {
 
 TEST(ComposeProjectionMatrix, Random) {
   for (int i = 0; i < 1000; i++) {
-    const Vector3d rotation = Vector3d::Random();
-    const Vector3d position = Vector3d::Random();
+    const Vector3d rotation = rng.RandVector3d();
+    const Vector3d position = rng.RandVector3d();
 
     Matrix3d calibration_matrix;
     const double focal_length = 800;
@@ -140,8 +145,9 @@ TEST(ComposeProjectionMatrix, Random) {
 TEST(ProjectionMatrix, Consistency) {
   const double kTolerance = 1e-6;
 
+  Matrix3x4d random_pmatrix;
   for (int i = 0; i < 1000; i++) {
-    const Matrix3x4d random_pmatrix = Matrix3x4d::Random();
+    rng.SetRandom(&random_pmatrix);
     Matrix3d calibration_matrix;
     Vector3d rotation, position;
     EXPECT_TRUE(DecomposeProjectionMatrix(random_pmatrix,

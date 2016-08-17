@@ -48,6 +48,8 @@ namespace theia {
 namespace {
 using cimg_library::CImg;
 
+RandomNumberGenerator rng(51);
+
 std::string img_filename = THEIA_DATA_DIR + std::string("/") + FLAGS_test_img;
 
 #define ASSERT_RGB_IMG_EQ(cimg_img, theia_img, rows, cols)     \
@@ -159,9 +161,8 @@ TEST(Image, IntegralImage) {
 
   // Check the integral image over 100 trials;
   for (int i = 0; i < 1000; i++) {
-    InitRandomGenerator();
-    const int x = RandInt(1, img.Cols());
-    const int y = RandInt(1, img.Rows());
+    const int x = rng.RandInt(1, img.Cols());
+    const int y = rng.RandInt(1, img.Rows());
 
     // Check the integral.
     double sum = 0;
@@ -180,10 +181,9 @@ TEST(Image, BillinearInterpolate) {
   static const float kTolerance = 1e-2;
 
   FloatImage theia_img(img_filename);
-  InitRandomGenerator();
   for (int i = 0; i < kNumTrials; i++) {
-    const double x = RandDouble(1.0, theia_img.Width() - 2);
-    const double y = RandDouble(1.0, theia_img.Height() - 2);
+    const double x = rng.RandDouble(1.0, theia_img.Width() - 2);
+    const double y = rng.RandDouble(1.0, theia_img.Height() - 2);
     const float pixel = Interpolate(theia_img, x, y, 0);
     const float pixel2 = theia_img.BilinearInterpolate(x, y, 0);
     EXPECT_NEAR(pixel, pixel2, kTolerance);

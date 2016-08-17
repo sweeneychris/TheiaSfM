@@ -42,18 +42,20 @@
 #include "theia/matching/guided_epipolar_matcher.h"
 #include "theia/matching/keypoints_and_descriptors.h"
 #include "theia/sfm/camera/camera.h"
+#include "theia/sfm/pose/test_util.h"
 #include "theia/sfm/pose/util.h"
 #include "theia/util/hash.h"
 #include "theia/util/random.h"
 
 namespace theia {
 
+std::shared_ptr<RandomNumberGenerator> rng =
+    std::make_shared<RandomNumberGenerator>(55);
+
 void TestGuidedEpipolarMatcher(const int num_valid_matches,
                                const int num_invalid_matches,
                                const int num_provided_matches) {
   static const int kNumDescriptorDimensions = 128;
-  std::shared_ptr<RandomNumberGenerator> rng =
-      std::make_shared<RandomNumberGenerator>(55);
 
   // Set up two cameras, with camera 1 being at the coordinate system origin.
   static const double kFocalLength = 800.0;
@@ -63,9 +65,8 @@ void TestGuidedEpipolarMatcher(const int num_valid_matches,
   camera1.SetPrincipalPoint(kPrincipalPoint, kPrincipalPoint);
   camera2.SetFocalLength(kFocalLength);
   camera2.SetPrincipalPoint(kPrincipalPoint, kPrincipalPoint);
-  camera2.SetOrientationFromRotationMatrix(ProjectToRotationMatrix(
-      Eigen::Matrix3d::Identity() + 0.1 * Eigen::Matrix3d::Random()));
-  camera2.SetPosition(Eigen::Vector3d::Random());
+  camera2.SetOrientationFromRotationMatrix(RandomRotation(5.0, rng.get()));
+  camera2.SetPosition(rng->RandVector3d());
 
   // Create 3d points and reproject them into both images to form
   // correspondences.
@@ -90,7 +91,7 @@ void TestGuidedEpipolarMatcher(const int num_valid_matches,
     // Make the descriptors the same for each feature so that they will be
     // guaranteed to match.
     Eigen::VectorXf descriptor(kNumDescriptorDimensions);
-    descriptor.setRandom();
+    rng->SetRandom(&descriptor);
     descriptor.normalize();
     features1.descriptors.emplace_back(descriptor);
     features2.descriptors.emplace_back(descriptor);
@@ -105,10 +106,11 @@ void TestGuidedEpipolarMatcher(const int num_valid_matches,
     features2.keypoints.emplace_back(rng->RandDouble(0, max_image_bound),
                                      rng->RandDouble(0, max_image_bound),
                                      Keypoint::OTHER);
-    features1.descriptors.emplace_back(
-        Eigen::VectorXf::Random(kNumDescriptorDimensions).normalized());
-    features2.descriptors.emplace_back(
-        Eigen::VectorXf::Random(kNumDescriptorDimensions).normalized());
+    Eigen::VectorXf rand_vec(kNumDescriptorDimensions);
+    rng->SetRandom(&rand_vec);
+    features1.descriptors.emplace_back(rand_vec.normalized());
+    rng->SetRandom(&rand_vec);
+    features2.descriptors.emplace_back(rand_vec.normalized());
   }
 
   // Add some pre-computed matches if applicable.

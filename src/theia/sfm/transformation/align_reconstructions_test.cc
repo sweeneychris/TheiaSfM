@@ -46,14 +46,17 @@
 #include "theia/sfm/types.h"
 #include "theia/sfm/transformation/align_reconstructions.h"
 #include "theia/sfm/transformation/transform_reconstruction.h"
+#include "theia/util/random.h"
 #include "theia/util/stringprintf.h"
 
 namespace theia {
 
+RandomNumberGenerator rng(53);
+
 Camera RandomCamera() {
   Camera camera;
-  camera.SetPosition(10 * Eigen::Vector3d::Random());
-  camera.SetOrientationFromAngleAxis(0.2 * Eigen::Vector3d::Random());
+  camera.SetPosition(10 * rng.RandVector3d());
+  camera.SetOrientationFromAngleAxis(0.2 * rng.RandVector3d());
   camera.SetImageSize(1000, 1000);
   camera.SetFocalLength(800);
   camera.SetPrincipalPoint(500.0, 500.0);
@@ -82,7 +85,7 @@ void BuildReconstructions(const int num_views,
     const TrackId track_id1 = reconstruction1->AddTrack(track);
     const TrackId track_id2 = reconstruction2->AddTrack(track);
 
-    const Eigen::Vector4d point = Eigen::Vector4d::Random();
+    const Eigen::Vector4d point = rng.RandVector4d();
     *reconstruction1->MutableTrack(track_id1)->MutablePoint() = point;
     *reconstruction2->MutableTrack(track_id2)->MutablePoint() = point;
     reconstruction1->MutableTrack(track_id1)->SetEstimated(true);
@@ -157,7 +160,7 @@ TEST(AlignReconstructions, Scale) {
 TEST(AlignReconstructions, Rotation) {
   static const int kNumViews = 10;
   static const int kNumTracks = 20;
-  const Eigen::Vector3d rotation_aa = Eigen::Vector3d::Random();
+  const Eigen::Vector3d rotation_aa = rng.RandVector3d();
   const Eigen::Matrix3d rotation =
       Eigen::AngleAxisd(rotation_aa.norm(), rotation_aa.normalized())
           .toRotationMatrix();
@@ -170,7 +173,7 @@ TEST(AlignReconstructions, Translation) {
   static const int kNumViews = 10;
   static const int kNumTracks = 20;
   const Eigen::Matrix3d rotation = Eigen::Matrix3d::Identity();
-  const Eigen::Vector3d translation = Eigen::Vector3d::Random();
+  const Eigen::Vector3d translation = rng.RandVector3d();
   const double scale = 1.0;
   TestAlignReconstructions(kNumViews, kNumTracks, rotation, translation, scale);
 }
@@ -178,11 +181,11 @@ TEST(AlignReconstructions, Translation) {
 TEST(AlignReconstructions, SimilarityTransformation) {
   static const int kNumViews = 10;
   static const int kNumTracks = 20;
-  const Eigen::Vector3d rotation_aa = Eigen::Vector3d::Random();
+  const Eigen::Vector3d rotation_aa = rng.RandVector3d();
   const Eigen::Matrix3d rotation =
       Eigen::AngleAxisd(rotation_aa.norm(), rotation_aa.normalized())
           .toRotationMatrix();
-  const Eigen::Vector3d translation = Eigen::Vector3d::Random();
+  const Eigen::Vector3d translation = rng.RandVector3d();
   const double scale = 4.2;
   TestAlignReconstructions(kNumViews, kNumTracks, rotation, translation, scale);
 }

@@ -145,13 +145,14 @@ void ImageCanvas::DrawMatchedFeatures(
     const std::vector<FeatureCorrespondence>& matches,
     double scale) {
   CHECK_GT(pixel_offsets_.size(), std::max(image_index1, image_index2));
-  InitRandomGenerator();
+
+  RandomNumberGenerator rng;
   for (int i = 0; i < matches.size(); i++) {
     const Feature& base = matches[i].feature1;
     const Feature& match = matches[i].feature2;
-    RGBPixel color(RandDouble(0, 255.0),
-                   RandDouble(0, 255.0),
-                   RandDouble(0, 255.0));
+    RGBPixel color(rng.RandDouble(0, 255.0),
+                   rng.RandDouble(0, 255.0),
+                   rng.RandDouble(0, 255.0));
     DrawFeature(image_index1, base, color, scale);
     DrawFeature(image_index2, match, color, scale);
     DrawLine(pixel_offsets_[image_index1] + base.x(),

@@ -135,9 +135,6 @@ void P5pfrTestWithNoise(const Matrix3d& gt_rotation,
 }
 
 void BasicTest(const double noise, const double reproj_tolerance) {
-  // Seed random number generator.
-  srand(time(NULL));
-
   // focal length (values used in the ICCV paper)
   const double focal_length = 1.3;
   // radial distortion (values used in the ICCV paper)
@@ -175,9 +172,6 @@ void BasicTest(const double noise, const double reproj_tolerance) {
 }
 
 void PlanarTestWithNoise(const double noise, const double reproj_tolerance) {
-  // Seed random number generator.
-  srand(time(NULL));
-
   // focal length (values used in the ICCV paper)
   const double focal_length = 1.3;
   // radial distortion (values used in the ICCV paper)

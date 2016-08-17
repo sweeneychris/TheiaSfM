@@ -47,10 +47,12 @@ namespace {
 
 int kNumTrials = 100;
 
+RandomNumberGenerator rng(62);
+
 // Zero distance.
 TEST(L2Distance, ZeroDistance) {
   Eigen::VectorXf descriptor1(4);
-  descriptor1.setRandom();
+  rng.SetRandom(&descriptor1);
   descriptor1.normalize();
   Eigen::VectorXf descriptor2 = descriptor1;
   L2 l2_dist;
@@ -59,13 +61,12 @@ TEST(L2Distance, ZeroDistance) {
 
 // Known distance.
 TEST(L2Distance, KnownDistance) {
-  RandomNumberGenerator(62);
   const int num_dimensions = 128;
   Eigen::VectorXf descriptor1(num_dimensions);
   Eigen::VectorXf descriptor2(num_dimensions);
   for (int n = 0; n < kNumTrials; n++) {
-    descriptor1.setRandom();
-    descriptor2.setRandom();
+    rng.SetRandom(&descriptor1);
+    rng.SetRandom(&descriptor2);
     descriptor1.normalize();
     descriptor2.normalize();
     L2 l2_dist;
