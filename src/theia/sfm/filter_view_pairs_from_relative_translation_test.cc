@@ -54,6 +54,8 @@ namespace {
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
 
+RandomNumberGenerator rng(57);
+
 void CreateViewsWithRandomPoses(
     const int num_views,
     std::unordered_map<ViewId, Vector3d>* orientations,
@@ -61,8 +63,8 @@ void CreateViewsWithRandomPoses(
   (*orientations)[0] = Vector3d::Zero();
   (*positions)[0] = Vector3d::Zero();
   for (int i = 1; i < num_views; i++) {
-    (*orientations)[i] = Vector3d::Random();
-    (*positions)[i] = Vector3d::Random();
+    (*orientations)[i] = rng.RandVector3d();
+    (*positions)[i] = rng.RandVector3d();
   }
 }
 
@@ -126,14 +128,12 @@ void CreateInvalidViewPairs(
     const std::unordered_map<ViewId, Vector3d>& orientations,
     const std::unordered_map<ViewId, Vector3d>& positions,
     ViewGraph* view_graph) {
-  InitRandomGenerator();
-
   const int final_num_view_pairs =
       view_graph->NumEdges() + num_invalid_view_pairs;
   while (view_graph->NumEdges() < final_num_view_pairs) {
     // Choose a random view pair id.
-    const ViewIdPair view_id_pair(RandInt(0, orientations.size() - 1),
-                                  RandInt(0, orientations.size() - 1));
+    const ViewIdPair view_id_pair(rng.RandInt(0, orientations.size() - 1),
+                                  rng.RandInt(0, orientations.size() - 1));
     if (view_id_pair.first >= view_id_pair.second ||
         view_graph->HasEdge(view_id_pair.first, view_id_pair.second)) {
       continue;
@@ -144,7 +144,7 @@ void CreateInvalidViewPairs(
         CreateTwoViewInfo(orientations, positions, view_id_pair);
     // Add a lot of noise to it.
     info.rotation_2 += Vector3d::Ones();
-    info.position_2 = Vector3d::Random().normalized();
+    info.position_2 = rng.RandVector3d().normalized();
     view_graph->AddEdge(view_id_pair.first, view_id_pair.second, info);
   }
 }
@@ -153,7 +153,6 @@ void TestFilterViewPairsFromRelativeTranslation(
     const int num_views,
     const int num_valid_view_pairs,
     const int num_invalid_view_pairs) {
-  srand(2456);
   std::unordered_map<ViewId, Vector3d> orientations;
   std::unordered_map<ViewId, Vector3d> positions;
   CreateViewsWithRandomPoses(num_views, &orientations, &positions);

@@ -78,7 +78,7 @@ void ExecuteRandomTest(const RansacParameters& options,
     // Add an inlier or outlier.
     if (i < inlier_ratio * kNumCorrespondences) {
       // Make sure the point is in front of the camera.
-      const Vector3d point_3d = Vector3d::Random() + Vector3d(0, 0, 4);
+      const Vector3d point_3d = rng.RandVector3d() + Vector3d(0, 0, 4);
       correspondence.feature1 = focal_length1 * point_3d.hnormalized();
       correspondence.feature2 =
           focal_length2 * (rotation * point_3d + translation).hnormalized();
@@ -121,11 +121,10 @@ TEST(EstimateUncalibratedRelativePose, AllInliersNoNoise) {
   const double kNoise = 0.0;
 
   for (int k = 0; k < kNumTrials; k++) {
-    const Matrix3d rotation = ProjectToRotationMatrix(Matrix3d::Identity() +
-                                                      0.3 * Matrix3d::Random());
-    const Vector3d position = Vector3d::Random();
-    const double focal_length1 = RandDouble(800, 1600);
-    const double focal_length2 = RandDouble(800, 1600);
+    const Matrix3d rotation = RandomRotation(10.0, &rng);
+    const Vector3d position = rng.RandVector3d();
+    const double focal_length1 = rng.RandDouble(800, 1600);
+    const double focal_length2 = rng.RandDouble(800, 1600);
     ExecuteRandomTest(options,
                       rotation,
                       position,
@@ -145,11 +144,10 @@ TEST(EstimateUncalibratedRelativePose, AllInliersWithNoise) {
   const double kNoise = 1.0;
 
   for (int k = 0; k < kNumTrials; k++) {
-    const Matrix3d rotation = ProjectToRotationMatrix(Matrix3d::Identity() +
-                                                      0.3 * Matrix3d::Random());
-    const Vector3d position = Vector3d::Random();
-    const double focal_length1 = RandDouble(800, 1600);
-    const double focal_length2 = RandDouble(800, 1600);
+const Matrix3d rotation = RandomRotation(10.0, &rng);
+const Vector3d position = rng.RandVector3d();
+    const double focal_length1 = rng.RandDouble(800, 1600);
+    const double focal_length2 = rng.RandDouble(800, 1600);
     ExecuteRandomTest(options,
                       rotation,
                       position,
@@ -169,11 +167,10 @@ TEST(EstimateUncalibratedRelativePose, OutliersNoNoise) {
   const double kNoise = 0.0;
 
   for (int k = 0; k < kNumTrials; k++) {
-    const Matrix3d rotation = ProjectToRotationMatrix(Matrix3d::Identity() +
-                                                      0.3 * Matrix3d::Random());
-    const Vector3d position = Vector3d::Random();
-    const double focal_length1 = RandDouble(800, 1600);
-    const double focal_length2 = RandDouble(800, 1600);
+    const Matrix3d rotation = RandomRotation(10.0, &rng);
+    const Vector3d position = rng.RandVector3d();
+    const double focal_length1 = rng.RandDouble(800, 1600);
+    const double focal_length2 = rng.RandDouble(800, 1600);
     ExecuteRandomTest(options,
                       rotation,
                       position,
@@ -194,11 +191,10 @@ TEST(EstimateUncalibratedRelativePose, OutliersWithNoise) {
   const double kNoise = 1.0;
 
   for (int k = 0; k < kNumTrials; k++) {
-    const Matrix3d rotation = ProjectToRotationMatrix(Matrix3d::Identity() +
-                                                      0.3 * Matrix3d::Random());
-    const Vector3d position = Vector3d::Random();
-    const double focal_length1 = RandDouble(800, 1600);
-    const double focal_length2 = RandDouble(800, 1600);
+    const Matrix3d rotation = RandomRotation(10.0, &rng);
+    const Vector3d position = rng.RandVector3d();
+    const double focal_length1 = rng.RandDouble(800, 1600);
+    const double focal_length2 = rng.RandDouble(800, 1600);
 
     ExecuteRandomTest(options,
                       rotation,

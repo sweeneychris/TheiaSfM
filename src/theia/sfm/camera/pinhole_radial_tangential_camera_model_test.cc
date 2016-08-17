@@ -40,7 +40,6 @@
 
 #include "theia/alignment/alignment.h"
 #include "theia/test/test_utils.h"
-#include "theia/util/random.h"
 #include "theia/sfm/camera/pinhole_radial_tangential_camera_model.h"
 
 namespace theia {
@@ -314,7 +313,6 @@ TEST(PinholeRadialTangentialCameraModel, ReprojectionOneRadialDistortion) {
 TEST(PinholeRadialTangentialCameraModel, ReprojectionTwoRadialDistortion) {
   static const double kPrincipalPoint[2] = {600.0, 400.0};
   static const double kFocalLength = 1200;
-  InitRandomGenerator();
   PinholeRadialTangentialCameraModel camera;
   camera.SetFocalLength(kFocalLength);
   camera.SetPrincipalPoint(kPrincipalPoint[0], kPrincipalPoint[1]);

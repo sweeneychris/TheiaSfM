@@ -53,12 +53,14 @@ using Eigen::Vector3d;
 
 namespace {
 
+RandomNumberGenerator rng(56);
+
 // Computes R_ij = R_j * R_i^t.
 Vector3d RelativeRotationFromTwoRotations(const Vector3d& rotation1,
                                           const Vector3d& rotation2,
                                           const double noise) {
   const Eigen::Matrix3d noisy_rotation =
-      Eigen::AngleAxisd(DegToRad(noise), Vector3d::Random().normalized())
+      Eigen::AngleAxisd(DegToRad(noise), rng.RandVector3d().normalized())
           .toRotationMatrix();
 
   Eigen::Matrix3d rotation_matrix1, rotation_matrix2;
@@ -132,15 +134,13 @@ class EstimateRotationsLinearTest : public ::testing::Test {
   }
 
  protected:
-  void SetUp() {
-    srand(4567);
-  }
+  void SetUp() {}
 
   void CreateGTOrientations(const int num_views) {
     static const double kRotationScale = 0.2;
     // Create random orientations.
     for (int i = 0; i < num_views; i++) {
-      orientations_[i] = kRotationScale * Vector3d::Random();
+      orientations_[i] = kRotationScale * rng.RandVector3d();
     }
   }
 
@@ -155,10 +155,9 @@ class EstimateRotationsLinearTest : public ::testing::Test {
     }
 
     // Add random edges.
-    InitRandomGenerator();
     while (view_pairs_.size() < num_view_pairs) {
-      ViewIdPair view_id_pair(RandInt(0, orientations_.size() - 1),
-                              RandInt(0, orientations_.size() - 1));
+      ViewIdPair view_id_pair(rng.RandInt(0, orientations_.size() - 1),
+                              rng.RandInt(0, orientations_.size() - 1));
       // Ensure the first id is smaller than the second id.
       if (view_id_pair.first > view_id_pair.second) {
         view_id_pair = ViewIdPair(view_id_pair.second, view_id_pair.first);
@@ -176,7 +175,7 @@ class EstimateRotationsLinearTest : public ::testing::Test {
           pose_noise);
 
       // Set the number of inliers to be randomly from 50 to 200.
-      view_pairs_[view_id_pair].num_verified_matches = RandInt(50, 100);
+      view_pairs_[view_id_pair].num_verified_matches = rng.RandInt(50, 100);
     }
   }
 

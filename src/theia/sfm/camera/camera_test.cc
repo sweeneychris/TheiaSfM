@@ -54,13 +54,16 @@ using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 
+RandomNumberGenerator rng(157);
+
 TEST(Camera, ProjectionMatrix) {
   const double kTolerance = 1e-12;
 
   Camera camera;
   const double image_size = 500;
+  Matrix3x4d gt_projection_matrix;
   for (int i = 0; i < 100; i++) {
-    const Matrix3x4d gt_projection_matrix = Matrix3x4d::Random();
+    rng.SetRandom(&gt_projection_matrix);
     EXPECT_TRUE(camera.InitializeFromProjectionMatrix(image_size,
                                                       image_size,
                                                       gt_projection_matrix));
@@ -181,13 +184,12 @@ void ReprojectionTest(const Camera& camera) {
 
   for (int i = 0; i < 10; i++) {
     // Get a random pixel within the image.
-    const Vector2d pixel =
-        camera.ImageWidth() * (Vector2d::Random() + Vector2d::Ones()) / 2.0;
+    const Vector2d pixel = camera.ImageWidth() * rng.RandVector2d(-1.0, 1.0);
 
     // Get the normalized ray of that pixel.
     const Vector3d normalized_ray = camera.PixelToUnitDepthRay(pixel);
 
-    const double random_depth = RandDouble(0.01, 100.0);
+    const double random_depth = rng.RandDouble(0.01, 100.0);
     const Vector4d random_point =
         (camera.GetPosition() + normalized_ray * random_depth)
             .homogeneous();
@@ -210,11 +212,12 @@ void ReprojectionTest(const Camera& camera) {
 }
 
 TEST(Camera, Reprojection) {
-  InitRandomGenerator();
   Camera camera;
   const double image_size = 600;
+  Matrix3x4d projection_mat;
   for (int i = 0; i < 100; i++) {
     // Initialize a random camera.
+    rng.SetRandom(&projection_mat);
     camera.InitializeFromProjectionMatrix(image_size, image_size,
                                           Matrix3x4d::Random());
 

@@ -208,10 +208,8 @@ TEST(EstimateRelativePose, OutliersNoNoise) {
   const double kNoise = 0.0;
   const double kPoseToleranceDegrees = 5.0;
 
-  const std::vector<Matrix3d> rotations = {
-    Matrix3d::Identity(),
-    ProjectToRotationMatrix(Matrix3d::Identity() + 0.2 * Matrix3d::Random())
-  };
+  const std::vector<Matrix3d> rotations = {Matrix3d::Identity(),
+                                           RandomRotation(10.0, &rng)};
   const std::vector<Vector3d> positions = { Vector3d(1, 0.2, 0),
                                             Vector3d(0, 1, 0.1) };
 
@@ -236,10 +234,8 @@ TEST(EstimateRelativePose, OutliersWithNoise) {
   const double kNoise = 1.0;
   const double kPoseToleranceDegrees = 5.0;
 
-  const std::vector<Matrix3d> rotations = {
-    Matrix3d::Identity(),
-    ProjectToRotationMatrix(Matrix3d::Identity() + 0.2 * Matrix3d::Random())
-  };
+  const std::vector<Matrix3d> rotations = {Matrix3d::Identity(),
+                                           RandomRotation(10.0, &rng)};
   const std::vector<Vector3d> positions = { Vector3d(1, 0.2, 0),
                                             Vector3d(0, 1, 0.1) };
 

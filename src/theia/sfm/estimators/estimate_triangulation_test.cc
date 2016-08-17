@@ -36,8 +36,10 @@
 #include <vector>
 
 #include "gtest/gtest.h"
+#include "theia/sfm/pose/test_util.h"
 #include "theia/solvers/sample_consensus_estimator.h"
 #include "theia/sfm/estimators/estimate_triangulation.h"
+#include "theia/util/random.h"
 
 namespace theia {
 
@@ -47,6 +49,8 @@ using Eigen::Matrix3d;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
+
+RandomNumberGenerator rng(151);
 
 void CreateObservations(
     const int num_observations,
@@ -60,16 +64,16 @@ void CreateObservations(
   // Initialize a random rotation and position within a 2x2x2 box around the
   // origin.
   for (int i = 0; i < num_observations; i++) {
-    const Matrix3d rotation = Matrix3d::Identity() + 0.1 * Matrix3d::Random();
+    const Matrix3d rotation = RandomRotation(5.0, &rng);
     const Vector3d position =
-        Vector3d::Random() + Vector3d(i / 2.0, i / 2.0, i / 2.0);
+        rng.RandVector3d() + Vector3d(i / 2.0, i / 2.0, i / 2.0);
     const Vector3d translation = -rotation * position;
     projection_matrices->at(i) << rotation, translation;
     features->at(i) = (projection_matrices->at(i) * point3d).hnormalized();
   }
 
   for (int i = 0; i < num_outliers; i++) {
-    projection_matrices->at(i) = Matrix3x4d::Random();
+    rng.SetRandom(&(*projection_matrices)[i]);
     features->at(i) = (projection_matrices->at(i) * point3d).hnormalized();
   }
 }

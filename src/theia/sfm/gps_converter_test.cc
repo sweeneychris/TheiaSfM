@@ -66,7 +66,8 @@ TEST(GPSConverter, LLAToECEF) {
 }
 
 TEST(GPSConverter, RoundTrip) {
-  InitRandomGenerator();
+  RandomNumberGenerator rng(69);
+
   static const double kTolerance = 1e-8;
   static const int kNumTrials = 1000;
   for (int i = 0; i < kNumTrials; i++) {
@@ -74,9 +75,9 @@ TEST(GPSConverter, RoundTrip) {
     // D.K. "Converting earth-Centered, Earth-Fixed Coordinates to Geodetic
     // Coordinates," IEEE Transactions on Aerospace and Electronic Systems,
     // Vol. 32, No. 1, January 1996, pp. 473-476.
-    const Eigen::Vector3d gt_lla(RandDouble(-90.0, 90.0),
-                                 RandDouble(-180.0, 180.0),
-                                 RandDouble(-10000, 100000));
+    const Eigen::Vector3d gt_lla(rng.RandDouble(-90.0, 90.0),
+                                 rng.RandDouble(-180.0, 180.0),
+                                 rng.RandDouble(-10000, 100000));
 
     const Eigen::Vector3d ecef = GPSConverter::LLAToECEF(gt_lla);
     const Eigen::Vector3d lla = GPSConverter::ECEFToLLA(ecef);

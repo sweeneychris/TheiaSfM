@@ -130,4 +130,35 @@ double RandomNumberGenerator::RandGaussian(const double mean,
   return distribution(*util_generator);
 }
 
+Eigen::Vector2d RandomNumberGenerator::RandVector2d(const double min,
+                                                    const double max) {
+  return Eigen::Vector2d(RandDouble(min, max), RandDouble(min, max));
+}
+
+Eigen::Vector2d RandomNumberGenerator::RandVector2d() {
+  return RandVector2d(-1.0, 1.0);
+}
+
+Eigen::Vector3d RandomNumberGenerator::RandVector3d(const double min,
+                                                    const double max) {
+  return Eigen::Vector3d(RandDouble(min, max),
+                         RandDouble(min, max),
+                         RandDouble(min, max));
+}
+
+Eigen::Vector3d RandomNumberGenerator::RandVector3d() {
+  return RandVector3d(-1.0, 1.0);
+}
+
+Eigen::Vector4d RandomNumberGenerator::RandVector4d(const double min, const double max) {
+  return Eigen::Vector4d(RandDouble(min, max),
+                         RandDouble(min, max),
+                         RandDouble(min, max),
+                         RandDouble(min, max));
+}
+
+Eigen::Vector4d RandomNumberGenerator::RandVector4d() {
+  return RandVector4d(-1.0, 1.0);
+}
+
 }  // namespace theia

@@ -279,7 +279,6 @@ TEST(GdlsSimilarityTransform, ManyPoints) {
   const double kMaxAllowedTranslationDifference = 1e-3;
   const double kMaxAllowedScaleDifference = 1e-2;
 
-  InitRandomGenerator();
   for (int i = 0; i < THEIA_ARRAYSIZE(kAxes); i++) {
     const Quaterniond soln_rotation(AngleAxisd(kRotationAngles[i], kAxes[i]));
     for (int j = 0; j < THEIA_ARRAYSIZE(num_points); j++) {

@@ -69,6 +69,11 @@ void CreateRandomPointsInFrustum(const double near_plane_width,
                                  const int num_points,
                                  RandomNumberGenerator* rng,
                                  std::vector<Eigen::Vector3d>* random_points);
+
+// Constructs a random rotation matrix that is within max_degrees_from_identity
+// of the identity rotation.
+Eigen::Matrix3d RandomRotation(const double max_degrees_from_identity,
+                               RandomNumberGenerator* rng);
 }  // namespace theia
 
 #endif  // THEIA_SFM_POSE_TEST_UTIL_H_

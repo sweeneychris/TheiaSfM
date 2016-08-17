@@ -34,9 +34,12 @@
 
 #include "theia/sfm/pose/test_util.h"
 
+#include <ceres/rotation.h>
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <glog/logging.h>
+
+#include "theia/math/util.h"
 #include "theia/util/random.h"
 
 namespace theia {
@@ -112,6 +115,16 @@ void CreateRandomPointsInFrustum(const double near_plane_width,
                         rng->RandDouble(-y_radius, y_radius), rand_depth);
     random_points->push_back(rand_point);
   }
+}
+
+Eigen::Matrix3d RandomRotation(const double max_degrees_from_identity,
+                               RandomNumberGenerator* rng) {
+  const Eigen::Vector3d angle_axis =
+      DegToRad(max_degrees_from_identity) * rng->RandVector3d();
+  Eigen::Matrix3d rotation;
+  ceres::AngleAxisToRotationMatrix(
+      angle_axis.data(), ceres::ColumnMajorAdapter3x3(rotation.data()));
+  return rotation;
 }
 
 }  // namespace theia

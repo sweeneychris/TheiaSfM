@@ -79,8 +79,6 @@ void TestTriangulationBasic(const TriangulationType type,
                             const Vector3d& rel_translation,
                             const double projection_noise,
                             const double max_reprojection_error) {
-  InitRandomGenerator();
-
   Matrix3x4d pose1;
   pose1 <<
       rel_rotation.toRotationMatrix(), rel_translation.normalized();

@@ -52,12 +52,14 @@ namespace {
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
 
+RandomNumberGenerator rng(55);
+
 void CreateViewsWithRandomOrientations(
     const int num_views,
     std::unordered_map<ViewId, Vector3d>* orientations) {
   (*orientations)[0] = Vector3d::Zero();
   for (int i = 1; i < num_views; i++) {
-    (*orientations)[i] = Vector3d::Random();
+    (*orientations)[i] = rng.RandVector3d();
   }
 }
 
@@ -115,8 +117,6 @@ void CreateInvalidViewPairs(
     const int num_invalid_view_pairs,
     const std::unordered_map<ViewId, Vector3d>& orientations,
     ViewGraph* view_graph) {
-  InitRandomGenerator();
-
   const int final_num_view_pairs =
       view_graph->NumEdges() + num_invalid_view_pairs;
   while (view_graph->NumEdges() < final_num_view_pairs) {

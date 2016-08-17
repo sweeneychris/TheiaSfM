@@ -119,9 +119,8 @@ TEST(EstimateFundamentalMatrix, AllInliersNoNoise) {
   const double kNoise = 0.0;
 
   for (int k = 0; k < kNumTrials; k++) {
-    const Matrix3d rotation = ProjectToRotationMatrix(Matrix3d::Identity() +
-                                                      0.3 * Matrix3d::Random());
-    const Vector3d position = Vector3d::Random();
+    const Matrix3d rotation = RandomRotation(10.0, &rng);
+    const Vector3d position = rng.RandVector3d();
     const double focal_length1 = RandDouble(800, 1600);
     const double focal_length2 = RandDouble(800, 1600);
     ExecuteRandomTest(options,
@@ -143,9 +142,8 @@ TEST(EstimateFundamentalMatrix, AllInliersWithNoise) {
   const double kNoise = 1.0;
 
   for (int k = 0; k < kNumTrials; k++) {
-    const Matrix3d rotation = ProjectToRotationMatrix(Matrix3d::Identity() +
-                                                      0.3 * Matrix3d::Random());
-    const Vector3d position = Vector3d::Random();
+    const Matrix3d rotation = RandomRotation(10.0, &rng);
+    const Vector3d position = rng.RandVector3d();
     const double focal_length1 = RandDouble(800, 1600);
     const double focal_length2 = RandDouble(800, 1600);
     ExecuteRandomTest(options,
@@ -167,9 +165,8 @@ TEST(EstimateFundamentalMatrix, OutliersNoNoise) {
   const double kNoise = 0.0;
 
   for (int k = 0; k < kNumTrials; k++) {
-    const Matrix3d rotation = ProjectToRotationMatrix(Matrix3d::Identity() +
-                                                      0.3 * Matrix3d::Random());
-    const Vector3d position = Vector3d::Random();
+    const Matrix3d rotation = RandomRotation(10.0, &rng);
+    const Vector3d position = rng.RandVector3d();
     const double focal_length1 = RandDouble(800, 1600);
     const double focal_length2 = RandDouble(800, 1600);
     ExecuteRandomTest(options,
@@ -191,9 +188,8 @@ TEST(EstimateFundamentalMatrix, OutliersWithNoise) {
   const double kNoise = 1.0;
 
   for (int k = 0; k < kNumTrials; k++) {
-    const Matrix3d rotation = ProjectToRotationMatrix(Matrix3d::Identity() +
-                                                      0.3 * Matrix3d::Random());
-    const Vector3d position = Vector3d::Random();
+    const Matrix3d rotation = RandomRotation(10.0, &rng);
+    const Vector3d position = rng.RandVector3d();
     const double focal_length1 = RandDouble(800, 1600);
     const double focal_length2 = RandDouble(800, 1600);
     ExecuteRandomTest(options,
