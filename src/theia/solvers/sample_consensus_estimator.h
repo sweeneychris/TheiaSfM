@@ -56,8 +56,7 @@ namespace theia {
 // default values unless other values are desired.
 struct RansacParameters {
   RansacParameters()
-      : rng(std::make_shared<RandomNumberGenerator>()),
-        error_thresh(-1),
+      : error_thresh(-1),
         failure_probability(0.01),
         min_inlier_ratio(0),
         min_iterations(100),

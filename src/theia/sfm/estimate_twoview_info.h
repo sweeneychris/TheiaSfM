@@ -35,8 +35,11 @@
 #ifndef THEIA_SFM_ESTIMATE_TWOVIEW_INFO_H_
 #define THEIA_SFM_ESTIMATE_TWOVIEW_INFO_H_
 
+#include <memory>
 #include <vector>
+
 #include "theia/sfm/create_and_initialize_ransac_variant.h"
+#include "theia/util/random.h"
 
 namespace theia {
 
@@ -46,6 +49,11 @@ struct TwoViewInfo;
 
 // Options for estimating two view infos.
 struct EstimateTwoViewInfoOptions {
+  // The random number generator used to generate random numbers through the
+  // two-view estimation process. If this is a nullptr then the random generator
+  // will be initialized based on the current time.
+  std::shared_ptr<RandomNumberGenerator> rng;
+
   // Type of Ransac variant to use.
   RansacType ransac_type = RansacType::RANSAC;
 

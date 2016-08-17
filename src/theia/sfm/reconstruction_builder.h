@@ -55,6 +55,11 @@ class TrackBuilder;
 class ViewGraph;
 
 struct ReconstructionBuilderOptions {
+  // The random number generator used to generate random numbers through the
+  // reconstruction building process. If this is a nullptr then the random
+  // generator will be initialized based on the current time.
+  std::shared_ptr<RandomNumberGenerator> rng;
+
   // Number of threads used. Each stage of the pipeline (feature extraction,
   // matching, estimation, etc.) will use this number of threads.
   int num_threads = 1;
@@ -176,7 +181,7 @@ class ReconstructionBuilder {
   // Removes all uncalibrated views from the reconstruction and view graph.
   void RemoveUncalibratedViews();
 
-  const ReconstructionBuilderOptions options_;
+  ReconstructionBuilderOptions options_;
 
   // SfM objects.
   std::unique_ptr<TrackBuilder> track_builder_;

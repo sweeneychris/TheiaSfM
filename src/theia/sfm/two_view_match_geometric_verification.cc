@@ -304,6 +304,7 @@ int TwoViewMatchGeometricVerification::CountHomographyInliers() {
   const EstimateTwoViewInfoOptions& etvi_options =
       options_.estimate_twoview_info_options;
   RansacParameters homography_params;
+  homography_params.rng = etvi_options.rng;
   homography_params.error_thresh = etvi_options.max_sampson_error_pixels *
                                    etvi_options.max_sampson_error_pixels;
   homography_params.max_iterations = etvi_options.max_ransac_iterations;
