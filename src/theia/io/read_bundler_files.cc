@@ -211,12 +211,20 @@ bool ReadBundlerFiles(const std::string& lists_file,
     std::string internal_params;
     std::getline(ifs, internal_params);
     p = internal_params.c_str();
-    const double focal_length = strtod(p, &p2);
+    double focal_length = strtod(p, &p2);
     p = p2;
     const double k1 = strtod(p, &p2);
     p = p2;
     const double k2 = strtod(p, &p2);
     p = p2;
+
+    // Some Bundler datasets are set up to only provide camera poses and do not
+    // contain camera intrinsic information. In this case, the focal length is
+    // set to 0. Camera intrinsics require a focal length greater than 0, so we
+    // manually set it here.
+    if (focal_length <= 0.0) {
+      focal_length = 1.0;
+    }
 
     camera->SetFocalLength(focal_length);
     camera->MutableCameraIntrinsics()->SetParameter(
@@ -322,7 +330,7 @@ bool ReadBundlerFiles(const std::string& lists_file,
     }
 
     // Do not add the track if it is underconstrained.
-    if (track.size() < 2) {
+    if (track.size() < 2 || position.squaredNorm() == 0.0) {
       continue;
     }
 

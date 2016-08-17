@@ -340,9 +340,6 @@ void Reconstruction::Normalize() {
   median(1) = Median(&points[1]);
   median(2) = Median(&points[2]);
 
-  // Apply position transformation.
-  TransformReconstruction(Eigen::Matrix3d::Identity(), -median, 1.0, this);
-
   // Find the median absolute deviation of the points from the median.
   std::vector<double> distance_to_median;
   distance_to_median.reserve(track_ids.size());
@@ -355,22 +352,12 @@ void Reconstruction::Normalize() {
   // the points is 100.
   const double scale = 100.0 / Median(&distance_to_median);
 
+  // Apply position and scale transformation.
+  TransformReconstruction(Eigen::Matrix3d::Identity(), -median, 1.0, this);
   TransformReconstruction(Eigen::Matrix3d::Identity(),
                           Eigen::Vector3d::Zero(),
                           scale,
                           this);
-
-  // Compute a rotation such that the x-z plane is aligned to the dominating
-  // plane of the cameras.
-  std::vector<Eigen::Vector3d> cameras;
-  const auto& view_ids = this->ViewIds();
-  for (const ViewId view_id : view_ids) {
-    const class View* view = View(view_id);
-    if (view == nullptr || !view->IsEstimated()) {
-      continue;
-    }
-    cameras.emplace_back(view->Camera().GetPosition());
-  }
 
   // Most images are taken relatively upright with the x-direction of the image
   // parallel to the ground plane. We can solve for the transformation that
