@@ -51,6 +51,7 @@ namespace {
 using Eigen::Vector3d;
 
 static const double kErrorThreshold = 1.0;
+RandomNumberGenerator rng(54);
 
 // Generate points on a plane
 void GeneratePoints(std::vector<Vector3d>* points) {
@@ -75,7 +76,9 @@ void ExecuteRandomTest(const RansacParameters& options,
   for (int i = 0; i < points3d.size(); i++) {
     // Add an inlier or outlier.
     if (i >= inlier_ratio * points3d.size()) {
-      points3d[i] = Vector3d::Random();
+      points3d[i] = Vector3d(rng.RandDouble(-1.0, 1.0),
+                             rng.RandDouble(-1.0, 1.0),
+                             rng.RandDouble(-1.0, 1.0));
     }
   }
 
@@ -86,7 +89,7 @@ void ExecuteRandomTest(const RansacParameters& options,
 
   if (noise) {
     for (int i = 0; i < points3d.size(); i++) {
-      AddNoiseToPoint(noise, &points3d[i]);
+      AddNoiseToPoint(noise, &rng, &points3d[i]);
     }
   }
 

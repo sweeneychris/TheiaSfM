@@ -58,6 +58,8 @@ using Eigen::Matrix3d;
 using Eigen::Quaterniond;
 using Eigen::Vector3d;
 
+RandomNumberGenerator rng(61);
+
 // Tests that the four point pose works correctly by taking the passed
 // points_3d, projecting them to view_1_origins to get image one rays,
 // transforming by (expected_rotation, expected_translation) to get
@@ -89,8 +91,8 @@ void TestFourPointResultWithNoise(const Vector3d& axis,
   }
   if (projection_noise_std_dev) {
     for (int i = 0; i < 4; ++i) {
-      AddNoiseToRay(projection_noise_std_dev, &image_one_rays[i]);
-      AddNoiseToRay(projection_noise_std_dev, &image_two_rays[i]);
+      AddNoiseToRay(projection_noise_std_dev, &rng, &image_one_rays[i]);
+      AddNoiseToRay(projection_noise_std_dev, &rng, &image_two_rays[i]);
     }
   }
   std::vector<Quaterniond> soln_rotations;

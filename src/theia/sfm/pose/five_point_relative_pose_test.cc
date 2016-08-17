@@ -55,6 +55,8 @@ using Eigen::Quaterniond;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 
+RandomNumberGenerator rng(67);
+
 // Tests that the five point algorithm works correctly be checking the epipolar
 // errors of the returned solutions and ensuring that at least one of the
 // candidate solutions corresponds to the essential matrix we used to construct
@@ -64,8 +66,6 @@ void TestFivePointResultWithNoise(const std::vector<Vector3d> points_3d,
                                   const Matrix3d& expected_rotation,
                                   const Vector3d& expected_translation,
                                   const double ematrix_tolerance) {
-  InitRandomGenerator();
-
   // Calculates the image points in both views.
   std::vector<Vector2d> view_one_points;
   std::vector<Vector2d> view_two_points;
@@ -79,8 +79,8 @@ void TestFivePointResultWithNoise(const std::vector<Vector3d> points_3d,
   if (projection_noise_std_dev) {
     // Adds noise to both of the points.
     for (int i = 0; i < view_one_points.size(); ++i) {
-      AddNoiseToProjection(projection_noise_std_dev, &view_one_points[i]);
-      AddNoiseToProjection(projection_noise_std_dev, &view_two_points[i]);
+      AddNoiseToProjection(projection_noise_std_dev, &rng, &view_one_points[i]);
+      AddNoiseToProjection(projection_noise_std_dev, &rng, &view_two_points[i]);
     }
   }
 

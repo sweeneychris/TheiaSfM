@@ -57,6 +57,7 @@ using Eigen::Vector2d;
 using Eigen::Vector3d;
 
 static const int kNumTrials = 100;
+RandomNumberGenerator rng(60);
 
 void ExecuteRandomTest(const RansacParameters& options,
                        const Matrix3d& rotation,
@@ -82,11 +83,15 @@ void ExecuteRandomTest(const RansacParameters& options,
       correspondence.feature2 =
           focal_length2 * (rotation * point_3d + translation).hnormalized();
 
-      AddNoiseToProjection(noise, &correspondence.feature1);
-      AddNoiseToProjection(noise, &correspondence.feature2);
+      AddNoiseToProjection(noise, &rng, &correspondence.feature1);
+      AddNoiseToProjection(noise, &rng, &correspondence.feature2);
     } else {
-      correspondence.feature1 = focal_length1 * Vector2d::Random();
-      correspondence.feature2 = focal_length2 * Vector2d::Random();
+      correspondence.feature1 =
+          focal_length1 *
+          Vector2d(rng.RandDouble(-1.0, 1.0), rng.RandDouble(-1.0, 1.0));
+      correspondence.feature2 =
+          focal_length2 *
+          Vector2d(rng.RandDouble(-1.0, 1.0), rng.RandDouble(-1.0, 1.0));
     }
     correspondences.emplace_back(correspondence);
   }
