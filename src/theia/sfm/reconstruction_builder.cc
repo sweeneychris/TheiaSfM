@@ -167,6 +167,8 @@ ReconstructionBuilder::ReconstructionBuilder(
   feam_options.feature_matcher_options = options_.matching_options;
   feam_options.feature_matcher_options.geometric_verification_options
       .min_num_inlier_matches = options_.min_num_inlier_matches;
+  feam_options.feature_matcher_options.geometric_verification_options
+      .estimate_twoview_info_options.rng = options_.rng;
 
   feature_extractor_and_matcher_.reset(
       new FeatureExtractorAndMatcher(feam_options));

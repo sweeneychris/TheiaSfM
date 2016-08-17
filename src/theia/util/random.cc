@@ -52,12 +52,14 @@ thread_local std::mt19937 util_generator;
 }  // namespace
 
 RandomNumberGenerator::RandomNumberGenerator() {
+  LOG(INFO) << "New rng.";
   const unsigned seed =
       std::chrono::system_clock::now().time_since_epoch().count();
   util_generator.seed(seed);
 }
 
 RandomNumberGenerator::RandomNumberGenerator(const unsigned seed) {
+  LOG(INFO) << "Seeded rng.";
   util_generator.seed(seed);
 }
 

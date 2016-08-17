@@ -35,10 +35,13 @@
 #ifndef THEIA_SFM_RECONSTRUCTION_ESTIMATOR_OPTIONS_H_
 #define THEIA_SFM_RECONSTRUCTION_ESTIMATOR_OPTIONS_H_
 
+#include <memory>
+
 #include "theia/sfm/bundle_adjustment/bundle_adjustment.h"
 #include "theia/sfm/global_pose_estimation/least_unsquared_deviation_position_estimator.h"
 #include "theia/sfm/global_pose_estimation/linear_position_estimator.h"
 #include "theia/sfm/global_pose_estimation/nonlinear_position_estimator.h"
+#include "theia/util/random.h"
 
 namespace theia {
 
@@ -85,6 +88,11 @@ struct ReconstructionEstimatorOptions {
 
   GlobalPositionEstimatorType global_position_estimator_type =
       GlobalPositionEstimatorType::NONLINEAR;
+
+  // The random number generator used to generate random numbers through the
+  // reconstruction estimation process. If this is a nullptr then the random
+  // generator will be initialized based on the current time.
+  std::shared_ptr<RandomNumberGenerator> rng;
 
   // Number of threads to use.
   int num_threads = 1;
