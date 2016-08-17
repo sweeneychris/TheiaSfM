@@ -56,8 +56,8 @@ class Ransac : public SampleConsensusEstimator<ModelEstimator> {
 
   // Initializes the random sampler and inlier support measurement.
   bool Initialize() {
-    Sampler<Datum>* random_sampler =
-        new RandomSampler<Datum>(this->estimator_.SampleSize());
+    Sampler<Datum>* random_sampler = new RandomSampler<Datum>(
+        this->ransac_params_.rng, this->estimator_.SampleSize());
     return SampleConsensusEstimator<ModelEstimator>::Initialize(random_sampler);
   }
 };

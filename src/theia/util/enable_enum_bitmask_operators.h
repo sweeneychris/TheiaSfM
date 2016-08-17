@@ -55,7 +55,7 @@ namespace theia {
 
 template <typename E>
 struct EnableEnumBitmaskOperators {
-    static const bool enable=false;
+    static const bool enable = false;
 };
 
 #define ENABLE_ENUM_BITMASK_OPERATORS(x) \

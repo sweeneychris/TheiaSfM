@@ -108,6 +108,7 @@ TEST(L1Solver, Decoding) {
   Eigen::VectorXd observation = code_word;
   Eigen::VectorXd pertubations(num_pertubations);
   rng.SetRandom(&pertubations);
+  pertubations *= 0.5;
   for (int i = 0; i < num_pertubations; i++) {
     const int rand_entry = rng.RandInt(0, observation.size() - 1);
     observation(rand_entry) = pertubations(i);

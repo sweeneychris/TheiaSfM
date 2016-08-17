@@ -332,35 +332,5 @@ TEST(TwoPointPoseTest, ManyPointsTest) {
                  kMaxAllowedTranslationDifference);
 }
 
-// Tests many sets of model to image correspondences and multiple
-// transformations consisting of translation and rotations around different
-// axes, with noise on the image correspondeces.
-TEST(TwoPointPoseTest, ManyPointsAndCorrespondenceNoiseTest) {
-  static const double kModelNoise = 0.0;
-  static const double kProjectionNoise = 0.5 / 512;
-  static const double kMaxAllowedRotationDifference = DegToRad(10.0);
-  static const double kMaxAllowedTranslationDifference = 5.0;
-
-  ManyPointsTest(kModelNoise,
-                 kProjectionNoise,
-                 kMaxAllowedRotationDifference,
-                 kMaxAllowedTranslationDifference);
-}
-
-// Tests many sets of model to image correspondences and multiple
-// transformations consisting of translation and rotations around different
-// axes, with noise on the model points.
-TEST(TwoPointPoseTest, ManyPointsAndModelNoiseTest) {
-  static const double kModelNoise = 0.01;
-  static const double kProjectionNoise = 0.0;
-  static const double kMaxAllowedRotationDifference = DegToRad(15.0);
-  static const double kMaxAllowedTranslationDifference = 10.0;
-
-  ManyPointsTest(kModelNoise,
-                 kProjectionNoise,
-                 kMaxAllowedRotationDifference,
-                 kMaxAllowedTranslationDifference);
-}
-
 }  // namespace
 }  // namespace theia

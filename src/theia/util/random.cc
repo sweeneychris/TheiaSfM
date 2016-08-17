@@ -42,97 +42,53 @@
 
 namespace theia {
 namespace {
-// We must use a pointer here and cannot use a unique_ptr here because c++11
-// only allows thread_local for trivial types, meaning we cannot use
-// non-trivial objects that require a destructor.
-thread_local std::default_random_engine* util_generator;
+// Define the random engine to be thread-local if available. Otherwise the
+// random generator is not thread safe but this should not cause severe errors.
+#if defined(__clang__) && !__has_feature(cxx_thread_local)
+static std::mt19937 util_generator;
+#else
+thread_local std::mt19937 util_generator;
+#endif
+
 }  // namespace
 
-// Initializes the random generator to be based on the current time. Does not
-// have to be called before calling RandDouble, but it works best if it is.
-void InitRandomGenerator() {
-  if (util_generator == nullptr) {
-    delete util_generator;
-  }
-  unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
-  util_generator = new std::default_random_engine(seed);
-}
-
-// Get a random double between lower and upper (inclusive).
-double RandDouble(double lower, double upper) {
-  if (util_generator == nullptr) {
-    InitRandomGenerator();
-  }
-
-  std::uniform_real_distribution<double> distribution(lower, upper);
-  return distribution(*util_generator);
-}
-
-// Get a random int between lower and upper (inclusive).
-int RandInt(int lower, int upper) {
-  if (util_generator == nullptr) {
-    InitRandomGenerator();
-  }
-
-  std::uniform_int_distribution<int> distribution(lower, upper);
-  return distribution(*util_generator);
-}
-
-// Gaussian Distribution with the corresponding mean and std dev.
-double RandGaussian(double mean, double std_dev) {
-  if (util_generator == nullptr) {
-    InitRandomGenerator();
-  }
-
-  std::normal_distribution<double> distribution(mean, std_dev);
-  return distribution(*util_generator);
-}
-
 RandomNumberGenerator::RandomNumberGenerator() {
-  if (util_generator == nullptr) {
-    delete util_generator;
-  }
-
   const unsigned seed =
       std::chrono::system_clock::now().time_since_epoch().count();
-  util_generator = new std::default_random_engine(seed);
+  util_generator.seed(seed);
 }
 
 RandomNumberGenerator::RandomNumberGenerator(const unsigned seed) {
-  if (util_generator == nullptr) {
-    delete util_generator;
-  }
-  util_generator = new std::default_random_engine(seed);
+  util_generator.seed(seed);
 }
 
 void RandomNumberGenerator::Seed(const unsigned seed) {
-  CHECK_NOTNULL(util_generator);
-  util_generator->seed(seed);
+  util_generator.seed(seed);
 }
 
 // Get a random double between lower and upper (inclusive).
 double RandomNumberGenerator::RandDouble(const double lower,
                                          const double upper) {
   std::uniform_real_distribution<double> distribution(lower, upper);
-  return distribution(*util_generator);
+  return distribution(util_generator);
 }
 
 float RandomNumberGenerator::RandFloat(const float lower, const float upper) {
   std::uniform_real_distribution<float> distribution(lower, upper);
-  return distribution(*util_generator);
+  return distribution(util_generator);
 }
 
 // Get a random int between lower and upper (inclusive).
 int RandomNumberGenerator::RandInt(const int lower, const int upper) {
   std::uniform_int_distribution<int> distribution(lower, upper);
-  return distribution(*util_generator);
+  return distribution(util_generator);
 }
 
 // Gaussian Distribution with the corresponding mean and std dev.
 double RandomNumberGenerator::RandGaussian(const double mean,
                                            const double std_dev) {
   std::normal_distribution<double> distribution(mean, std_dev);
-  return distribution(*util_generator);
+  return distribution(util_generator);
 }
 
 Eigen::Vector2d RandomNumberGenerator::RandVector2d(const double min,
@@ -155,7 +111,8 @@ Eigen::Vector3d RandomNumberGenerator::RandVector3d() {
   return RandVector3d(-1.0, 1.0);
 }
 
-Eigen::Vector4d RandomNumberGenerator::RandVector4d(const double min, const double max) {
+Eigen::Vector4d RandomNumberGenerator::RandVector4d(const double min,
+                                                    const double max) {
   return Eigen::Vector4d(RandDouble(min, max),
                          RandDouble(min, max),
                          RandDouble(min, max),

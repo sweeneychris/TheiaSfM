@@ -166,8 +166,10 @@ int Arrsac<ModelEstimator>::GenerateInitialHypothesisSet(
   double rejected_accum_inlier_ratio = 0;
 
   // RandomSampler and PROSAC Sampler.
-  RandomSampler<Datum> random_sampler(this->estimator_.SampleSize());
-  ProsacSampler<Datum> prosac_sampler(this->estimator_.SampleSize());
+  RandomSampler<Datum> random_sampler(this->ransac_params_.rng,
+                                      this->estimator_.SampleSize());
+  ProsacSampler<Datum> prosac_sampler(this->ransac_params_.rng,
+                                      this->estimator_.SampleSize());
   random_sampler.Initialize();
   prosac_sampler.Initialize();
 
@@ -271,7 +273,8 @@ bool Arrsac<ModelEstimator>::Estimate(const std::vector<Datum>& data,
     }
   }
 
-  RandomSampler<Datum> random_sampler(this->estimator_.SampleSize());
+  RandomSampler<Datum> random_sampler(this->ransac_params_.rng,
+                                      this->estimator_.SampleSize());
   random_sampler.Initialize();
 
   // Preemptive Evaluation

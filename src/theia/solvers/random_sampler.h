@@ -37,6 +37,7 @@
 
 #include <stdlib.h>
 #include <algorithm>
+#include <memory>
 #include <numeric>
 #include <vector>
 
@@ -49,14 +50,13 @@ namespace theia {
 // sample by performing a Fisher-Yates sampling.
 template <class Datum> class RandomSampler : public Sampler<Datum> {
  public:
-  explicit RandomSampler(const int min_num_samples)
-      : Sampler<Datum>(min_num_samples) {}
+  RandomSampler(const std::shared_ptr<RandomNumberGenerator>& rng,
+                const int min_num_samples)
+      : Sampler<Datum>(rng, min_num_samples) {}
+
   ~RandomSampler() {}
 
-  bool Initialize() override {
-    InitRandomGenerator();
-    return true;
-  }
+  bool Initialize() override { return true; }
 
   // Samples the input variable data and fills the vector subset with the
   // random samples.
@@ -67,7 +67,8 @@ template <class Datum> class RandomSampler : public Sampler<Datum> {
     std::iota(random_numbers.begin(), random_numbers.end(), 0);
 
     for (int i = 0; i < this->min_num_samples_; i++) {
-      std::swap(random_numbers[i], random_numbers[RandInt(i, data.size() - 1)]);
+      std::swap(random_numbers[i],
+                random_numbers[this->rng_->RandInt(i, data.size() - 1)]);
       (*subset)[i] = data[random_numbers[i]];
     }
 

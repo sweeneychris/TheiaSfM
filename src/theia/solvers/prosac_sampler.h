@@ -49,14 +49,15 @@ namespace theia {
 // - Progressive Sampling Consensus" by Chum and Matas.
 template <class Datum> class ProsacSampler : public Sampler<Datum> {
  public:
-  explicit ProsacSampler(const int min_num_samples)
-      : Sampler<Datum>(min_num_samples) {}
+  ProsacSampler(const std::shared_ptr<RandomNumberGenerator>& rng,
+                const int min_num_samples)
+      : Sampler<Datum>(rng, min_num_samples) {}
+
   ~ProsacSampler() {}
 
   bool Initialize() {
     ransac_convergence_iterations_ = 20000;
     kth_sample_number_ = 1;
-    InitRandomGenerator();
     return true;
   }
 
@@ -95,7 +96,7 @@ template <class Datum> class ProsacSampler : public Sampler<Datum> {
         // Generate a random number that has not already been used.
         int rand_number;
         while (std::find(random_numbers.begin(), random_numbers.end(),
-                         (rand_number = RandInt(0, n - 1))) !=
+                         (rand_number = this->rng_->RandInt(0, n - 1))) !=
                random_numbers.end()) {
         }
 
@@ -111,7 +112,7 @@ template <class Datum> class ProsacSampler : public Sampler<Datum> {
         // Generate a random number that has not already been used.
         int rand_number;
         while (std::find(random_numbers.begin(), random_numbers.end(),
-                         (rand_number = RandInt(0, n - 2))) !=
+                         (rand_number = this->rng_->RandInt(0, n - 2))) !=
                random_numbers.end()) {
         }
         random_numbers.push_back(rand_number);

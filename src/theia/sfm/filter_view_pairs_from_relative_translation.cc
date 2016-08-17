@@ -200,13 +200,23 @@ void TranslationFilteringIteration(
     const std::unordered_map<ViewIdPair, Vector3d>& relative_translations,
     const Vector3d& direction_mean,
     const Vector3d& direction_variance,
+    const std::shared_ptr<RandomNumberGenerator>& rng,
     std::mutex* mutex,
     std::unordered_map<ViewIdPair, double>* bad_edge_weight) {
+  // Create the random number generator within each thread. If the random number
+  // generator is not supplied then create a new one within each thread.
+  std::shared_ptr<RandomNumberGenerator> local_rng;
+  if (rng.get() == nullptr) {
+    local_rng = std::make_shared<RandomNumberGenerator>();
+  } else {
+    local_rng = rng;
+  }
+
   // Get a random vector to project all relative translations on to.
   const Vector3d random_axis =
-      Vector3d(RandGaussian(direction_mean[0], direction_variance[0]),
-               RandGaussian(direction_mean[1], direction_variance[1]),
-               RandGaussian(direction_mean[2], direction_variance[2]))
+      Vector3d(local_rng->RandGaussian(direction_mean[0], direction_variance[0]),
+               local_rng->RandGaussian(direction_mean[1], direction_variance[1]),
+               local_rng->RandGaussian(direction_mean[2], direction_variance[2]))
           .normalized();
 
   // Project all vectors.
@@ -272,6 +282,7 @@ void FilterViewPairsFromRelativeTranslation(
              rotated_translations,
              translation_mean,
              translation_variance,
+             options.rng,
              &mutex,
              &bad_edge_weight);
   }

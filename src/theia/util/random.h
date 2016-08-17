@@ -40,19 +40,6 @@
 
 namespace theia {
 
-// Initializes the random generator to be based on the current time. Does not
-// have to be called before calling RandDouble, but it works best if it is.
-void InitRandomGenerator();
-
-// Get a random double between lower and upper (inclusive).
-double RandDouble(double lower, double upper);
-
-// Get a random double between lower and upper (inclusive).
-int RandInt(int lower, int upper);
-
-// Generate a number drawn from a gaussian distribution.
-double RandGaussian(double mean, double std_dev);
-
 // A wrapper around the c++11 random generator utilities. This allows for a
 // thread-safe random number generator that may be easily instantiated and
 // passed around as an object.
@@ -106,7 +93,6 @@ class RandomNumberGenerator {
       data[i] = RandFloat(-1.0, 1.0);
     }
   }
-
 };
 
 }  // namespace theia

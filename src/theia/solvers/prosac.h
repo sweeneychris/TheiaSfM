@@ -59,8 +59,8 @@ class Prosac : public SampleConsensusEstimator<ModelEstimator> {
   ~Prosac() {}
 
   bool Initialize() {
-    Sampler<Datum>* prosac_sampler =
-        new ProsacSampler<Datum>(this->estimator_.SampleSize());
+    Sampler<Datum>* prosac_sampler = new ProsacSampler<Datum>(
+        this->ransac_params_.rng, this->estimator_.SampleSize());
     return SampleConsensusEstimator<ModelEstimator>::Initialize(prosac_sampler);
   }
 };

@@ -166,6 +166,7 @@ void TestFilterViewPairsFromRelativeTranslation(
                          positions,
                          &view_graph);
   FilterViewPairsFromRelativeTranslationOptions options;
+  options.rng = std::make_shared<RandomNumberGenerator>(169);
   FilterViewPairsFromRelativeTranslation(options, orientations, &view_graph);
   EXPECT_GE(view_graph.NumEdges(), num_valid_view_pairs);
 }
@@ -196,6 +197,7 @@ TEST(FilterViewPairsFromRelativeTranslation, LineTest) {
   view_graph.AddEdge(0, 3, invalid_info);
 
   FilterViewPairsFromRelativeTranslationOptions options;
+  options.rng = std::make_shared<RandomNumberGenerator>(199);
   options.translation_projection_tolerance = 0.1;
   FilterViewPairsFromRelativeTranslation(options, orientations, &view_graph);
   EXPECT_EQ(view_graph.NumEdges(), kValidViewPairs);

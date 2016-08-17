@@ -80,12 +80,13 @@ template <class Datum> class EvsacSampler : public Sampler<Datum> {
   // predictor_threshold:  The threshold used to decide correct or incorrect
   //   matches/correspondences. The recommended value is 0.65.
   // fitting_method:  The fiting method to use, i.e.,  MLE or QUANTILE_NLS.
-  EvsacSampler(
-      const int min_num_samples,
-      const Eigen::MatrixXd& sorted_distances,
-      const double predictor_threshold,
-      FittingMethod fitting_method)
-      : Sampler<Datum>(min_num_samples), sorted_distances_(sorted_distances),
+  EvsacSampler(const int min_num_samples,
+               const Eigen::MatrixXd& sorted_distances,
+               const double predictor_threshold,
+               FittingMethod fitting_method)
+      : Sampler<Datum>(std::make_shared<RandomNumberGenerator>(),
+                       min_num_samples),
+        sorted_distances_(sorted_distances),
         predictor_threshold_(predictor_threshold),
         fitting_method_(fitting_method) {
     CHECK_GT(predictor_threshold_, 0.0);

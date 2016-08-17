@@ -36,15 +36,21 @@
 #define THEIA_SFM_FILTER_VIEW_PAIRS_FROM_RELATIVE_TRANSLATION_H_
 
 #include <Eigen/Core>
+#include <memory>
 #include <unordered_map>
 
 #include "theia/sfm/types.h"
+#include "theia/util/random.h"
 
 namespace theia {
 
 class ViewGraph;
 
 struct FilterViewPairsFromRelativeTranslationOptions {
+  // Random number generator used to sample from normal distributions to compute
+  // the axis of projection for 1dsfm filtering.
+  std::shared_ptr<RandomNumberGenerator> rng;
+
   // Filtering the translations is embarassingly parallel (each iteration can
   // be run independently) so we can use a thread pool to speed up computation.
   int num_threads = 1;

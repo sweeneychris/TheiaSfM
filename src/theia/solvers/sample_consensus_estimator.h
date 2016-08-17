@@ -56,13 +56,18 @@ namespace theia {
 // default values unless other values are desired.
 struct RansacParameters {
   RansacParameters()
-      : error_thresh(-1),
+      : rng(std::make_shared<RandomNumberGenerator>()),
+        error_thresh(-1),
         failure_probability(0.01),
         min_inlier_ratio(0),
         min_iterations(100),
         max_iterations(std::numeric_limits<int>::max()),
         use_mle(false),
         use_Tdd_test(false) {}
+
+  // The random number generator used to compute random number during
+  // RANSAC. This may be controlled by the caller for debugging purposes.
+  std::shared_ptr<RandomNumberGenerator> rng;
 
   // Error threshold to determin inliers for RANSAC (e.g., squared reprojection
   // error). This is what will be used by the estimator to determine inliers.
@@ -194,6 +199,7 @@ bool SampleConsensusEstimator<ModelEstimator>::Initialize(
     Sampler<Datum>* sampler) {
   CHECK_NOTNULL(sampler);
   sampler_.reset(sampler);
+
   if (!sampler_->Initialize()) {
     return false;
   }
