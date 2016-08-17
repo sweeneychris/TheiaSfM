@@ -63,8 +63,8 @@ void CreateViewsWithRandomPoses(
   (*orientations)[0] = Vector3d::Zero();
   (*positions)[0] = Vector3d::Zero();
   for (int i = 1; i < num_views; i++) {
-    (*orientations)[i] = Vector3d::Random();
-    (*positions)[i] = Vector3d::Random();
+    (*orientations)[i] = rng.RandVector3d();
+    (*positions)[i] = rng.RandVector3d();
   }
 }
 
@@ -144,7 +144,7 @@ void CreateInvalidViewPairs(
         CreateTwoViewInfo(orientations, positions, view_id_pair);
     // Add a lot of noise to it.
     info.rotation_2 += Vector3d::Ones();
-    info.position_2 = Vector3d::Random().normalized();
+    info.position_2 = rng.RandVector3d().normalized();
     view_graph->AddEdge(view_id_pair.first, view_id_pair.second, info);
   }
 }
@@ -153,7 +153,6 @@ void TestExtractMaximallyParallelRigidSubgraph(
     const int num_views,
     const int num_valid_view_pairs,
     const int num_invalid_view_pairs) {
-  srand(2456);
   std::unordered_map<ViewId, Vector3d> orientations;
   std::unordered_map<ViewId, Vector3d> positions;
   CreateViewsWithRandomPoses(num_views, &orientations, &positions);

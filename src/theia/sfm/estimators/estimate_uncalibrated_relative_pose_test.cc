@@ -67,7 +67,6 @@ void ExecuteRandomTest(const RansacParameters& options,
                        const double inlier_ratio,
                        const double noise) {
   static const int kNumCorrespondences = 600;
-  InitRandomGenerator();
 
   // Create feature correspondences (inliers and outliers) and add noise if
   // appropriate.

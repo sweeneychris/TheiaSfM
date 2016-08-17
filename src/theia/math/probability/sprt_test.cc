@@ -45,6 +45,8 @@ using std::vector;
 namespace theia {
 namespace {
 
+RandomNumberGenerator rng(48);
+
 struct Point {
   double x;
   double y;
@@ -102,8 +104,8 @@ TEST(SPRTTest, SequentialProbabilityRatioTestPass) {
   // Create a set of points along y=x with a small random pertubation.
   vector<Point> input_points;
   for (int i = 0; i < 10000; ++i) {
-    double noise_x = RandDouble(-1, 1);
-    double noise_y = RandDouble(-1, 1);
+    double noise_x = rng.RandDouble(-1, 1);
+    double noise_y = rng.RandDouble(-1, 1);
     input_points.push_back(Point(i + noise_x, i + noise_y));
   }
   // Test for the correct line.
@@ -137,8 +139,8 @@ TEST(SPRTTest, SequentialProbabilityRatioTestFail) {
   // Create a set of points along y=x with a small random pertubation.
   vector<Point> input_points;
   for (int i = 0; i < 10000; ++i) {
-    double noise_x = RandDouble(-1, 1);
-    double noise_y = RandDouble(-1, 1);
+    double noise_x = rng.RandDouble(-1, 1);
+    double noise_y = rng.RandDouble(-1, 1);
     input_points.push_back(Point(i + noise_x, i + noise_y));
   }
   // Test for the correct line.

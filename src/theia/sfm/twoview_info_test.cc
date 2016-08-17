@@ -35,12 +35,15 @@
 #include "gtest/gtest.h"
 
 #include "theia/sfm/twoview_info.h"
+#include "theia/util/random.h"
 
 namespace theia {
 
 namespace {
 
 static const int kNumTrials = 100;
+
+RandomNumberGenerator rng(45);
 
 void CheckSwappedCamera(const TwoViewInfo& info,
                         const TwoViewInfo& swapped_info) {
@@ -65,12 +68,11 @@ void CheckSwappedCamera(const TwoViewInfo& info,
 TEST(TwoViewInfo, SwapCameras) {
   for (int i = 0; i < kNumTrials; i++) {
     TwoViewInfo info;
-    const Eigen::Vector2d focal_lengths =
-        500.0 * (Eigen::Vector2d::Random() + Eigen::Vector2d::Ones());
+    const Eigen::Vector2d focal_lengths = rng.RandVector2d(500.0, 1000.0);
     info.focal_length_1 = focal_lengths[0];
     info.focal_length_2 = focal_lengths[1];
-    info.rotation_2 = Eigen::Vector3d::Random();
-    info.position_2 = Eigen::Vector3d::Random();
+    info.rotation_2 = rng.RandVector3d();
+    info.position_2 = rng.RandVector3d();
 
     TwoViewInfo info2 = info;
     SwapCameras(&info2);
