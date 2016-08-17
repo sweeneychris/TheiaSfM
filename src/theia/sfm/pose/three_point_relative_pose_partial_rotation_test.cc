@@ -214,7 +214,6 @@ TEST(ThreePointRelativePosePartialRotationTest, NoiseTest) {
       Vector3d(13.0, 1.0, 15.0)
   };
 
-  InitRandomGenerator();
   for (int transform_index = 0; transform_index < THEIA_ARRAYSIZE(kAxes);
        ++transform_index) {
     Quaterniond kExpectedRotation(
@@ -330,7 +329,6 @@ TEST(ThreePointRelativePosePartialRotationTest, ManyPoints) {
       Vector3d(13.0, 1.0, 15.0)
   };
 
-  InitRandomGenerator();
   for (int i = 0; i < 1000; ++i) {
     for (int transform_index = 0; transform_index < THEIA_ARRAYSIZE(kAxes);
          ++transform_index) {

@@ -231,8 +231,6 @@ TEST(FourPointEssentialMatrixTest, NoiseTest) {
     Vector3d(6.0, 3.0, 2.0), Vector3d(13.0, 1.0, 15.0)
   };
 
-  InitRandomGenerator();
-
   for (int transform_index = 0;
        transform_index < THEIA_ARRAYSIZE(kAxes);
        ++transform_index) {

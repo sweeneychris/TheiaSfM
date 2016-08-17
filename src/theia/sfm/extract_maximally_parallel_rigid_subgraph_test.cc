@@ -54,6 +54,8 @@ namespace {
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
 
+RandomNumberGenerator rng(57);
+
 void CreateViewsWithRandomPoses(
     const int num_views,
     std::unordered_map<ViewId, Vector3d>* orientations,
@@ -126,14 +128,12 @@ void CreateInvalidViewPairs(
     const std::unordered_map<ViewId, Vector3d>& orientations,
     const std::unordered_map<ViewId, Vector3d>& positions,
     ViewGraph* view_graph) {
-  InitRandomGenerator();
-
   const int final_num_view_pairs =
       view_graph->NumEdges() + num_invalid_view_pairs;
   while (view_graph->NumEdges() < final_num_view_pairs) {
     // Choose a random view pair id.
-    const ViewIdPair view_id_pair(RandInt(0, orientations.size() - 1),
-                                  RandInt(0, orientations.size() - 1));
+    const ViewIdPair view_id_pair(rng.RandInt(0, orientations.size() - 1),
+                                  rng.RandInt(0, orientations.size() - 1));
     if (view_id_pair.first >= view_id_pair.second ||
         view_graph->HasEdge(view_id_pair.first, view_id_pair.second)) {
       continue;

@@ -35,6 +35,7 @@
 #ifndef THEIA_UTIL_RANDOM_H_
 #define THEIA_UTIL_RANDOM_H_
 
+#include <Eigen/Core>
 #include <random>
 
 namespace theia {
@@ -74,6 +75,26 @@ class RandomNumberGenerator {
 
   // Generate a number drawn from a gaussian distribution.
   double RandGaussian(const double mean, const double std_dev);
+
+  // Return eigen types with random initialization. These are just convenience
+  // methods. Methods without min and max assign random values between -1 and 1
+  // just like the Eigen::Random function.
+  Eigen::Vector2d RandVector2d(const double min, const double max);
+  Eigen::Vector2d RandVector2d();
+  Eigen::Vector3d RandVector3d(const double min, const double max);
+  Eigen::Vector3d RandVector3d();
+  Eigen::Vector4d RandVector4d(const double min, const double max);
+  Eigen::Vector4d RandVector4d();
+
+  // Sets an Eigen type with random values between -1.0 and 1.0. This is meant
+  // to replace the Eigen::Random() functionality.
+  template <int RowsT, int ColsT>
+  void SetRandom(Eigen::Matrix<double, RowsT, ColsT>* b) {
+    double* data = b->data();
+    for (int i = 0; i < b->size(); i++) {
+      data[i] = RandDouble(-1.0, 1.0);
+    }
+  }
 };
 
 }  // namespace theia

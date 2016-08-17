@@ -53,13 +53,8 @@ RandomNumberGenerator rng(52);
 
 Camera RandomCamera() {
   Camera camera;
-  camera.SetPosition(Eigen::Vector3d(rng.RandDouble(-1.0, 1.0),
-                                     rng.RandDouble(-1.0, 1.0),
-                                     rng.RandDouble(-1.0, 1.0)));
-  camera.SetOrientationFromAngleAxis(
-      0.2 * Eigen::Vector3d(rng.RandDouble(-1.0, 1.0),
-                            rng.RandDouble(-1.0, 1.0),
-                            rng.RandDouble(-1.0, 1.0)));
+  camera.SetPosition(rng.RandVector3d());
+  camera.SetOrientationFromAngleAxis(0.2 * rng.RandVector3d());
   camera.SetImageSize(1000, 1000);
   camera.SetFocalLength(800);
   camera.SetPrincipalPoint(500.0, 500.0);
@@ -137,11 +132,10 @@ TEST(OptimizeRelativePositionWithKnownRotationTest, NoNoise) {
   std::vector<Eigen::Vector3d> points(kNumPoints);
 
   // Set up random points.
-  InitRandomGenerator();
   for (int i = 0; i < kNumPoints; i++) {
-    Eigen::Vector3d point(RandDouble(-2.0, 2.0),
-                          RandDouble(-2.0, -2.0),
-                          RandDouble(8.0, 10.0));
+    Eigen::Vector3d point(rng.RandDouble(-2.0, 2.0),
+                          rng.RandDouble(-2.0, -2.0),
+                          rng.RandDouble(8.0, 10.0));
     points[i] = point;
   }
 
@@ -161,11 +155,10 @@ TEST(OptimizeRelativePositionWithKnownRotationTest, PixelNoise) {
   std::vector<Eigen::Vector3d> points(kNumPoints);
 
   // Set up random points.
-  InitRandomGenerator();
   for (int i = 0; i < kNumPoints; i++) {
-    Eigen::Vector3d point(RandDouble(-2.0, 2.0),
-                          RandDouble(-2.0, -2.0),
-                          RandDouble(8.0, 10.0));
+    Eigen::Vector3d point(rng.RandDouble(-2.0, 2.0),
+                          rng.RandDouble(-2.0, -2.0),
+                          rng.RandDouble(8.0, 10.0));
     points[i] = point;
   }
 
@@ -186,11 +179,10 @@ TEST(OptimizeRelativePositionWithKnownRotationTest, TranslationNoise) {
   std::vector<Eigen::Vector3d> points(kNumPoints);
 
   // Set up random points.
-  InitRandomGenerator();
   for (int i = 0; i < kNumPoints; i++) {
-    Eigen::Vector3d point(RandDouble(-2.0, 2.0),
-                          RandDouble(-2.0, -2.0),
-                          RandDouble(8.0, 10.0));
+    Eigen::Vector3d point(rng.RandDouble(-2.0, 2.0),
+                          rng.RandDouble(-2.0, -2.0),
+                          rng.RandDouble(8.0, 10.0));
     points[i] = point;
   }
 
@@ -211,11 +203,10 @@ TEST(OptimizeRelativePositionWithKnownRotationTest, PixelAndTranslationNoise) {
   std::vector<Eigen::Vector3d> points(kNumPoints);
 
   // Set up random points.
-  InitRandomGenerator();
   for (int i = 0; i < kNumPoints; i++) {
-    Eigen::Vector3d point(RandDouble(-2.0, 2.0),
-                          RandDouble(-2.0, -2.0),
-                          RandDouble(8.0, 10.0));
+    Eigen::Vector3d point(rng.RandDouble(-2.0, 2.0),
+                          rng.RandDouble(-2.0, -2.0),
+                          rng.RandDouble(8.0, 10.0));
     points[i] = point;
   }
 

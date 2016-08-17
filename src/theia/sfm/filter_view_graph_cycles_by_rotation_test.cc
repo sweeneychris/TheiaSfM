@@ -53,12 +53,14 @@ namespace {
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
 
+RandomNumberGenerator rng(56);
+
 void CreateViewsWithRandomOrientations(
     const int num_views,
     std::unordered_map<ViewId, Vector3d>* orientations) {
   (*orientations)[0] = Vector3d::Zero();
   for (int i = 1; i < num_views; i++) {
-    (*orientations)[i] = Vector3d::Random();
+    (*orientations)[i] = rng.RandVector3d();
   }
 }
 
@@ -96,6 +98,14 @@ void CreateValidViewPairs(
         CreateTwoViewInfo(orientations, ViewIdPair(i - 1, i));
     view_graph->AddEdge(i - 1, i, info);
     view_ids.push_back(i);
+
+    // Add another edge which will ensure a valid triangle exists for every
+    // view.
+    if (i >= 2) {
+      const TwoViewInfo info2 =
+          CreateTwoViewInfo(orientations, ViewIdPair(i - 2, i));
+      view_graph->AddEdge(i - 2, i, info2);
+    }
   }
 
   // Add extra edges.
@@ -117,14 +127,12 @@ void CreateInvalidViewPairs(
     const int num_invalid_view_pairs,
     const std::unordered_map<ViewId, Vector3d>& orientations,
     ViewGraph* view_graph) {
-  InitRandomGenerator();
-
   const int final_num_view_pairs =
       view_graph->NumEdges() + num_invalid_view_pairs;
   while (view_graph->NumEdges() < final_num_view_pairs) {
     // Choose a random view pair id.
-    const ViewIdPair view_id_pair(RandInt(0, orientations.size() - 1),
-                                  RandInt(0, orientations.size() - 1));
+    const ViewIdPair view_id_pair(rng.RandInt(0, orientations.size() - 1),
+                                  rng.RandInt(0, orientations.size() - 1));
     if (view_id_pair.first == view_id_pair.second ||
         view_graph->HasEdge(view_id_pair.first, view_id_pair.second)) {
       continue;
@@ -133,7 +141,7 @@ void CreateInvalidViewPairs(
     // Create a valid view pair.
     TwoViewInfo info = CreateTwoViewInfo(orientations, view_id_pair);
     // Add a lot of noise to it.
-    info.rotation_2 += Vector3d::Ones();
+    info.rotation_2 = rng.RandVector3d();
 
     view_graph->AddEdge(view_id_pair.first, view_id_pair.second, info);
   }
@@ -142,7 +150,7 @@ void CreateInvalidViewPairs(
 void TestFilterViewGraphCyclesByRotation(const int num_views,
                                          const int num_valid_view_pairs,
                                          const int num_invalid_view_pairs) {
-  static const double kMaxRelativeRotationDifferenceDegrees = 2.0;
+  static const double kMaxRelativeRotationDifferenceDegrees = 4.0;
   std::unordered_map<ViewId, Vector3d> orientations;
   CreateViewsWithRandomOrientations(num_views, &orientations);
 

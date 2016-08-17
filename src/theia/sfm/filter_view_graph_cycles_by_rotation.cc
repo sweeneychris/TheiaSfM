@@ -118,7 +118,7 @@ void FilterViewGraphCyclesByRotation(const double max_loop_error_degrees,
       // Compute loop rotation error.
       const double loop_rotation_error_degrees =
           ComputeLoopRotationError(triplet);
-      LOG(INFO) << "Loop rotation error = " << loop_rotation_error_degrees;
+
       // Add the view pairs to the list of valid view pairs if the loop error is
       // within the designated tolerance.
       if (loop_rotation_error_degrees < max_loop_error_degrees) {

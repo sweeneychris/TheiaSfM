@@ -50,6 +50,8 @@ namespace theia {
 
 using Eigen::Vector3d;
 
+RandomNumberGenerator rng(53);
+
 void RelativeRotationFromTwoRotations(const Vector3d& rotation1,
                                       const Vector3d& rotation2,
                                       Vector3d* relative_rotation) {
@@ -91,25 +93,23 @@ void TwoViewInfoFromCameras(const Camera& camera1,
 void TestTripletBaselineComputation(const double pixel_noise,
                                     const double scene_depth,
                                     const double tolerance) {
-  InitRandomGenerator();
-
   static const int kNumTracks = 100;
   static const double kFocalLength = 1000;
 
   // Set up 3 views.
   Camera camera1, camera2, camera3;
   camera1.SetPosition(Vector3d(-1, 0.8, -0.2));
-  camera1.SetOrientationFromAngleAxis(0.2 * Vector3d::Random());
+  camera1.SetOrientationFromAngleAxis(0.2 * rng.RandVector3d());
   camera2.SetPosition(Vector3d(0.2, 0.3, -1.0));
-  camera2.SetOrientationFromAngleAxis(0.2 * Vector3d::Random());
+  camera2.SetOrientationFromAngleAxis(0.2 * rng.RandVector3d());
   camera3.SetPosition(Vector3d(0.8, -0.7, 0.3));
-  camera3.SetOrientationFromAngleAxis(0.2 * Vector3d::Random());
+  camera3.SetOrientationFromAngleAxis(0.2 * rng.RandVector3d());
 
   // Add tracks.
   std::vector<Feature> feature1(kNumTracks), feature2(kNumTracks),
       feature3(kNumTracks);
   for (int i = 0; i < kNumTracks; i++) {
-    const Eigen::Vector4d point = Eigen::Vector3d::Random().homogeneous() +
+    const Eigen::Vector4d point = rng.RandVector3d().homogeneous() +
                                   Eigen::Vector4d(0, 0, scene_depth, 0);
 
     // Add the observations (plus noise if applicable).
@@ -118,12 +118,12 @@ void TestTripletBaselineComputation(const double pixel_noise,
     camera3.ProjectPoint(point, &feature3[i]);
 
     if (pixel_noise > 0) {
-      feature1[i].x() += RandGaussian(0.0, pixel_noise / kFocalLength);
-      feature1[i].y() += RandGaussian(0.0, pixel_noise / kFocalLength);
-      feature2[i].x() += RandGaussian(0.0, pixel_noise / kFocalLength);
-      feature2[i].y() += RandGaussian(0.0, pixel_noise / kFocalLength);
-      feature3[i].x() += RandGaussian(0.0, pixel_noise / kFocalLength);
-      feature3[i].y() += RandGaussian(0.0, pixel_noise / kFocalLength);
+      feature1[i].x() += rng.RandGaussian(0.0, pixel_noise / kFocalLength);
+      feature1[i].y() += rng.RandGaussian(0.0, pixel_noise / kFocalLength);
+      feature2[i].x() += rng.RandGaussian(0.0, pixel_noise / kFocalLength);
+      feature2[i].y() += rng.RandGaussian(0.0, pixel_noise / kFocalLength);
+      feature3[i].x() += rng.RandGaussian(0.0, pixel_noise / kFocalLength);
+      feature3[i].y() += rng.RandGaussian(0.0, pixel_noise / kFocalLength);
     }
   }
 

@@ -125,7 +125,6 @@ void EightPointNormalizedWithNoiseTest(const std::vector<Vector3d>& points_3d,
                                        const Quaterniond& expected_rotation,
                                        const Vector3d& expected_translation,
                                        const double kMaxReprojectionError) {
-  InitRandomGenerator();
   std::vector<Vector2d> image_1_points;
   std::vector<Vector2d> image_2_points;
   GenerateImagePoints(points_3d, projection_noise_std_dev, expected_rotation,
