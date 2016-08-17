@@ -86,7 +86,7 @@ void ExecuteRandomTest(const RansacParameters& options,
       correspondence.feature =
           (rotation * (correspondence.world_point - position)).hnormalized();
     } else {
-      correspondence.feature = Vector2d::Random();
+      correspondence.feature = rng.RandVector2d();
     }
     correspondences.emplace_back(correspondence);
   }

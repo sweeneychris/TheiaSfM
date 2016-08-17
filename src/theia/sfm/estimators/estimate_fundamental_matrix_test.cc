@@ -65,7 +65,6 @@ void ExecuteRandomTest(const RansacParameters& options,
                        const double inlier_ratio,
                        const double noise) {
   static const int kNumCorrespondences = 600;
-  InitRandomGenerator();
 
   // Create feature correspondences (inliers and outliers) and add noise if
   // appropriate.
@@ -121,8 +120,8 @@ TEST(EstimateFundamentalMatrix, AllInliersNoNoise) {
   for (int k = 0; k < kNumTrials; k++) {
     const Matrix3d rotation = RandomRotation(10.0, &rng);
     const Vector3d position = rng.RandVector3d();
-    const double focal_length1 = RandDouble(800, 1600);
-    const double focal_length2 = RandDouble(800, 1600);
+    const double focal_length1 = rng.RandDouble(800, 1600);
+    const double focal_length2 = rng.RandDouble(800, 1600);
     ExecuteRandomTest(options,
                       rotation,
                       position,
@@ -144,8 +143,8 @@ TEST(EstimateFundamentalMatrix, AllInliersWithNoise) {
   for (int k = 0; k < kNumTrials; k++) {
     const Matrix3d rotation = RandomRotation(10.0, &rng);
     const Vector3d position = rng.RandVector3d();
-    const double focal_length1 = RandDouble(800, 1600);
-    const double focal_length2 = RandDouble(800, 1600);
+    const double focal_length1 = rng.RandDouble(800, 1600);
+    const double focal_length2 = rng.RandDouble(800, 1600);
     ExecuteRandomTest(options,
                       rotation,
                       position,
@@ -167,8 +166,8 @@ TEST(EstimateFundamentalMatrix, OutliersNoNoise) {
   for (int k = 0; k < kNumTrials; k++) {
     const Matrix3d rotation = RandomRotation(10.0, &rng);
     const Vector3d position = rng.RandVector3d();
-    const double focal_length1 = RandDouble(800, 1600);
-    const double focal_length2 = RandDouble(800, 1600);
+    const double focal_length1 = rng.RandDouble(800, 1600);
+    const double focal_length2 = rng.RandDouble(800, 1600);
     ExecuteRandomTest(options,
                       rotation,
                       position,
@@ -190,8 +189,8 @@ TEST(EstimateFundamentalMatrix, OutliersWithNoise) {
   for (int k = 0; k < kNumTrials; k++) {
     const Matrix3d rotation = RandomRotation(10.0, &rng);
     const Vector3d position = rng.RandVector3d();
-    const double focal_length1 = RandDouble(800, 1600);
-    const double focal_length2 = RandDouble(800, 1600);
+    const double focal_length1 = rng.RandDouble(800, 1600);
+    const double focal_length2 = rng.RandDouble(800, 1600);
     ExecuteRandomTest(options,
                       rotation,
                       position,

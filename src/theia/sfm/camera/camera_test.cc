@@ -219,7 +219,7 @@ TEST(Camera, Reprojection) {
     // Initialize a random camera.
     rng.SetRandom(&projection_mat);
     camera.InitializeFromProjectionMatrix(image_size, image_size,
-                                          Matrix3x4d::Random());
+                                          projection_mat);
 
     ReprojectionTest(camera);
   }

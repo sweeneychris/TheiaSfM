@@ -121,8 +121,8 @@ void CreateInvalidViewPairs(
       view_graph->NumEdges() + num_invalid_view_pairs;
   while (view_graph->NumEdges() < final_num_view_pairs) {
     // Choose a random view pair id.
-    const ViewIdPair view_id_pair(RandInt(0, orientations.size() - 1),
-                                  RandInt(0, orientations.size() - 1));
+    const ViewIdPair view_id_pair(rng.RandInt(0, orientations.size() - 1),
+                                  rng.RandInt(0, orientations.size() - 1));
     if (view_id_pair.first == view_id_pair.second ||
         view_graph->HasEdge(view_id_pair.first, view_id_pair.second)) {
       continue;

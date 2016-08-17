@@ -67,8 +67,6 @@ void GeneratePoints(std::vector<Vector3d>* points) {
 void ExecuteRandomTest(const RansacParameters& options,
                        const double inlier_ratio,
                        const double noise) {
-  InitRandomGenerator();
-
   // Create 3D points (inliers and outliers) and add noise if appropriate.
   std::vector<Vector3d> points3d;
   GeneratePoints(&points3d);

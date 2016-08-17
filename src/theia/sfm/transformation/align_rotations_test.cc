@@ -41,16 +41,19 @@
 #include "gtest/gtest.h"
 #include "theia/math/util.h"
 #include "theia/sfm/transformation/align_rotations.h"
+#include "theia/util/random.h"
 
 namespace theia {
 
 namespace {
 
+RandomNumberGenerator rng(49);
+
 void ApplyRotation(const Eigen::Matrix3d& rotation_transformation,
                    const double noise,
                    Eigen::Vector3d* rotation) {
   const Eigen::Matrix3d noisy_rotation =
-      Eigen::AngleAxisd(DegToRad(noise), Eigen::Vector3d::Random().normalized())
+      Eigen::AngleAxisd(DegToRad(noise), rng.RandVector3d().normalized())
           .toRotationMatrix();
 
   // Apply the transformation to the rotation.
@@ -73,9 +76,9 @@ void TestAlignRotations(const int num_views,
   std::vector<Eigen::Vector3d> rotations(num_views);
 
   Eigen::Matrix3d rotation_transformation = Eigen::AngleAxisd(
-      15.0, Eigen::Vector3d::Random().normalized()).toRotationMatrix();
+      15.0, rng.RandVector3d().normalized()).toRotationMatrix();
   for (int i = 0; i < num_views; i++) {
-    gt_rotations[i] = Eigen::Vector3d::Random();
+    gt_rotations[i] = rng.RandVector3d();
     rotations[i] = gt_rotations[i];
     ApplyRotation(rotation_transformation, noise_degrees, &rotations[i]);
   }

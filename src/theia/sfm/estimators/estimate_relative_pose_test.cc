@@ -81,8 +81,6 @@ void ExecuteRandomTest(const RansacParameters& options,
                        const double inlier_ratio,
                        const double noise,
                        const double tolerance_degrees) {
-  InitRandomGenerator();
-
   // Create feature correspondences (inliers and outliers) and add noise if
   // appropriate.
   std::vector<Vector3d> points3d;

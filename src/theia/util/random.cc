@@ -117,6 +117,11 @@ double RandomNumberGenerator::RandDouble(const double lower,
   return distribution(*util_generator);
 }
 
+float RandomNumberGenerator::RandFloat(const float lower, const float upper) {
+  std::uniform_real_distribution<float> distribution(lower, upper);
+  return distribution(*util_generator);
+}
+
 // Get a random int between lower and upper (inclusive).
 int RandomNumberGenerator::RandInt(const int lower, const int upper) {
   std::uniform_int_distribution<int> distribution(lower, upper);

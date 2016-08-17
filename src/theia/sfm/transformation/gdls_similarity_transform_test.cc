@@ -41,10 +41,10 @@
 
 #include "theia/alignment/alignment.h"
 #include "theia/math/util.h"
-#include "theia/util/random.h"
-#include "theia/util/util.h"
 #include "theia/sfm/pose/test_util.h"
 #include "theia/sfm/transformation/gdls_similarity_transform.h"
+#include "theia/util/random.h"
+#include "theia/util/util.h"
 
 namespace theia {
 namespace {
@@ -285,9 +285,9 @@ TEST(GdlsSimilarityTransform, ManyPoints) {
       std::vector<Vector3d> points_3d;
       points_3d.reserve(num_points[j]);
       for (int k = 0; k < num_points[j]; k++) {
-        points_3d.push_back(Vector3d(RandDouble(-5.0, 5.0),
-                                     RandDouble(-5.0, 5.0),
-                                     RandDouble(2.0, 10.0)));
+        points_3d.push_back(Vector3d(rng.RandDouble(-5.0, 5.0),
+                                     rng.RandDouble(-5.0, 5.0),
+                                     rng.RandDouble(2.0, 10.0)));
       }
 
       TestGdlsSimilarityTransformWithNoise(

@@ -74,8 +74,10 @@ void ExecuteRandomTest(const RansacParameters& options,
   std::vector<FeatureCorrespondence2D3D> correspondences;
   for (int i = 0; i < kNumPoints; i++) {
     FeatureCorrespondence2D3D correspondence;
-    correspondence.world_point = Vector3d(
-        RandDouble(-2.0, 2.0), RandDouble(-2.0, 2.0), RandDouble(6.0, 10.0));
+    correspondence.world_point =
+        Vector3d(rng.RandDouble(-2.0, 2.0),
+                 rng.RandDouble(-2.0, 2.0),
+                 rng.RandDouble(6.0, 10.0));
 
     // Add an inlier or outlier.
     if (i < inlier_ratio * kNumPoints) {

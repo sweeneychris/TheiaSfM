@@ -38,21 +38,24 @@
 #include <vector>
 
 #include "gtest/gtest.h"
-#include "theia/util/map_util.h"
 #include "theia/sfm/view_graph/orientations_from_maximum_spanning_tree.h"
 #include "theia/sfm/view_graph/view_graph.h"
+#include "theia/util/map_util.h"
+#include "theia/util/random.h"
 
 namespace theia {
 
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
 
+RandomNumberGenerator rng(150);
+
 void CreateViewsWithRandomOrientations(
     const int num_views,
     std::unordered_map<ViewId, Vector3d>* orientations) {
   (*orientations)[0] = Vector3d::Zero();
   for (int i = 1; i < num_views; i++) {
-    (*orientations)[i] = Vector3d::Random();
+    (*orientations)[i] = rng.RandVector3d();
   }
 }
 

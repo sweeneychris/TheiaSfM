@@ -41,6 +41,7 @@
 #include "gtest/gtest.h"
 #include "theia/sfm/pose/util.h"
 #include "theia/sfm/types.h"
+#include "theia/util/random.h"
 
 namespace theia {
 
@@ -48,17 +49,19 @@ using Eigen::Matrix3d;
 using Eigen::Quaterniond;
 using Eigen::Vector3d;
 
+RandomNumberGenerator rng(51);
+
 TEST(FundamentalMatrixUtil, FocalLengths) {
   static const double kTolerance = 1e-8;
 
   for (int i = 0; i < 100; i++) {
     const double gt_focal_length1 = 800.0;
     const double gt_focal_length2 = 1000.0;
-    const Vector3d rotation_angle_axis = Vector3d::Random();
+    const Vector3d rotation_angle_axis = rng.RandVector3d();
     const Matrix3d rotation =
         Eigen::AngleAxisd(rotation_angle_axis.norm(),
                           rotation_angle_axis.normalized()).toRotationMatrix();
-    const Vector3d translation = Vector3d::Random().normalized();
+    const Vector3d translation = rng.RandVector3d().normalized();
 
     // Create calibration matrices.
     Matrix3d fundamental_matrix;
@@ -82,15 +85,15 @@ TEST(FundamentalMatrixUtil, FundamentalMatrixFromProjectionMatrices) {
     // Set up model points.
     Vector3d points_3d[kNumPoints];
     for (int j = 0; j < kNumPoints; j++) {
-      points_3d[j] = Vector3d::Random() + Vector3d(0, 0, 10);
+      points_3d[j] = rng.RandVector3d() + Vector3d(0, 0, 10);
     }
 
     // Set up projection matrices.
-    const Vector3d rotation_angle_axis = Vector3d::Random();
+    const Vector3d rotation_angle_axis = rng.RandVector3d();
     const Matrix3d rotation =
         Eigen::AngleAxisd(rotation_angle_axis.norm(),
                           rotation_angle_axis.normalized()).toRotationMatrix();
-    const Vector3d translation = Vector3d::Random();
+    const Vector3d translation = rng.RandVector3d();
     Matrix3x4d pmatrix1, pmatrix2;
     pmatrix1 << Matrix3d::Identity(), Vector3d::Zero();
     pmatrix2 << rotation, translation;

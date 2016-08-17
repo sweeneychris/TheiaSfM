@@ -49,6 +49,8 @@ namespace {
 const int kNumInlierPoints = 5000;
 const int kNumOutlierPoints = 2500;
 
+RandomNumberGenerator rng(52);
+
 // TODO(vfragoso): These classes below  (Point, Line, and LineEstimator) can be
 // put in a single file. Several tests such as ransac_test.cc and prosac_test.cc
 // use these classes.
@@ -96,12 +98,12 @@ class LmedTest : public ::testing::Test {
     input_points = new std::vector<Point>;
     input_points->reserve(kNumInlierPoints + kNumOutlierPoints);
     for (int i = 0; i < kNumInlierPoints; ++i) {
-      input_points->emplace_back(i + RandGaussian(0.0, 0.1),
-                                 i + RandGaussian(0.0, 0.1));
+      input_points->emplace_back(i + rng.RandGaussian(0.0, 0.1),
+                                 i + rng.RandGaussian(0.0, 0.1));
     }
     for (int i = 0; i < kNumOutlierPoints; ++i) {
-      input_points->emplace_back(RandDouble(0.0, 10000),
-                                 RandDouble(0.0, 10000));
+      input_points->emplace_back(rng.RandDouble(0.0, 10000),
+                                 rng.RandDouble(0.0, 10000));
     }
     // Reshuffle.
     std::random_shuffle(input_points->begin(), input_points->end());

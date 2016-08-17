@@ -52,6 +52,7 @@
 #include "theia/sfm/transformation/align_point_clouds.h"
 #include "theia/sfm/types.h"
 #include "theia/util/map_util.h"
+#include "theia/util/random.h"
 #include "theia/util/stringprintf.h"
 
 namespace theia {
@@ -60,10 +61,12 @@ using Eigen::Vector3d;
 
 namespace {
 
+RandomNumberGenerator rng(63);
+
 Camera RandomCamera() {
   Camera camera;
-  camera.SetPosition(10 * Vector3d::Random());
-  camera.SetOrientationFromAngleAxis(0.2 * Vector3d::Random());
+  camera.SetPosition(10 * rng.RandVector3d());
+  camera.SetOrientationFromAngleAxis(0.2 * rng.RandVector3d());
   camera.SetImageSize(1000, 1000);
   camera.SetFocalLength(800);
   camera.SetPrincipalPoint(500.0, 500.0);
@@ -74,7 +77,7 @@ Vector3d RelativeRotationFromTwoRotations(const Vector3d& rotation1,
                                           const Vector3d& rotation2,
                                           const double noise) {
   const Eigen::Matrix3d noisy_rotation =
-      Eigen::AngleAxisd(DegToRad(noise), Vector3d::Random().normalized())
+      Eigen::AngleAxisd(DegToRad(noise), rng.RandVector3d().normalized())
           .toRotationMatrix();
 
   Eigen::Matrix3d rotation_matrix1, rotation_matrix2;
@@ -91,7 +94,7 @@ Vector3d RelativeTranslationFromTwoPositions(const Vector3d& position1,
                                              const Vector3d& rotation1,
                                              const double noise) {
   const Eigen::AngleAxisd noisy_translation(DegToRad(noise),
-                                            Vector3d::Random().normalized());
+                                            rng.RandVector3d().normalized());
   Eigen::Matrix3d rotation_matrix1;
   ceres::AngleAxisToRotationMatrix(rotation1.data(), rotation_matrix1.data());
   const Vector3d relative_translation =
@@ -149,7 +152,7 @@ class EstimatePositionsNonlinearTest : public ::testing::Test {
       const Vector3d& estimated_position =
           FindOrDie(estimated_positions, position.first);
       const double position_error =
-          (position.second - estimated_position).norm();
+          (position.second - estimated_position).squaredNorm();
       EXPECT_LT(position_error, position_tolerance)
           << "\ng.t. position = " << position.second.transpose()
           << "\nestimated position = " << estimated_position.transpose();
@@ -157,9 +160,7 @@ class EstimatePositionsNonlinearTest : public ::testing::Test {
   }
 
  protected:
-  void SetUp() {
-    srand(1234);
-  }
+  void SetUp() {}
 
   void SetupReconstruction(const int num_views, const int num_tracks) {
     // Create random views.
@@ -182,7 +183,7 @@ class EstimatePositionsNonlinearTest : public ::testing::Test {
       std::random_shuffle(view_ids.begin(), view_ids.end());
 
       // Create a track that is seen in several views.
-      Eigen::Vector4d point = Eigen::Vector4d::Random();
+      Eigen::Vector4d point = rng.RandVector4d();
       point[2] += 20.0;
       point[3] = 1.0;
       std::vector<std::pair<ViewId, Feature> > features;
@@ -229,7 +230,7 @@ class EstimatePositionsNonlinearTest : public ::testing::Test {
     info.focal_length_2 = 800.0;
 
     // These objects will add noise to the relative pose.
-    const Eigen::Vector2d noise = pose_noise * Eigen::Vector2d::Random();
+    const Eigen::Vector2d noise = pose_noise * rng.RandVector2d();
 
     // Determine the relative rotation and add noise.
     info.rotation_2 = RelativeRotationFromTwoRotations(

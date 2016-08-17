@@ -39,14 +39,18 @@
 #include <random>
 #include "gtest/gtest.h"
 
-#include "theia/test/test_utils.h"
 #include "theia/sfm/pose/four_point_focal_length.h"
+#include "theia/sfm/pose/test_util.h"
+#include "theia/test/test_utils.h"
+#include "theia/util/random.h"
 
 namespace {
 using Eigen::Map;
 using Eigen::Matrix;
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
+
+theia::RandomNumberGenerator rng(151);
 
 void P4pfTestWithNoise(const Matrix3d& gt_rotation,
                        const Vector3d& gt_translation,
@@ -141,9 +145,6 @@ void BasicTest(const double noise, const double reproj_tolerance) {
 }
 
 void RandomTestWithNoise(const double noise, const double reproj_tolerance) {
-  // Seed random number generator.
-  srand(time(NULL));
-
   const double kBaseline = 0.25;
 
   // focal length (values used in the ICCV paper)
@@ -168,15 +169,15 @@ void RandomTestWithNoise(const double noise, const double reproj_tolerance) {
         0, cos(x), sin(x),
         0, -sin(x), cos(x);
   const Matrix3d gt_rotation = Rz * Ry * Rx;
-  const Vector3d gt_translation = Vector3d::Random() * kBaseline;
+  const Vector3d gt_translation = rng.RandVector3d() * kBaseline;
 
   // Create 3D world points that are viable based on the camera intrinsics and
   // extrinsics.
   std::vector<Vector3d> world_points_vector(4);
   Map<Matrix<double, 3, 4> > world_points(world_points_vector[0].data());
-  world_points.row(2) = 2.0 * Matrix<double, 1, 4>::Random().array() + 2.0;
-  world_points.row(1) = 2.0 * Matrix<double, 1, 4>::Random();
-  world_points.row(0) = 2.0 * Matrix<double, 1, 4>::Random();
+  world_points.row(2) = 2.0 * rng.RandVector4d().transpose().array() + 2.0;
+  world_points.row(1) = 2.0 * rng.RandVector4d().transpose();
+  world_points.row(0) = 2.0 * rng.RandVector4d().transpose();
 
   P4pfTestWithNoise(gt_rotation, gt_translation, focal_length,
                     world_points_vector, noise, reproj_tolerance);
