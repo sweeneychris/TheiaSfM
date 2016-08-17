@@ -45,7 +45,6 @@
 #include <vector>
 
 #include "theia/util/map_util.h"
-#include "theia/sfm/estimators/estimate_dominant_plane_from_points.h"
 #include "theia/sfm/feature.h"
 #include "theia/sfm/pose/util.h"
 #include "theia/sfm/track.h"
@@ -373,45 +372,34 @@ void Reconstruction::Normalize() {
     cameras.emplace_back(view->Camera().GetPosition());
   }
 
-  // Robustly estimate the dominant plane from the cameras. This will correspond
-  // to a plan that is parallel to the ground plane for the majority of
-  // reconstructions. We start with a small threshold and gradually increase it
-  // until at an inlier set of at least 50% is found.
-  RansacParameters ransac_params;
-  ransac_params.max_iterations = 1000;
-  ransac_params.error_thresh = 0.01;
-  Plane plane;
-  RansacSummary unused_summary;
-  Eigen::Matrix3d rotation_for_dominant_plane = Eigen::Matrix3d::Identity();
-  if (EstimateDominantPlaneFromPoints(ransac_params,
-                                      RansacType::LMED,
-                                      cameras,
-                                      &plane,
-                                      &unused_summary)) {
-    // Set the rotation such that the plane normal points in the upward
-    // direction. Choose the sign of the normal that will minimize the rotation
-    // (this hopes to prevent having a rotation that flips the scene upside
-    // down).
-    const Eigen::Quaterniond rotation_quat1 =
-        Eigen::Quaterniond::FromTwoVectors(plane.unit_normal,
-                                           Eigen::Vector3d(0, 1.0, 0));
-    const Eigen::Quaterniond rotation_quat2 =
-        Eigen::Quaterniond::FromTwoVectors(-plane.unit_normal,
-                                           Eigen::Vector3d(0, 1.0, 0));
-    const Eigen::AngleAxisd rotation1_aa(rotation_quat1);
-    const Eigen::AngleAxisd rotation2_aa(rotation_quat2);
-
-    if (rotation1_aa.angle() < rotation2_aa.angle()) {
-      rotation_for_dominant_plane = rotation1_aa.toRotationMatrix();
-    } else {
-      rotation_for_dominant_plane = rotation2_aa.toRotationMatrix();
+  // Most images are taken relatively upright with the x-direction of the image
+  // parallel to the ground plane. We can solve for the transformation that
+  // tries to best align the x-directions to the ground plane by finding the
+  // null vector of the covariance matrix of per-camera x-directions.
+  Eigen::Matrix3d correlation;
+  correlation.setZero();
+  for (const ViewId view_id : view_ids) {
+    const class View* view = View(view_id);
+    if (view == nullptr || !view->IsEstimated()) {
+      continue;
     }
+    const Camera& camera = View(view_id)->Camera();
+    const Eigen::Vector3d x =
+        camera.GetOrientationAsRotationMatrix().transpose() *
+        Eigen::Vector3d(1.0, 0.0, 0.0);
+    correlation += x * x.transpose();
   }
 
-  TransformReconstruction(rotation_for_dominant_plane,
-                          Eigen::Vector3d::Zero(),
-                          1.0,
-                          this);
+  // The up-direction is computed as the null vector of the covariance matrix.
+  Eigen::JacobiSVD<Eigen::Matrix3d> svd(correlation, Eigen::ComputeFullV);
+  const Eigen::Vector3d plane_normal = svd.matrixV().rightCols<1>();
+
+  // We want the coordinate system to be such that the cameras lie on the x-z
+  // plane with the y vector pointing up. Thus, the plane normal should be equal
+  // to the positive y-direction.
+  Eigen::Matrix3d rotation = Eigen::Quaterniond::FromTwoVectors(
+      plane_normal, Eigen::Vector3d(0, 1, 0)).toRotationMatrix();
+  TransformReconstruction(rotation, Eigen::Vector3d::Zero(), 1.0, this);
 }
 
 }  // namespace theia
