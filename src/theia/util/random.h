@@ -93,6 +93,15 @@ class RandomNumberGenerator {
       data[i] = RandFloat(-1.0, 1.0);
     }
   }
+
+ private:
+  // Define the random engine to be thread-local if available. Otherwise the
+  // random generator is not thread safe but this should not cause severe errors.
+#if defined(__clang__) && !__has_feature(cxx_thread_local)
+  static std::mt19937 util_generator_;
+#else
+  static thread_local std::mt19937 util_generator_;
+#endif
 };
 
 }  // namespace theia

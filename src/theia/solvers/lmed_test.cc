@@ -143,6 +143,7 @@ TEST_F(LmedTest, LineFitting) {
   LineEstimator line_estimator;
   Line line;
   RansacParameters params;
+  params.rng = std::make_shared<RandomNumberGenerator>(rng);
   // This threshold is arbitrary to comply with sample_consensus_estimator.h.
   params.error_thresh = 5.0;
   LMed<LineEstimator> lmed_line(params, line_estimator);

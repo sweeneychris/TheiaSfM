@@ -122,6 +122,7 @@ TEST(EstimateDominantPlane, MinimalCase) {
 
   // Estimate the dominant plane.
   RansacParameters options;
+  options.rng = std::make_shared<RandomNumberGenerator>(rng);
   options.use_mle = true;
   options.error_thresh = kErrorThreshold;
   options.failure_probability = 0.001;
@@ -139,6 +140,7 @@ TEST(EstimateDominantPlane, MinimalCase) {
 
 TEST(EstimateDominantPlane, AllInliersNoNoise) {
   RansacParameters options;
+  options.rng = std::make_shared<RandomNumberGenerator>(rng);
   options.use_mle = true;
   options.error_thresh = kErrorThreshold;
   options.failure_probability = 0.001;
@@ -152,6 +154,7 @@ TEST(EstimateDominantPlane, AllInliersNoNoise) {
 
 TEST(EstimateDominantPlane, AllInliersWithNoise) {
   RansacParameters options;
+  options.rng = std::make_shared<RandomNumberGenerator>(rng);
   options.use_mle = true;
   options.error_thresh = kErrorThreshold;
   options.failure_probability = 0.001;
@@ -165,6 +168,7 @@ TEST(EstimateDominantPlane, AllInliersWithNoise) {
 
 TEST(EstimateDominantPlane, OutliersNoNoise) {
   RansacParameters options;
+  options.rng = std::make_shared<RandomNumberGenerator>(rng);
   options.use_mle = true;
   options.error_thresh = kErrorThreshold;
   options.failure_probability = 0.001;
@@ -178,6 +182,7 @@ TEST(EstimateDominantPlane, OutliersNoNoise) {
 
 TEST(EstimateDominantPlane, OutliersWithNoise) {
   RansacParameters options;
+  options.rng = std::make_shared<RandomNumberGenerator>(rng);
   options.use_mle = true;
   options.error_thresh = kErrorThreshold;
   options.failure_probability = 0.001;

@@ -102,6 +102,7 @@ TEST(RansacTest, LineFitting) {
   LineEstimator line_estimator;
   Line line;
   RansacParameters params;
+  params.rng = std::make_shared<RandomNumberGenerator>(rng);
   params.error_thresh = 0.5;
   Ransac<LineEstimator> ransac_line(params, line_estimator);
   ransac_line.Initialize();
@@ -129,6 +130,7 @@ TEST(RansacTest, TerminationNumInliers) {
   LineEstimator line_estimator;
   Line line;
   RansacParameters params;
+  params.rng = std::make_shared<RandomNumberGenerator>(rng);
   params.error_thresh = 0.5;
   Ransac<LineEstimator> ransac_line(params, line_estimator);
   ransac_line.Initialize();

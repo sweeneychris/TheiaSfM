@@ -122,6 +122,7 @@ TEST(ArrsacTest, InitializeHypothesisSet) {
   LineEstimator estimator;
   vector<Line> initial_hypothesis;
   RansacParameters params;
+  params.rng = std::make_shared<RandomNumberGenerator>(rng);
   params.error_thresh = 1.0;
   TestableArrsac<LineEstimator> arrsac_line(params, estimator);
   arrsac_line.Initialize();
@@ -145,6 +146,7 @@ TEST(ArrsacTest, Estimate) {
   LineEstimator estimator;
   Line fitted_line;
   RansacParameters params;
+  params.rng = std::make_shared<RandomNumberGenerator>(rng);
   params.error_thresh = 1.0;
   TestableArrsac<LineEstimator> arrsac_line(params, estimator);
   arrsac_line.Initialize();
@@ -175,6 +177,7 @@ TEST(ArrsacTest, EstimateWithQuality) {
 
   Line fitted_line;
   RansacParameters params;
+  params.rng = std::make_shared<RandomNumberGenerator>(rng);
   params.error_thresh = 1.0;
   TestableArrsac<LineEstimator> arrsac_line(params, estimator);
   arrsac_line.Initialize();

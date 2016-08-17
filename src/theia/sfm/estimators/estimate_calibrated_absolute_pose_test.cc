@@ -122,6 +122,7 @@ void ExecuteRandomTest(const RansacParameters& options,
 
 TEST(EstimateCalibratedAbsolutePose, AllInliersNoNoise) {
   RansacParameters options;
+  options.rng = std::make_shared<RandomNumberGenerator>(rng);
   options.use_mle = true;
   options.error_thresh = kErrorThreshold;
   options.failure_probability = 0.001;
@@ -151,6 +152,7 @@ TEST(EstimateCalibratedAbsolutePose, AllInliersNoNoise) {
 
 TEST(EstimateCalibratedAbsolutePose, AllInliersWithNoise) {
   RansacParameters options;
+  options.rng = std::make_shared<RandomNumberGenerator>(rng);
   options.use_mle = true;
   options.error_thresh = kErrorThreshold;
   options.failure_probability = 0.001;
@@ -181,6 +183,7 @@ TEST(EstimateCalibratedAbsolutePose, AllInliersWithNoise) {
 
 TEST(EstimateCalibratedAbsolutePose, OutliersNoNoise) {
   RansacParameters options;
+  options.rng = std::make_shared<RandomNumberGenerator>(rng);
   options.use_mle = true;
   options.error_thresh = kErrorThreshold;
   options.failure_probability = 0.001;
@@ -207,6 +210,7 @@ TEST(EstimateCalibratedAbsolutePose, OutliersNoNoise) {
 
 TEST(EstimateCalibratedAbsolutePose, OutliersWithNoise) {
   RansacParameters options;
+  options.rng = std::make_shared<RandomNumberGenerator>(rng);
   options.use_mle = true;
   options.error_thresh = kErrorThreshold;
   options.failure_probability = 0.001;
