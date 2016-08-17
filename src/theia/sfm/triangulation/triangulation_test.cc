@@ -56,6 +56,8 @@ using Eigen::Vector4d;
 
 namespace {
 
+RandomNumberGenerator rng(59);
+
 enum TriangulationType {
   STANDARD = 1,
   DLT = 2,
@@ -93,8 +95,8 @@ void TestTriangulationBasic(const TriangulationType type,
 
   // Add projection noise if required.
   if (projection_noise) {
-    AddNoiseToProjection(projection_noise, &image_point1);
-    AddNoiseToProjection(projection_noise, &image_point2);
+    AddNoiseToProjection(projection_noise, &rng, &image_point1);
+    AddNoiseToProjection(projection_noise, &rng, &image_point2);
   }
 
   // Triangulate with Optimal.
@@ -209,7 +211,7 @@ void TestTriangulationManyPoints(const double projection_noise,
     // Add projection noise if required.
     if (projection_noise) {
       for (int i = 0; i < num_views; i++) {
-        AddNoiseToProjection(projection_noise, &image_points[i]);
+        AddNoiseToProjection(projection_noise, &rng, &image_points[i]);
       }
     }
 

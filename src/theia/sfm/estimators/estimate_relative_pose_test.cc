@@ -62,6 +62,8 @@ static const double kSampsonError = 2.0;
 static const double kErrorThreshold =
     (kSampsonError * kSampsonError) / (kFocalLength * kFocalLength);
 
+RandomNumberGenerator rng(65);
+
 // Generate points in a grid so that they are repeatable.
 void GeneratePoints(std::vector<Vector3d>* points) {
   for (int i = -1; i <= 1; i++) {
@@ -97,16 +99,22 @@ void ExecuteRandomTest(const RansacParameters& options,
       correspondence.feature2 =
           (rotation * points3d[i] + translation).hnormalized();
     } else {
-      correspondence.feature1 = Vector2d::Random();
-      correspondence.feature2 = Vector2d::Random();
+      correspondence.feature1 = Vector2d(rng.RandDouble(-1.0, 1.0),
+                                         rng.RandDouble(-1.0, 1.0));
+      correspondence.feature2 = Vector2d(rng.RandDouble(-1.0, 1.0),
+                                         rng.RandDouble(-1.0, 1.0));
     }
     correspondences.emplace_back(correspondence);
   }
 
   if (noise) {
     for (int i = 0; i < points3d.size(); i++) {
-      AddNoiseToProjection(noise / kFocalLength, &correspondences[i].feature1);
-      AddNoiseToProjection(noise / kFocalLength, &correspondences[i].feature2);
+      AddNoiseToProjection(noise / kFocalLength,
+                           &rng,
+                           &correspondences[i].feature1);
+      AddNoiseToProjection(noise / kFocalLength,
+                           &rng,
+                           &correspondences[i].feature2);
     }
   }
 

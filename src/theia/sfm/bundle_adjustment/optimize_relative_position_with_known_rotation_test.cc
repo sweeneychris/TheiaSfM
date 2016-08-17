@@ -49,11 +49,17 @@
 namespace theia {
 
 namespace {
+RandomNumberGenerator rng(52);
 
 Camera RandomCamera() {
   Camera camera;
-  camera.SetPosition(Eigen::Vector3d::Random());
-  camera.SetOrientationFromAngleAxis(0.2 * Eigen::Vector3d::Random());
+  camera.SetPosition(Eigen::Vector3d(rng.RandDouble(-1.0, 1.0),
+                                     rng.RandDouble(-1.0, 1.0),
+                                     rng.RandDouble(-1.0, 1.0)));
+  camera.SetOrientationFromAngleAxis(
+      0.2 * Eigen::Vector3d(rng.RandDouble(-1.0, 1.0),
+                            rng.RandDouble(-1.0, 1.0),
+                            rng.RandDouble(-1.0, 1.0)));
   camera.SetImageSize(1000, 1000);
   camera.SetFocalLength(800);
   camera.SetPrincipalPoint(500.0, 500.0);
@@ -84,8 +90,8 @@ void TestOptimization(const Camera& camera1,
     FeatureCorrespondence match;
     camera1.ProjectPoint(point, &match.feature1);
     camera2.ProjectPoint(point, &match.feature2);
-    AddNoiseToProjection(kPixelNoise, &match.feature1);
-    AddNoiseToProjection(kPixelNoise, &match.feature2);
+    AddNoiseToProjection(kPixelNoise, &rng, &match.feature1);
+    AddNoiseToProjection(kPixelNoise, &rng, &match.feature2);
 
     // Undo the calibration.
     match.feature1 =
@@ -101,8 +107,11 @@ void TestOptimization(const Camera& camera1,
   const Eigen::Vector3d gt_relative_position = relative_position;
 
   // Add noise to relative translation.
-  const Eigen::AngleAxisd translation_noise(DegToRad(
-      RandGaussian(0.0, kTranslationNoise)), Eigen::Vector3d::Random());
+  const Eigen::AngleAxisd translation_noise(
+      DegToRad(rng.RandGaussian(0.0, kTranslationNoise)),
+      Eigen::Vector3d(rng.RandDouble(-1.0, 1.0),
+                      rng.RandDouble(-1.0, 1.0),
+                      rng.RandDouble(-1.0, 1.0)));
   relative_position = translation_noise * relative_position;
 
   CHECK(OptimizeRelativePositionWithKnownRotation(

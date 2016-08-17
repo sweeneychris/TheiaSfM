@@ -54,6 +54,8 @@ using Eigen::Matrix3d;
 using Eigen::Quaterniond;
 using Eigen::Vector3d;
 
+RandomNumberGenerator rng(57);
+
 void TestGdlsSimilarityTransformWithNoise(
     const std::vector<Vector3d>& camera_centers,
     const std::vector<Vector3d>& world_points,
@@ -87,7 +89,7 @@ void TestGdlsSimilarityTransformWithNoise(
   if (projection_noise_std_dev) {
     // Adds noise to both of the rays.
     for (int i = 0; i < num_points; i++) {
-      AddNoiseToRay(projection_noise_std_dev, &camera_rays[i]);
+      AddNoiseToRay(projection_noise_std_dev, &rng, &camera_rays[i]);
     }
   }
 

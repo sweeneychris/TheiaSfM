@@ -57,6 +57,8 @@ using Eigen::Vector2d;
 using Eigen::Vector3d;
 using Eigen::Vector4d;
 
+RandomNumberGenerator rng(60);
+
 // Creates a test scenario from ground truth 3D points and ground truth rotation
 // and translation. Projection (i.e., image) noise is optional (set to 0 for no
 // noise). The fundamental matrix is computed to ensure that the reprojection
@@ -77,8 +79,10 @@ void GenerateImagePoints(const std::vector<Vector3d>& points_3d,
 
   if (projection_noise_std_dev) {
     for (int i = 0; i < points_3d.size(); i++) {
-      AddNoiseToProjection(projection_noise_std_dev, &((*image_1_points)[i]));
-      AddNoiseToProjection(projection_noise_std_dev, &((*image_2_points)[i]));
+      AddNoiseToProjection(projection_noise_std_dev, &rng,
+                           &((*image_1_points)[i]));
+      AddNoiseToProjection(projection_noise_std_dev, &rng,
+                           &((*image_2_points)[i]));
     }
   }
 }

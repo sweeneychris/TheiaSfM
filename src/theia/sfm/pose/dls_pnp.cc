@@ -130,10 +130,11 @@ void DlsPnp(const std::vector<Vector2d>& feature_position,
 
   // We create one equation with random terms that is generally non-zero at the
   // roots of our system.
-  const double macaulay_term[4] = { RandDouble(0.0, 100.0),
-                                    RandDouble(0.0, 100.0),
-                                    RandDouble(0.0, 100.0),
-                                    RandDouble(0.0, 100.0) };
+  const Eigen::Vector4d rand_vec = 100.0 *Eigen::Vector4d::Random();
+  const double macaulay_term[4] = {rand_vec(0),
+                                   rand_vec(1),
+                                   rand_vec(2),
+                                   rand_vec(3)};
 
   // Create Macaulay matrix that will be used to solve our polynonomial system.
   const MatrixXd& macaulay_matrix =

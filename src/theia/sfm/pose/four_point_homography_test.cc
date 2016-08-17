@@ -50,6 +50,8 @@ using Eigen::Quaterniond;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 
+RandomNumberGenerator rng(53);
+
 // Creates a test scenario from ground truth 3D points and ground truth rotation
 // and translation. Projection (i.e., image) noise is optional (set to 0 for no
 // noise). The fundamental matrix is computed to ensure that the reprojection
@@ -70,8 +72,10 @@ void GenerateImagePoints(const std::vector<Vector3d>& points_3d,
 
   if (projection_noise_std_dev) {
     for (int i = 0; i < points_3d.size(); i++) {
-      AddNoiseToProjection(projection_noise_std_dev, &((*image_1_points)[i]));
-      AddNoiseToProjection(projection_noise_std_dev, &((*image_2_points)[i]));
+      AddNoiseToProjection(projection_noise_std_dev, &rng,
+                           &((*image_1_points)[i]));
+      AddNoiseToProjection(projection_noise_std_dev, &rng,
+                           &((*image_2_points)[i]));
     }
   }
 }
@@ -105,7 +109,6 @@ void FourPointHomographyWithNoiseTest(const std::vector<Vector3d>& points_3d,
                                       const Quaterniond& expected_rotation,
                                       const Vector3d& expected_translation,
                                       const double kMaxSymmetricError) {
-  InitRandomGenerator();
   std::vector<Vector2d> image_1_points;
   std::vector<Vector2d> image_2_points;
   GenerateImagePoints(points_3d, projection_noise_std_dev, expected_rotation,
@@ -189,9 +192,9 @@ void ManyPointsTest() {
 
   std::vector<Vector3d> points_3d(num_points);
   for (int j = 0; j < num_points; j++) {
-    points_3d[j] = Vector3d(RandDouble(-2.0, 2.0),
-                            RandDouble(-2.0, 2.0),
-                            RandDouble(1.0, 5.0));
+    points_3d[j] = Vector3d(rng.RandDouble(-2.0, 2.0),
+                            rng.RandDouble(-2.0, 2.0),
+                            rng.RandDouble(1.0, 5.0));
   }
 
   FourPointHomographyWithNoiseTest(points_3d, kNoise, soln_rotation,

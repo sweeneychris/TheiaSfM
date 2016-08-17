@@ -55,6 +55,8 @@ using Eigen::Vector3d;
 
 namespace {
 
+RandomNumberGenerator rng(58);
+
 void TestTwoPointPoseWithNoise(
     const Vector3d points_3d[2],
     const Vector3d& axis,
@@ -83,14 +85,14 @@ void TestTwoPointPoseWithNoise(
   // Adds projection noise if required.
   if (projection_noise) {
     for (int i = 0; i < 2; ++i) {
-      AddNoiseToRay(projection_noise, &image_rays[i]);
+      AddNoiseToRay(projection_noise, &rng, &image_rays[i]);
     }
   }
 
   // Adds model noise if required.
   if (model_noise) {
     for (int i = 0; i < 2; ++i) {
-      AddNoiseToPoint(model_noise, &model_points[i]);
+      AddNoiseToPoint(model_noise, &rng, &model_points[i]);
     }
   }
 
@@ -202,7 +204,6 @@ void ManyPointsTest(const double model_noise,
       {0.31, -2.77, 7.54, 0.54, -3.77, 9.77},
   };
 
-  InitRandomGenerator();
   for (int i = 0; i < THEIA_ARRAYSIZE(kTestPoints); ++i) {
     const Vector3d points_3d[2] = {
       Vector3d(kTestPoints[i][0], kTestPoints[i][1], kTestPoints[i][2]),
