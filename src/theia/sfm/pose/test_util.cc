@@ -120,7 +120,7 @@ void CreateRandomPointsInFrustum(const double near_plane_width,
 Eigen::Matrix3d RandomRotation(const double max_degrees_from_identity,
                                RandomNumberGenerator* rng) {
   const Eigen::Vector3d angle_axis =
-      DegToRad(max_degrees_from_identity) * rng->RandVector3d();
+      DegToRad(max_degrees_from_identity) * rng->RandVector3d().normalized();
   Eigen::Matrix3d rotation;
   ceres::AngleAxisToRotationMatrix(
       angle_axis.data(), ceres::ColumnMajorAdapter3x3(rotation.data()));

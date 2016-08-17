@@ -103,6 +103,7 @@ bool EstimateTwoViewInfoCalibrated(
 
   // Set the ransac parameters.
   RansacParameters ransac_options;
+  ransac_options.rng = options.rng;
   ransac_options.failure_probability = 1.0 - options.expected_ransac_confidence;
   ransac_options.min_iterations = options.min_ransac_iterations;
   ransac_options.max_iterations = options.max_ransac_iterations;
@@ -151,6 +152,7 @@ bool EstimateTwoViewInfoUncalibrated(
 
   // Set the ransac parameters.
   RansacParameters ransac_options;
+  ransac_options.rng = options.rng;
   ransac_options.failure_probability = 1.0 - options.expected_ransac_confidence;
   ransac_options.min_iterations = options.min_ransac_iterations;
   ransac_options.max_iterations = options.max_ransac_iterations;

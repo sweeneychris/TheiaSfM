@@ -49,7 +49,7 @@ class RandomNumberGenerator {
   RandomNumberGenerator();
 
   // Creates the random number generator using the given seed.
-  explicit RandomNumberGenerator(const unsigned seed);
+  RandomNumberGenerator(const unsigned seed);
 
   // Seeds the random number generator with the given value.
   void Seed(const unsigned seed);

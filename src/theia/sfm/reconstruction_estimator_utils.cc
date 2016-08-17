@@ -121,6 +121,7 @@ BundleAdjustmentOptions SetBundleAdjustmentOptions(
 RansacParameters SetRansacParameters(
     const ReconstructionEstimatorOptions& options) {
   RansacParameters ransac_params;
+  ransac_params.rng = options.rng;
   ransac_params.failure_probability = 1.0 - options.ransac_confidence;
   ransac_params.min_iterations = options.ransac_min_iterations;
   ransac_params.max_iterations = options.ransac_max_iterations;

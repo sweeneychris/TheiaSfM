@@ -35,6 +35,7 @@
 #ifndef THEIA_SOLVERS_SAMPLER_H_
 #define THEIA_SOLVERS_SAMPLER_H_
 
+#include <glog/logging.h>
 #include <memory>
 #include <vector>
 

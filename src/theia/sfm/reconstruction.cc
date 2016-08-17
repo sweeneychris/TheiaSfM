@@ -365,6 +365,7 @@ void Reconstruction::Normalize() {
   // null vector of the covariance matrix of per-camera x-directions.
   Eigen::Matrix3d correlation;
   correlation.setZero();
+  const auto& view_ids = ViewIds();
   for (const ViewId view_id : view_ids) {
     const class View* view = View(view_id);
     if (view == nullptr || !view->IsEstimated()) {
