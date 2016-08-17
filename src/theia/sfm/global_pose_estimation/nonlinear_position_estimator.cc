@@ -90,6 +90,12 @@ NonlinearPositionEstimator::NonlinearPositionEstimator(
   CHECK_GE(options_.min_num_points_per_view, 0);
   CHECK_GT(options_.point_to_camera_weight, 0);
   CHECK_GT(options_.robust_loss_width, 0);
+
+  if (options_.rng.get() == nullptr) {
+    rng_ = std::make_shared<RandomNumberGenerator>();
+  } else {
+    rng_ = options_.rng;
+  }
 }
 
 bool NonlinearPositionEstimator::EstimatePositions(
@@ -168,7 +174,7 @@ void NonlinearPositionEstimator::InitializeRandomPositions(
   positions->reserve(orientations.size());
   for (const auto& orientation : orientations) {
     if (ContainsKey(constrained_positions, orientation.first)) {
-      (*positions)[orientation.first] = 100.0 * Vector3d::Random();
+      (*positions)[orientation.first] = 100.0 * rng_->RandVector3d();
     }
   }
 }
@@ -224,7 +230,7 @@ void NonlinearPositionEstimator::AddPointToCameraConstraints(
 
   triangulated_points_.reserve(tracks_to_add.size());
   for (const TrackId track_id : tracks_to_add) {
-    triangulated_points_[track_id] = 100.0 * Vector3d::Random();
+    triangulated_points_[track_id] = 100.0 * rng_->RandVector3d();
 
     AddTrackToProblem(track_id,
                       orientations,

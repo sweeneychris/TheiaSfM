@@ -139,6 +139,7 @@ class EstimatePositionsNonlinearTest : public ::testing::Test {
     GetTwoViewInfos(num_view_pairs, pose_noise);
 
     // Estimate the positions.
+    options_.rng = std::make_shared<RandomNumberGenerator>(rng);
     NonlinearPositionEstimator position_estimator(options_, reconstruction_);
     std::unordered_map<ViewId, Vector3d> estimated_positions;
     EXPECT_TRUE(position_estimator.EstimatePositions(view_pairs_,

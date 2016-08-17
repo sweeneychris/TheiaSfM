@@ -108,6 +108,7 @@ GlobalReconstructionEstimator::GlobalReconstructionEstimator(
     const ReconstructionEstimatorOptions& options) {
   options_ = options;
   translation_filter_options_ = SetRelativeTranslationFilteringOptions(options);
+  options_.nonlinear_position_estimator_options.rng = options.rng;
   options_.nonlinear_position_estimator_options.num_threads =
       options_.num_threads;
   options_.linear_triplet_position_estimator_options.num_threads =
