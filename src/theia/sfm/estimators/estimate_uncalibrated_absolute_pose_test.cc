@@ -61,6 +61,7 @@ static const int kNumPoints = 100;
 static const double kFocalLength = 1000.0;
 static const double kReprojectionError = 4.0;
 static const double kErrorThreshold = kReprojectionError * kReprojectionError;
+RandomNumberGenerator rng(64);
 
 void ExecuteRandomTest(const RansacParameters& options,
                        const Matrix3d& rotation,
@@ -85,14 +86,16 @@ void ExecuteRandomTest(const RansacParameters& options,
           kFocalLength *
           ((rotation * (correspondence.world_point - position)).hnormalized());
     } else {
-      correspondence.feature = kFocalLength * Vector2d::Random();
+      correspondence.feature =
+          kFocalLength *
+          Vector2d(rng.RandDouble(-1.0, 1.0), rng.RandDouble(-1.0, 1.0));
     }
     correspondences.emplace_back(correspondence);
   }
 
   if (noise) {
     for (int i = 0; i < kNumPoints; i++) {
-      AddNoiseToProjection(noise, &correspondences[i].feature);
+      AddNoiseToProjection(noise, &rng, &correspondences[i].feature);
     }
   }
 

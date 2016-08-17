@@ -58,6 +58,7 @@ static const double kFocalLength = 1000.0;
 static const double kReprojectionError = 4.0;
 static const double kErrorThreshold =
     (kReprojectionError * kReprojectionError) / (kFocalLength * kFocalLength);
+RandomNumberGenerator rng(61);
 
 // Generate points on a plane so that a homography can accurately estimate the
 // motion.
@@ -76,8 +77,6 @@ void ExecuteRandomTest(const RansacParameters& options,
                        const double inlier_ratio,
                        const double noise,
                        const double tolerance) {
-  InitRandomGenerator();
-
   // Create feature correspondences (inliers and outliers) and add noise if
   // appropriate.
   std::vector<Vector3d> points3d;
@@ -94,16 +93,22 @@ void ExecuteRandomTest(const RansacParameters& options,
       correspondence.feature2 =
           (rotation * points3d[i] + translation).hnormalized();
     } else {
-      correspondence.feature1 = Vector2d::Random();
-      correspondence.feature2 = Vector2d::Random();
+      correspondence.feature1 = Vector2d(rng.RandDouble(-1.0, 1.0),
+                                         rng.RandDouble(-1.0, 1.0));
+      correspondence.feature2 = Vector2d(rng.RandDouble(-1.0, 1.0),
+                                         rng.RandDouble(-1.0, 1.0));
     }
     correspondences.emplace_back(correspondence);
   }
 
   if (noise) {
     for (int i = 0; i < points3d.size(); i++) {
-      AddNoiseToProjection(noise / kFocalLength, &correspondences[i].feature1);
-      AddNoiseToProjection(noise / kFocalLength, &correspondences[i].feature2);
+      AddNoiseToProjection(noise / kFocalLength,
+                           &rng,
+                           &correspondences[i].feature1);
+      AddNoiseToProjection(noise / kFocalLength,
+                           &rng,
+                           &correspondences[i].feature2);
     }
   }
 

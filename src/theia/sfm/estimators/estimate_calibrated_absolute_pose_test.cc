@@ -63,21 +63,22 @@ static const double kReprojectionError = 4.0;
 static const double kErrorThreshold =
     (kReprojectionError * kReprojectionError) / (kFocalLength * kFocalLength);
 
+RandomNumberGenerator rng(66);
+
 void ExecuteRandomTest(const RansacParameters& options,
                        const Matrix3d& rotation,
                        const Vector3d& position,
                        const double inlier_ratio,
                        const double noise,
                        const double tolerance) {
-  InitRandomGenerator();
-
   // Create feature correspondences (inliers and outliers) and add noise if
   // appropriate.
   std::vector<FeatureCorrespondence2D3D> correspondences;
   for (int i = 0; i < kNumPoints; i++) {
     FeatureCorrespondence2D3D correspondence;
-    correspondence.world_point = Vector3d(
-        RandDouble(-2.0, 2.0), RandDouble(-2.0, 2.0), RandDouble(6.0, 10.0));
+    correspondence.world_point = Vector3d(rng.RandDouble(-2.0, 2.0),
+                                          rng.RandDouble(-2.0, 2.0),
+                                          rng.RandDouble(6.0, 10.0));
 
     // Add an inlier or outlier.
     if (i < inlier_ratio * kNumPoints) {
@@ -92,7 +93,7 @@ void ExecuteRandomTest(const RansacParameters& options,
 
   if (noise) {
     for (int i = 0; i < kNumPoints; i++) {
-      AddNoiseToProjection(noise / kFocalLength, &correspondences[i].feature);
+      AddNoiseToProjection(noise / kFocalLength, &rng, &correspondences[i].feature);
     }
   }
 

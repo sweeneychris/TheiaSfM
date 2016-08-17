@@ -56,6 +56,8 @@ using Eigen::Quaterniond;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 
+RandomNumberGenerator rng(59);
+
 void TestDlsPnpWithNoise(const std::vector<Vector3d>& world_points,
                          const double projection_noise_std_dev,
                          const Quaterniond& expected_rotation,
@@ -63,8 +65,6 @@ void TestDlsPnpWithNoise(const std::vector<Vector3d>& world_points,
                          const double max_reprojection_error,
                          const double max_rotation_difference,
                          const double max_translation_difference) {
-  InitRandomGenerator();
-
   const int num_points = world_points.size();
 
   Matrix3x4d expected_transform;
@@ -83,7 +83,7 @@ void TestDlsPnpWithNoise(const std::vector<Vector3d>& world_points,
   if (projection_noise_std_dev) {
     // Adds noise to both of the rays.
     for (int i = 0; i < num_points; i++) {
-      AddNoiseToProjection(projection_noise_std_dev, &feature_points[i]);
+      AddNoiseToProjection(projection_noise_std_dev, &rng, &feature_points[i]);
     }
   }
 
@@ -227,9 +227,9 @@ TEST(DlsPnp, ManyPoints) {
       std::vector<Vector3d> points_3d;
       points_3d.reserve(num_points[j]);
       for (int k = 0; k < num_points[j]; k++) {
-        points_3d.push_back(Vector3d(RandDouble(-5.0, 5.0),
-                                     RandDouble(-5.0, 5.0),
-                                     RandDouble(2.0, 10.0)));
+        points_3d.push_back(Vector3d(rng.RandDouble(-5.0, 5.0),
+                                     rng.RandDouble(-5.0, 5.0),
+                                     rng.RandDouble(2.0, 10.0)));
       }
 
       TestDlsPnpWithNoise(points_3d,
