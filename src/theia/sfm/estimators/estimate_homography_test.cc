@@ -127,6 +127,7 @@ void ExecuteRandomTest(const RansacParameters& options,
 
 TEST(EstimateHomography, AllInliersNoNoise) {
   RansacParameters options;
+  options.rng = std::make_shared<RandomNumberGenerator>(rng);
   options.use_mle = true;
   options.error_thresh = kErrorThreshold;
   options.failure_probability = 0.001;
@@ -156,6 +157,7 @@ TEST(EstimateHomography, AllInliersNoNoise) {
 
 TEST(EstimateHomography, AllInliersWithNoise) {
   RansacParameters options;
+  options.rng = std::make_shared<RandomNumberGenerator>(rng);
   options.use_mle = true;
   options.error_thresh = kErrorThreshold;
   options.failure_probability = 0.001;
@@ -186,6 +188,7 @@ TEST(EstimateHomography, AllInliersWithNoise) {
 
 TEST(EstimateHomography, OutliersNoNoise) {
   RansacParameters options;
+  options.rng = std::make_shared<RandomNumberGenerator>(rng);
   options.use_mle = true;
   options.error_thresh = kErrorThreshold;
   options.failure_probability = 0.001;
@@ -212,6 +215,7 @@ TEST(EstimateHomography, OutliersNoNoise) {
 
 TEST(EstimateHomography, OutliersWithNoise) {
   RansacParameters options;
+  options.rng = std::make_shared<RandomNumberGenerator>(rng);
   options.use_mle = true;
   options.error_thresh = kErrorThreshold;
   options.failure_probability = 0.001;

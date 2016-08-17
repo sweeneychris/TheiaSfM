@@ -43,6 +43,7 @@
 #include "theia/solvers/estimator.h"
 #include "theia/solvers/evsac.h"
 #include "theia/sfm/pose/four_point_homography.h"
+#include "theia/util/random.h"
 #include "theia/test/test_utils.h"
 
 namespace theia {
@@ -56,6 +57,9 @@ using Eigen::MatrixXd;
 using Eigen::Matrix3d;
 
 namespace {
+
+RandomNumberGenerator rng(60);
+
 // Rayleigh samples taken from MATLAB with sigma=1.
 const vector<double> rayl_samples = {
   9.442826e-01, 1.571453e+00, 9.874990e-01, 1.803729e+00, 7.826802e-01,
@@ -414,6 +418,7 @@ TEST(EvsacTest, HomographyEstimationWithEvsacSampling) {
   HomographyEstimator homography_estimator;
   Matrix3d homography;
   RansacParameters params;
+  params.rng = std::make_shared<RandomNumberGenerator>(rng);
   params.error_thresh = 5.0;  // 5px of error
   const double kPredictorThreshold = 0.65;
   Evsac<HomographyEstimator> evsac_homography(

@@ -49,7 +49,6 @@ static std::mt19937 util_generator;
 #else
 thread_local std::mt19937 util_generator;
 #endif
-
 }  // namespace
 
 RandomNumberGenerator::RandomNumberGenerator() {

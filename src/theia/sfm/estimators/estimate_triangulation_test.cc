@@ -86,6 +86,7 @@ TEST(EstimateTriangulation, InsufficientObservations) {
   CreateObservations(1, 0, &projection_matrices, &features);
 
   RansacParameters params;
+  params.rng = std::make_shared<RandomNumberGenerator>(rng);
   params.error_thresh = 1.0 * 1.0;
   RansacSummary summary;
   Vector4d triangulated_point;
@@ -102,6 +103,7 @@ TEST(EstimateTriangulation, TwoViews) {
   CreateObservations(2, 0, &projection_matrices, &features);
 
   RansacParameters params;
+  params.rng = std::make_shared<RandomNumberGenerator>(rng);
   params.error_thresh = 1.0 * 1.0;
   RansacSummary summary;
   Vector4d triangulated_point;
@@ -124,6 +126,7 @@ TEST(EstimateTriangulation, WithOutliers) {
   CreateObservations(10, 2, &projection_matrices, &features);
 
   RansacParameters params;
+  params.rng = std::make_shared<RandomNumberGenerator>(rng);
   params.error_thresh = 1.0 * 1.0;
   RansacSummary summary;
   Vector4d triangulated_point;

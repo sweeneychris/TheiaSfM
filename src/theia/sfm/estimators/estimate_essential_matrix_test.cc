@@ -135,6 +135,7 @@ void ExecuteRandomTest(const RansacParameters& options,
 
 TEST(EstimateEssentialMatrix, AllInliersNoNoise) {
   RansacParameters options;
+  options.rng = std::make_shared<RandomNumberGenerator>(rng);
   options.use_mle = true;
   options.error_thresh = kErrorThreshold;
   options.failure_probability = 0.001;
@@ -164,6 +165,7 @@ TEST(EstimateEssentialMatrix, AllInliersNoNoise) {
 
 TEST(EstimateEssentialMatrix, AllInliersWithNoise) {
   RansacParameters options;
+  options.rng = std::make_shared<RandomNumberGenerator>(rng);
   options.use_mle = true;
   options.error_thresh = kErrorThreshold;
   options.failure_probability = 0.001;
@@ -194,6 +196,7 @@ TEST(EstimateEssentialMatrix, AllInliersWithNoise) {
 
 TEST(EstimateEssentialMatrix, OutliersNoNoise) {
   RansacParameters options;
+  options.rng = std::make_shared<RandomNumberGenerator>(rng);
   options.use_mle = true;
   options.error_thresh = kErrorThreshold;
   options.failure_probability = 0.001;
@@ -220,6 +223,7 @@ TEST(EstimateEssentialMatrix, OutliersNoNoise) {
 
 TEST(EstimateEssentialMatrix, OutliersWithNoise) {
   RansacParameters options;
+  options.rng = std::make_shared<RandomNumberGenerator>(rng);
   options.use_mle = true;
   options.error_thresh = kErrorThreshold;
   options.failure_probability = 0.001;

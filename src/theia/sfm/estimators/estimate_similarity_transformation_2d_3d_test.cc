@@ -148,6 +148,7 @@ void ExecuteRandomTest(
 
 TEST(EstimateSimilarityTransformation2D3D, AllInliersNoNoise) {
   RansacParameters options;
+  options.rng = std::make_shared<RandomNumberGenerator>(rng);
   options.use_mle = true;
   options.error_thresh = kReprojectionError;
   options.failure_probability = 0.001;
@@ -171,6 +172,7 @@ TEST(EstimateSimilarityTransformation2D3D, AllInliersNoNoise) {
 
 TEST(EstimateSimilarityTransformation2D3D, AllInliersWithNoise) {
   RansacParameters options;
+  options.rng = std::make_shared<RandomNumberGenerator>(rng);
   options.use_mle = true;
   options.error_thresh = kReprojectionError;
   options.failure_probability = 0.001;
@@ -194,6 +196,7 @@ TEST(EstimateSimilarityTransformation2D3D, AllInliersWithNoise) {
 
 TEST(EstimateSimilarityTransformation2D3D, OutliersNoNoise) {
   RansacParameters options;
+  options.rng = std::make_shared<RandomNumberGenerator>(rng);
   options.use_mle = true;
   options.error_thresh = kReprojectionError;
   options.failure_probability = 0.001;
@@ -217,6 +220,7 @@ TEST(EstimateSimilarityTransformation2D3D, OutliersNoNoise) {
 
 TEST(EstimateSimilarityTransformation2D3D, OutliersWithNoise) {
   RansacParameters options;
+  options.rng = std::make_shared<RandomNumberGenerator>(rng);
   options.use_mle = true;
   options.error_thresh = kReprojectionError;
   options.failure_probability = 0.001;
