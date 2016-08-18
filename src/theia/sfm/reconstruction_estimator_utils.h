@@ -48,6 +48,14 @@
 
 namespace theia {
 
+// By default, Theia uses pixel error thresholds based on an image that is 1024
+// pixels wide. For images of different resolutions this function will scale the
+// threshold based on the maximum image dimensions. If the image dimensions are
+// not set, then the input value is returned.
+double ComputeResolutionScaledThreshold(const double threshold_pixels,
+                                        const int image_width,
+                                        const int image_height);
+
 // Sets the bundle adjustment optiosn from the reconstruction estimator options.
 BundleAdjustmentOptions SetBundleAdjustmentOptions(
     const ReconstructionEstimatorOptions& options, const int num_views);

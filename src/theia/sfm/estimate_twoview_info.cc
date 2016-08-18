@@ -46,6 +46,7 @@
 #include "theia/sfm/estimators/estimate_relative_pose.h"
 #include "theia/sfm/estimators/estimate_uncalibrated_relative_pose.h"
 #include "theia/sfm/pose/util.h"
+#include "theia/sfm/reconstruction_estimator_utils.h"
 #include "theia/sfm/set_camera_intrinsics_from_priors.h"
 #include "theia/sfm/triangulation/triangulation.h"
 #include "theia/sfm/twoview_info.h"
@@ -107,8 +108,19 @@ bool EstimateTwoViewInfoCalibrated(
   ransac_options.failure_probability = 1.0 - options.expected_ransac_confidence;
   ransac_options.min_iterations = options.min_ransac_iterations;
   ransac_options.max_iterations = options.max_ransac_iterations;
+
+  // Compute the sampson error threshold to account for the resolution of the
+  // images.
+  const double max_sampson_error_pixels1 = ComputeResolutionScaledThreshold(
+      options.max_sampson_error_pixels,
+      intrinsics1.image_width,
+      intrinsics1.image_height);
+  const double max_sampson_error_pixels2 = ComputeResolutionScaledThreshold(
+      options.max_sampson_error_pixels,
+      intrinsics2.image_width,
+      intrinsics2.image_height);
   ransac_options.error_thresh =
-      options.max_sampson_error_pixels * options.max_sampson_error_pixels /
+      max_sampson_error_pixels1 * max_sampson_error_pixels2 /
       (intrinsics1.focal_length.value[0] * intrinsics2.focal_length.value[0]);
   ransac_options.use_mle = options.use_mle;
 
@@ -156,8 +168,19 @@ bool EstimateTwoViewInfoUncalibrated(
   ransac_options.failure_probability = 1.0 - options.expected_ransac_confidence;
   ransac_options.min_iterations = options.min_ransac_iterations;
   ransac_options.max_iterations = options.max_ransac_iterations;
+
+  // Compute the sampson error threshold to account for the resolution of the
+  // images.
+  const double max_sampson_error_pixels1 = ComputeResolutionScaledThreshold(
+      options.max_sampson_error_pixels,
+      intrinsics1.image_width,
+      intrinsics1.image_height);
+  const double max_sampson_error_pixels2 = ComputeResolutionScaledThreshold(
+      options.max_sampson_error_pixels,
+      intrinsics2.image_width,
+      intrinsics2.image_height);
   ransac_options.error_thresh =
-      options.max_sampson_error_pixels * options.max_sampson_error_pixels;
+    max_sampson_error_pixels1 * max_sampson_error_pixels2;
 
   UncalibratedRelativePose relative_pose;
   RansacSummary summary;

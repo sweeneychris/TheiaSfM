@@ -91,6 +91,20 @@ void GetNormalizedFeatureCorrespondences(
 
 }  // namespace
 
+double ComputeResolutionScaledThreshold(const double threshold_pixels,
+                                        const int image_width,
+                                        const int image_height) {
+  static const double kDefaultImageDimension = 1024.0;
+
+  if (image_width == 0 && image_height == 0) {
+    return threshold_pixels;
+  }
+
+  const int max_image_dimension = std::max(image_width, image_height);
+  return threshold_pixels * static_cast<double>(max_image_dimension) /
+         kDefaultImageDimension;
+}
+
 // Sets the bundle adjustment options from the reconstruction estimator options.
 BundleAdjustmentOptions SetBundleAdjustmentOptions(
     const ReconstructionEstimatorOptions& options, const int num_views) {

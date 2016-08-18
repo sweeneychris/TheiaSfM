@@ -47,7 +47,14 @@ class Reconstruction;
 // that determines inliers and outliers during RANSAC. This value will override
 // the error thresh set in the RansacParameters.
 struct LocalizeViewToReconstructionOptions {
-  double reprojection_error_threshold_pixels;
+  // The reprojection error threshold that determines whether a 2D-3D
+  // correspondence is an inlier during localization.
+  //
+  // NOTE: This threshold is with respect to an image that is 1024 pixels
+  // wide. If the image dimensions are larger or smaller than this value then
+  // the threshold will be appropriately scaled.
+  double reprojection_error_threshold_pixels = 4.0;
+
   RansacParameters ransac_params;
 
   // The view will be bundle adjusted (while all tracks are held constant) if

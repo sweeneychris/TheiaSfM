@@ -183,7 +183,12 @@ struct ReconstructionEstimatorOptions {
   // When adding a new view to the current reconstruction, this is the
   // reprojection error that determines whether a 2D-3D correspondence is an
   // inlier during localization.
-  double absolute_pose_reprojection_error_threshold = 8.0;
+  //
+  // NOTE: This threshold is with respect to an image that is 1024 pixels
+  // wide. If the image dimensions are larger or smaller than this value then
+  // the threshold will be appropriately scaled. This allows us to use a single
+  // threshold for images that have varying resolutions.
+  double absolute_pose_reprojection_error_threshold = 4.0;
 
   // Minimum number of inliers for absolute pose estimation to be considered
   // successful.
@@ -210,6 +215,7 @@ struct ReconstructionEstimatorOptions {
 
   // The reprojection error to use for determining valid triangulation.
   double triangulation_max_reprojection_error_in_pixels = 10.0;
+
   // Bundle adjust a track immediately after estimating it.
   bool bundle_adjust_tracks = true;
 

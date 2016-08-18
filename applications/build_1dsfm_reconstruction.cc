@@ -116,7 +116,7 @@ DEFINE_double(position_estimation_robust_loss_width, 0.1,
               "Robust loss width to use for position estimation.");
 
 // Incremental SfM options.
-DEFINE_double(absolute_pose_reprojection_error_threshold, 8.0,
+DEFINE_double(absolute_pose_reprojection_error_threshold, 4.0,
               "The inlier threshold for absolute pose estimation.");
 DEFINE_int32(min_num_absolute_pose_inliers, 30,
              "Minimum number of inliers in order for absolute pose estimation "
@@ -128,7 +128,6 @@ DEFINE_double(full_bundle_adjustment_growth_percent, 5.0,
 DEFINE_int32(partial_bundle_adjustment_num_views, 20,
              "When full BA is not being run, partial BA is executed on a "
              "constant number of views specified by this parameter.");
-
 
 // Triangulation options.
 DEFINE_double(min_triangulation_angle_degrees, 4.0,

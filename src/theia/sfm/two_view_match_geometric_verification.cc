@@ -44,6 +44,7 @@
 #include "theia/sfm/camera_intrinsics_prior.h"
 #include "theia/sfm/estimate_twoview_info.h"
 #include "theia/sfm/estimators/estimate_homography.h"
+#include "theia/sfm/reconstruction_estimator_utils.h"
 #include "theia/sfm/set_camera_intrinsics_from_priors.h"
 #include "theia/sfm/triangulation/triangulation.h"
 #include "theia/sfm/twoview_info.h"
@@ -305,8 +306,20 @@ int TwoViewMatchGeometricVerification::CountHomographyInliers() {
       options_.estimate_twoview_info_options;
   RansacParameters homography_params;
   homography_params.rng = etvi_options.rng;
-  homography_params.error_thresh = etvi_options.max_sampson_error_pixels *
-                                   etvi_options.max_sampson_error_pixels;
+
+  // Compute the reprojection error threshold to account for the resolution of
+  // the images.
+  const double max_sampson_error_pixels1 = ComputeResolutionScaledThreshold(
+      etvi_options.max_sampson_error_pixels,
+      camera1_.ImageWidth(),
+      camera1_.ImageHeight());
+  const double max_sampson_error_pixels2 = ComputeResolutionScaledThreshold(
+      etvi_options.max_sampson_error_pixels,
+      camera2_.ImageWidth(),
+      camera2_.ImageHeight());
+
+  homography_params.error_thresh =
+      max_sampson_error_pixels1 * max_sampson_error_pixels2;
   homography_params.max_iterations = etvi_options.max_ransac_iterations;
   homography_params.min_iterations = etvi_options.min_ransac_iterations;
   homography_params.use_mle = etvi_options.use_mle;

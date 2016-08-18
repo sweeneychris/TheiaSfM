@@ -84,9 +84,11 @@ DEFINE_int32(matching_max_num_images_in_cache, 128,
              "feature matching. The higher this number is the more memory is "
              "consumed during matching.");
 DEFINE_double(lowes_ratio, 0.8, "Lowes ratio used for feature matching.");
-DEFINE_double(
-    max_sampson_error_for_verified_match, 4.0,
-    "Maximum sampson error for a match to be considered geometrically valid.");
+DEFINE_double(max_sampson_error_for_verified_match, 4.0,
+              "Maximum sampson error for a match to be considered "
+              "geometrically valid. This threshold is relative to an image "
+              "with a width of 1024 pixels and will be appropriately scaled "
+              "for images with different resolutions.");
 DEFINE_int32(min_num_inliers_for_valid_match, 30,
              "Minimum number of geometrically verified inliers that a pair on "
              "images must have in order to be considered a valid two-view "
@@ -158,8 +160,11 @@ DEFINE_double(position_estimation_robust_loss_width, 0.1,
               "Robust loss width to use for position estimation.");
 
 // Incremental SfM options.
-DEFINE_double(absolute_pose_reprojection_error_threshold, 8.0,
-              "The inlier threshold for absolute pose estimation.");
+DEFINE_double(absolute_pose_reprojection_error_threshold, 4.0,
+              "The inlier threshold for absolute pose estimation. This "
+              "threshold is relative to an image with a width of 1024 pixels "
+              "and will be appropriately scaled based on the input image "
+              "resolutions.");
 DEFINE_int32(min_num_absolute_pose_inliers, 30,
              "Minimum number of inliers in order for absolute pose estimation "
              "to be considered successful.");

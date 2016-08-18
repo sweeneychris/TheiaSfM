@@ -58,7 +58,12 @@ struct EstimateTwoViewInfoOptions {
   RansacType ransac_type = RansacType::RANSAC;
 
   // Maximum sampson error in pixels for correspondences to be inliers.
-  double max_sampson_error_pixels = 4.0;
+  //
+  // NOTE: This threshold is with respect to an image that is 1024 pixels
+  // wide. If the image dimensions are larger or smaller than this value then
+  // the threshold will be appropriately scaled. This allows us to use a single
+  // threshold for images of varying resolutions.
+  double max_sampson_error_pixels = 6.0;
 
   // Ransac parameters.
   double expected_ransac_confidence = 0.9999;

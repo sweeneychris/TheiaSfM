@@ -50,7 +50,11 @@
 --num_retriangulation_iterations=1
 
 ############### Incremental SfM Options ###############
---absolute_pose_reprojection_error_threshold=8
+
+# NOTE: This threshold is relative to an image with a width of 1024 pixels. It
+# will be scaled appropriately based on the image resolutions. This allows a
+# single threshold to be used for images with different resolutions.
+--absolute_pose_reprojection_error_threshold=4
 --partial_bundle_adjustment_num_views=20
 --full_bundle_adjustment_growth_percent=5
 --min_num_absolute_pose_inliers=30

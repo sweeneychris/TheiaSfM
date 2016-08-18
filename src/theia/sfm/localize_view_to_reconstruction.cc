@@ -38,11 +38,12 @@
 #include <vector>
 
 #include "theia/sfm/bundle_adjustment/bundle_adjustment.h"
-#include "theia/sfm/estimators/feature_correspondence_2d_3d.h"
+#include "theia/sfm/camera/camera.h"
 #include "theia/sfm/estimators/estimate_calibrated_absolute_pose.h"
 #include "theia/sfm/estimators/estimate_uncalibrated_absolute_pose.h"
-#include "theia/sfm/camera/camera.h"
+#include "theia/sfm/estimators/feature_correspondence_2d_3d.h"
 #include "theia/sfm/reconstruction.h"
+#include "theia/sfm/reconstruction_estimator_utils.h"
 #include "theia/sfm/types.h"
 #include "theia/solvers/sample_consensus_estimator.h"
 
@@ -137,11 +138,19 @@ bool LocalizeViewToReconstruction(
   bool success = false;
   RansacParameters ransac_parameters = options.ransac_params;
 
+  // Compute the reprojection error threshold scaled to account for the image
+  // resolution.
+  const double resolution_scaled_reprojection_error_threshold_pixels =
+      ComputeResolutionScaledThreshold(
+          options.reprojection_error_threshold_pixels,
+          camera->ImageWidth(),
+          camera->ImageHeight());
+
   // If calibrated, estimate the pose with P3P.
   if (known_intrinsics) {
     ransac_parameters.error_thresh =
-        options.reprojection_error_threshold_pixels *
-        options.reprojection_error_threshold_pixels /
+        resolution_scaled_reprojection_error_threshold_pixels *
+        resolution_scaled_reprojection_error_threshold_pixels /
         (camera->FocalLength() * camera->FocalLength());
 
     CalibratedAbsolutePose pose;
@@ -153,8 +162,8 @@ bool LocalizeViewToReconstruction(
     // If the focal length is not known, estimate the focal length and pose
     // together.
     ransac_parameters.error_thresh =
-        options.reprojection_error_threshold_pixels *
-        options.reprojection_error_threshold_pixels;
+        resolution_scaled_reprojection_error_threshold_pixels *
+        resolution_scaled_reprojection_error_threshold_pixels;
 
     UncalibratedAbsolutePose pose;
     success = EstimateUncalibratedAbsolutePose(
