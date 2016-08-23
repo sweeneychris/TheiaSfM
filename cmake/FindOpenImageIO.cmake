@@ -1,71 +1,178 @@
-# - Find OpenImageIO library
-# Find the native OpenImageIO includes and library
-# This module defines
-#  OPENIMAGEIO_INCLUDE_DIRS, where to find openimageio.h, Set when
-#                            OPENIMAGEIO_INCLUDE_DIR is found.
-#  OPENIMAGEIO_LIBRARIES, libraries to link against to use OpenImageIO.
-#  OPENIMAGEIO_ROOT_DIR, The base directory to search for OpenImageIO.
-#                        This can also be an environment variable.
-#  OPENIMAGEIO_FOUND, If false, do not try to use OpenImageIO.
+# FindOpenImageIO.cmake - Find OpenImageIO library.
 #
-# also defined, but not for general use are
-#  OPENIMAGEIO_LIBRARY, where to find the OpenImageIO library.
-
-#=============================================================================
-# Copyright 2011 Blender Foundation.
+# This module defines the following variables:
 #
-# Distributed under the OSI-approved BSD License (the "License");
-# see accompanying file Copyright.txt for details.
+# OPENIMAGEIO_FOUND: TRUE iff OpenImageIO is found.
+# OPENIMAGEIO_INCLUDE_DIRS: Include directories for OpenImageIO.
+# OPENIMAGEIO_LIBRARIES: Libraries required to link OpenImageIO.
 #
-# This software is distributed WITHOUT ANY WARRANTY; without even the
-# implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-# See the License for more information.
-#=============================================================================
+# The following variables control the behaviour of this module:
+#
+# OPENIMAGEIO_INCLUDE_DIR_HINTS: List of additional directories in which to
+#                         search for OpenImageIO includes, e.g: /timbuktu/include.
+# OPENIMAGEIO_LIBRARY_DIR_HINTS: List of additional directories in which to
+#                         search for OpenImageIO libraries, e.g: /timbuktu/lib.
+#
+# The following variables are also defined by this module, but in line with
+# CMake recommended FindPackage() module style should NOT be referenced directly
+# by callers (use the plural variables detailed above instead).  These variables
+# do however affect the behaviour of the module via FIND_[PATH/LIBRARY]() which
+# are NOT re-called (i.e. search for library is not repeated) if these variables
+# are set with valid values _in the CMake cache_. This means that if these
+# variables are set directly in the cache, either by the user in the CMake GUI,
+# or by the user passing -DVAR=VALUE directives to CMake when called (which
+# explicitly defines a cache variable), then they will be used verbatim,
+# bypassing the HINTS variables and other hard-coded search locations.
+#
+# OPENIMAGEIO_INCLUDE_DIR: Include directory for OpenImageIO, not including the
+#                   include directory of any dependencies.
+# OPENIMAGEIO_LIBRARY: OpenImageIO library, not including the libraries of any
+#               dependencies.
 
-# If OPENIMAGEIO_ROOT_DIR was defined in the environment, use it.
-IF(NOT OPENIMAGEIO_ROOT_DIR AND NOT $ENV{OPENIMAGEIO_ROOT_DIR} STREQUAL "")
-  SET(OPENIMAGEIO_ROOT_DIR $ENV{OPENIMAGEIO_ROOT_DIR})
-ENDIF()
+# Reset CALLERS_CMAKE_FIND_LIBRARY_PREFIXES to its value when
+# FindOpenImageIO was invoked.
+macro(OPENIMAGEIO_RESET_FIND_LIBRARY_PREFIX)
+  if (MSVC)
+    set(CMAKE_FIND_LIBRARY_PREFIXES "${CALLERS_CMAKE_FIND_LIBRARY_PREFIXES}")
+  endif (MSVC)
+endmacro(OPENIMAGEIO_RESET_FIND_LIBRARY_PREFIX)
 
-SET(_openimageio_SEARCH_DIRS
-  ${OPENIMAGEIO_ROOT_DIR}
-  /usr/local
-  /sw # Fink
-  /opt/local # DarwinPorts
-  /opt/csw # Blastwave
-  /opt/lib/oiio
-)
+# Called if we failed to find OpenImageIO or any of it's required dependencies,
+# unsets all public (designed to be used externally) variables and reports
+# error message at priority depending upon [REQUIRED/QUIET/<NONE>] argument.
+macro(OPENIMAGEIO_REPORT_NOT_FOUND REASON_MSG)
+  unset(OPENIMAGEIO_FOUND)
+  unset(OPENIMAGEIO_INCLUDE_DIRS)
+  unset(OPENIMAGEIO_LIBRARIES)
+  # Make results of search visible in the CMake GUI if OpenImageIO has not
+  # been found so that user does not have to toggle to advanced view.
+  mark_as_advanced(CLEAR OPENIMAGEIO_INCLUDE_DIR
+                         OPENIMAGEIO_LIBRARY)
 
-FIND_PATH(OPENIMAGEIO_INCLUDE_DIR
-  NAMES
-    OpenImageIO/imageio.h
-  HINTS
-    ${_openimageio_SEARCH_DIRS}
-  PATH_SUFFIXES
-    include
-)
+  openimageio_reset_find_library_prefix()
 
-FIND_LIBRARY(OPENIMAGEIO_LIBRARY
-  NAMES
-    OpenImageIO
-  HINTS
-    ${_openimageio_SEARCH_DIRS}
-  PATH_SUFFIXES
-    lib64 lib
-  )
+  # Note <package>_FIND_[REQUIRED/QUIETLY] variables defined by FindPackage()
+  # use the camelcase library name, not uppercase.
+  if (OpenImageIO_FIND_QUIETLY)
+    message(STATUS "Failed to find OpenImageIO - " ${REASON_MSG} ${ARGN})
+  elseif (OpenImageIO_FIND_REQUIRED)
+    message(FATAL_ERROR "Failed to find OpenImageIO - " ${REASON_MSG} ${ARGN})
+  else()
+    # Neither QUIETLY nor REQUIRED, use no priority which emits a message
+    # but continues configuration and allows generation.
+    message("-- Failed to find OpenImageIO - " ${REASON_MSG} ${ARGN})
+  endif ()
+endmacro(OPENIMAGEIO_REPORT_NOT_FOUND)
 
-# handle the QUIETLY and REQUIRED arguments and set OPENIMAGEIO_FOUND to TRUE if
-# all listed variables are TRUE
-INCLUDE(FindPackageHandleStandardArgs)
-FIND_PACKAGE_HANDLE_STANDARD_ARGS(OpenImageIO DEFAULT_MSG
-    OPENIMAGEIO_LIBRARY OPENIMAGEIO_INCLUDE_DIR)
+# Handle possible presence of lib prefix for libraries on MSVC, see
+# also OPENIMAGEIO_RESET_FIND_LIBRARY_PREFIX().
+if (MSVC)
+  # Preserve the caller's original values for CMAKE_FIND_LIBRARY_PREFIXES
+  # s/t we can set it back before returning.
+  set(CALLERS_CMAKE_FIND_LIBRARY_PREFIXES "${CMAKE_FIND_LIBRARY_PREFIXES}")
+  # The empty string in this list is important, it represents the case when
+  # the libraries have no prefix (shared libraries / DLLs).
+  set(CMAKE_FIND_LIBRARY_PREFIXES "lib" "" "${CMAKE_FIND_LIBRARY_PREFIXES}")
+endif (MSVC)
 
-IF(OPENIMAGEIO_FOUND)
-  SET(OPENIMAGEIO_LIBRARIES ${OPENIMAGEIO_LIBRARY})
-  SET(OPENIMAGEIO_INCLUDE_DIRS ${OPENIMAGEIO_INCLUDE_DIR})
-ENDIF(OPENIMAGEIO_FOUND)
+# Search user-installed locations first, so that we prefer user installs
+# to system installs where both exist.
+list(APPEND OPENIMAGEIO_CHECK_INCLUDE_DIRS
+  /usr/local/include
+  /usr/local/homebrew/include # Mac OS X
+  /opt/local/var/macports/software # Mac OS X.
+  /opt/local/include
+  /usr/include)
+# Windows (for C:/Program Files prefix).
+list(APPEND OPENIMAGEIO_CHECK_PATH_SUFFIXES
+  openimageio/include
+  openimageio/Include
+  OpenImageIO/include
+  OpenImageIO/Include)
 
-MARK_AS_ADVANCED(
-  OPENIMAGEIO_INCLUDE_DIR
-  OPENIMAGEIO_LIBRARY
-)
+list(APPEND OPENIMAGEIO_CHECK_LIBRARY_DIRS
+  /usr/local/lib
+  /usr/local/homebrew/lib # Mac OS X.
+  /opt/local/lib
+  /usr/lib)
+# Windows (for C:/Program Files prefix).
+list(APPEND OPENIMAGEIO_CHECK_LIBRARY_SUFFIXES
+  openimageio/lib
+  openimageio/Lib
+  OpenImageIO/lib
+  OpenImageIO/Lib)
+
+# Search supplied hint directories first if supplied.
+find_path(OPENIMAGEIO_INCLUDE_DIR
+  NAMES OpenImageIO/imageio.h
+  PATHS ${OPENIMAGEIO_INCLUDE_DIR_HINTS}
+  ${OPENIMAGEIO_CHECK_INCLUDE_DIRS}
+  PATH_SUFFIXES ${OPENIMAGEIO_CHECK_PATH_SUFFIXES})
+if (NOT OPENIMAGEIO_INCLUDE_DIR OR
+    NOT EXISTS ${OPENIMAGEIO_INCLUDE_DIR})
+  openimageio_report_not_found(
+    "Could not find OpenImageIO include directory, set OPENIMAGEIO_INCLUDE_DIR "
+    "to directory containing OpenImageIO/imageio.h")
+endif (NOT OPENIMAGEIO_INCLUDE_DIR OR
+       NOT EXISTS ${OPENIMAGEIO_INCLUDE_DIR})
+
+find_library(OPENIMAGEIO_LIBRARY NAMES OpenImageIO
+  PATHS ${OPENIMAGEIO_LIBRARY_DIR_HINTS}
+  ${OPENIMAGEIO_CHECK_LIBRARY_DIRS}
+  PATH_SUFFIXES ${OPENIMAGEIO_CHECK_LIBRARY_SUFFIXES})
+if (NOT OPENIMAGEIO_LIBRARY OR
+    NOT EXISTS ${OPENIMAGEIO_LIBRARY})
+  openimageio_report_not_found(
+    "Could not find OpenImageIO library, set OPENIMAGEIO_LIBRARY "
+    "to full path to libopenimageio.")
+endif (NOT OPENIMAGEIO_LIBRARY OR
+       NOT EXISTS ${OPENIMAGEIO_LIBRARY})
+
+# Mark internally as found, then verify. OPENIMAGEIO_REPORT_NOT_FOUND() unsets
+# if called.
+set(OPENIMAGEIO_FOUND TRUE)
+
+# OpenImageIO does not seem to provide any record of the version in its
+# source tree, thus cannot extract version.
+
+# Catch case when caller has set OPENIMAGEIO_INCLUDE_DIR in the cache / GUI and
+# thus FIND_[PATH/LIBRARY] are not called, but specified locations are
+# invalid, otherwise we would report the library as found.
+if (OPENIMAGEIO_INCLUDE_DIR AND
+    NOT EXISTS ${OPENIMAGEIO_INCLUDE_DIR}/OpenImageIO/imageio.h)
+  openimageio_report_not_found(
+    "Caller defined OPENIMAGEIO_INCLUDE_DIR:"
+    " ${OPENIMAGEIO_INCLUDE_DIR} does not contain OpenImageIO/imageio.h header.")
+endif (OPENIMAGEIO_INCLUDE_DIR AND
+       NOT EXISTS ${OPENIMAGEIO_INCLUDE_DIR}/OpenImageIO/imageio.h)
+# TODO: This regex for OpenImageIO library is pretty primitive, we use lowercase
+#       for comparison to handle Windows using CamelCase library names, could
+#       this check be better?
+string(TOLOWER "${OPENIMAGEIO_LIBRARY}" LOWERCASE_OPENIMAGEIO_LIBRARY)
+if (OPENIMAGEIO_LIBRARY AND
+    NOT "${LOWERCASE_OPENIMAGEIO_LIBRARY}" MATCHES ".*openimageio[^/]*")
+  openimageio_report_not_found(
+    "Caller defined OPENIMAGEIO_LIBRARY: "
+    "${OPENIMAGEIO_LIBRARY} does not match OpenImageIO.")
+endif (OPENIMAGEIO_LIBRARY AND
+       NOT "${LOWERCASE_OPENIMAGEIO_LIBRARY}" MATCHES ".*openimageio[^/]*")
+
+# Set standard CMake FindPackage variables if found.
+if (OPENIMAGEIO_FOUND)
+  set(OPENIMAGEIO_INCLUDE_DIRS ${OPENIMAGEIO_INCLUDE_DIR})
+  set(OPENIMAGEIO_LIBRARIES ${OPENIMAGEIO_LIBRARY})
+endif (OPENIMAGEIO_FOUND)
+
+openimageio_reset_find_library_prefix()
+
+# Handle REQUIRED / QUIET optional arguments.
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(OpenImageIO DEFAULT_MSG
+  OPENIMAGEIO_INCLUDE_DIRS OPENIMAGEIO_LIBRARIES)
+
+# Only mark internal variables as advanced if we found OpenImageIO, otherwise
+# leave them visible in the standard GUI for the user to set manually.
+if (OPENIMAGEIO_FOUND)
+  mark_as_advanced(FORCE OPENIMAGEIO_INCLUDE_DIR
+                         OPENIMAGEIO_LIBRARY)
+endif (OPENIMAGEIO_FOUND)
