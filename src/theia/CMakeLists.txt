@@ -41,7 +41,7 @@ set(THEIA_SRC
   image/descriptor/create_descriptor_extractor.cc
   image/descriptor/descriptor_extractor.cc
   image/descriptor/sift_descriptor.cc
-  image/image_canvas.cc
+  image/image.cc
   image/keypoint_detector/sift_detector.cc
   io/import_nvm_file.cc
   io/read_1dsfm.cc
@@ -168,10 +168,9 @@ set(THEIA_LIBRARY_DEPENDENCIES
   ${CERES_LIBRARIES}
   ${GFLAGS_LIBRARIES}
   ${GLOG_LIBRARIES}
-  ${CIMG_LIBRARIES}
   ${SUITESPARSE_LIBRARIES}
+  ${OPENIMAGEIO_LIBRARIES}
   akaze
-  easyexif
   flann_cpp
   statx
   stlplus3

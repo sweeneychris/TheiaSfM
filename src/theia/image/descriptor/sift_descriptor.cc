@@ -60,6 +60,7 @@ double GetValidFirstOctave(const int first_octave,
   int valid_first_octave = first_octave;
   double scale_factor = std::pow(2.0, -1 * valid_first_octave);
   while (max_dim * scale_factor >= kMaxScaledDim) {
+    LOG(INFO) << "Scale factor = " << scale_factor;
     scale_factor /= 2.0;
     ++valid_first_octave;
   }
@@ -108,8 +109,10 @@ bool SiftDescriptorExtractor::ComputeDescriptor(
   int vl_status =
       vl_sift_process_first_octave(sift_filter_, mutable_image.Data());
   // Proceed through the octaves we reach the same one as the keypoint.
-  while (sift_keypoint.o != sift_filter_->o_cur)
+  while (sift_keypoint.o != sift_filter_->o_cur) {
+    LOG(INFO) << "Next octave...";
     vl_sift_process_next_octave(sift_filter_);
+  }
 
   if (vl_status == VL_ERR_EOF)
     LOG(FATAL) << "could not extract sift descriptors";

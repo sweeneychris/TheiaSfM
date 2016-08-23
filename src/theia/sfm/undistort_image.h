@@ -38,6 +38,8 @@
 #include "theia/sfm/camera/camera.h"
 #include "theia/image/image.h"
 
+#include "theia/sfm/camera/camera_intrinsics_model.h"
+
 namespace theia {
 
 // Given an image with lens distortion distortion described by the camera

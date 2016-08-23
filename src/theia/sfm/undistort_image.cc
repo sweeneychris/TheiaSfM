@@ -165,13 +165,13 @@ void RemoveImageLensDistortion(const Camera& distorted_camera,
       if (pixel.x() < 0 || pixel.x() >= distorted_image.Width() ||
           pixel.y() < 0 || pixel.y() >= distorted_image.Height()) {
         for (int c = 0; c < distorted_image.Channels(); c++) {
-          undistorted_image->AtRowCol(y, x, c) = 0.0;
+          undistorted_image->SetXY(x, y, c,  0.0);
         }
       } else {
         for (int c = 0; c < distorted_image.Channels(); c++) {
-          undistorted_image->AtRowCol(y, x, c) =
-              distorted_image.BilinearInterpolate(distorted_pixel.x(),
-                                                  distorted_pixel.y(), c);
+          undistorted_image->SetXY(
+              x, y, c, distorted_image.BilinearInterpolate(
+                           distorted_pixel.x(), distorted_pixel.y(), c));
         }
       }
     }
@@ -226,9 +226,13 @@ bool UndistortImage(const Camera& distorted_camera,
           distorted_camera.ImageHeight());
 
   // Undistort the image.
+  if (distorted_image.Channels() == 1) {
+    undistorted_image->ConvertToGrayscaleImage();
+  } else {
+    undistorted_image->ConvertToRGBImage();
+  }
   undistorted_image->Resize(undistorted_camera->ImageWidth(),
-                            undistorted_camera->ImageHeight(),
-                            distorted_image.Channels());
+                            undistorted_camera->ImageHeight());
 
   // Remap the distorted pixels into the undistorted image.
   RemoveImageLensDistortion(distorted_camera,

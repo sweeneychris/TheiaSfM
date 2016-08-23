@@ -50,8 +50,7 @@ struct SiftParameters {
       peak_threshold(peak_threshold) {}
 
   SiftParameters(int num_octaves, int num_levels, int first_octave) :
-      SiftParameters(num_octaves, num_levels, first_octave,
-                     10.0f, 0.7f) {}
+      SiftParameters(num_octaves, num_levels, first_octave) {}
 
   ~SiftParameters() {}
 
@@ -60,8 +59,8 @@ struct SiftParameters {
   int num_octaves = -1;
   int num_levels = 3;
   int first_octave = -1;
-  float edge_threshold = 10.0f;
-  float peak_threshold = 0.7f;
+  float edge_threshold = 10.0f / 255.0;
+  float peak_threshold = 1.2f / 255.0;
   // Descriptor parameters.
   bool root_sift = true;
   // Upright sift enables only a single descriptor to be extracted at a given
