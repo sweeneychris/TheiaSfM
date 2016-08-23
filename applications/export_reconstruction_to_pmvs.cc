@@ -82,7 +82,7 @@ int WriteCamerasToPMVS(const theia::Reconstruction& reconstruction) {
     // %08d.jpg.
     const std::string new_image_file = theia::StringPrintf(
         "%s/%08d.jpg", visualize_dir.c_str(), current_image_index);
-    theia::Image<float> old_image(image_files[i]);
+    theia::FloatImage old_image(image_files[i]);
     old_image.Write(new_image_file);
 
     // Write the camera projection matrix.

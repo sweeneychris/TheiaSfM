@@ -35,8 +35,9 @@
 #ifndef THEIA_IMAGE_IMAGE_H_
 #define THEIA_IMAGE_IMAGE_H_
 
-#include <cimg/CImg.h>
+#include <Eigen/Core>
 #include <glog/logging.h>
+#include <OpenImageIO/imagebuf.h>
 
 #include <algorithm>
 #include <cmath>
@@ -48,30 +49,26 @@
 #include "theia/util/util.h"
 
 namespace theia {
-template <typename T> class Image;
-typedef Image<float> FloatImage;
-typedef Image<uchar> UcharImage;
-typedef Image<int> IntImage;
 
-// Templated on the number of channels.
-template <typename T> class Image {
+// A basic wrapper class for handling images. The images are always converted to
+// floating point type with pixel values ranging from 0 to 1.0. The number of
+// channels is dynamically controlled and methods that access pixels requires
+// the caller to choose to appropriate RGB vs grayscale method.
+class FloatImage {
  public:
-  Image() {}
+  FloatImage() {}
 
   // Read from file.
-  explicit Image(const std::string& filename);
-  Image(const int width, const int height, const int channels);
+  explicit FloatImage(const std::string& filename);
+  FloatImage(const int width, const int height, const int channels);
 
   // Copy function. This is a deep copy of the image.
-  Image(const Image<T>& image_to_copy);
+  FloatImage(const FloatImage& image_to_copy);
 
-  // Copy function. This is a deep copy of the image.
-  template <typename D>
-  Image(const Image<D>& image_to_copy);
+  explicit FloatImage(const OpenImageIO::ImageBuf& image);
 
-  explicit Image(const cimg_library::CImg<T>& image);
+  ~FloatImage() {}
 
-  ~Image() {}
   // Image information
   int Rows() const;
   int Cols() const;
@@ -79,18 +76,49 @@ template <typename T> class Image {
   int Height() const;
   int Channels() const;
 
-  // Returns the pixel value at (x, y). An optional third parameter can specify
-  // the color channel.
-  T& operator()(const int x, const int y, const int c = 0);
-  const T& operator()(const int x, const int y, const int c = 0) const;
-  T& AtRowCol(const int row, const int col, const int channel = 0);
-  const T& AtRowCol(const int row, const int col, const int channel = 0) const;
+  // Set the pixel color value at (x, y) in channel c.
+  void SetXY(const int x,
+             const int y,
+             const int c,
+             const float value);
+  // Set the rgb color values at the pixel (x, y). This assumes (with no
+  // checks!) that the image is an rgb image.
+  void SetXY(const int x,
+             const int y,
+             const Eigen::Vector3f& rgb);
 
-  T BilinearInterpolate(const double x, const double y, const int c = 0) const;
+  // Get the pixel value at the given (x, y) position and channel.
+  float GetXY(const int x, const int y, const int channel) const;
+  // Get the RGB value at the given pixel. This assumes (with no checks!) that
+  // the image is indeed an RGB image.
+  Eigen::Vector3f GetXY(const int x, const int y) const;
+
+  // Set the pixel value at row and column in channel c.
+  void SetRowCol(const int row,
+                 const int col,
+                 const int channel,
+                 const float value);
+  // Set the rgb color values at the given row and column. This assumes (with no
+  // checks!) that the image is an rgb image.
+  void SetRowCol(const int row,
+                 const int col,
+                 const Eigen::Vector3f& rgb);
+  // Get the pixel value at the given location and channel.
+  float GetRowCol(const int row, const int col, const int channel) const;
+
+  // Get the RGB value at the given pixel. This assumes (with no checks!) that
+  // the image is indeed an RGB image.
+  Eigen::Vector3f GetRowCol(const int row, const int col) const;
+
+  // Get the pixel value at a non-discrete location with bilinear interpolation.
+  float BilinearInterpolate(const double x, const double y, const int c) const;
+
+  // Get the pixel value at a non-discrete location with bilinear interpolation.
+  Eigen::Vector3f BilinearInterpolate(const double x, const double y) const;
 
   // Convert to other image types.
-  Image<T> AsGrayscaleImage() const;
-  Image<T> AsRGBImage() const;
+  FloatImage AsGrayscaleImage() const;
+  FloatImage AsRGBImage() const;
   void ConvertToGrayscaleImage();
   void ConvertToRGBImage();
 
@@ -102,16 +130,12 @@ template <typename T> class Image {
   void Write(const std::string& filename) const;
 
   // Get a pointer to the data.
-  T* Data() { return image_.data(); }
-  const T* Data() const { return image_.data(); }
+  float* Data();
+  const float* Data() const;
 
   // Computes the gradient in x and y and returns the summation to obtain the
   // gradient magnitude at each pixel.
-  Image<T> ComputeGradient() const;
-
-  // Sampling techniques.
-  void HalfSample(Image<T>* dest) const;
-  void TwoThirdsSample(Image<T>* dest) const;
+  FloatImage ComputeGradient() const;
 
   // Compute the integral image where pixel (x, y) is equal to the sum of all
   // values in the rectangle from (0, 0) to (x, y) non-inclusive. This means
@@ -120,219 +144,22 @@ template <typename T> class Image {
   //
   // NOTE: This method should be called with precise number types such as double
   // otherwise floating roundoff errors are sure to occur.
-  template <typename D>
-  void Integrate(Image<D>* integral) const;
+  void Integrate(FloatImage* integral) const;
 
   // Computes a fast approximate gaussian blur of te image.
   void ApproximateGaussianBlur(const double sigma);
 
   // Resize using a Lanczos 3 filter.
   void Resize(int new_width, int new_height);
-  void Resize(int new_width, int new_height, int new_channels);
   void ResizeRowsCols(int new_rows, int new_cols);
-  void ResizeRowsCols(int new_rows, int new_cols, int new_channels);
   void Resize(double scale);
 
  protected:
-  template<class AnyType> friend class Image;
-  friend class ImageCanvas;
+  //template<class AnyType> friend class Image;
+  // friend class ImageCanvas;
 
-  cimg_library::CImg<T> image_;
+  OpenImageIO::ImageBuf image_;
 };
-
-// ----------------- Implementation ----------------- //
-
-// Read from file.
-template <typename T> Image<T>::Image(const std::string& filename) {
-  image_.load(filename.c_str());
-}
-
-template <typename T> Image<T>::Image(const Image<T>& image_to_copy) {
-  image_ = image_to_copy.image_;
-}
-
-template <typename T>
-Image<T>::Image(const int width, const int height, const int channels) {
-  image_.resize(width, height, 1, channels);
-}
-
-// Copy function. This is a deep copy of the image.
-template <typename T> template <typename D>
-Image<T>::Image(const Image<D>& image_to_copy) {
-  image_ = image_to_copy.image_;
-}
-
-template <typename T> Image<T>::Image(const cimg_library::CImg<T>& image) {
-  image_ = image;
-}
-
-template <typename T> int Image<T>::Rows() const {
-  return image_.height();
-}
-
-template <typename T> int Image<T>::Cols() const {
-  return image_.width();
-}
-
-template <typename T> int Image<T>::Width() const {
-  return image_.width();
-}
-
-template <typename T> int Image<T>::Height() const {
-  return image_.height();
-}
-
-template <typename T> int Image<T>::Channels() const {
-  return image_.spectrum();
-}
-
-template <typename T>
-T& Image<T>::operator()(const int x, const int y, const int c) {
-  return image_(x, y, 0, c);
-}
-
-template <typename T>
-const T& Image<T>::operator()(const int x, const int y, const int c) const {
-  return image_(x, y, 0, c);
-}
-
-template <typename T>
-T& Image<T>::AtRowCol(const int row, const int col, const int channel) {
-  return image_(col, row, channel);
-}
-
-template <typename T>
-const T& Image<T>::AtRowCol(const int row,
-                            const int col,
-                            const int channel) const {
-  return image_(col, row, channel);
-}
-
-template <typename T>
-T Image<T>::BilinearInterpolate(const double x,
-                                const double y,
-                                const int c) const {
-  return image_.linear_atXY(x, y, 0, c);
-}
-
-template <typename T> void Image<T>::ConvertToGrayscaleImage() {
-  if (Channels() == 1) {
-    VLOG(2) << "Image is already a grayscale image. No conversion necessary.";
-    return;
-  }
-  image_ = image_.get_RGBtoYCbCr().channel(0);
-}
-
-template <typename T> void Image<T>::ConvertToRGBImage() {
-  if (Channels() == 3) {
-    VLOG(2) << "Image is already an RGB image. No conversion necessary.";
-    return;
-  }
-
-  // Resizing with NN interpolation by default will copy the pixel value of the
-  // grayscale pixel to all RGB channels.
-  image_.resize(image_.width(),
-                image_.height(),
-                image_.depth(),
-                3);
-}
-
-template <typename T> Image<T> Image<T>::AsGrayscaleImage() const {
-  if (Channels() == 1) {
-    VLOG(2) << "Image is already a grayscale image. No conversion necessary.";
-    return *this;
-  }
-  Image<T> gray_image(*this);
-  gray_image.ConvertToGrayscaleImage();
-  return gray_image;
-}
-
-template <typename T> Image<T> Image<T>::AsRGBImage() const {
-  if (Channels() == 3) {
-    VLOG(2) << "Image is already an RGB image. No conversion necessary.";
-    return *this;
-  }
-
-  Image<T> rgb_image(*this);
-  rgb_image.ConvertToRGBImage();
-  return rgb_image;
-}
-
-template <typename T> void Image<T>::ScalePixels(float scale) {
-  image_ *= scale;
-}
-
-template <typename T> void Image<T>::Read(const std::string& filename) {
-  image_.load(filename.c_str());
-}
-
-template <typename T> void Image<T>::Write(const std::string& filename) const {
-  image_.save(filename.c_str());
-}
-
-template <typename T>
-Image<T> Image<T>::ComputeGradient() const {
-  cimg_library::CImgList<T> gradient = image_.get_gradient("xy");
-  return Image<T>(gradient[0] + gradient[1]);
-}
-
-template <typename T> void Image<T>::HalfSample(Image<T>* dest) const {
-  dest->image_ = image_.get_resize_halfXY();
-}
-
-template <typename T> void Image<T>::TwoThirdsSample(Image<T>* dest) const {
-  const int new_width = static_cast<int>(image_.width() * 2.0 / 3.0);
-  const int new_height = static_cast<int>(image_.height() * 2.0 / 3.0);
-  dest->image_ = image_.get_resize(new_width, new_height, -100, -100, 6);
-}
-
-template <typename T>
-template <typename D>
-void Image<T>::Integrate(Image<D>* integral) const {
-  integral->ResizeRowsCols(Rows() + 1, Cols() + 1);
-
-  for (int i = 0; i < Channels(); i++) {
-    // Fill the first row with zeros.
-    for (int x = 0; x < Width(); x++) {
-      (*integral)(x, 0, i) = 0;
-    }
-
-    for (int y = 1; y <= Height(); y++) {
-      // This variable is to correct floating point round off.
-      D sum(0);
-      (*integral)(0, y, i) = 0;
-      for (int x = 1; x <= Width(); x++) {
-        sum += static_cast<D>((*this)(x - 1, y - 1, i));
-        (*integral)(x, y, i) = (*integral)(x, y - 1, i) + sum;
-      }
-    }
-  }
-}
-
-template <typename T>
-void Image<T>::ApproximateGaussianBlur(const double sigma) {
-  image_.blur(sigma);
-}
-
-template <typename T>
-void Image<T>::Resize(int new_width, int new_height) {
-  image_.resize(new_width, new_height);
-}
-
-template <typename T>
-void Image<T>::Resize(int new_width, int new_height, int new_channels) {
-  image_.resize(new_width, new_height, 1, new_channels);
-}
-
-template <typename T>
-void Image<T>::ResizeRowsCols(int new_rows, int new_cols) {
-  image_.resize(new_cols, new_rows);
-}
-template <typename T>
-void Image<T>::ResizeRowsCols(int new_rows, int new_cols, int new_channels) {
-  image_.resize(new_cols, new_rows, 1, new_channels);
-}
-
 }  // namespace theia
 
 #endif  // THEIA_IMAGE_IMAGE_H_

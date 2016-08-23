@@ -43,8 +43,7 @@
 
 namespace theia {
 
-template<class T> class Image;
-typedef Image<float> FloatImage;
+class FloatImage;
 
 // Parameters for the akaze feature extractor.
 struct AkazeParameters {

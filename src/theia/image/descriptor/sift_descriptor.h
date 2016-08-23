@@ -47,8 +47,7 @@ extern "C" {
 
 namespace theia {
 
-template<class T> class Image;
-typedef Image<float> FloatImage;
+class FloatImage;
 
 class SiftDescriptorExtractor : public DescriptorExtractor {
  public:

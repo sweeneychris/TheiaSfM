@@ -32,9 +32,10 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#include <cimg/CImg.h>
 #include <Eigen/Core>
 #include <gflags/gflags.h>
+#include <OpenImageIO/imagebuf.h>
+#include <OpenImageIO/imagebufalgo.h>
 #include <stdio.h>
 #include <string>
 
@@ -46,71 +47,66 @@ DEFINE_string(test_img, "image/test1.jpg", "Name of test image file.");
 
 namespace theia {
 namespace {
-using cimg_library::CImg;
 
 RandomNumberGenerator rng(51);
 
 std::string img_filename = THEIA_DATA_DIR + std::string("/") + FLAGS_test_img;
 
-#define ASSERT_RGB_IMG_EQ(cimg_img, theia_img, rows, cols)     \
-  ASSERT_EQ(cimg_img.width(), theia_img.Cols());               \
-  ASSERT_EQ(cimg_img.height(), theia_img.Rows());              \
-  ASSERT_EQ(cimg_img.spectrum(), theia_img.Channels());        \
-  ASSERT_EQ(theia_img.Channels(), 3);                          \
-  ASSERT_EQ(cimg_img.depth(), 1);                              \
-  for (int i = 0; i < cols; i++) {                             \
-    for (int j = 0; j < rows; j++) {                           \
-      ASSERT_EQ(cimg_img(i, j, 0, 0), theia_img(i, j, 0));     \
-      ASSERT_EQ(cimg_img(i, j, 0, 1), theia_img(i, j, 1));     \
-      ASSERT_EQ(cimg_img(i, j, 0, 2), theia_img(i, j, 2));     \
-    }                                                          \
+#define ASSERT_IMG_EQ(oiio_img, theia_img, rows, cols)      \
+  oiio_img.read(0, 0, true, OpenImageIO::TypeDesc::FLOAT);  \
+  ASSERT_EQ(oiio_img.oriented_width(), theia_img.Cols());   \
+  ASSERT_EQ(oiio_img.oriented_height(), theia_img.Rows());  \
+  ASSERT_EQ(oiio_img.nchannels(), theia_img.Channels());    \
+  OpenImageIO::ImageBuf::ConstIterator<float> it(oiio_img); \
+  for (; !it.done(); ++it) {                                \
+    for (int c = 0; c < oiio_img.nchannels(); c++) {        \
+      ASSERT_EQ(it[c], theia_img.GetXY(it.x(), it.y(), c)); \
+    }                                                       \
   }
-
-#define ASSERT_GRAY_IMG_EQ(cimg_img, theia_img, rows, cols)     \
-  ASSERT_EQ(cimg_img.width(), theia_img.Cols());                \
-  ASSERT_EQ(cimg_img.height(), theia_img.Rows());               \
-  ASSERT_EQ(cimg_img.spectrum(), theia_img.Channels());         \
-  ASSERT_EQ(theia_img.Channels(), 1);                           \
-  ASSERT_EQ(cimg_img.depth(), 1);                               \
-  for (int i = 0; i < cols; i++)                                \
-    for (int j = 0; j < rows; j++)                              \
-      ASSERT_EQ(cimg_img(i, j), theia_img(i, j));               \
 
 float Interpolate(const FloatImage& image,
                   const double x,
                   const double y,
                   const int c) {
-  const int left = std::floor(x);
-  const int right = std::ceil(x);
-  const int top = std::floor(y);
-  const int bottom = std::ceil(y);
-  return image(left, top, c) * (right - x) * (bottom - y) +
-         image(left, bottom, c) * (right - x) * (y - top) +
-         image(right, top, c) * (x - left) * (bottom - y) +
-         image(right, bottom, c) * (x - left) * (y - top);
+  const float x_fix = x - 0.5;
+  const float y_fix = y - 0.5;
+
+  float intpart;
+  const float s = std::modf(x_fix, &intpart);
+  const int left = static_cast<int>(intpart);
+  const float t = std::modf(y_fix, &intpart);
+  const int top = static_cast<int>(intpart);
+
+  const float v0 = image.GetXY(left, top, 0);
+  const float v1 = image.GetXY(left + 1, top, 0);
+  const float v2 = image.GetXY(left, top + 1, 0);
+  const float v3 = image.GetXY(left + 1, top + 1, 0);
+
+  return (1.0 - t) * (v0 * (1.0 - s) + v1 * s) + t * (v2 * (1.0 - s) + v3 * s);
 }
 
 }  // namespace
 
 // Test that inputting the old fashioned way is the same as through our class.
 TEST(Image, RGBInput) {
-  CImg<float> cimg_img(img_filename.c_str());
+  OpenImageIO::ImageBuf oiio_img(img_filename.c_str());
+  oiio_img.read();
   FloatImage theia_img(img_filename);
 
-  int rows = cimg_img.height();
-  int cols = cimg_img.width();
+  int rows = oiio_img.oriented_height();
+  int cols = oiio_img.oriented_width();
 
   // Assert each pixel value is exactly the same!
-  ASSERT_RGB_IMG_EQ(cimg_img, theia_img, rows, cols);
+  ASSERT_IMG_EQ(oiio_img, theia_img, rows, cols);
 }
 
 // Test that width and height methods work.
 TEST(Image, RGBColsRows) {
-  CImg<float> cimg_img(img_filename.c_str());
+  OpenImageIO::ImageBuf oiio_img(img_filename.c_str());
   FloatImage theia_img(img_filename);
 
-  int true_height = cimg_img.height();
-  int true_width = cimg_img.width();
+  int true_height = oiio_img.oriented_height();
+  int true_width = oiio_img.oriented_width();
 
   ASSERT_EQ(theia_img.Cols(), true_width);
   ASSERT_EQ(theia_img.Rows(), true_height);
@@ -118,61 +114,46 @@ TEST(Image, RGBColsRows) {
 
 // Test that inputting the old fashioned way is the same as through our class.
 TEST(Image, ConvertToGrayscaleImage) {
-  CImg<float> cimg_img(img_filename.c_str());
-  CImg<float> gray_img(cimg_img.RGBtoYCbCr().channel(0));
+  OpenImageIO::ImageBuf oiio_img(img_filename.c_str());
+  OpenImageIO::ImageBuf gray_img;
+  const float luma_weights[3] = {.2126, .7152, .0722};
+  OpenImageIO::ImageBufAlgo::channel_sum(gray_img, oiio_img, luma_weights);
+
   FloatImage theia_img(img_filename);
   theia_img.ConvertToGrayscaleImage();
+  ASSERT_EQ(theia_img.Channels(), 1);
 
-  int rows = cimg_img.height();
-  int cols = cimg_img.width();
+  int rows = oiio_img.oriented_height();
+  int cols = oiio_img.oriented_width();
 
   // Assert each pixel value is exactly the same!
-  ASSERT_GRAY_IMG_EQ(gray_img, theia_img, rows, cols);
+  ASSERT_IMG_EQ(gray_img, theia_img, rows, cols);
 }
 
 TEST(Image, ConvertToRGBImage) {
-  const CImg<float> cimg_img(img_filename.c_str());
-  const CImg<float>& gray_cimg = cimg_img.get_RGBtoYCbCr().get_channel(0);
+  OpenImageIO::ImageBuf oiio_img(img_filename.c_str());
+  OpenImageIO::ImageBuf gray_img;
+  const float luma_weights[3] = {.2126, .7152, .0722};
+  OpenImageIO::ImageBufAlgo::channel_sum(gray_img, oiio_img, luma_weights);
 
-  CImg<float> rgb_img = gray_cimg;
-  rgb_img.resize(cimg_img.width(), cimg_img.height(), cimg_img.depth(),
-                 3);
+  // This should result in an image with the grayscale image copied in each
+  // channel.
+  FloatImage rgb_img(img_filename.c_str());
+  rgb_img.ConvertToGrayscaleImage();
+  rgb_img.ConvertToRGBImage();
 
-  cimg_forXY(rgb_img, x, y) {
-    CHECK_EQ(rgb_img(x, y, 0, 0), rgb_img(x, y, 0, 1));
-    CHECK_EQ(rgb_img(x, y, 0, 0), rgb_img(x, y, 0, 2));
-  }
+  ASSERT_EQ(rgb_img.Width(), gray_img.oriented_width());
+  ASSERT_EQ(rgb_img.Height(), gray_img.oriented_height());
+  ASSERT_EQ(rgb_img.Channels(), 3);
 
-  FloatImage theia_img(img_filename);
-  theia_img.ConvertToGrayscaleImage();
-  theia_img.ConvertToRGBImage();
-
-  int rows = cimg_img.height();
-  int cols = cimg_img.width();
-
-  // Assert each pixel value is exactly the same!
-  ASSERT_RGB_IMG_EQ(rgb_img, theia_img, rows, cols);
-}
-
-TEST(Image, IntegralImage) {
-  const FloatImage img = FloatImage(img_filename).AsGrayscaleImage();
-  Image<double> integral_img;
-  img.Integrate(&integral_img);
-
-  // Check the integral image over 100 trials;
-  for (int i = 0; i < 1000; i++) {
-    const int x = rng.RandInt(1, img.Cols());
-    const int y = rng.RandInt(1, img.Rows());
-
-    // Check the integral.
-    double sum = 0;
-    for (int r = 0; r < y; r++) {
-      for (int c = 0; c < x; c++) {
-        sum += img(c, r);
-      }
-    }
-
-    EXPECT_DOUBLE_EQ(integral_img(x, y), sum);
+  // Check that all channels have equal value and that the value is equal to the
+  // grayscale image.
+  for (OpenImageIO::ImageBuf::ConstIterator<float> it(gray_img);
+       !it.done();
+       ++it) {
+    ASSERT_EQ(it[0], rgb_img.GetXY(it.x(), it.y(), 0));
+    ASSERT_EQ(it[0], rgb_img.GetXY(it.x(), it.y(), 1));
+    ASSERT_EQ(it[0], rgb_img.GetXY(it.x(), it.y(), 2));
   }
 }
 
@@ -181,6 +162,7 @@ TEST(Image, BillinearInterpolate) {
   static const float kTolerance = 1e-2;
 
   FloatImage theia_img(img_filename);
+  theia_img.ConvertToGrayscaleImage();
   for (int i = 0; i < kNumTrials; i++) {
     const double x = rng.RandDouble(1.0, theia_img.Width() - 2);
     const double y = rng.RandDouble(1.0, theia_img.Height() - 2);
@@ -200,7 +182,8 @@ TEST(Image, ScalePixels) {
 
   for (int y = 0; y < theia_img.Height(); y++) {
     for (int x = 0; x < theia_img.Width(); x++) {
-      EXPECT_DOUBLE_EQ(kScaleFactor * theia_img(x, y), scaled_img(x, y));
+      ASSERT_EQ(kScaleFactor * theia_img.GetXY(x, y, 0),
+                scaled_img.GetXY(x, y, 0));
     }
   }
 }

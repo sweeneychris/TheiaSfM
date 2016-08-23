@@ -157,6 +157,16 @@ else (CERES_FOUND)
     "CERES_LIBRARY")
 endif (CERES_FOUND)
 
+# OpenImageIO
+message("-- Check for OpenImageIO")
+find_package(OpenImageIO REQUIRED)
+if (OPENIMAGEIO_FOUND)
+  message("-- Found OpenImageIO: ${OPENIMAGEIO_INCLUDE_DIRS}")
+else (OPENIMAGEIO_FOUND)
+  message(FATAL_ERROR "Can't find OpenImageIO. Please set OPENIMAGEIO_INCLUDE_DIR & "
+    "OPENIMAGEIO_LIBRARY")
+endif (OPENIMAGEIO_FOUND)
+
 # Suitesparse
 find_package(SuiteSparse REQUIRED)
 if (SUITESPARSE_FOUND)
@@ -190,7 +200,9 @@ include_directories(
   ${CERES_INCLUDE_DIRS}
   ${GFLAGS_INCLUDE_DIRS}
   ${GLOG_INCLUDE_DIRS}
-  ${SUITESPARSE_INCLUDE_DIRS})
+  ${SUITESPARSE_INCLUDE_DIRS}
+  ${OPENIMAGEIO_INCLUDE_DIRS}
+)
 
 # NOTE: This fix came from Ceres solver with the following comment:
 #
@@ -215,9 +227,6 @@ include_directories(
   ${akaze_INCLUDE_DIR}
   ${cereal_SOURCE_DIR}
   ${cereal_SOURCE_DIR}/include
-  ${cimg_SOURCE_DIR}
-  ${cimg_INCLUDE_DIR}
-  ${easyexif_INCLUDE_DIR}
   ${flann_SOURCE_DIR}
   ${flann_SOURCE_DIR}/src/cpp
   ${gtest_SOURCE_DIR}/include

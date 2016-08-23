@@ -163,6 +163,16 @@ else (GFLAGS_FOUND)
 endif (GFLAGS_FOUND)
 list(APPEND THEIA_INCLUDE_DIRS ${GFLAGS_INCLUDE_DIRS})
 
+# OpenImageIO
+find_package(OpenImageIO QUIET)
+if (OPENIMAGEIO_FOUND)
+  message(STATUS "Found Theia dependency: OpenImageIO in ${OPENIMAGEIO_INCLUDE_DIRS}")
+else (OPENIMAGEIO_FOUND)
+  theia_report_not_found("Missing required Theia dependency: OpenImageIO. Please set "
+    "OPENIMAGEIO_INCLUDE_DIR & OPENIMAGEIO_LIBRARY")
+endif (OPENIMAGEIO_FOUND)
+list(APPEND THEIA_INCLUDE_DIRS ${OPENIMAGEIO_INCLUDE_DIRS})
+
 find_package(SuiteSparse QUIET)
 if (SUITESPARSE_FOUND)
   # On Ubuntu the system install of SuiteSparse (v3.4.0) up to at least
@@ -204,8 +214,6 @@ set(THEIA_INTERNAL_LIBS_INCLUDES
   ${THEIA_INTERNAL_LIB_PREFIX}/akaze
   ${THEIA_INTERNAL_LIB_PREFIX}/cereal
   ${THEIA_INTERNAL_LIB_PREFIX}/cereal/include
-  ${THEIA_INTERNAL_LIB_PREFIX}/cimg
-  ${THEIA_INTERNAL_LIB_PREFIX}/easyexif
   ${THEIA_INTERNAL_LIB_PREFIX}/flann
   ${THEIA_INTERNAL_LIB_PREFIX}/gtest
   ${THEIA_INTERNAL_LIB_PREFIX}/gtest/include

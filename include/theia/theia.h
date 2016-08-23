@@ -41,7 +41,6 @@
 #include "theia/image/descriptor/descriptor_extractor.h"
 #include "theia/image/descriptor/sift_descriptor.h"
 #include "theia/image/image.h"
-#include "theia/image/image_canvas.h"
 #include "theia/image/keypoint_detector/keypoint.h"
 #include "theia/image/keypoint_detector/keypoint_detector.h"
 #include "theia/image/keypoint_detector/sift_detector.h"

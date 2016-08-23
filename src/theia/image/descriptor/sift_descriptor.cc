@@ -108,11 +108,13 @@ bool SiftDescriptorExtractor::ComputeDescriptor(
   int vl_status =
       vl_sift_process_first_octave(sift_filter_, mutable_image.Data());
   // Proceed through the octaves we reach the same one as the keypoint.
-  while (sift_keypoint.o != sift_filter_->o_cur)
+  while (sift_keypoint.o != sift_filter_->o_cur) {
     vl_sift_process_next_octave(sift_filter_);
+  }
 
-  if (vl_status == VL_ERR_EOF)
+  if (vl_status == VL_ERR_EOF) {
     LOG(FATAL) << "could not extract sift descriptors";
+  }
 
   // Calculate the sift feature. Note that we are passing in a direct pointer to
   // the descriptor's underlying data.
