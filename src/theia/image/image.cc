@@ -69,6 +69,18 @@ FloatImage::FloatImage(const OpenImageIO::ImageBuf& image) {
   image_.copy(image);
 }
 
+FloatImage& FloatImage::operator=(const FloatImage& image2) {
+  image_.copy(image2.image_);
+}
+
+OpenImageIO::ImageBuf& FloatImage::GetOpenImageIOImageBuf() {
+  return image_;
+}
+
+const OpenImageIO::ImageBuf& FloatImage::GetOpenImageIOImageBuf() const {
+  return image_;
+}
+
 int FloatImage::Rows() const { return Height(); }
 
 int FloatImage::Cols() const { return Width(); }
@@ -260,7 +272,10 @@ void FloatImage::ApproximateGaussianBlur(const double sigma) {
 
 void FloatImage::Resize(int new_width, int new_height) {
   OpenImageIO::ROI roi(0, new_width, 0, new_height, 0, 1, 0, Channels());
-  OpenImageIO::ImageBufAlgo::resize(image_, image_, nullptr, roi);
+  OpenImageIO::ImageBuf dst;
+  CHECK(OpenImageIO::ImageBufAlgo::resize(dst, image_, nullptr, roi))
+      << OpenImageIO::geterror();
+  image_.copy(dst);
 }
 
 void FloatImage::ResizeRowsCols(int new_rows, int new_cols) {
