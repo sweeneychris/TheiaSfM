@@ -42,6 +42,7 @@ set(THEIA_SRC
   image/descriptor/descriptor_extractor.cc
   image/descriptor/sift_descriptor.cc
   image/image.cc
+  image/image_cache.cc
   image/keypoint_detector/sift_detector.cc
   io/import_nvm_file.cc
   io/read_1dsfm.cc
