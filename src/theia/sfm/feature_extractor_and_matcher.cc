@@ -53,6 +53,7 @@
 #include "theia/sfm/exif_reader.h"
 #include "theia/sfm/two_view_match_geometric_verification.h"
 #include "theia/util/filesystem.h"
+#include "theia/util/string.h"
 #include "theia/util/threadpool.h"
 
 namespace theia {
@@ -192,6 +193,25 @@ void FeatureExtractorAndMatcher::ProcessImage(
     return;
   }
 
+  // Get the image filename without the directory.
+  std::string image_filename;
+  CHECK(GetFilenameFromFilepath(image_filepath, true, &image_filename));
+
+  // Get the feature filepath based on the image filename.
+  std::string output_dir =
+      options_.feature_matcher_options.keypoints_and_descriptors_output_dir;
+  AppendTrailingSlashIfNeeded(&output_dir);
+  const std::string feature_filepath =
+      output_dir + image_filename + ".features";
+
+  // If the feature file already exists, skip the feature extraction.
+  if (options_.feature_matcher_options.match_out_of_core &&
+      FileExists(feature_filepath)) {
+    std::lock_guard<std::mutex> lock(matcher_mutex_);
+    matcher_->AddImage(image_filename, intrinsics);
+    return;
+  }
+
   // Extract Features.
   std::vector<Keypoint> keypoints;
   std::vector<Eigen::VectorXf> descriptors;
@@ -201,8 +221,6 @@ void FeatureExtractorAndMatcher::ProcessImage(
   // the feature matcher to control fine-grained things like multi-threading and
   // caching. For instance, the matcher may choose to write the descriptors to
   // disk and read them back as needed.
-  std::string image_filename;
-  CHECK(GetFilenameFromFilepath(image_filepath, true, &image_filename));
   std::lock_guard<std::mutex> lock(matcher_mutex_);
   matcher_->AddImage(image_filename, keypoints, descriptors, intrinsics);
 }
