@@ -310,6 +310,28 @@ std::vector<TrackId> Reconstruction::TrackIds() const {
 }
 
 void Reconstruction::Normalize() {
+  // First normalize the position so that the marginal median of the camera
+  // positions is at the origin.
+  std::vector<std::vector<double> > camera_positions(3);
+  Eigen::Vector3d median_camera_position;
+  const auto& view_ids = ViewIds();
+  for (const ViewId view_id : view_ids) {
+    const class View* view = View(view_id);
+    if (view == nullptr || !view->IsEstimated()) {
+      continue;
+    }
+
+    const Eigen::Vector3d point = view->Camera().GetPosition();
+    camera_positions[0].push_back(point[0]);
+    camera_positions[1].push_back(point[1]);
+    camera_positions[2].push_back(point[2]);
+  }
+  median_camera_position(0) = Median(&camera_positions[0]);
+  median_camera_position(1) = Median(&camera_positions[1]);
+  median_camera_position(2) = Median(&camera_positions[2]);
+  TransformReconstruction(Eigen::Matrix3d::Identity(), -median_camera_position,
+                          1.0, this);
+
   // Get the estimated track ids.
   const auto& temp_track_ids = TrackIds();
   std::vector<TrackId> track_ids;
@@ -351,9 +373,6 @@ void Reconstruction::Normalize() {
   // This will scale the reconstruction so that the median absolute deviation of
   // the points is 100.
   const double scale = 100.0 / Median(&distance_to_median);
-
-  // Apply position and scale transformation.
-  TransformReconstruction(Eigen::Matrix3d::Identity(), -median, 1.0, this);
   TransformReconstruction(Eigen::Matrix3d::Identity(),
                           Eigen::Vector3d::Zero(),
                           scale,
@@ -365,7 +384,6 @@ void Reconstruction::Normalize() {
   // null vector of the covariance matrix of per-camera x-directions.
   Eigen::Matrix3d correlation;
   correlation.setZero();
-  const auto& view_ids = ViewIds();
   for (const ViewId view_id : view_ids) {
     const class View* view = View(view_id);
     if (view == nullptr || !view->IsEstimated()) {
