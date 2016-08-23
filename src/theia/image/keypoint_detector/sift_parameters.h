@@ -49,8 +49,10 @@ struct SiftParameters {
       first_octave(first_octave), edge_threshold(edge_threshold),
       peak_threshold(peak_threshold) {}
 
-  SiftParameters(int num_octaves, int num_levels, int first_octave) :
-      SiftParameters(num_octaves, num_levels, first_octave) {}
+  SiftParameters(int num_octaves, int num_levels, int first_octave)
+      : num_octaves(num_octaves),
+        num_levels(num_levels),
+        first_octave(first_octave) {}
 
   ~SiftParameters() {}
 
