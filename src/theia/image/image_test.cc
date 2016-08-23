@@ -200,4 +200,27 @@ TEST(Image, Resize) {
   EXPECT_EQ(theia_img.Height(), kHeight);
 }
 
+TEST(Image, ResizeUninitialized) {
+  static const int kWidth = 800;
+  static const int kHeight = 600;
+
+  FloatImage theia_img;
+  theia_img.Resize(kWidth, kHeight);
+
+  // Make sure the image was resized appropriately.
+  EXPECT_EQ(theia_img.Width(), kWidth);
+  EXPECT_EQ(theia_img.Height(), kHeight);
+
+  // Make sure the resizing still works when converting an uninitialized image
+  // to RGB first.
+  FloatImage theia_img2;
+  theia_img2.ConvertToRGBImage();
+  theia_img2.Resize(kWidth, kHeight);
+
+  // Make sure the image was resized appropriately.
+  EXPECT_EQ(theia_img2.Width(), kWidth);
+  EXPECT_EQ(theia_img2.Height(), kHeight);
+  EXPECT_EQ(theia_img2.Channels(), 3);
+}
+
 }  // namespace theia

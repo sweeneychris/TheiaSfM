@@ -271,11 +271,19 @@ void FloatImage::ApproximateGaussianBlur(const double sigma) {
 }
 
 void FloatImage::Resize(int new_width, int new_height) {
-  OpenImageIO::ROI roi(0, new_width, 0, new_height, 0, 1, 0, Channels());
-  OpenImageIO::ImageBuf dst;
-  CHECK(OpenImageIO::ImageBufAlgo::resize(dst, image_, nullptr, roi))
+  // If the image has not been initialized then initialize it with the image
+  // spec. Otherwise resize the image and interpolate pixels accordingly.
+  if (!image_.initialized()) {
+    OpenImageIO::ImageSpec image_spec(new_width, new_height, Channels(),
+                                      OpenImageIO::TypeDesc::FLOAT);
+    image_.reset(image_spec);
+  } else {
+    OpenImageIO::ROI roi(0, new_width, 0, new_height, 0, 1, 0, Channels());
+    OpenImageIO::ImageBuf dst;
+    CHECK(OpenImageIO::ImageBufAlgo::resize(dst, image_, nullptr, roi))
       << OpenImageIO::geterror();
-  image_.copy(dst);
+    image_.copy(dst);
+  }
 }
 
 void FloatImage::ResizeRowsCols(int new_rows, int new_cols) {
