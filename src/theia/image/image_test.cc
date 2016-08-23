@@ -188,5 +188,16 @@ TEST(Image, ScalePixels) {
   }
 }
 
+TEST(Image, Resize) {
+  static const int kWidth = 800;
+  static const int kHeight = 600;
+
+  FloatImage theia_img(img_filename);
+  theia_img.Resize(kWidth, kHeight);
+
+  // Make sure the image was resized appropriately.
+  EXPECT_EQ(theia_img.Width(), kWidth);
+  EXPECT_EQ(theia_img.Height(), kHeight);
+}
 
 }  // namespace theia
