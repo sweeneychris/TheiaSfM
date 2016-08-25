@@ -65,6 +65,24 @@ inline CameraIntrinsicsModelType StringToCameraIntrinsicsModelType(
   }
 }
 
+inline std::string CameraIntrinsicsModelTypeToString(
+    const CameraIntrinsicsModelType& camera_model_type) {
+  switch (camera_model_type) {
+    case CameraIntrinsicsModelType::PINHOLE:
+      return "PINHOLE";
+    case CameraIntrinsicsModelType::PINHOLE_RADIAL_TANGENTIAL:
+      return "PINHOLE_RADIAL_TANGENTIAL";
+    case CameraIntrinsicsModelType::FISHEYE:
+      return "FISHEYE";
+    default:
+      LOG(FATAL) << "Invalid Camera model chosen.";
+      break;
+  }
+
+  LOG(FATAL) << "This should not be reached!!";
+  return "";
+}
+
 }  // namespace theia
 
 #endif  // THEIA_SFM_CAMERA_CAMERA_INTRINSICS_MODEL_TYPE_H_
