@@ -39,6 +39,8 @@
 #include "theia/image/image.h"
 
 #include "theia/sfm/camera/camera_intrinsics_model.h"
+#include "theia/sfm/types.h"
+#include "theia/sfm/view.h"
 
 namespace theia {
 
@@ -56,6 +58,13 @@ bool UndistortImage(const Camera& distorted_camera,
                     const FloatImage& distorted_image,
                     Camera* undistorted_camera,
                     FloatImage* undistorted_image);
+
+// Same as above, but undistorts the view so that the feature observations are
+// also undistorted.
+bool UndistortView(const View& distorted_view,
+                   const FloatImage& distorted_image,
+                   View* undistorted_view,
+                   FloatImage* undistorted_image);
 
 }  // namespace theia
 

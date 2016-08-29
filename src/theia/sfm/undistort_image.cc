@@ -38,12 +38,14 @@
 #include <algorithm>
 #include <limits>
 
+#include "theia/image/image.h"
 #include "theia/sfm/camera/camera.h"
 #include "theia/sfm/camera/camera_intrinsics_model.h"
+#include "theia/sfm/camera/fisheye_camera_model.h"
 #include "theia/sfm/camera/pinhole_camera_model.h"
 #include "theia/sfm/camera/pinhole_radial_tangential_camera_model.h"
-#include "theia/sfm/camera/fisheye_camera_model.h"
-#include "theia/image/image.h"
+#include "theia/sfm/types.h"
+#include "theia/sfm/view.h"
 
 namespace theia {
 namespace {
@@ -213,6 +215,7 @@ bool UndistortImage(const Camera& distorted_camera,
       1.0 / std::max(cy / (cy - top_max_y),
                      (distorted_camera.ImageHeight() - 0.5 - cy) /
                          (bottom_min_y - cy));
+
   undistorted_camera->SetImageSize(
       static_cast<int>(
           std::max(1.0, scale_x * undistorted_camera->ImageWidth())),
@@ -242,6 +245,46 @@ bool UndistortImage(const Camera& distorted_camera,
                             distorted_image,
                             *undistorted_camera,
                             undistorted_image);
+
+  return true;
+}
+
+bool UndistortView(const View& distorted_view,
+                   const FloatImage& distorted_image,
+                   View* undistorted_view,
+                   FloatImage* undistorted_image) {
+  *undistorted_view = distorted_view;
+
+  // Undistort the image to obtain the undistorted camera.
+  Camera undistorted_camera;
+  if (!UndistortImage(distorted_view.Camera(),
+                      distorted_image,
+                      &undistorted_camera,
+                      undistorted_image)) {
+    return false;
+  }
+
+  // The camera intrinsics models describe how to distort and undistort the
+  // pixels.
+  const CameraIntrinsicsModel& distorted_intrinsics =
+      distorted_view.Camera().CameraIntrinsics();
+  const CameraIntrinsicsModel& undistorted_intrinsics =
+      undistorted_view->Camera().CameraIntrinsics();
+
+  // Undisort all features seen by the view.
+  const auto& track_ids = undistorted_view->TrackIds();
+  for (const TrackId track_id : track_ids) {
+    // Get the undistorted feature.
+    const Feature* distorted_feature = distorted_view.GetFeature(track_id);
+    const Eigen::Vector3d distorted_point =
+        distorted_intrinsics.ImageToCameraCoordinates(*distorted_feature);
+    const Eigen::Vector2d undistorted_feature =
+        undistorted_intrinsics.CameraToImageCoordinates(distorted_point);
+
+    // Add the new undistorted feature to the undistorted view.
+    CHECK(undistorted_view->RemoveFeature(track_id));
+    undistorted_view->AddFeature(track_id, undistorted_feature);
+  }
 
   return true;
 }

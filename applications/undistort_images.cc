@@ -64,19 +64,20 @@ void UndistortImageAndWriteToFile(const std::string input_image_directory,
   }
 
   // Undistort the image.
-  const theia::Camera distorted_camera = view->Camera();
   const theia::FloatImage distorted_image(input_image_directory + view->Name());
-  theia::Camera undistorted_camera;
+  theia::View undistorted_view;
   theia::FloatImage undistorted_image;
-  theia::UndistortImage(distorted_camera,
-                        distorted_image,
-                        &undistorted_camera,
-                        &undistorted_image);
+  CHECK(theia::UndistortView(*view,
+                             distorted_image,
+                             &undistorted_view,
+                             &undistorted_image))
+      << "Could not undistort image: " << view->Name();
 
-  // Update the camera to the undistorted camera.
-  *view->MutableCamera() = undistorted_camera;
+  // Update the view to the undistorted view.
+  *view = undistorted_view;
 
   // Save the image to the output directory.
+  LOG(INFO) << "Writing image " << view->Name();
   undistorted_image.Write(output_image_directory + view->Name());
 }
 
