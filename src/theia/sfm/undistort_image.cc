@@ -72,6 +72,9 @@ void SetLensDistortionToZero(Camera* camera) {
       intrinsics[FisheyeCameraModel::RADIAL_DISTORTION_3] = 0.0;
       intrinsics[FisheyeCameraModel::RADIAL_DISTORTION_4] = 0.0;
       break;
+    case CameraIntrinsicsModelType::FOV:
+      intrinsics[FisheyeCameraModel::RADIAL_DISTORTION_1] = 0.0;
+      break;
   }
 }
 
