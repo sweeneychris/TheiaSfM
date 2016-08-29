@@ -48,6 +48,7 @@ enum class CameraIntrinsicsModelType {
   PINHOLE = 0,
   PINHOLE_RADIAL_TANGENTIAL = 1,
   FISHEYE = 2,
+  FOV = 3,
 };
 
 // Converts an input string to the corresponding camera intrinsics model type.
@@ -59,6 +60,8 @@ inline CameraIntrinsicsModelType StringToCameraIntrinsicsModelType(
     return CameraIntrinsicsModelType::PINHOLE_RADIAL_TANGENTIAL;
   } else if (camera_model_type_string == "FISHEYE") {
     return CameraIntrinsicsModelType::FISHEYE;
+  } else if (camera_model_type_string == "FOV") {
+    return CameraIntrinsicsModelType::FOV;
   } else {
     LOG(FATAL) << "Invalid camera model type supplied: "
                << camera_model_type_string;
@@ -74,6 +77,8 @@ inline std::string CameraIntrinsicsModelTypeToString(
       return "PINHOLE_RADIAL_TANGENTIAL";
     case CameraIntrinsicsModelType::FISHEYE:
       return "FISHEYE";
+    case CameraIntrinsicsModelType::FOV:
+      return "FOV";
     default:
       LOG(FATAL) << "Invalid Camera model chosen.";
       break;
