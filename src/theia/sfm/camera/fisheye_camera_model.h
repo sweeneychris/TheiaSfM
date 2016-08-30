@@ -95,9 +95,6 @@ class FisheyeCameraModel : public CameraIntrinsicsModel {
   // Given a point in the camera coordinate system, apply the camera intrinsics
   // (e.g., focal length, principal point, distortion) to transform the point
   // into pixel coordinates.
-  //
-  // NOTE: This method should transform to pixel coordinates and so lens
-  // distortion should be applied.
   template <typename T>
   static void CameraToPixelCoordinates(const T* intrinsic_parameters,
                                        const T* point,
@@ -112,17 +109,17 @@ class FisheyeCameraModel : public CameraIntrinsicsModel {
                                        const T* pixel,
                                        T* point);
 
-  // Given an undistorted pixel, apply lens distortion to the pixel to get a
-  // distorted pixel. The type of distortion (i.e. radial, tangential, fisheye,
+  // Given an undistorted point, apply lens distortion to the point to get a
+  // distorted point. The type of distortion (i.e. radial, tangential, fisheye,
   // etc.) will depend on the camera intrinsics model.
   template <typename T>
   static void DistortPoint(const T* intrinsic_parameters,
                            const T* undistorted_point,
                            T* distorted_point);
 
-  // Given an undistorted pixel, apply lens distortion to the pixel to get a
-  // distorted pixel. The type of distortion (i.e. radial, tangential, fisheye,
-  // etc.) will depend on the camera intrinsics model.
+  // Given a distorted point, apply lens undistortion to the point to get an
+  // undistorted point. The type of distortion (i.e. radial, tangential,
+  // fisheye, etc.) will depend on the camera intrinsics model.
   template <typename T>
   static void UndistortPoint(const T* intrinsic_parameters,
                              const T* distorted_point,
@@ -154,13 +151,6 @@ class FisheyeCameraModel : public CameraIntrinsicsModel {
   }
 };
 
-// Implementation of the static templated methods.
-// Given a point in the camera coordinate system, apply the camera intrinsics
-// (e.g., focal length, principal point) to transform the point into
-// undistorted pixel coordinates.
-//
-// NOTE: This method should transform to UNDISTORTED pixel coordinates and no
-// lens distortion should be applied.
 template <typename T>
 void FisheyeCameraModel::CameraToPixelCoordinates(
     const T* intrinsic_parameters, const T* point, T* pixel) {
@@ -192,12 +182,6 @@ void FisheyeCameraModel::CameraToPixelCoordinates(
              principal_point_y;
 }
 
-// Given a point in the camera coordinate system, apply the camera intrinsics
-// (e.g., focal length, principal point) to transform the point into
-// undistorted pixel coordinates.
-//
-// NOTE: This method should transform to UNDISTORTED pixel coordinates and no
-// lens distortion should be applied.
 template <typename T>
 void FisheyeCameraModel::PixelToCameraCoordinates(const T* intrinsic_parameters,
                                                   const T* pixel,
@@ -227,9 +211,6 @@ void FisheyeCameraModel::PixelToCameraCoordinates(const T* intrinsic_parameters,
   point[2] = T(1.0);
 }
 
-// Given an undistorted pixel, apply lens distortion to the pixel to get a
-// distorted pixel. The type of distortion (i.e. radial, tangential, fisheye,
-// etc.) will depend on the camera intrinsics model.
 template <typename T>
 void FisheyeCameraModel::DistortPoint(const T* intrinsic_parameters,
                                       const T* undistorted_point,
@@ -269,9 +250,6 @@ void FisheyeCameraModel::DistortPoint(const T* intrinsic_parameters,
   distorted_point[1] = undistorted_point[1] * theta_d / r;
 }
 
-// Given an undistorted pixel, apply lens distortion to the pixel to get a
-// distorted pixel. The type of distortion (i.e. radial, tangential, fisheye,
-// etc.) will depend on the camera intrinsics model.
 template <typename T>
 void FisheyeCameraModel::UndistortPoint(const T* intrinsic_parameters,
                                         const T* distorted_point,
