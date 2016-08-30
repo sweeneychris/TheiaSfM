@@ -54,6 +54,7 @@ using Eigen::Vector4d;
 
 TEST(FOVCameraModel, InternalParameterGettersAndSetters) {
   FOVCameraModel camera;
+  static const double kDefaultOmega = 0.75;
 
   EXPECT_EQ(camera.Type(), CameraIntrinsicsModelType::FOV);
 
@@ -62,7 +63,7 @@ TEST(FOVCameraModel, InternalParameterGettersAndSetters) {
   EXPECT_EQ(camera.AspectRatio(), 1.0);
   EXPECT_EQ(camera.PrincipalPointX(), 0.0);
   EXPECT_EQ(camera.PrincipalPointY(), 0.0);
-  EXPECT_EQ(camera.RadialDistortion1(), 0.0);
+  EXPECT_EQ(camera.RadialDistortion1(), kDefaultOmega);
 
   // Set parameters to different values.
   camera.SetFocalLength(600.0);
@@ -250,15 +251,37 @@ TEST(FOVCameraModel, ReprojectionNoDistortion) {
   ReprojectionTest(camera);
 }
 
-TEST(FOVCameraModel, ReprojectionOneDistortion) {
+TEST(FOVCameraModel, ReprojectionOneDistortionSmall) {
   static const double kPrincipalPoint[2] = {600.0, 400.0};
   static const double kFocalLength = 1200;
   FOVCameraModel camera;
   camera.SetFocalLength(kFocalLength);
   camera.SetPrincipalPoint(kPrincipalPoint[0], kPrincipalPoint[1]);
-  camera.SetRadialDistortion(0.01);
+
+  camera.SetRadialDistortion(0.0001);
   ReprojectionTest(camera);
 }
 
+TEST(FOVCameraModel, ReprojectionOneDistortionMedium) {
+  static const double kPrincipalPoint[2] = {600.0, 400.0};
+  static const double kFocalLength = 1200;
+  FOVCameraModel camera;
+  camera.SetFocalLength(kFocalLength);
+  camera.SetPrincipalPoint(kPrincipalPoint[0], kPrincipalPoint[1]);
+
+  camera.SetRadialDistortion(0.001);
+  ReprojectionTest(camera);
+}
+
+TEST(FOVCameraModel, ReprojectionOneDistortionLarge) {
+  static const double kPrincipalPoint[2] = {600.0, 400.0};
+  static const double kFocalLength = 1200;
+  FOVCameraModel camera;
+  camera.SetFocalLength(kFocalLength);
+  camera.SetPrincipalPoint(kPrincipalPoint[0], kPrincipalPoint[1]);
+
+  camera.SetRadialDistortion(0.1);
+  ReprojectionTest(camera);
+}
 
 }  // namespace theia

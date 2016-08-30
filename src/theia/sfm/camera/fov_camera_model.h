@@ -134,6 +134,10 @@ class FOVCameraModel : public CameraIntrinsicsModel {
   double RadialDistortion1() const;
 
  private:
+  // The distortion parameter omega will not be able to converge to a good value
+  // if it is initialized at zero.
+  const double kDefaultOmega = 0.75;
+
   // Templated method for disk I/O with cereal. This method tells cereal which
   // data members should be used when reading/writing to/from disk.
   friend class cereal::access;
@@ -219,7 +223,7 @@ template <typename T>
 void FOVCameraModel::DistortPoint(const T* intrinsic_parameters,
                                   const T* undistorted_point,
                                   T* distorted_point) {
-  static const T kVerySmallNumber(1e-8);
+  static const T kVerySmallNumber(1e-3);
   // The FOV distortion term omega.
   const T& omega = intrinsic_parameters[RADIAL_DISTORTION_1];
 
@@ -227,18 +231,41 @@ void FOVCameraModel::DistortPoint(const T* intrinsic_parameters,
   const T r_u_sq = undistorted_point[0] * undistorted_point[0] +
                    undistorted_point[1] * undistorted_point[1];
 
-  // If omega or r_sq are small then the distortion is effectively zero.
-  if (omega < kVerySmallNumber || r_u_sq < kVerySmallNumber) {
-    distorted_point[0] = undistorted_point[0];
-    distorted_point[1] = undistorted_point[1];
-    return;
+  // If omega is very small then we need to approximate the distortion using the
+  // Taylor series so that bundle adjustment will still be able to compute a
+  // gradient and can appropriately optimize the distortion parameter.
+  T r_d;
+  if (omega < kVerySmallNumber) {
+    // Derivation of this case with Matlab borrowed from COLMAP:
+    // https://github.com/colmap/colmap/blob/master/src/base/camera_models.h#L1107
+    //
+    // syms radius omega;
+    // factor(radius) = tan(radius * omega) / ...
+    //                  (radius * 2*tan(omega/2));
+    // simplify(taylor(factor, omega, 'order', 3))
+    r_d = (omega * omega * r_u_sq) / T(3) - omega * omega / T(12) + T(1);
+  } else if (r_u_sq < kVerySmallNumber) {
+    // Derivation of this case with Matlab borrowed from COLMAP:
+    // https://github.com/colmap/colmap/blob/master/src/base/camera_models.h#L1107
+    //
+    // syms radius omega;
+    // factor(radius) = tan(radius * omega) / ...
+    //                  (radius * 2*tan(omega/2));
+    // simplify(taylor(factor, radius, 'order', 3))
+    const T tan_half_omega = ceres::tan(omega / T(2));
+    r_d = (T(-2) * tan_half_omega *
+           (T(4) * r_u_sq * tan_half_omega * tan_half_omega - T(3))) /
+          (T(3) * omega);
+  } else {
+    // Compute the radius of the distorted image point based on the FOV model
+    // equations.
+    const T r_u = ceres::sqrt(r_u_sq);
+    r_d =
+        ceres::atan(T(2.0) * r_u * ceres::tan(omega / T(2.0))) / (r_u * omega);
   }
 
   // Compute the radius of the distorted image point based on the FOV model
   // equations.
-  const T r_u = ceres::sqrt(r_u_sq);
-  const T r_d =
-      ceres::atan(T(2.0) * r_u * ceres::tan(omega / T(2.0))) / (r_u * omega);
   distorted_point[0] = r_d * undistorted_point[0];
   distorted_point[1] = r_d * undistorted_point[1];
 }
@@ -250,7 +277,7 @@ template <typename T>
 void FOVCameraModel::UndistortPoint(const T* intrinsic_parameters,
                                     const T* distorted_point,
                                     T* undistorted_point) {
-  static const T kVerySmallNumber(1e-8);
+  static const T kVerySmallNumber(1e-3);
   // The FOV distortion term omega.
   const T& omega = intrinsic_parameters[RADIAL_DISTORTION_1];
 
@@ -258,18 +285,36 @@ void FOVCameraModel::UndistortPoint(const T* intrinsic_parameters,
   const T r_d_sq = distorted_point[0] * distorted_point[0] +
                    distorted_point[1] * distorted_point[1];
 
-  // If omega or r_d_sq are small then the distortion is effectively zero.
-  if (omega < kVerySmallNumber || r_d_sq < kVerySmallNumber) {
-    undistorted_point[0] = distorted_point[0];
-    undistorted_point[1] = distorted_point[1];
-    return;
+  // If omega is very small then we need to approximate the distortion using the
+  // Taylor series so that bundle adjustment will still be able to compute a
+  // gradient and can appropriately optimize the distortion parameter.
+  T r_u;
+  if (omega < kVerySmallNumber) {
+    // Derivation of this case with Matlab borrowed from COLMAP:
+    // https://github.com/colmap/colmap/blob/master/src/base/camera_models.h#L1146
+    //
+    // syms radius omega;
+    // factor(radius) = tan(radius * omega) / ...
+    //                  (radius * 2*tan(omega/2));
+    // simplify(taylor(factor, omega, 'order', 3))
+    r_u = (omega * omega * r_d_sq) / T(3) - omega * omega / T(12) + T(1);
+  } else if (r_d_sq < kVerySmallNumber) {
+    // Derivation of this case with Matlab borrowed from COLMAP:
+    // https://github.com/colmap/colmap/blob/master/src/base/camera_models.h#L1146
+    //
+    // syms radius omega;
+    // factor(radius) = tan(radius * omega) / ...
+    //                  (radius * 2*tan(omega/2));
+    // simplify(taylor(factor, radius, 'order', 3))
+    r_u = (omega * (omega * omega * r_d_sq + T(3))) /
+          (T(6) * ceres::tan(omega / T(2)));
+  } else {
+    // Compute the radius of the distorted image point based on the FOV model
+    // equations.
+    const T r_d = ceres::sqrt(r_d_sq);
+    r_u = ceres::tan(r_d * omega) / (T(2.0) * r_d * ceres::tan(omega / T(2.0)));
   }
 
-  // Compute the radius of the distorted image point based on the FOV model
-  // equations.
-  const T r_d = ceres::sqrt(r_d_sq);
-  const T r_u =
-      ceres::tan(r_d * omega) / (T(2.0) * r_d * ceres::tan(omega / T(2.0)));
   undistorted_point[0] = r_u * distorted_point[0];
   undistorted_point[1] = r_u * distorted_point[1];
 }

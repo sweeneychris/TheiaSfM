@@ -58,7 +58,7 @@ FOVCameraModel::FOVCameraModel() {
   SetFocalLength(1.0);
   SetPrincipalPoint(0.0, 0.0);
   SetParameter(ASPECT_RATIO, 1.0);
-  SetParameter(RADIAL_DISTORTION_1, 0.0);
+  SetParameter(RADIAL_DISTORTION_1, kDefaultOmega);
 }
 
 int FOVCameraModel::NumParameters() const {return kIntrinsicsSize;}
@@ -95,6 +95,8 @@ void FOVCameraModel::SetFromCameraIntrinsicsPriors(
   // Set radial distortion if available.
   if (prior.radial_distortion.is_set) {
     SetParameter(RADIAL_DISTORTION_1, prior.radial_distortion.value[0]);
+  } else {
+    SetParameter(RADIAL_DISTORTION_1, kDefaultOmega);
   }
 }
 
