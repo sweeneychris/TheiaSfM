@@ -143,17 +143,17 @@ class CameraIntrinsicsModel {
                                        const T* pixel,
                                        T* point);
 
-  // Given an undistorted pixel, apply lens distortion to the pixel to get a
-  // distorted pixel. The type of distortion (i.e. radial, tangential, fisheye,
+  // Given an undistorted point, apply lens distortion to the pixel to get a
+  // distorted point. The type of distortion (i.e. radial, tangential, fisheye,
   // etc.) will depend on the camera intrinsics model.
   template <typename T>
   static void DistortPoint(const T* intrinsic_parameters,
                            const T* undistorted_point,
                            T* distorted_point);
 
-  // Given an undistorted pixel, apply lens distortion to the pixel to get a
-  // distorted pixel. The type of distortion (i.e. radial, tangential, fisheye,
-  // etc.) will depend on the camera intrinsics model.
+  // Given a distorted point, apply lens undistortion to the pixel to get a
+  // undistorted point. The type of distortion (i.e. radial, tangential,
+  // fisheye, etc.) will depend on the camera intrinsics model.
   template <typename T>
   static void UndistortPoint(const T* intrinsic_parameters,
                              const T* distorted_point,
