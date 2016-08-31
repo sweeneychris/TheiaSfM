@@ -155,6 +155,11 @@ float FloatImage::GetRowCol(const int row,
   return GetXY(col, row, channel);
 }
 
+Eigen::Vector3f FloatImage::GetRowCol(const int row,
+                                      const int col) const {
+  return GetXY(col, row);
+}
+
 float FloatImage::BilinearInterpolate(const double x,
                                       const double y,
                                       const int c) const {
