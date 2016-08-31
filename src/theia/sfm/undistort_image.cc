@@ -154,31 +154,28 @@ void RemoveImageLensDistortion(const Camera& distorted_camera,
 
   // For each pixel in the undistorted image, find the coordinate in the
   // distorted image and set the pixel color accordingly.
-  Eigen::Vector2d image_point;
-  for (int y = 0; y < undistorted_image->Height(); ++y) {
-    image_point.y() = y + 0.5;
-    for (int x = 0; x < undistorted_image->Width(); ++x) {
-      image_point.x() = x + 0.5;
-      // Camera models assume that the upper left pixel center is (0.5, 0.5).
-      const Eigen::Vector3d distorted_point =
-          undistorted_intrinsics.ImageToCameraCoordinates(image_point);
-      const Eigen::Vector2d distorted_pixel =
-          distorted_intrinsics.CameraToImageCoordinates(distorted_point);
-      const Eigen::Vector2d pixel(std::round<int>(distorted_pixel.x() - 0.5),
-                                  std::round<int>(distorted_pixel.y() - 0.5));
+  const int num_channels = distorted_image.Channels();
+  OpenImageIO::ImageBuf& undistorted_img =
+      undistorted_image->GetOpenImageIOImageBuf();
+  OpenImageIO::ImageBuf::Iterator<float> undistorted_it(undistorted_img);
+  for (; !undistorted_it.done(); ++undistorted_it) {
+    Eigen::Vector2d image_point(undistorted_it.x() + 0.5,
+                                undistorted_it.y() + 0.5);
 
-      if (pixel.x() < 0 || pixel.x() >= distorted_image.Width() ||
-          pixel.y() < 0 || pixel.y() >= distorted_image.Height()) {
-        for (int c = 0; c < distorted_image.Channels(); c++) {
-          undistorted_image->SetXY(x, y, c,  0.0);
-        }
-      } else {
-        for (int c = 0; c < distorted_image.Channels(); c++) {
-          undistorted_image->SetXY(
-              x, y, c, distorted_image.BilinearInterpolate(
-                           distorted_pixel.x(), distorted_pixel.y(), c));
-        }
-      }
+    // Camera models assume that the upper left pixel center is (0.5, 0.5).
+    const Eigen::Vector3d distorted_point =
+        undistorted_intrinsics.ImageToCameraCoordinates(image_point);
+    const Eigen::Vector2d distorted_pixel =
+        distorted_intrinsics.CameraToImageCoordinates(distorted_point);
+    const Eigen::Vector2d pixel(std::round<int>(distorted_pixel.x() - 0.5),
+                                std::round<int>(distorted_pixel.y() - 0.5));
+    // Set all color channels appropriately. Note that we do not need to check
+    // if the distorted pixel is within the image bounds since the
+    // FindUndistortedImageBoundary function has guaranteed that all pixels will
+    // be within the image borders.
+    for (int c = 0; c < num_channels; c++) {
+      undistorted_it[c] = distorted_image.BilinearInterpolate(
+          distorted_pixel.x(), distorted_pixel.y(), c);
     }
   }
 }
