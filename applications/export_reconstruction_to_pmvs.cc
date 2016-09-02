@@ -76,22 +76,30 @@ int WriteCamerasToPMVS(const theia::Reconstruction& reconstruction) {
       continue;
     }
 
+    LOG(INFO) << "Undistorting image " << image_name;
+    const theia::Camera& distorted_camera =
+        reconstruction.View(view_id)->Camera();
+    theia::FloatImage distorted_image(image_files[i]);
+    theia::Camera undistorted_camera;
+    theia::FloatImage undistorted_image;
+    CHECK(theia::UndistortImage(distorted_camera,
+                                distorted_image,
+                                &undistorted_camera,
+                                &undistorted_image));
+
     LOG(INFO) << "Exporting parameters for image: " << image_name;
 
     // Copy the image into a jpeg format with the filename in the form of
     // %08d.jpg.
     const std::string new_image_file = theia::StringPrintf(
         "%s/%08d.jpg", visualize_dir.c_str(), current_image_index);
-    theia::FloatImage old_image(image_files[i]);
-    old_image.Write(new_image_file);
+    undistorted_image.Write(new_image_file);
 
     // Write the camera projection matrix.
     const std::string txt_file = theia::StringPrintf(
         "%s/%08d.txt", txt_dir.c_str(), current_image_index);
-    const theia::Camera camera = reconstruction.View(view_id)->Camera();
-
     theia::Matrix3x4d projection_matrix;
-    camera.GetProjectionMatrix(&projection_matrix);
+    undistorted_camera.GetProjectionMatrix(&projection_matrix);
     std::ofstream ofs(txt_file);
     ofs << "CONTOUR" << std::endl;
     ofs << projection_matrix.format(unaligned);
