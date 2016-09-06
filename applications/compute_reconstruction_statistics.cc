@@ -41,56 +41,9 @@
 #include <memory>
 #include <string>
 
+#include "print_reconstruction_statistics.h"
+
 DEFINE_string(reconstruction, "", "Reconstruction file");
-
-void ComputeReprojectionErrors(const theia::Reconstruction& reconstruction) {
-  std::vector<double> reprojection_errors;
-  int num_projections_behind_camera = 0;
-  for (const theia::TrackId track_id : reconstruction.TrackIds()) {
-    const theia::Track* track = CHECK_NOTNULL(reconstruction.Track(track_id));
-    for (const theia::ViewId view_id : track->ViewIds()) {
-      const theia::Feature* feature =
-          reconstruction.View(view_id)->GetFeature(track_id);
-
-      // Reproject the observations.
-      Eigen::Vector2d projection;
-      if (reconstruction.View(view_id)
-              ->Camera().ProjectPoint(track->Point(), &projection) < 0) {
-        ++num_projections_behind_camera;
-      }
-
-      // Compute reprojection error.
-      const double reprojection_error = (*feature - projection).norm();
-      reprojection_errors.emplace_back(reprojection_error);
-    }
-  }
-
-  std::sort(reprojection_errors.begin(), reprojection_errors.end());
-  const double mean_reprojection_error =
-      std::accumulate(reprojection_errors.begin(),
-                      reprojection_errors.end(),
-                      0.0) / static_cast<double>(reprojection_errors.size());
-  const double median_reprojection_error =
-      reprojection_errors[reprojection_errors.size() / 2];
-
-  LOG(INFO) << "\nNum observations: " << reprojection_errors.size()
-            << "\nNum reprojections behind camera: "
-            << num_projections_behind_camera
-            << "\nMean reprojection error = " << mean_reprojection_error
-            << "\nMedian reprojection_error = " << median_reprojection_error;
-}
-
-void ComputeTrackLengthHistogram(const theia::Reconstruction& reconstruction) {
-  std::vector<int> histogram_bins = {2, 3,  4,  5,  6,  7, 8,
-                                     9, 10, 15, 20, 25, 50};
-  theia::Histogram<int> histogram(histogram_bins);
-  for (const theia::TrackId track_id : reconstruction.TrackIds()) {
-    const theia::Track* track = reconstruction.Track(track_id);
-    histogram.Add(track->NumViews());
-  }
-  const std::string hist_msg = histogram.PrintString();
-  LOG(INFO) << "Track lengths = \n" << hist_msg;
-}
 
 int main(int argc, char* argv[]) {
   google::InitGoogleLogging(argv[0]);
@@ -107,10 +60,10 @@ int main(int argc, char* argv[]) {
             << "\nNum 3D points: " << reconstruction->NumTracks();
 
   // Check that the reprojection errors are sane.
-  ComputeReprojectionErrors(*reconstruction);
+  PrintReprojectionErrors(*reconstruction);
 
   // Compute track length statistics.
-  ComputeTrackLengthHistogram(*reconstruction);
+  PrintTrackLengthHistogram(*reconstruction);
 
   return 0;
 }
