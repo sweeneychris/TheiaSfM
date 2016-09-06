@@ -154,15 +154,11 @@ class FisheyeCameraModel : public CameraIntrinsicsModel {
 template <typename T>
 void FisheyeCameraModel::CameraToPixelCoordinates(
     const T* intrinsic_parameters, const T* point, T* pixel) {
-  // Get normalized pixel projection at image plane depth = 1.
-  const T& depth = point[2];
-  const T normalized_pixel[2] = { point[0] / depth,
-                                  point[1] / depth };
-
-  // Apply radial distortion.
+  // Apply radial distortion. Note that we pass in the entire 3D point instead
+  // of the projection onto a plane or sphere.
   T distorted_pixel[2];
   FisheyeCameraModel::DistortPoint(intrinsic_parameters,
-                                   normalized_pixel,
+                                   point,
                                    distorted_pixel);
 
   // Apply calibration parameters to transform normalized units into pixels.
@@ -211,6 +207,11 @@ void FisheyeCameraModel::PixelToCameraCoordinates(const T* intrinsic_parameters,
   point[2] = T(1.0);
 }
 
+// For fisheye distortion, we use the angle of the undistorted point with
+// respect to the optical axis to measure the magnitude of distortion. To make
+// sure that the computation is stable, we pass in the 3-dimensional undistorted
+// point and compute angle theta using the more stable atan2 so that we do not
+// have to perform the (potentially unstable) perspective divide by z.
 template <typename T>
 void FisheyeCameraModel::DistortPoint(const T* intrinsic_parameters,
                                       const T* undistorted_point,
@@ -227,18 +228,21 @@ void FisheyeCameraModel::DistortPoint(const T* intrinsic_parameters,
 
   const T r_sq = undistorted_point[0] * undistorted_point[0] +
                  undistorted_point[1] * undistorted_point[1];
-  const T r = ceres::sqrt(r_sq);
 
   // If the radius of the undistorted is too small then the divide by r below is
   // unstable. In this case, the point is very close to the center of distortion
   // and so we can assume there is no distortion.
-  if (r < kVerySmallNumber) {
+  if (r_sq < kVerySmallNumber) {
     distorted_point[0] = undistorted_point[0];
     distorted_point[1] = undistorted_point[1];
     return;
   }
 
-  const T theta = ceres::atan2(r, T(1.0));
+  const T r_numerator = ceres::sqrt(r_sq);
+  const T r_denominator = ceres::abs(undistorted_point[2]);
+  // Using atan2 should be more stable than dividing by the denominator for
+  // small z-values (i.e. viewing angles approaching 180 deg FOV).
+  const T theta = ceres::atan2(r_numerator, r_denominator);
   const T theta_sq = theta * theta;
   const T theta_d =
       theta * (T(1.0) + radial_distortion1 * theta_sq +
@@ -246,8 +250,11 @@ void FisheyeCameraModel::DistortPoint(const T* intrinsic_parameters,
                radial_distortion3 * theta_sq * theta_sq * theta_sq +
                radial_distortion4 * theta_sq * theta_sq * theta_sq * theta_sq);
 
-  distorted_point[0] = undistorted_point[0] * theta_d / r;
-  distorted_point[1] = undistorted_point[1] * theta_d / r;
+  const T a = undistorted_point[0] / undistorted_point[2];
+  const T b = undistorted_point[1] / undistorted_point[2];
+  const T r = r_numerator / r_denominator;
+  distorted_point[0] = a * theta_d / r;
+  distorted_point[1] = b * theta_d / r;
 }
 
 template <typename T>
