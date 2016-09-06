@@ -239,10 +239,9 @@ void FisheyeCameraModel::DistortPoint(const T* intrinsic_parameters,
   }
 
   const T r_numerator = ceres::sqrt(r_sq);
-  const T r_denominator = ceres::abs(undistorted_point[2]);
   // Using atan2 should be more stable than dividing by the denominator for
   // small z-values (i.e. viewing angles approaching 180 deg FOV).
-  const T theta = ceres::atan2(r_numerator, r_denominator);
+  const T theta = ceres::atan2(r_numerator, ceres::abs(undistorted_point[2]));
   const T theta_sq = theta * theta;
   const T theta_d =
       theta * (T(1.0) + radial_distortion1 * theta_sq +
@@ -250,11 +249,13 @@ void FisheyeCameraModel::DistortPoint(const T* intrinsic_parameters,
                radial_distortion3 * theta_sq * theta_sq * theta_sq +
                radial_distortion4 * theta_sq * theta_sq * theta_sq * theta_sq);
 
-  const T a = undistorted_point[0] / undistorted_point[2];
-  const T b = undistorted_point[1] / undistorted_point[2];
-  const T r = r_numerator / r_denominator;
-  distorted_point[0] = a * theta_d / r;
-  distorted_point[1] = b * theta_d / r;
+  distorted_point[0] = theta_d * undistorted_point[0] / r_numerator;
+  distorted_point[1] = theta_d * undistorted_point[1] / r_numerator;
+
+  if (undistorted_point[2] < T(0.0)) {
+    distorted_point[0] *= T(-1.0);
+    distorted_point[1] *= T(-1.0);
+  }
 }
 
 template <typename T>
