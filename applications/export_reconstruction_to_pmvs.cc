@@ -79,12 +79,14 @@ int WriteCamerasToPMVS(const theia::Reconstruction& reconstruction) {
     LOG(INFO) << "Undistorting image " << image_name;
     const theia::Camera& distorted_camera =
         reconstruction.View(view_id)->Camera();
-    theia::FloatImage distorted_image(image_files[i]);
     theia::Camera undistorted_camera;
+    CHECK(theia::UndistortCamera(distorted_camera, &undistorted_camera));
+
+    theia::FloatImage distorted_image(image_files[i]);
     theia::FloatImage undistorted_image;
     CHECK(theia::UndistortImage(distorted_camera,
                                 distorted_image,
-                                &undistorted_camera,
+                                undistorted_camera,
                                 &undistorted_image));
 
     LOG(INFO) << "Exporting parameters for image: " << image_name;

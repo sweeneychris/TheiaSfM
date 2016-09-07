@@ -45,40 +45,36 @@ DEFINE_string(input_reconstruction, "",
               "Input reconstruction file with distorted cameras");
 DEFINE_string(output_reconstruction, "",
               "Output reconstruction file with undistorted cameras");
+
+DEFINE_bool(undistort_images, true,
+            "Set to true to undistort the images. If false, only the "
+            "reconstruction itself is undistorted.");
 DEFINE_string(input_image_directory, "",
               "Directory containing the input distorted images.");
 DEFINE_string(output_image_directory, "",
-              "Directory containing the output undistorted images.");
+              "Directory to write the output undistorted images. This is only "
+              "used if undistort_images is set to true");
+
 DEFINE_int32(num_threads, 1, "Number of threads to use for undistortion.");
 
-void UndistortImageAndWriteToFile(const std::string input_image_directory,
-                                  const std::string output_image_directory,
-                                  const theia::ViewId view_id,
-                                  theia::Reconstruction* reconstruction) {
-  theia::View* view = reconstruction->MutableView(view_id);
-  LOG(INFO) << "Undistorting image " << view->Name();
-
-  // Skip this image if the view is unestimated or does not exist.
-  if (view == nullptr || !view->IsEstimated()) {
-    return;
-  }
+void UndistortImageAndWriteToFile(const std::string input_image_filepath,
+                                  const std::string output_image_filepath,
+                                  const theia::Camera& distorted_camera,
+                                  const theia::Camera& undistorted_camera) {
+  LOG(INFO) << "Undistorting image " << input_image_filepath;
 
   // Undistort the image.
-  const theia::FloatImage distorted_image(input_image_directory + view->Name());
-  theia::View undistorted_view;
+  const theia::FloatImage distorted_image(input_image_filepath);
   theia::FloatImage undistorted_image;
-  CHECK(theia::UndistortView(*view,
-                             distorted_image,
-                             &undistorted_view,
-                             &undistorted_image))
-      << "Could not undistort image: " << view->Name();
-
-  // Update the view to the undistorted view.
-  *view = undistorted_view;
+  CHECK(theia::UndistortImage(distorted_camera,
+                              distorted_image,
+                              undistorted_camera,
+                              &undistorted_image))
+      << "Could not undistort image: " << input_image_filepath;
 
   // Save the image to the output directory.
-  LOG(INFO) << "Writing image " << view->Name();
-  undistorted_image.Write(output_image_directory + view->Name());
+  LOG(INFO) << "Writing undistorted image to: " << output_image_filepath;
+  undistorted_image.Write(output_image_filepath);
 }
 
 int main(int argc, char* argv[]) {
@@ -86,9 +82,27 @@ int main(int argc, char* argv[]) {
   THEIA_GFLAGS_NAMESPACE::ParseCommandLineFlags(&argc, &argv, true);
 
   // Load the reconstruction.
-  theia::Reconstruction reconstruction;
-  CHECK(theia::ReadReconstruction(FLAGS_input_reconstruction, &reconstruction))
+  theia::Reconstruction distorted_reconstruction;
+  CHECK(theia::ReadReconstruction(FLAGS_input_reconstruction,
+                                  &distorted_reconstruction))
       << "Could not read reconstruction file.";
+
+  theia::Reconstruction undistorted_reconstruction = distorted_reconstruction;
+  // Undistort the reconstruction.
+  CHECK(theia::UndistortReconstruction(&undistorted_reconstruction));
+
+  // Output the undistorted reconstruction
+  if (FLAGS_output_reconstruction.size() > 0) {
+    LOG(INFO) << "Writing the undistorted reconstruction to: "
+              << FLAGS_output_reconstruction;
+    theia::WriteReconstruction(undistorted_reconstruction,
+                               FLAGS_output_reconstruction);
+  }
+
+  // If we do not want to undistort the images, end here.
+  if (!FLAGS_undistort_images) {
+    return 0;
+  }
 
   // Get the image input and output directories.
   std::string input_image_directory = FLAGS_input_image_directory;
@@ -98,16 +112,23 @@ int main(int argc, char* argv[]) {
 
   // Undistort images in parallel.
   theia::ThreadPool pool(FLAGS_num_threads);
-  const auto& view_ids = reconstruction.ViewIds();
+  const auto& view_ids = distorted_reconstruction.ViewIds();
   for (const theia::ViewId view_id : view_ids) {
+    const theia::View* distorted_view = distorted_reconstruction.View(view_id);
+    const theia::View* undistorted_view =
+        undistorted_reconstruction.View(view_id);
+
+    const std::string input_image_filepath =
+        FLAGS_input_image_directory + distorted_view->Name();
+    const std::string output_image_filepath =
+        FLAGS_output_image_directory + undistorted_view->Name();
     pool.Add(UndistortImageAndWriteToFile,
-             input_image_directory,
-             output_image_directory,
-             view_id,
-             &reconstruction);
+             input_image_filepath,
+             output_image_filepath,
+             distorted_view->Camera(),
+             undistorted_view->Camera());
   }
   pool.WaitForTasksToFinish();
 
-  theia::WriteReconstruction(reconstruction, FLAGS_output_reconstruction);
   return 0;
 }
