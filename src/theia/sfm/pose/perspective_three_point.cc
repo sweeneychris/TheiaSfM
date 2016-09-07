@@ -199,9 +199,8 @@ bool PoseFromThreePoints(const Vector2d feature_point[3],
   Vector3d world_1_0 = world_points[1] - world_points[0];
   Vector3d world_2_0 = world_points[2] - world_points[0];
   if (world_1_0.cross(world_2_0).squaredNorm() < kTolerance) {
-    LOG(WARNING)
-        << "The 3 world points are collinear! No solution for absolute "
-           "pose exits.";
+    VLOG(2) << "The 3 world points are collinear! No solution for absolute "
+               "pose exits.";
     return false;
   }
 
