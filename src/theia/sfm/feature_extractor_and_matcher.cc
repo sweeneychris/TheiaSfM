@@ -168,29 +168,38 @@ void FeatureExtractorAndMatcher::ProcessImage(
     const int i) {
   const std::string& image_filepath = image_filepaths_[i];
 
-  // Extract Exif if it wasn't provided.
-  if (!ContainsKey(intrinsics_, image_filepath)) {
-    CameraIntrinsicsPrior intrinsics;
+  // Get the camera intrinsics prior if it was provided.
+  CameraIntrinsicsPrior intrinsics =
+      FindWithDefault(intrinsics_, image_filepath, CameraIntrinsicsPrior());
+
+  // Extract an EXIF focal length if it was not provided.
+  if (!intrinsics.focal_length.is_set) {
     CHECK(exif_reader_.ExtractEXIFMetadata(image_filepath, &intrinsics));
+
+    // If the focal length still could not be extracted, set it to a reasonable
+    // value based on a median viewing angle.
+    if (!options_.only_calibrated_views && !intrinsics.focal_length.is_set) {
+      VLOG(2) << "Exif was not detected. Setting it to a reasonable value.";
+      intrinsics.focal_length.is_set = true;
+      intrinsics.focal_length.value[0] =
+          1.2 * static_cast<double>(
+                    std::max(intrinsics.image_width, intrinsics.image_height));
+    }
+
     std::lock_guard<std::mutex> lock(intrinsics_mutex_);
-    intrinsics_.emplace(image_filepath, intrinsics);
+    // Insert or update the value of the intrinsics.
+    intrinsics_[image_filepath] =  intrinsics;
   }
 
   // Early exit if no EXIF calibration exists and we are only processing
   // calibration views.
-  const CameraIntrinsicsPrior& intrinsics =
-      FindOrDie(intrinsics_, image_filepath);
-  if (intrinsics.focal_length.is_set) {
-    LOG(INFO) << "Image " << image_filepath
-              << " contained an EXIF focal length: "
-              << intrinsics.focal_length.value[0];
-  } else if (!options_.only_calibrated_views) {
-    LOG(INFO) << "Image " << image_filepath
-              << " did not contain an EXIF focal length.";
-  } else {
+  if (options_.only_calibrated_views && !intrinsics.focal_length.is_set) {
     LOG(INFO) << "Image " << image_filepath
               << " did not contain an EXIF focal length. Skipping this image.";
-    return;
+  } else {
+    LOG(INFO) << "Image " << image_filepath
+              << " is initialized with the focal length: "
+              << intrinsics.focal_length.value[0];
   }
 
   // Get the image filename without the directory.
