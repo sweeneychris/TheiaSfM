@@ -118,6 +118,32 @@ void PinholeRadialTangentialCameraModel::SetFromCameraIntrinsicsPriors(
   }
 }
 
+CameraIntrinsicsPrior
+PinholeRadialTangentialCameraModel::CameraIntrinsicsPriorFromIntrinsics()
+    const {
+  CameraIntrinsicsPrior prior;
+  prior.camera_intrinsics_model_type =
+      CameraIntrinsicsModelTypeToString(Type());
+  prior.focal_length.is_set = true;
+  prior.focal_length.value[0] = FocalLength();
+  prior.principal_point.is_set = true;
+  prior.principal_point.value[0] = PrincipalPointX();
+  prior.principal_point.value[1] = PrincipalPointY();
+  prior.aspect_ratio.is_set = true;
+  prior.aspect_ratio.value[0] = AspectRatio();
+  prior.skew.is_set = true;
+  prior.skew.value[0] = Skew();
+  prior.radial_distortion.is_set = true;
+  prior.radial_distortion.value[0] = RadialDistortion1();
+  prior.radial_distortion.value[1] = RadialDistortion2();
+  prior.radial_distortion.value[2] = RadialDistortion3();
+  prior.tangential_distortion.is_set = true;
+  prior.tangential_distortion.value[0] = TangentialDistortion1();
+  prior.tangential_distortion.value[1] = TangentialDistortion2();
+
+  return prior;
+}
+
 // Returns the indices of the parameters that will be optimized during bundle
 // adjustment.
 std::vector<int>
@@ -169,6 +195,19 @@ void PinholeRadialTangentialCameraModel::GetCalibrationMatrix(
                                 parameters_[PRINCIPAL_POINT_X],
                                 parameters_[PRINCIPAL_POINT_Y],
                                 kmatrix);
+}
+
+void PinholeRadialTangentialCameraModel::PrintIntrinsics() const {
+  LOG(INFO) << "Camera model type: "
+            << CameraIntrinsicsModelTypeToString(Type())
+            << "\nFocal length (pixels): " << FocalLength()
+            << "\nPrincipal Point (px, py) = (" << PrincipalPointX() << ", "
+            << PrincipalPointY() << ")"
+            << "\nSkew: " << Skew() << "\nAspect Ratio: " << AspectRatio()
+            << "\nRadialDistortion: " << RadialDistortion1() << ", "
+            << RadialDistortion2() << ", " << RadialDistortion3()
+            << "\nTangential Distortion: " << TangentialDistortion1() << ", "
+            << TangentialDistortion2();
 }
 
 // ----------------------- Getter and Setter methods ---------------------- //

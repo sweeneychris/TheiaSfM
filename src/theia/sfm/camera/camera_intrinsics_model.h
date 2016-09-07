@@ -109,6 +109,10 @@ class CameraIntrinsicsModel {
   virtual void SetFromCameraIntrinsicsPriors(
       const CameraIntrinsicsPrior& prior) = 0;
 
+  // Return a CameraIntrinsicsPrior that can be used to initialize a camera with
+  // the same parameters with the SetFromCameraIntrinsicsPriors method.
+  virtual CameraIntrinsicsPrior CameraIntrinsicsPriorFromIntrinsics() const = 0;
+
   // Returns the indices of the parameters that will be optimized during bundle
   // adjustment.
   virtual std::vector<int> GetSubsetFromOptimizeIntrinsicsType(
@@ -116,6 +120,11 @@ class CameraIntrinsicsModel {
 
   // Returns the calibration matrix.
   virtual void GetCalibrationMatrix(Eigen::Matrix3d* kmatrix) const = 0;
+
+  // Prints the camera intrinsics in a human-readable format. This method should
+  // print the values of the intrinsics along with the intrinsics field such as:
+  //   Focal length (pixels): 800.0
+  virtual void PrintIntrinsics() const = 0;
 
   // ------------------------------------------------------------------------ //
   //  Although the methods below are static and templated they must be

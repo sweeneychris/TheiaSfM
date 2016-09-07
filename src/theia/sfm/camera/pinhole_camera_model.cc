@@ -106,6 +106,27 @@ void PinholeCameraModel::SetFromCameraIntrinsicsPriors(
   }
 }
 
+CameraIntrinsicsPrior PinholeCameraModel::CameraIntrinsicsPriorFromIntrinsics()
+    const {
+  CameraIntrinsicsPrior prior;
+  prior.camera_intrinsics_model_type =
+      CameraIntrinsicsModelTypeToString(Type());
+  prior.focal_length.is_set = true;
+  prior.focal_length.value[0] = FocalLength();
+  prior.principal_point.is_set = true;
+  prior.principal_point.value[0] = PrincipalPointX();
+  prior.principal_point.value[1] = PrincipalPointY();
+  prior.aspect_ratio.is_set = true;
+  prior.aspect_ratio.value[0] = AspectRatio();
+  prior.skew.is_set = true;
+  prior.skew.value[0] = Skew();
+  prior.radial_distortion.is_set = true;
+  prior.radial_distortion.value[0] = RadialDistortion1();
+  prior.radial_distortion.value[1] = RadialDistortion2();
+
+  return prior;
+}
+
 // Returns the indices of the parameters that will be optimized during bundle
 // adjustment.
 std::vector<int> PinholeCameraModel::GetSubsetFromOptimizeIntrinsicsType(
@@ -147,6 +168,17 @@ void PinholeCameraModel::GetCalibrationMatrix(Matrix3d* kmatrix) const {
                                 parameters_[PRINCIPAL_POINT_X],
                                 parameters_[PRINCIPAL_POINT_Y],
                                 kmatrix);
+}
+
+void PinholeCameraModel::PrintIntrinsics() const {
+  LOG(INFO) << "Camera model type: "
+            << CameraIntrinsicsModelTypeToString(Type())
+            << "\nFocal length (pixels): " << FocalLength()
+            << "\nPrincipal Point (px, py) = (" << PrincipalPointX() << ", "
+            << PrincipalPointY() << ")"
+            << "\nSkew: " << Skew() << "\nAspect Ratio: " << AspectRatio()
+            << "\nRadialDistortion: " << RadialDistortion1() << ", "
+            << RadialDistortion2();
 }
 
 // ----------------------- Getter and Setter methods ---------------------- //

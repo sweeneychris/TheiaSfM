@@ -102,6 +102,10 @@ class PinholeCameraModel : public CameraIntrinsicsModel {
   void SetFromCameraIntrinsicsPriors(
       const CameraIntrinsicsPrior& prior) override;
 
+  // Return a CameraIntrinsicsPrior that can be used to initialize a camera with
+  // the same parameters with the SetFromCameraIntrinsicsPriors method.
+  CameraIntrinsicsPrior CameraIntrinsicsPriorFromIntrinsics() const override;
+
   // Returns the indices of the parameters that will be optimized during bundle
   // adjustment.
   std::vector<int> GetSubsetFromOptimizeIntrinsicsType(
@@ -109,6 +113,9 @@ class PinholeCameraModel : public CameraIntrinsicsModel {
 
   // Returns the calibration matrix in the form specified above.
   void GetCalibrationMatrix(Eigen::Matrix3d* kmatrix) const override;
+
+  // Prints the camera intrinsics in a human-readable format.
+  void PrintIntrinsics() const;
 
   // Given a point in the camera coordinate system, apply the camera intrinsics
   // (e.g., focal length, principal point, distortion) to transform the point
