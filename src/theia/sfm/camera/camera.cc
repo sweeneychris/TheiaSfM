@@ -40,6 +40,7 @@
 #include <glog/logging.h>
 #include <algorithm>
 
+#include "theia/sfm/camera_intrinsics_prior.h"
 #include "theia/sfm/camera/camera_intrinsics_model.h"
 #include "theia/sfm/camera/pinhole_camera_model.h"
 #include "theia/sfm/camera/projection_matrix_utils.h"
@@ -120,6 +121,14 @@ void Camera::SetFromCameraIntrinsicsPriors(const CameraIntrinsicsPrior& prior) {
   image_size_[0] = prior.image_width;
   image_size_[1] = prior.image_height;
   camera_intrinsics_->SetFromCameraIntrinsicsPriors(prior);
+}
+
+CameraIntrinsicsPrior Camera::CameraIntrinsicsPriorFromIntrinsics() const {
+  CameraIntrinsicsPrior prior =
+      camera_intrinsics_->CameraIntrinsicsPriorFromIntrinsics();
+  prior.image_width = image_size_[0];
+  prior.image_height = image_size_[1];
+  return prior;
 }
 
 CameraIntrinsicsModelType Camera::GetCameraIntrinsicsModelType() const {
@@ -210,7 +219,11 @@ Vector3d Camera::PixelToNormalizedCoordinates(const Vector2d& pixel) const {
   return camera_intrinsics_->ImageToCameraCoordinates(pixel);
 }
 
-  // ----------------------- Getter and Setter methods ---------------------- //
+void Camera::PrintCameraIntrinsics() const {
+  camera_intrinsics_->PrintIntrinsics();
+}
+
+// ----------------------- Getter and Setter methods ---------------------- //
 void Camera::SetPosition(const Vector3d& position) {
   Map<Vector3d>(mutable_extrinsics() + POSITION) = position;
 }

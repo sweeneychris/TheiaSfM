@@ -102,6 +102,10 @@ class Camera {
   // Set the camera parameters (and camera intrinsics type) from the prior.
   void SetFromCameraIntrinsicsPriors(const CameraIntrinsicsPrior& prior);
 
+  // Return a CameraIntrinsicsPrior that can be used to initialize a camera with
+  // the same parameters with the SetFromCameraIntrinsicsPriors method.
+  CameraIntrinsicsPrior CameraIntrinsicsPriorFromIntrinsics() const;
+
   // Returns the type corresponding to the camera intrinsics model used the
   // describe the lens of this camera.
   CameraIntrinsicsModelType GetCameraIntrinsicsModelType() const;
@@ -153,6 +157,9 @@ class Camera {
   // effect of camera calibration and does not account for the camera pose.
   Eigen::Vector3d PixelToNormalizedCoordinates(
       const Eigen::Vector2d& pixel) const;
+
+  // Print the camera intrinsics values in a human-readable format.
+  void PrintCameraIntrinsics() const;
 
   // ----------------------- Getter and Setter methods ---------------------- //
   void SetPosition(const Eigen::Vector3d& position);
