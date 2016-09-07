@@ -1,0 +1,87 @@
+############### Input/Output ###############
+# Input as a wildcard e.g., /home/my_username/my_images/*.jpg
+--images=
+
+# The number of iterations to run the calibration procedure. Typically 2-3
+# iterations is sufficient to obtain a good calibration.
+--num_calibration_iterations=2
+
+# The type of camera model to use for calibration. The most common camera model
+# types are PINHOLE and FISHEYE but a full list may be found at
+# //theia/sfm/camera/camera_intrinsic_model_type.h
+--camera_model=PINHOLE
+
+############### Multithreading ###############
+# Set to the number of threads you want to use.
+--num_threads=16
+
+############### Feature Extraction ###############
+--descriptor=SIFT
+--feature_density=NORMAL
+
+############### Matching Options ###############
+# Perform matching out-of-core. If set to true, the matching_working_directory
+# must be set to a valid, writable directory (the directory will be created if
+# it does not exits) Set to false to perform all-in-memory matching.
+--match_out_of_core=true
+
+# During feature matching, features are saved to disk so that out-of-core
+# matching may be performed. This directory specifies which directory those
+# features should be saved to.
+--matching_working_directory=
+
+# During feature matching we utilize an LRU cache for out-of-core matching. The size
+# of that cache (in terms of number of images) is controlled by this parameter. The
+# higher this number the more memory is required.
+--matching_max_num_images_in_cache=128
+
+--matching_strategy=CASCADE_HASHING
+--lowes_ratio=0.75
+--min_num_inliers_for_valid_match=30
+# NOTE: This threshold is relative to an image with a width of 1024 pixels. It
+# will be scaled appropriately based on the image resolutions. This allows a
+# single threshold to be used for images with different resolutions.
+--max_sampson_error_for_verified_match=6.0
+--bundle_adjust_two_view_geometry=true
+--keep_only_symmetric_matches=true
+
+############### General SfM Options ###############
+--min_track_length=2
+--max_track_length=50
+
+############### Incremental SfM Options ###############
+# NOTE: This threshold is relative to an image with a width of 1024 pixels. It
+# will be scaled appropriately based on the image resolutions. This allows a
+# single threshold to be used for images with different resolutions.
+--absolute_pose_reprojection_error_threshold=4
+--partial_bundle_adjustment_num_views=20
+--full_bundle_adjustment_growth_percent=5
+--min_num_absolute_pose_inliers=30
+
+############### Bundle Adjustment Options ###############
+# Set this parameter to a value other than NONE if you want to utilize a robust
+# cost function during bundle adjustment. This can increase robustness to outliers
+# during the optimization.
+--bundle_adjustment_robust_loss_function=CAUCHY
+
+# Set this value to the determine the reprojection error in pixelst at which
+# robustness begins (if a robust cost function is being used).
+--bundle_adjustment_robust_loss_width=10.0
+
+# Set this parameter to change which camera intrinsics should be optimized
+# during the calibration. Typically the focal length and distortion parameters
+# are desired.
+--intrinsics_to_optimize=FOCAL_LENGTH|RADIAL_DISTORTION
+
+# After BA, remove any points that have a reprojection error greater
+# than this.
+--max_reprojection_error_pixels=4.0
+
+############### Triangulation Options ###############
+--min_triangulation_angle_degrees=4.0
+--triangulation_reprojection_error_pixels=15.0
+--bundle_adjust_tracks=true
+
+############### Logging Options ###############
+# Logging verbosity.
+--logtostderr
