@@ -56,21 +56,31 @@ struct ReprojectionError {
     typedef Eigen::Matrix<T, 3, 1> Matrix3T;
     typedef Eigen::Map<const Matrix3T> ConstMap3T;
 
+    static const T kVerySmallNumber(1e-8);
+
     // Remove the translation.
     Eigen::Matrix<T, 3, 1> adjusted_point =
         ConstMap3T(point) -
         point[3] * ConstMap3T(extrinsic_parameters + Camera::POSITION);
+
+    // If the point is too close to the camera center then the point cannot be
+    // constrained by triangulation. This is likely to only occur when a 3d
+    // point is seen by 2 views and the camera center of 1 view lies on or neare
+    // the optical axis of the other view.
+    //
+    // Since we do not know the camera model we cannot say that the point must
+    // be in front of the camera (e.g., wide angle cameras that have > 180
+    // degree FOV). Instead we simply force that the point is not near the
+    // camera center.
+    if (adjusted_point.squaredNorm() < kVerySmallNumber) {
+      return false;
+    }
 
     // Rotate the point to obtain the point in the camera coordinate system.
     T rotated_point[3];
     ceres::AngleAxisRotatePoint(extrinsic_parameters + Camera::ORIENTATION,
                                 adjusted_point.data(),
                                 rotated_point);
-
-    // TODO(csweeney): The depth of the point here is rotated_point[2] /
-    // point[3]. Should we cause a large error or perhaps a failure if the point
-    // is behind the image? The filtering after triangulation should preven this
-    // from ever happening.
 
     // Apply the camera intrinsics to get the reprojected pixel.
     T reprojection[2];
