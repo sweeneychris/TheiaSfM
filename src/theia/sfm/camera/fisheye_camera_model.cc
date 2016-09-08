@@ -79,8 +79,12 @@ void FisheyeCameraModel::SetFromCameraIntrinsicsPriors(
   if (prior.focal_length.is_set) {
     SetFocalLength(prior.focal_length.value[0]);
   } else if (prior.image_width != 0.0 && prior.image_height != 0.0) {
-    SetFocalLength(1.2 * static_cast<double>(std::max(
-        prior.image_width, prior.image_height)));
+    // NOTE: A scaling of 0.4 times the max image dimension was empircally
+    // observed to be a decent initialization by csweeney.
+    static const double kFocalLengthScaleFactor = 0.4;
+    SetFocalLength(
+        kFocalLengthScaleFactor *
+        static_cast<double>(std::max(prior.image_width, prior.image_height)));
   }
 
   // Set the principal point.
