@@ -311,6 +311,8 @@ bool UndistortReconstruction(Reconstruction* reconstruction) {
       }
     }
   }
+
+  return true;
 }
 
 }  // namespace theia
