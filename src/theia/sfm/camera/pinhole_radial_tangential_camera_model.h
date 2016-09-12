@@ -123,7 +123,7 @@ class PinholeRadialTangentialCameraModel : public CameraIntrinsicsModel {
   void GetCalibrationMatrix(Eigen::Matrix3d* kmatrix) const override;
 
   // Prints the camera intrinsics in a human-readable format.
-  void PrintIntrinsics() const;
+  void PrintIntrinsics() const override;
 
   // Given a point in the camera coordinate system, apply the camera intrinsics
   // (e.g., focal length, principal point, distortion) to transform the point
