@@ -21,7 +21,7 @@ Theia relies on a number of open source libraries. Luckily, most of the will be 
 
 3. `eigen3 <http://eigen.tuxfamily.org/index.php?title=Main_Page>`_ is used extensively for doing nearly all the matrix and linear algebra operations.
 
-4. `ImageMagick <http://www.imagemagick.org/>`_ is used to read and write image files.
+4. `OpenImageIO <http://www.openimageio.org/>`_ is used to read and write image files.
 
 5. `Ceres Solver <https://code.google.com/p/ceres-solver/>`_ is a library for solving non-linear least squares problems. In particular, Theia uses it for Bundle Adjustment.
 
