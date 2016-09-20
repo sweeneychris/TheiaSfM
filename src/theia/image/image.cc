@@ -71,6 +71,7 @@ FloatImage::FloatImage(const OpenImageIO::ImageBuf& image) {
 
 FloatImage& FloatImage::operator=(const FloatImage& image2) {
   image_.copy(image2.image_);
+  return *this;
 }
 
 OpenImageIO::ImageBuf& FloatImage::GetOpenImageIOImageBuf() {
@@ -103,8 +104,8 @@ void FloatImage::SetXY(const int x,
   DCHECK_LT(c, Channels());
 
   // Set the ROI to be the precise pixel location in the correct channel.
-  OpenImageIO::ROI roi(x, x + 1, y, y + 1, 0, 1, c, c + 1);
-  image_.set_pixels(roi, OpenImageIO::TypeDesc::FLOAT, &value);
+  OpenImageIO::ImageBuf::Iterator<float> it(image_, x, y, 0);
+  it[c] = value;
 }
 
 void FloatImage::SetXY(const int x, const int y, const Eigen::Vector3f& rgb) {
@@ -252,8 +253,8 @@ const float* FloatImage::Data() const {
 
 FloatImage FloatImage::ComputeGradient() const {
   // Get Dx and Dy.
-  float sobel_filter_x[9] = {-1, 0, 1, -2, 0, 2, -1, 0, 1};
-  float sobel_filter_y[9] = {-1, -2, -1, 0, 0, 0, 1, 2, 1};
+  float sobel_filter_x[9] = {-.125, 0, .125, -.25, 0, .25, -.125, 0, .125};
+  float sobel_filter_y[9] = {-.125, -.25, -.125, 0, 0, 0, .125, .25, .125};
 
   OpenImageIO::ImageSpec spec(3, 3, 1, OpenImageIO::TypeDesc::FLOAT);
   OpenImageIO::ImageBuf kernel_x(spec, sobel_filter_x);
