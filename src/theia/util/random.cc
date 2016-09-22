@@ -42,13 +42,13 @@
 
 namespace theia {
 namespace {
-// Define the random engine to be thread-local if available. Otherwise the
-// random generator is not thread safe but this should not cause severe errors.
-#if defined(__clang__) && !__has_feature(cxx_thread_local)
-static std::mt19937 util_generator;
-#else
+
+#ifdef THEIA_HAS_THREAD_LOCAL_KEYWORD
 thread_local std::mt19937 util_generator;
-#endif
+#else
+static std::mt19937 util_generator;
+#endif  // THEIA_HAS_THREAD_LOCAL_KEYWORD
+
 }  // namespace
 
 RandomNumberGenerator::RandomNumberGenerator() {

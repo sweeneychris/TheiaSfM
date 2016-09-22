@@ -145,6 +145,14 @@ macro(OptimizeTheiaCompilerFlags)
     endif (COMPILER_HAS_CXX11_FLAG)
   endif (NOT MSVC)
 
+  # Check for the thread_local keyword. If it cannot be used, set the macro to
+  # indicate so.
+  include(CheckCXXSourceCompiles)
+  check_cxx_source_compiles("thread_local int i = 0; int main() { return i; }" THEIA_HAVE_THREAD_LOCAL_STORAGE)
+  if(THEIA_HAVE_THREAD_LOCAL_STORAGE)
+    add_definitions(-DTHEIA_HAS_THREAD_LOCAL_KEYWORD)
+  endif(THEIA_HAVE_THREAD_LOCAL_STORAGE)
+
   set (CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${THEIA_CXX_FLAGS}")
 
   # After the tweaks for the compile settings, disable some warnings on MSVC.
