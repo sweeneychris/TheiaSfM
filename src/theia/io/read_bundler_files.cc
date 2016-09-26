@@ -218,15 +218,13 @@ bool ReadBundlerFiles(const std::string& lists_file,
     const double k2 = strtod(p, &p2);
     p = p2;
 
-    // Some Bundler datasets are set up to only provide camera poses and do not
-    // contain camera intrinsic information. In this case, the focal length is
-    // set to 0. Camera intrinsics require a focal length greater than 0, so we
-    // manually set it here.
+    // Do not consider this view if an invalid focal length is present.
     if (focal_length <= 0.0) {
-      focal_length = 1.0;
+      views_to_remove.insert(i);
+    } else {
+      camera->SetFocalLength(focal_length);
     }
 
-    camera->SetFocalLength(focal_length);
     camera->MutableCameraIntrinsics()->SetParameter(
         PinholeCameraModel::RADIAL_DISTORTION_1, k1);
     camera->MutableCameraIntrinsics()->SetParameter(
@@ -264,10 +262,6 @@ bool ReadBundlerFiles(const std::string& lists_file,
     const Eigen::Vector3d position = -rotation.transpose() * translation;
     camera->SetPosition(position);
     camera->SetOrientationFromRotationMatrix(rotation);
-
-    if (camera->FocalLength() == 0) {
-      views_to_remove.insert(i);
-    }
 
     if ((i + 1) % 100 == 0 || i == num_cameras - 1) {
       std::cout << "\r Loading parameters for camera " << i + 1 << " / "
