@@ -32,6 +32,10 @@ Bibliography
    Binary Robust Independent Elementary Features**, *11th European Conference
    on Computer Vision (ECCV)*, September 2010
 
+.. [Devernay] Devernay, and Faugeras. **Straight Lines Have to be Straight:
+   Automatic Calibration and Removal of Distortion from Scenes of Structured
+   Environments**, *Machine Vision and Applications*, 2001.
+
 .. [Fischler] M. Fischler and R. Bolles. 1981. **Random sample consensus: a
    paradigm for model fitting with applications to image analysis and automated
    cartography**. *Commun. ACM* 24, 6 (June 1981), 381-395.

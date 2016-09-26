@@ -12,4 +12,5 @@ API Reference
    ransac
    pose
    math
+   cameras
    sfm

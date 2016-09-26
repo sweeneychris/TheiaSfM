@@ -64,105 +64,6 @@ the features correspond to the same 3D point. These 3D points are useful
 constraints in SfM reconstruction, as they represent the "structure" in
 "Structure-from-Motion" and help to build a point cloud for our reconstruction.
 
-
-Camera
-------
-
-.. class:: Camera
-
-Each :class:`View` contains a :class:`Camera` object that contains intrinsic and
-extrinsic information about the camera that observed the scene. Theia has an
-efficient, compact :class:`Camera` class that abstracts away common image
-operations. This greatly relieves the pain of manually dealing with calibration
-and geometric transformations of images. We represent camera intrinsics such
-that the calibration matrix is:
-
-.. math::
-
-  K = \left[\begin{matrix}f & s & p_x \\ 0 & f * a & p_y \\ 0 & 0 & 1 \end{matrix} \right]
-
-where :math:`f` is the focal length (in pixels), :math:`s` is the skew,
-:math:`a` is the aspect ratio and :math:`p` is the principle point of the
-camera. All of these intrinsics may be accessed with getter and setter methods,
-e.g., :code:`double GetFocalLength()` or :code:`void SetFocalLength(const double
-focal_length)`. Note that we do additionally allow for up to two radial
-distortion parameters, but these are not part of the calibration matrix so they
-must be set or retrieved separately from the corresponding getter/setter
-methods.
-
-We store the camera pose information as the transformation which maps world
-coordinates into camera coordinates. Our rotation is stored internally as an
-`SO(3)` rotation, which makes optimization with :class:`BundleAdjustment` more
-effective since the value is always a valid rotation (unlike e.g., Quaternions
-that must be normalized after each optimization step). However, for convenience
-we provide an interface to retrieve the rotation as a rotation matrix as
-well. Further, we store the camera position as opposed to the translation.
-
-The convenience of this camera class is clear with the common example of 3D
-point reprojection.
-
-.. code:: c++
-
-   // Open an image and obtain camera parameters.
-   FloatImage image("my_image.jpg");
-   double focal_length;
-   CHECK(image.FocalLengthPixels(&focal_length));
-   const double radial_distortion1 = value obtained elsewhere...
-   const double radial_distortion2 = value obtained elsewhere...
-   const Eigen::Matrix3d rotation = value obtained elsewhere...
-   const Eigen::Vector3d position = value obtained elsewhere...
-
-   // Set up the camera.
-   Camera camera;
-   camera.SetOrientationFromRotationMatrix(rotation);
-   camera.SetPosition(position);
-   camera.SetFocalLength(focal_length);
-   camera.SetPrincipalPoint(image.Width() / 2.0, image.Height() / 2.0);
-   camera.SetRadialDistortion(radial_distortion1, radial_distortion2);
-
-   // Obtain a homogeneous 3D point
-   const Eigen::Vector4d homogeneous_point3d = value obtained elsewhere...
-
-   // Reproject the 3D point to a pixel.
-   Eigen::Vector2d reprojection_pixel;
-   const double depth = camera.ProjectPoint(homogeneous_point3d, &pixel);
-   if (depth < 0) {
-     LOG(INFO) << "Point was behind the camera!";
-   }
-
-   LOG(INFO) << "Homogeneous 3D point: " << homogeneous_point3d
-             << " reprojected to the pixel value of " << reprojection_pixel;
-
-Point projection can be a tricky function when considering the camera intrinsics
-and extrinsics. Theia takes care of this projection (including radial
-distortion) in a simple and efficient manner.
-
-In addition to typical getter/setter methods for the camera parameters, the
-:class:`Camera` class also defines several helper functions:.
-
-.. function:: bool Camera::InitializeFromProjectionMatrix(const int image_width, const int image_height, const Matrix3x4d projection_matrix)
-
-    Initializes the camera intrinsic and extrinsic parameters from the
-    projection matrix by decomposing the matrix with a RQ decomposition.
-
-    .. NOTE:: The projection matrix does not contain information about radial
-        distortion, so those parameters will need to be set separately.
-
-.. function:: void Camera::GetProjectionMatrix(Matrix3x4d* pmatrix) const
-
-    Returns the projection matrix. Does not include radial distortion.
-
-.. function:: void Camera::GetCalibrationMatrix(Eigen::Matrix3d* kmatrix) const
-
-    Returns the calibration matrix in the form specified above.
-
-.. function:: Eigen::Vector3d Camera::PixelToUnitDepthRay(const Eigen::Vector2d& pixel) const
-
-    Converts the pixel point to a ray in 3D space such that the origin of the
-    ray is at the camera center and the direction is the pixel direction rotated
-    according to the camera orientation in 3D space. The returned vector is not
-    unit length.
-
 Reconstruction
 --------------
 
@@ -192,12 +93,30 @@ lightweight and efficient.
     fails. Each view is uniquely identified by the view name (a good view name could
     be the filename of the image).
 
+.. function:: ViewId Reconstruction::AddView(const std::string& view_name, const CameraIntrinsicsGroupId group_id)
+
+    Same as above, but explicitly sets the CameraIntrinsicsGroupId. This is
+    useful for when multiple cameras share the same intrinsics.
+
 .. function:: bool Reconstruction::RemoveView(const ViewId view_id)
 
     Removes the view from the reconstruction and removes all references to the view in
     the tracks.
 
     .. NOTE:: Any tracks that have length 0 after the view is removed will also be removed.
+
+.. function:: CameraIntrinsicsGroupId Reconstruction::CameraIntrinsicsGroupIdFromViewId(const ViewId view_id) const
+
+    Returns the camera intrinsics group id for the given view.
+
+.. function:: std::unordered_set<ViewId> Reconstruction::GetViewsInCameraIntrinsicsGroup(const CameraIntrinsicsGroupId group_id) const
+
+    Returns all view_ids with the given camera intrinsics group id. If an
+    invalid or non-existant group is chosen then an empty set will be returned.
+
+.. function:: std::unordered_set<CameraIntrinsicsGroupId> CameraIntrinsicsGroupIds() const
+
+    Returns all camera intrinsics group ids present in the reconstruction.
 
 .. function:: int Reconstruction::NumViews() const
 .. function:: int Reconstruction::NumTracks() const
@@ -342,12 +261,19 @@ these classes are:
 
   Add an image to the reconstruction.
 
+.. function:: bool ReconstructionBuilder::AddImage(const std::string& image_filepath, const CameraIntrinsicsGroupId camera_intrinsics_group)
+
+  Same as above, but with the camera intrinsics group specified.
+
 .. function:: bool ReconstructionBuilder::AddImageWithCameraIntrinsicsPrior(const std::string& image_filepath, const CameraIntrinsicsPrior& camera_intrinsics_prior)
 
    Same as above, but with the camera priors manually specified. This is useful
    when calibration or EXIF information is known ahead of time. Note, if the
    CameraIntrinsicsPrior is not explicitly set, Theia will attempt to extract
    EXIF information for camera intrinsics.
+
+.. function:: bool ReconstructionBuilder::AddImageWithCameraIntrinsicsPrior(const std::string& image_filepath, const CameraIntrinsicsPrior& camera_intrinsics_prior, const CameraIntrinsicsGroupId camera_intrinsics_group_id)
+
 
 .. function:: bool ReconstructionBuilder::AddTwoViewMatch(const std::string& image1, const std::string& image2, const ImagePairMatch& matches)
 
@@ -390,6 +316,13 @@ be set to modify the functionality, strategies, and performance of the SfM
 reconstruction process. This includes options for feature description
 extraction, feature matching, which SfM pipeline to use, and more.
 
+.. member:: std::shared_ptr<RandomNumberGenerator> rng
+
+  If specified, the reconstruction process will use the user-supplied random
+  number generator. This allows users to provide a random number generator with
+  a known seed so that the reconstruction process may be deterministic. If rng
+  is not supplied, then the seed is initialized based on the time.
+
 .. member:: int ReconstructionBuilderOptions::num_threads
 
   DEFAULT: ``1``
@@ -412,6 +345,13 @@ extraction, feature matching, which SfM pipeline to use, and more.
   Set to true to only accept calibrated views (from EXIF or elsewhere) as
   valid inputs to the reconstruction process. When uncalibrated views are
   added to the reconstruction builder they are ignored with a LOG warning.
+
+.. member:: int ReconstructionBuilderOptions::min_track_length
+
+  DEFAULT: ``2``
+
+  Minimum allowable track length. Short tracks are often less stable during
+  triangulation and bundle adjustment and so they may be filtered for stability.
 
 .. member:: int ReconstructionBuilderOptions::max_track_length
 
@@ -436,12 +376,11 @@ extraction, feature matching, which SfM pipeline to use, and more.
   See `//theia/image/descriptor/create_descriptor_extractor.h
   <https://github.com/sweeneychris/TheiaSfM/blob/master/src/theia/image/descriptor/create_descriptor_extractor.h>`_
 
-.. member:: SiftParameters ReconstructionBuilderOptions::sift_parameters
+.. member:: FeatureDensity ReconstructionBuilderOptions::feature_density
 
-  If the desired descriptor type is SIFT then these are the sift parameters
-  controlling keypoint detection and description options. See
-  `//theia/image/keypoint_detector/sift_parameters.h
-  <https://github.com/sweeneychris/TheiaSfM/blob/master/src/theia/image/keypoint_detector/sift_parameters.h>`_
+  DEFAULT: ``FeatureDensity::NORMAL``
+
+  The density of the feature extraction. This may be set to ``SPARSE``, ``NORMAL``, or ``DENSE``
 
 .. member:: MatchingStrategy ReconstructionBuilderOptions::matching_strategy
 
@@ -606,17 +545,6 @@ description of these options.
   improve the quality of a RANSAC estimation with virtually no computational
   cost.
 
-.. member:: double ReconstructorEstimatorOptions::max_rotation_error_in_view_graph_cycles
-
-  DEFAULT: ``3.0``
-
-  Before orientations are estimated, some "bad" edges may be removed from the
-  view graph by determining the consistency of rotation estimations in loops
-  within the view graph. By examining loops of size 3 (i.e., triplets) the
-  concatenated relative rotations should result in a perfect identity
-  rotation. Any edges that break this consistency may be removed prior to
-  rotation estimation.
-
 .. member:: double ReconstructorEstimatorOptions::rotation_filtering_max_difference_degrees
 
   DEFAULT: ``5.0``
@@ -704,11 +632,14 @@ description of these options.
 
 .. member::  double ReconstructionEstimatorOptions::absolute_pose_reprojection_error_threshold
 
-  DEFAULT: ``8.0``
+  DEFAULT: ``4.0``
 
   **Used for incremental SfM only.** When adding a new view to the current
   reconstruction, this is the reprojection error that determines whether a 2D-3D
-  correspondence is an inlier during localization.
+  correspondence is an inlier during localization. This threshold is adaptive to
+  the image resolution and is relative to an image with a width of 1024
+  pixels. This threshold scales up and down with images of varying resolutions
+  appropriately.
 
 .. member:: int ReconstructionEstimatorOptions::min_num_absolute_pose_inliers
 
@@ -784,14 +715,14 @@ description of these options.
   Use SPARSE_SCHUR for problems smaller than this size and ITERATIVE_SCHUR
   for problems larger than this size.
 
-.. member:: bool ReconstructorEstimatorOptions::constant_camera_intrinsics
+.. member:: OptimizeIntrinsicsType ReconstructorEstimatorOptions::intrinsics_to_optimize
 
-  DEFAULT: ``false``
+  DEFAULT: OptimizeIntrinsicsType::FOCAL_LENGTH | OptimizeIntrinsicsType::RADIAL_DISTORTION
 
-  If true, the camera intrinsic parameters (i.e., focal length, principal point,
-  radial distortion, etc.) will not be modified during SfM. If accurate
-  calibration is known ahead of time then it is recommended to set the camera
-  intrinsics constant.
+  The intrinsics parameters that are optimized during the bundle adjustment may
+  be specified in a bitwise OR fashion. The various camera models will
+  appropriately set the camera intrinsics parameters to be "free" or constant
+  during optimization based on this parameters.
 
 Incremental SfM Pipeline
 ========================
@@ -1118,23 +1049,11 @@ proposed in [OzyesilCVPR2015]_.
    track information) and the two view geometry information that will be use to
    recover the positions.
 
-.. member:: int LeastUnsquaredDeviationPositionEstimator::Options::num_threads
-
-   DEFAULT: ``1``
-
-   Number of threads to use with Ceres for nonlinear optimization.
-
 .. member:: int LeastUnsquaredDeviationPositionEstimator::Options::max_num_iterations
 
    DEFAULT: ``400``
 
    The maximum number of iterations for the minimization.
-
-.. member:: int LeastUnsquaredDeviationPositionEstimator::Options::initialize_random_positions
-
-   DEFAULT: ``true``
-
-   If true, positions will be initialized to be random. If false, the position values that were passed into ``EstimatePositions`` will be used for initialization.
 
 .. member:: int LeastUnsquaredDeviationPositionEstimator::Options::max_num_reweighted_iterations
 
@@ -1298,13 +1217,23 @@ the reprojection error.
 
   Set to true for verbose logging.
 
-.. member:: bool BundleAdjustmentOptions::constant_camera_intrinsics
+.. member:: bool BundleAdjustmentOptions::constant_camera_orientation
 
   DEFAULT: ``false``
 
-  If set to true, the camera intrinsics are held constant during
-  optimization. This is useful if the calibration is precisely known ahead of
-  time.
+  If true, hold the camera orientations constant during bundle adjustment.
+
+.. member:: bool BundleAdjustmentOptions::constant_camera_position
+
+  DEFAULT: ``false``
+
+  If true, hold the camera positions constant during bundle adjustment.
+
+.. member:: OptimizeIntrinsicsType BundleAdjustmentOptions::intrinsics_to_optimize
+
+  DEFAULT:  OptimizeIntrinsicsType::FOCAL_LENGTH | OptimizeIntrinsicsType::RADIAL_DISTORTION
+
+  Set to the bitwise OR of the parameters you wish to optimize during bundle adjustment.
 
 .. member:: int BundleAdjustmentOptions::num_threads
 

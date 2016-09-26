@@ -242,7 +242,6 @@ struct ReconstructionEstimatorOptions {
   // //theia/sfm/bundle_adjustment_options.h for full details.
   OptimizeIntrinsicsType intrinsics_to_optimize =
       OptimizeIntrinsicsType::FOCAL_LENGTH |
-      OptimizeIntrinsicsType::PRINCIPAL_POINTS |
       OptimizeIntrinsicsType::RADIAL_DISTORTION;
 };
 

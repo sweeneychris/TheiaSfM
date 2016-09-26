@@ -102,7 +102,6 @@ struct BundleAdjustmentOptions {
   // these are almost universally constant.
   OptimizeIntrinsicsType intrinsics_to_optimize =
       OptimizeIntrinsicsType::FOCAL_LENGTH |
-      OptimizeIntrinsicsType::PRINCIPAL_POINTS |
       OptimizeIntrinsicsType::RADIAL_DISTORTION;
 
   int num_threads = 1;

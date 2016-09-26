@@ -4,6 +4,41 @@
 Releases
 ========
 
+`Master <https://github.com/sweeneychris/TheiaSfM/>`_
+========================================================================
+
+New Features
+------------
+* Camera intrinsics may be shared among multiple cameras.
+* New CameraIntrinsicsModel class allows users to specify new camera models for SfM. All camera models seamlessly integrate into Theia's pipelines.
+* PinholeRadialTangentialCameraModel, FisheyeCameraModel, and FOVCameraModel classes have been added.
+* Large restructure of camera class for increased modularity. The Camera class can now set its parameters from camera intrinsics priors, and more.
+* Image undistortion module will remove radial distortion from images and features.
+* 3d-3d alignment may now utilize weights per correspondence (thanks @nosleduc).
+* New guided matching capability (based on Rajvi Shah's work).
+* Versioning for serialization to provide backwards compatability.
+* Added the ability to specify minimum track length for triangulation.
+* AKAZE feature detector/descriptor added.
+* Remove CImg from the library and add external dependency OpenImageIO.
+* Position or orientation may be independently set to constant during BA. This is useful for Global SfM methods.
+* Thresholds for incremental SfM are now resolution independent, leading to better quality when there is a variety of image resolutions in the dataset.
+* Feature extraction is skipped if the feature file is already present. This allows us to perform matching without feature extraction during SfM.
+
+Bug Fixes
+---------
+* Fixed c++11 detection for MSVC.
+* Many more CMake and other minor bugs for MSVC compilation (thanks to @MikePelton).
+* Fixed a bug in the localization for incremental SfM that accidentally added under-constrained images to the reconstruction.
+* Fixed a bug in the Normalized Cut module (thanks @cqd123123).
+
+Misc.
+-----
+* New RandomNumberGenerator class is used so that all randomized operations may be seeded. This gives better stability to unit tests (via fixed seeds) and allows users repeatability during SfM.
+* Unit tests for incremental reconstruction.
+* Updated the default SfM parameters for better reconstructions.
+* GPS information added to camera intrinsics priors.
+* Reconstruction normalization is no longer based on a RANSAC method and is now deterministic.
+
 `0.6.0  <https://github.com/sweeneychris/TheiaSfM/archive/v0.6.tar.gz>`_
 ========================================================================
 

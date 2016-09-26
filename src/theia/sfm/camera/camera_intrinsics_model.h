@@ -170,9 +170,8 @@ class CameraIntrinsicsModel {
   //  not need to be implemented in the derived classes.
   // ------------------------------------------------------------------------ //
 
-  // Projects the homogeneous 3D point in the camera coordinate system into the
-  // image plane and undistorts the point according to the radial distortion
-  // parameters.
+  // Projects the 3D point in the camera coordinate system into the image plane
+  // and distorts the point according to the radial distortion parameters.
   virtual Eigen::Vector2d CameraToImageCoordinates(
       const Eigen::Vector3d& point) const;
 

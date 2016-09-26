@@ -10,6 +10,15 @@ Theia can be used for your own applications. Only minimal documentation is
 provided here, but a full description of command line arguments and more can be
 found within each application file.
 
+The general way to run each of the applications (after building Theia) is by running the executables and supplying the required command line flags. The command line flags may be determined by running the executable followed by ``--helpshort``. This will supply a list of required command line flags with a short description of their meaning, as well as the default parameters. When many flags are required to run a program, it is advisable to put all the flags into a single .txt file and supply them as a "flagfile" such as:
+
+.. code-block:: bash
+
+  ./bin/build_reconstruction --flagfile=build_reconstruction_flags.txt
+
+In order to view the logging that Theia provides (which can be extremely useful!) you will have to add the command line flag ``--logtostderr``
+
+
 Features
 ========
 
@@ -195,12 +204,20 @@ Create Calibration File From EXIF
 Creates a calibration file from the EXIF information that can be
 extracted from an image set.
 
-Convert Bundle File
--------------------
+.. code-block:: bash
 
-Converts a bundler reconstruction to a Theia :class:`Reconstruction`.
+  ./bin/create_calibration_file_from_exif --images=/path/to/images/*.jpg --output_calibration_file=/path/to/output/calibration.txt
 
-Convert Sift Key File
----------------------
+Converting to Bundler and NVM formats
+-------------------------------------
 
-Converts Lowe's SIFT key files to a binary format.
+We provide conversion to to and from Bundler and NVM files. Take a look at convert_bundle_file.cc, convert_nvm_file.cc, convert_theia_reconstruction_to_bundler_file.cc, and export_to_nvm_file.cc.
+
+Additionally, we provide at tool to convert the Theia reconstruction to the PMVS format in the export_reconstruction_to_pmvs.cc.
+
+Calibrate Camera Intrinsics
+---------------------------
+
+Often it is difficult to obtain good camera calibration, and personally I have never found OpenCV's calibration to work as reliably as I would like (particularly for fisheye lenses). I have written a simple calibration tool that takes in images and runs incremental SfM while optimizing camera intrinsics. Then, the optimized intrinsics are used as the priors for a fresh restart of incremental SfM and the process is repeated for several iterations. The final calibration is printed as upon termination.
+
+The calibration toolkit has worked well for me if the input is a well textured scene. You may supply which camera model you would like to use, and many other parameters that may be found in the ``calibrate_camera_intrinsics_flags.txt`` file. Please use this flags file as your starting point when using the calibration module.

@@ -21,18 +21,15 @@ Theia relies on a number of open source libraries. Luckily, most of the will be 
 
 3. `eigen3 <http://eigen.tuxfamily.org/index.php?title=Main_Page>`_ is used extensively for doing nearly all the matrix and linear algebra operations.
 
-4. `ImageMagick <http://www.imagemagick.org/>`_ is used to read and write image files.
+4. `OpenImageIO <https://sites.google.com/site/openimageio/home>`_ is used to read and write image files. It is recommended to install version 1.6 or higher.
 
 5. `Ceres Solver <https://code.google.com/p/ceres-solver/>`_ is a library for solving non-linear least squares problems. In particular, Theia uses it for Bundle Adjustment.
 
 **NOTE**: Theia also depends on the following libraries, but they are included in the installation of Ceres so it is likely that you do not need to reinstall them.
 
-
 6. `google-glog <http://code.google.com/p/google-glog>`_ is used for error checking and logging. Ceres needs glog version 0.3.1 or later. Version 0.3 (which ships with Fedora 16) has a namespace bug which prevents Ceres from building.
 
-
 7. `gflags <http://code.google.com/p/gflags>`_ is a library for processing command line flags. It is used by some of the examples and tests.
-
 
 Make sure all of these libraries are installed properly before proceeding. Improperly installing any of these libraries can cause Theia to not build.
 
@@ -53,7 +50,9 @@ First, navigate to the source directory of the Theia library. Then execute the f
  make -j4
  make test
 
-If all tests pass, then you are ready to install. Theia can be install using the make install command
+If all tests pass, then you are ready to install. If not all tests pass, you should examine the individual test to determine if it affects your performance. For instance, if the global SfM methods fail but you are only going to use incremental SfM, you probably do not need to worry about the failing tests. Email the mailing list if you are unsure about failing tests.
+
+Theia can be install using the make install command
 
 .. code-block:: bash
 
