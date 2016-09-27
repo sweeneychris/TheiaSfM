@@ -565,6 +565,14 @@ description of these options.
   rotation estimations. This can improve the quality of the translation
   estimation.
 
+.. member:: bool ReconstructorEstimatorOptions::refine_camera_positions_and_points_after_position_estimation
+
+  DEFAULT: ``true``
+
+  After estimating the camera position with Global SfM it is often advantageous
+  to refine only the camera positions and points first before full bundle
+  adjustment is run.
+
 .. member:: bool ReconstructorEstimatorOptions::extract_maximal_rigid_subgraph
 
   DEFAULT: ``false``

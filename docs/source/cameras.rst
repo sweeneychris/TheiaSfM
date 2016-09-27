@@ -23,7 +23,7 @@ First, it is useful to review the coordinate system conventions in Theia. We
 utilize 3 coordinate systems: world, camera, and image coordinate systems. The
 world coordinate system is the global coordinate system of 3D space that defines
 3D point locations and camera positions. The camera coordinate system is
-cenetered at the particular camera of interest and is oriented so that the
+centered at the particular camera of interest and is oriented so that the
 positive z-axis is aligned with the camera's optical axis (i.e. the optical axis
 is the ray :math:`\left[0 & 0 & 1]` in the camera coordinates. The image
 coordinate system is the 2D coordinate system that describes image pixel
