@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8)
 project( akaze )
 set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 
-OPTION(OPENMP "Enable multithreading (requires OpenMP)" ON)
+OPTION(OPENMP "Enable multithreading (requires OpenMP)" OFF)
 
 # Where to output binaries and libraries
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/lib")
