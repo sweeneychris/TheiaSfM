@@ -4,7 +4,7 @@
 Releases
 ========
 
-`Master <https://github.com/sweeneychris/TheiaSfM/>`_
+`0.7.0 <https://github.com/sweeneychris/TheiaSfM/archive/v0.7.tar.gz/>`_
 ========================================================================
 
 New Features
