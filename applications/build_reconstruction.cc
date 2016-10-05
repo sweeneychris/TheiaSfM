@@ -44,6 +44,7 @@
 
 // Input/output files.
 DEFINE_string(images, "", "Wildcard of images to reconstruct.");
+DEFINE_string(masks, "", "Wildcard of masks to reconstruct.");
 DEFINE_string(matches_file, "", "Filename of the matches file.");
 DEFINE_string(calibration_file, "",
               "Calibration file containing image calibration data.");
