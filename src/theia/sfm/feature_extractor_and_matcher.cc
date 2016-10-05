@@ -63,10 +63,11 @@ namespace {
 void ExtractFeatures(
     const FeatureExtractorAndMatcher::Options& options,
     const std::string& image_filepath,
+    const std::string& imagemask_filepath,
     std::vector<Keypoint>* keypoints,
     std::vector<Eigen::VectorXf>* descriptors) {
+  static const float kMaskThreshold = 0.5;
   std::unique_ptr<FloatImage> image(new FloatImage(image_filepath));
-
   // We create these variable here instead of upon the construction of the
   // object so that they can be thread-safe. We *should* be able to use the
   // static thread_local keywords, but apparently Mac OS-X's version of clang
@@ -86,13 +87,44 @@ void ExtractFeatures(
     return;
   }
 
+  if (imagemask_filepath.size() > 0) {
+    std::unique_ptr<FloatImage> image_mask(new FloatImage(imagemask_filepath));
+    // Check the size of the image and its associated mask.
+    CHECK(image_mask->Width() == image->Width() &&
+          image_mask->Height() == image->Height())
+      << "The image and the mask don't have the same size. \n"
+      << "- Image: " << image_filepath
+      << "\t(" << image->Width() << " x " << image->Height() << ")\n"
+      << "- Mask: " << imagemask_filepath
+      << "\t(" << image_mask->Width() << " x " << image_mask->Height() << ")";
+
+    // Convert the mask to grayscale.
+    image_mask->ConvertToGrayscaleImage();
+    // Remove keypoints according to the associated mask (remove kp. in black
+    // part).
+    for (int i=keypoints->size()-1; i>-1; i--) {
+      if (image_mask->BilinearInterpolate(keypoints->at(i).x(),
+                                          keypoints->at(i).y(),
+                                          0) < kMaskThreshold) {
+        keypoints->erase(keypoints->begin() + i);
+        descriptors->erase(descriptors->begin() + i);
+      }
+    }
+  }
+
   if (keypoints->size() > options.max_num_features) {
     keypoints->resize(options.max_num_features);
     descriptors->resize(options.max_num_features);
   }
 
-  VLOG(1) << "Successfully extracted " << descriptors->size()
-          << " features from image " << image_filepath;
+  if (imagemask_filepath.size() > 0) {
+    VLOG(1) << "Successfully extracted " << descriptors->size()
+            << " features from image " << image_filepath
+            << " with an image mask.";
+  } else {
+    VLOG(1) << "Successfully extracted " << descriptors->size()
+            << " features from image " << image_filepath;
+  }
 }
 
 }  // namespace
@@ -123,6 +155,15 @@ bool FeatureExtractorAndMatcher::AddImage(
     return false;
   }
   intrinsics_[image_filepath] = intrinsics;
+  return true;
+}
+
+bool FeatureExtractorAndMatcher::AddMaskForFeaturesExtraction(
+    const std::string& image_filepath,
+    const std::string& mask_filepath) {
+  image_masks_[image_filepath] = mask_filepath;
+  LOG(INFO) << "Image: " << image_filepath << " || "
+            << "Associated mask: " << mask_filepath;
   return true;
 }
 
@@ -172,6 +213,10 @@ void FeatureExtractorAndMatcher::ProcessImage(
   // Get the camera intrinsics prior if it was provided.
   CameraIntrinsicsPrior intrinsics =
       FindWithDefault(intrinsics_, image_filepath, CameraIntrinsicsPrior());
+
+  // Get the associated mask if it was provided.
+  const std::string mask_filepath =
+      FindWithDefault(image_masks_, image_filepath, "");
 
   // Extract an EXIF focal length if it was not provided.
   if (!intrinsics.focal_length.is_set) {
@@ -226,7 +271,11 @@ void FeatureExtractorAndMatcher::ProcessImage(
   // Extract Features.
   std::vector<Keypoint> keypoints;
   std::vector<Eigen::VectorXf> descriptors;
-  ExtractFeatures(options_, image_filepath, &keypoints, &descriptors);
+  ExtractFeatures(options_,
+                  image_filepath,
+                  mask_filepath,
+                  &keypoints,
+                  &descriptors);
 
   // Add the relevant image and feature data to the feature matcher. This allows
   // the feature matcher to control fine-grained things like multi-threading and

@@ -91,6 +91,12 @@ class FeatureExtractorAndMatcher {
   bool AddImage(const std::string& image_filepath,
                 const CameraIntrinsicsPrior& intrinsics);
 
+  // Assignes a mask to an image.
+  // The mask is a black and white image, where black is 0.0 and white is 1.0.
+  // The white part of the mask indicates the area for the keypoints extraction.
+  bool AddMaskForFeaturesExtraction(const std::string& image_filepath,
+                                    const std::string& mask_filepath);
+
   // Performs feature matching between all images provided by the image
   // filepaths. Features are extracted and matched between the images according
   // to the options passed in. Only matches that have passed geometric
@@ -107,10 +113,11 @@ class FeatureExtractorAndMatcher {
 
   const Options options_;
 
-  // Local copies of the images to be matches and any priors on the camera
-  // intrinsics.
+  // Local copies of the images to be matches, masks for use and any priors on
+  // the camera intrinsics.
   std::vector<std::string> image_filepaths_;
   std::unordered_map<std::string, CameraIntrinsicsPrior> intrinsics_;
+  std::unordered_map<std::string, std::string> image_masks_;
 
   // Exif reader for loading exif information. This object is created once so
   // that the EXIF focal length database does not have to be loaded multiple

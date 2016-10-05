@@ -44,6 +44,7 @@
 
 // Input/output files.
 DEFINE_string(images, "", "Wildcard of images to reconstruct.");
+DEFINE_string(image_masks, "", "Wildcard of image masks to reconstruct.");
 DEFINE_string(matches_file, "", "Filename of the matches file.");
 DEFINE_string(calibration_file, "",
               "Calibration file containing image calibration data.");
@@ -382,6 +383,38 @@ void AddImagesToReconstructionBuilder(
           image_file, *image_camera_intrinsics_prior, intrinsics_group_id));
     } else {
       CHECK(reconstruction_builder->AddImage(image_file, intrinsics_group_id));
+    }
+  }
+
+  // Add black and write image masks for any images if those are provided.
+  // The white part of the mask indicates the area for the keypoints extraction.
+  // The mask is a basic black and white image (jpg, png, tif etc.), where white
+  // is 1.0 and black is 0.0. Its name must content the associated image's name
+  // (e.g. 'image0001_mask.jpg' is the mask of 'image0001.png').
+  std::vector<std::string> mask_files;
+  if (FLAGS_image_masks.size() != 0) {
+    CHECK(theia::GetFilepathsFromWildcard(FLAGS_image_masks, &mask_files))
+          << "Could not find image masks that matched the filepath: "
+          << FLAGS_image_masks
+          << ". NOTE that the ~ filepath is not supported.";
+    if (mask_files.size() > 0) {
+      for (const std::string& image_file : image_files) {
+        std::string image_filename;
+        CHECK(theia::GetFilenameFromFilepath(image_file,
+                                             false,
+                                             &image_filename));
+        // Find and add the associated mask
+        for (const std::string& mask_file : mask_files) {
+          if (mask_file.find(image_filename) != std::string::npos) {
+            CHECK(reconstruction_builder->AddMaskForFeaturesExtraction(
+                image_file,
+                mask_file));
+            break;
+          }
+        }
+      }
+    } else {
+      LOG(WARNING) << "No image masks found in: " << FLAGS_image_masks;
     }
   }
 
