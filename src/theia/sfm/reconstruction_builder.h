@@ -146,6 +146,9 @@ class ReconstructionBuilder {
                        const std::string& image2,
                        const ImagePairMatch& matches);
 
+  // Assign a mask for each image.
+  bool SetMasksForFeaturesExtraction(std::vector<std::string> mask_filepaths);
+
   // Extracts features and performs matching with geometric verification.
   bool ExtractAndMatchFeatures();
 

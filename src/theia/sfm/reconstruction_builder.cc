@@ -228,6 +228,11 @@ void ReconstructionBuilder::RemoveUncalibratedViews() {
   }
 }
 
+
+bool ReconstructionBuilder::SetMasksForFeaturesExtraction(std::vector<std::string> mask_filepaths) {
+  return feature_extractor_and_matcher_->SetMasksForFeaturesExtraction(mask_filepaths);
+}
+
 bool ReconstructionBuilder::ExtractAndMatchFeatures() {
   CHECK_EQ(view_graph_->NumViews(), 0) << "Cannot call ExtractAndMatchFeatures "
                                           "after TwoViewMatches has been "
