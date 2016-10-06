@@ -67,6 +67,9 @@ public:
  const std::shared_ptr<theia::FloatImage> FetchImage(
      const std::string& image_filename) const;
 
+ const std::shared_ptr<theia::FloatImage> FetchGrayscaleImage(
+     const std::string& image_filename) const;
+
  private:
   typedef LRUCache<std::string, std::shared_ptr<theia::FloatImage> >
       ImageLRUCache;
