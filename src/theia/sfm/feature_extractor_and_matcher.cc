@@ -106,7 +106,7 @@ void ExtractFeaturesWithMask(
   // Check the size of the image and its associated mask.
   if (image_mask.get()->Width() != image.get()->Width()
           || image_mask.get()->Height() != image.get()->Height()) {
-      LOG(FATAL) << "Mask and image don't have the same size : \n"
+      LOG(FATAL) << "Mask and image don't have the same size: \n"
                  << "- Mask: " << mask_filepath
                  << " (" << image_mask.get()->Width() << "x" << image_mask.get()->Height() << "),\n"
                  << "- Image: " << image_filepath
@@ -291,10 +291,6 @@ void FeatureExtractorAndMatcher::ProcessImage(
   const std::string feature_filepath =
       output_dir + image_filename + ".features";
 
-
-  std::cout << mask_filepaths_[i] << std::endl;
-  std::cout << image_filename << std::endl;
-
   // If the feature file already exists, skip the feature extraction.
   if (options_.feature_matcher_options.match_out_of_core &&
       FileExists(feature_filepath)) {
@@ -302,8 +298,6 @@ void FeatureExtractorAndMatcher::ProcessImage(
     matcher_->AddImage(image_filename, intrinsics);
     return;
   }
-
-  std::cout << mask_filepaths_[i] << " !!!" << std::endl;
 
   // Extract Features.
   std::vector<Keypoint> keypoints;
