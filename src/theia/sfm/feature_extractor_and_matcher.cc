@@ -291,6 +291,10 @@ void FeatureExtractorAndMatcher::ProcessImage(
   const std::string feature_filepath =
       output_dir + image_filename + ".features";
 
+
+  std::cout << mask_filepaths_[i] << std::endl;
+  std::cout << image_filename << std::endl;
+
   // If the feature file already exists, skip the feature extraction.
   if (options_.feature_matcher_options.match_out_of_core &&
       FileExists(feature_filepath)) {
@@ -299,10 +303,11 @@ void FeatureExtractorAndMatcher::ProcessImage(
     return;
   }
 
+  std::cout << mask_filepaths_[i] << " !!!" << std::endl;
+
   // Extract Features.
   std::vector<Keypoint> keypoints;
   std::vector<Eigen::VectorXf> descriptors;
-
   if (mask_filepaths_.size() == 0 || mask_filepaths_[i] == "")
     ExtractFeatures(options_, image_filepath, &keypoints, &descriptors);
   else
