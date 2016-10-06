@@ -64,6 +64,13 @@ const std::shared_ptr<FloatImage> ImageCache::FetchImage(
   return image;
 }
 
+const std::shared_ptr<FloatImage> ImageCache::FetchGrayscaleImage(
+    const std::string& image_filename) const {
+  std::shared_ptr<FloatImage> image = images_->Fetch(image_filename);
+  image->ConvertToGrayscaleImage();
+  return image;
+}
+
 std::shared_ptr<FloatImage> ImageCache::FetchImagesFromDisk(
     const std::string& image_filename) {
   const std::string image_filepath = image_directory_ + image_filename;
