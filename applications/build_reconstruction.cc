@@ -361,6 +361,7 @@ void AddImagesToReconstructionBuilder(
           << "Could not find masks that matched the filepath: " << FLAGS_masks
           << ". NOTE that the ~ filepath is not supported.";
   }
+  CHECK_GT(mask_files.size(), 0) << "No masks found in: " << FLAGS_masks;
 
   // Load calibration file if it is provided.
   std::unordered_map<std::string, theia::CameraIntrinsicsPrior>
