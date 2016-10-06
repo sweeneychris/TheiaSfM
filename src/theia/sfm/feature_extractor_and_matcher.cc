@@ -245,7 +245,6 @@ void FeatureExtractorAndMatcher::ExtractAndMatchFeatures(
 void FeatureExtractorAndMatcher::ProcessImage(
     const int i) {
   const std::string& image_filepath = image_filepaths_[i];
-  const std::string& mask_filepath = mask_filepaths_[i];
 
   // Get the camera intrinsics prior if it was provided.
   CameraIntrinsicsPrior intrinsics =
@@ -304,10 +303,10 @@ void FeatureExtractorAndMatcher::ProcessImage(
   std::vector<Keypoint> keypoints;
   std::vector<Eigen::VectorXf> descriptors;
 
-  if (mask_filepath.size() == 0 || mask_filepath == "")
+  if (mask_filepaths_.size() == 0 || mask_filepaths_[i] == "")
     ExtractFeatures(options_, image_filepath, &keypoints, &descriptors);
   else
-    ExtractFeaturesWithMask(options_, image_filepath, mask_filepath, &keypoints, &descriptors);
+    ExtractFeaturesWithMask(options_, image_filepath, mask_filepaths_[i], &keypoints, &descriptors);
 
   // Add the relevant image and feature data to the feature matcher. This allows
   // the feature matcher to control fine-grained things like multi-threading and
