@@ -137,7 +137,7 @@ void ExtractFeaturesWithMask(
   image_mask.get()->ConvertToGrayscaleImage();
   // Remove keypoints according to the associated mask (remove kp. in black part).
   for (int i=keypoints->size()-1; i>-1; i--) {
-    if ((int)image_mask.get()->GetXY(keypoints->at(i).x(), keypoints->at(i).y(), 0) == 0) {
+    if (image_mask.get()->GetXY(keypoints->at(i).x(), keypoints->at(i).y(), 0) < 0.5) {
       *keypoints->erase(keypoints->begin() + i);
       *descriptors->erase(descriptors->begin() + i);
     }
