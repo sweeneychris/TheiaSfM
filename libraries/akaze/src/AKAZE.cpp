@@ -20,6 +20,8 @@
  * @author Pablo F. Alcantarilla, Jesus Nuevo
  */
 
+#define _USE_MATH_DEFINES
+
 #include "cimg/CImg.h"
 #include "src/AKAZE.h"
 #include "src/utils.h"
@@ -31,7 +33,6 @@
 #include <ctime>
 #include <iostream>
 
-#define _USE_MATH_DEFINESo
 
 using namespace libAKAZE;
 

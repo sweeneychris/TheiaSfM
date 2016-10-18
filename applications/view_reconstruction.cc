@@ -458,6 +458,12 @@ int main(int argc, char* argv[]) {
   glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH);
   glutCreateWindow("Theia Reconstruction Viewer");
 
+#ifdef _WIN32
+  // Set up glew.
+  CHECK_EQ(GLEW_OK, glewInit())
+      << "Failed initializing GLEW.";
+#endif
+
   // Set the camera
   gluLookAt(0.0f, 0.0f, -6.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f);
 
