@@ -30,7 +30,11 @@
 #include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
+#ifndef _MSC_VER
 #include <unistd.h>
+#else 
+#include <io.h>
+#endif
 using namespace std;
 
 #include "FeaturePoints.h"
