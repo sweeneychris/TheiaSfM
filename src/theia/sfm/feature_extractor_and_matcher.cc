@@ -193,17 +193,13 @@ bool FeatureExtractorAndMatcher::SetMasksForFeaturesExtraction(
   for (const std::string& image_filepath : image_filepaths_) {
     std::string image_filename;
     CHECK(theia::GetFilenameFromFilepath(image_filepath,
-                                         true,
+                                         false,
                                          &image_filename));
-
-    // Remove image format (.jpg, .tif, .png etc.)
-    std::string image_rootname = image_filename.substr(0,
-                                                       image_filename.size()-4);
 
     // Find the associated mask
     std::string associated_mask = "";
     for (const std::string& mask_filepath : mask_filepaths) {
-      if (mask_filepath.find(image_rootname) != std::string::npos)
+      if (mask_filepath.find(image_filename) != std::string::npos)
         associated_mask = mask_filepath;
     }
     mask_filepaths_.emplace_back(associated_mask);
