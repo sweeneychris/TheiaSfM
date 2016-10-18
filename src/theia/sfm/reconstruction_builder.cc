@@ -229,7 +229,8 @@ void ReconstructionBuilder::RemoveUncalibratedViews() {
 }
 
 
-bool ReconstructionBuilder::SetMasksForFeaturesExtraction(std::vector<std::string> mask_filepaths) {
+bool ReconstructionBuilder::SetMasksForFeaturesExtraction(
+    const std::vector<std::string>& mask_filepaths) {
   return feature_extractor_and_matcher_->SetMasksForFeaturesExtraction(mask_filepaths);
 }
 
