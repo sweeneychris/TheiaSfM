@@ -76,23 +76,28 @@ class RandomNumberGenerator {
   Eigen::Vector4d RandVector4d(const double min, const double max);
   Eigen::Vector4d RandVector4d();
 
+  double Rand(const double lower, const double upper)
+  {
+      return RandDouble(lower, upper);
+  }
+
+  float Rand(const float lower, const float upper)
+  {
+      return RandFloat(lower, upper);
+  }
+
   // Sets an Eigen type with random values between -1.0 and 1.0. This is meant
   // to replace the Eigen::Random() functionality.
-  template <int RowsT, int ColsT>
-  void SetRandom(Eigen::Matrix<double, RowsT, ColsT>* b) {
-    double* data = b->data();
-    for (int i = 0; i < b->size(); i++) {
-      data[i] = RandDouble(-1.0, 1.0);
+  template <typename Derived>
+  void SetRandom(Eigen::MatrixBase<Derived>* b)
+  {
+    for (int r = 0; r < b->rows(); r++) {
+      for (int c = 0; c < b->cols(); c++) {
+        (*b)(r, c) = Rand(-1.0, 1.0);
+      }
     }
   }
 
-  template <int RowsT, int ColsT>
-  void SetRandom(Eigen::Matrix<float, RowsT, ColsT>* b) {
-    float* data = b->data();
-    for (int i = 0; i < b->size(); i++) {
-      data[i] = RandFloat(-1.0, 1.0);
-    }
-  }
 };
 
 }  // namespace theia
