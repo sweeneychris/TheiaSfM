@@ -63,56 +63,23 @@ void ExtractFeatures(
     const FeatureExtractorAndMatcher::Options& options,
     const std::string& image_filepath,
     std::vector<Keypoint>* keypoints,
-    std::vector<Eigen::VectorXf>* descriptors) {
+    std::vector<Eigen::VectorXf>* descriptors,
+    const std::string& imagemask_filepath = "") {
   std::unique_ptr<FloatImage> image(new FloatImage(image_filepath));
+  std::unique_ptr<FloatImage> image_mask(new FloatImage(imagemask_filepath));
 
-  // We create these variable here instead of upon the construction of the
-  // object so that they can be thread-safe. We *should* be able to use the
-  // static thread_local keywords, but apparently Mac OS-X's version of clang
-  // does not actually support it!
-  //
-  // TODO(cmsweeney): Change this so that each thread in the threadpool receives
-  // exactly one object.
-  std::unique_ptr<DescriptorExtractor> descriptor_extractor =
-      CreateDescriptorExtractor(options.descriptor_extractor_type,
-                                options.feature_density);
-
-  // Exit if the descriptor extraction fails.
-  if (!descriptor_extractor->DetectAndExtractDescriptors(*image,
-                                                         keypoints,
-                                                         descriptors)) {
-    LOG(ERROR) << "Could not extract descriptors in image " << image_filepath;
-    return;
-  }
-
-  if (keypoints->size() > options.max_num_features) {
-    keypoints->resize(options.max_num_features);
-    descriptors->resize(options.max_num_features);
-  }
-
-  VLOG(1) << "Successfully extracted " << descriptors->size()
-          << " features from image " << image_filepath;
-}
-
-void ExtractFeaturesWithMask(
-    const FeatureExtractorAndMatcher::Options& options,
-    const std::string& image_filepath,
-    const std::string& mask_filepath,
-    std::vector<Keypoint>* keypoints,
-    std::vector<Eigen::VectorXf>* descriptors) {
-  std::unique_ptr<FloatImage> image(new FloatImage(image_filepath));
-  std::unique_ptr<FloatImage> image_mask(new FloatImage(mask_filepath));
-
+  if (imagemask_filepath != "") {
   // Check the size of the image and its associated mask.
-  if (image_mask.get()->Width() != image.get()->Width() ||
-      image_mask.get()->Height() != image.get()->Height()) {
-    LOG(FATAL) << "Mask and image don't have the same size: \n"
-               << "- Mask: " << mask_filepath
-               << " (" << image_mask.get()->Width()
-               << "x" << image_mask.get()->Height() << "),\n"
-               << "- Image: " << image_filepath << " (" << image.get()->Width()
-               << "x" << image.get()->Height() << ")";
-    return;
+    if (image_mask.get()->Width() != image.get()->Width() ||
+        image_mask.get()->Height() != image.get()->Height()) {
+      LOG(FATAL) << "Mask and image don't have the same size: \n"
+                 << "- Mask: " << imagemask_filepath
+                 << " (" << image_mask.get()->Width()
+                 << "x" << image_mask.get()->Height() << "),\n"
+                 << "- Image: "<< image_filepath << " (" << image.get()->Width()
+                 << "x" << image.get()->Height() << ")";
+      return;
+    }
   }
 
   // We create these variable here instead of upon the construction of the
@@ -134,16 +101,17 @@ void ExtractFeaturesWithMask(
     return;
   }
 
-  // Convert the mask to grayscale.
-  image_mask.get()->ConvertToGrayscaleImage();
-  // Remove keypoints according to the associated mask (remove kp. in black
-  // part).
-  for (int i=keypoints->size()-1; i>-1; i--) {
-    if (image_mask.get()->GetXY(keypoints->at(i).x(),
-                                keypoints->at(i).y(), 0) < 0.5) {
-      *keypoints->erase(keypoints->begin() + i);
-      *descriptors->erase(descriptors->begin() + i);
-
+  if (imagemask_filepath != "") {
+    // Convert the mask to grayscale.
+    image_mask.get()->ConvertToGrayscaleImage();
+    // Remove keypoints according to the associated mask (remove kp. in black
+    // part).
+    for (int i=keypoints->size()-1; i>-1; i--) {
+      if (image_mask.get()->GetXY(keypoints->at(i).x(),
+          keypoints->at(i).y(), 0) < 0.5) {
+        *keypoints->erase(keypoints->begin() + i);
+        *descriptors->erase(descriptors->begin() + i);
+      }
     }
   }
 
@@ -152,9 +120,14 @@ void ExtractFeaturesWithMask(
     descriptors->resize(options.max_num_features);
   }
 
-  VLOG(1) << "Successfully extracted " << descriptors->size()
-          << " features from image " << image_filepath
-          << " with an image mask.";
+  if (imagemask_filepath != "") {
+    VLOG(1) << "Successfully extracted " << descriptors->size()
+            << " features from image " << image_filepath
+            << " with an image mask.";
+  } else {
+    VLOG(1) << "Successfully extracted " << descriptors->size()
+            << " features from image " << image_filepath;
+  }
 }
 
 }  // namespace
@@ -309,14 +282,17 @@ void FeatureExtractorAndMatcher::ProcessImage(
   // Extract Features.
   std::vector<Keypoint> keypoints;
   std::vector<Eigen::VectorXf> descriptors;
-  if (mask_filepaths_.size() == 0 || mask_filepaths_[i] == "") {
-    ExtractFeatures(options_, image_filepath, &keypoints, &descriptors);
+  if (mask_filepaths_.empty()) {
+    ExtractFeatures(options_,
+                    image_filepath,
+                    &keypoints,
+                    &descriptors);
   } else {
-    ExtractFeaturesWithMask(options_,
-                            image_filepath,
-                            mask_filepaths_[i],
-                            &keypoints,
-                            &descriptors);
+    ExtractFeatures(options_,
+                    image_filepath,
+                    &keypoints,
+                    &descriptors,
+                    mask_filepaths_[i]);
   }
   // Add the relevant image and feature data to the feature matcher. This allows
   // the feature matcher to control fine-grained things like multi-threading and
