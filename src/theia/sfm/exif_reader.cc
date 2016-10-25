@@ -37,6 +37,7 @@
 #include <glog/logging.h>
 
 #include <algorithm>
+#include <cmath>
 #include <fstream>  // NOLINT
 #include <iostream>  // NOLINT
 #include <sstream>
@@ -145,9 +146,9 @@ bool ExifReader::ExtractEXIFMetadata(
 
   // Make sure the focal length value is sane. If so, indicate the prior as
   // being set.
-  if (camera_intrinsics_prior->focal_length.value[0] > 0.0) {
-    camera_intrinsics_prior->focal_length.is_set = true;
-  }
+  const double focal_length = camera_intrinsics_prior->focal_length.value[0];
+  camera_intrinsics_prior->focal_length.is_set = std::isfinite(focal_length) &&
+      focal_length > 0.0;
 
   // Set GPS latitude.
   const OpenImageIO::ImageIOParameter* latitude =
