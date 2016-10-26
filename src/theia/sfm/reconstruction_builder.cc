@@ -228,10 +228,25 @@ void ReconstructionBuilder::RemoveUncalibratedViews() {
   }
 }
 
-
 bool ReconstructionBuilder::SetMasksForFeaturesExtraction(
-    const std::vector<std::string>& mask_filepaths) {
-  return feature_extractor_and_matcher_->SetMasksForFeaturesExtraction(mask_filepaths);
+  const std::vector<std::string>& mask_filepaths) {
+  for (const std::string& image_filepath : image_filepaths_) {
+    std::string image_filename;
+    CHECK(theia::GetFilenameFromFilepath(image_filepath,
+                                         false,
+                                         &image_filename));
+    // Find and add the associated mask
+    for (const std::string& mask_filepath : mask_filepaths) {
+      if (mask_filepath.find(image_filename) != std::string::npos) {
+        feature_extractor_and_matcher_->AddMaskForFeaturesExtraction(
+            image_filepath,
+            mask_filepath);
+        LOG(INFO) << "Image: " << image_filepath << " || "
+                  << "Associated mask: " << mask_filepath;
+        }
+      }
+    }
+    return true;
 }
 
 bool ReconstructionBuilder::ExtractAndMatchFeatures() {

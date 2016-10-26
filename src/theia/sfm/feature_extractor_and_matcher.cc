@@ -162,24 +162,10 @@ bool FeatureExtractorAndMatcher::AddImage(
   return true;
 }
 
-bool FeatureExtractorAndMatcher::SetMasksForFeaturesExtraction(
-    const std::vector<std::string> &mask_filepaths) {
-  for (const std::string& image_filepath : image_filepaths_) {
-    std::string image_filename;
-    CHECK(theia::GetFilenameFromFilepath(image_filepath,
-                                         false,
-                                         &image_filename));
-
-    // Find the associated mask
-    std::string associated_mask = "";
-    for (const std::string& mask_filepath : mask_filepaths) {
-      if (mask_filepath.find(image_filename) != std::string::npos)
-        associated_mask = mask_filepath;
-    }
-    mask_filepaths_.emplace_back(associated_mask);
-    LOG(INFO) << "Image: " << image_filepath
-              << " || Associated mask: " << associated_mask;
-  }
+bool FeatureExtractorAndMatcher::AddMaskForFeaturesExtraction(
+    const std::string& image_filepath,
+    const std::string& mask_filepath) {
+  image_masks_[image_filepath] = mask_filepath;
   return true;
 }
 
@@ -229,6 +215,10 @@ void FeatureExtractorAndMatcher::ProcessImage(
   // Get the camera intrinsics prior if it was provided.
   CameraIntrinsicsPrior intrinsics =
       FindWithDefault(intrinsics_, image_filepath, CameraIntrinsicsPrior());
+
+  // Get the associated mask if it was provided.
+  const std::string mask_filepath =
+      FindWithDefault(image_masks_, image_filepath, "");
 
   // Extract an EXIF focal length if it was not provided.
   if (!intrinsics.focal_length.is_set) {
@@ -282,19 +272,12 @@ void FeatureExtractorAndMatcher::ProcessImage(
   // Extract Features.
   std::vector<Keypoint> keypoints;
   std::vector<Eigen::VectorXf> descriptors;
-  if (mask_filepaths_.empty()) {
-    ExtractFeatures(options_,
-                    image_filepath,
-                    "",
-                    &keypoints,
-                    &descriptors);
-  } else {
-    ExtractFeatures(options_,
-                    image_filepath,
-                    mask_filepaths_[i],
-                    &keypoints,
-                    &descriptors);
-  }
+  ExtractFeatures(options_,
+                  image_filepath,
+                  mask_filepath,
+                  &keypoints,
+                  &descriptors);
+
   // Add the relevant image and feature data to the feature matcher. This allows
   // the feature matcher to control fine-grained things like multi-threading and
   // caching. For instance, the matcher may choose to write the descriptors to

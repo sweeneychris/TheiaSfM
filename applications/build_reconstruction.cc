@@ -354,18 +354,6 @@ void AddImagesToReconstructionBuilder(
 
   CHECK_GT(image_files.size(), 0) << "No images found in: " << FLAGS_images;
 
-  // Load image masks files if it is provided.
-  std::vector<std::string> mask_files;
-  if (FLAGS_image_masks.size() != 0) {
-    CHECK(theia::GetFilepathsFromWildcard(FLAGS_image_masks, &mask_files))
-          << "Could not find image masks that matched the filepath: "
-          << FLAGS_image_masks
-          << ". NOTE that the ~ filepath is not supported.";
-    if (mask_files.size() == 0) {
-      LOG(WARNING) << "No image masks found in: " << FLAGS_image_masks;
-    }
-  }
-
   // Load calibration file if it is provided.
   std::unordered_map<std::string, theia::CameraIntrinsicsPrior>
       camera_intrinsics_prior;
@@ -398,9 +386,18 @@ void AddImagesToReconstructionBuilder(
     }
   }
 
-  // Assign a mask for each image.
-  if (mask_files.size() > 0) {
-    CHECK(reconstruction_builder->SetMasksForFeaturesExtraction(mask_files));
+  // Load image masks files if it is provided
+  std::vector<std::string> mask_files;
+  if (FLAGS_image_masks.size() != 0) {
+    CHECK(theia::GetFilepathsFromWildcard(FLAGS_image_masks, &mask_files))
+          << "Could not find image masks that matched the filepath: "
+          << FLAGS_image_masks
+          << ". NOTE that the ~ filepath is not supported.";
+    if (mask_files.size() > 0) {
+      CHECK(reconstruction_builder->SetMasksForFeaturesExtraction(mask_files));
+    } else {
+      LOG(WARNING) << "No image masks found in: " << FLAGS_image_masks;
+    }
   }
 
   // Extract and match features.
