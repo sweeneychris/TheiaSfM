@@ -243,10 +243,10 @@ bool ReconstructionBuilder::SetMasksForFeaturesExtraction(
             mask_filepath);
         LOG(INFO) << "Image: " << image_filepath << " || "
                   << "Associated mask: " << mask_filepath;
-        }
       }
     }
-    return true;
+  }
+  return true;
 }
 
 bool ReconstructionBuilder::ExtractAndMatchFeatures() {

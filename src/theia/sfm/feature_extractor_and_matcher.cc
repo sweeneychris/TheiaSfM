@@ -90,18 +90,10 @@ void ExtractFeatures(
     std::unique_ptr<FloatImage> image_mask(new FloatImage(imagemask_filepath));
     // Check the size of the image and its associated mask.
     CHECK_EQ(image_mask->Width(), image->Width())
-             << "Mask and image don't have the same size: \n"
-             << "- Mask: " << imagemask_filepath << " (" << image_mask->Width()
-             << "x" << image_mask->Height() << "),\n"
-             << "- Image: "<< image_filepath << " (" << image->Width()
-             << "x" << image->Height() << ")";
+        << "Masks and images don't have the same size.";
     CHECK_EQ(image_mask->Height(), image->Height())
-             << "Mask and image don't have the same size: \n"
-             << "- Mask: " << imagemask_filepath
-             << " (" << image_mask->Width()
-             << "x" << image_mask->Height() << "),\n"
-             << "- Image: "<< image_filepath << " (" << image->Width()
-             << "x" << image->Height() << ")";
+        << "Masks and images don't have the same size.";
+
     // Convert the mask to grayscale.
     image_mask->ConvertToGrayscaleImage();
     // Remove keypoints according to the associated mask (remove kp. in black

@@ -146,7 +146,7 @@ class ReconstructionBuilder {
                        const std::string& image2,
                        const ImagePairMatch& matches);
 
-  // Assign a mask for each image in the FeatureExtractorAndMatcher attribut.
+  // Assign a mask for each image.
   bool SetMasksForFeaturesExtraction(
       const std::vector<std::string>& mask_filepaths);
 
