@@ -66,7 +66,8 @@ bool AkazeDescriptorExtractor::DetectAndExtractDescriptors(
       Eigen::Map<const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic,
                                      Eigen::RowMajor> >(
           gray_image.Data(), gray_image.Rows(), gray_image.Cols());
-  img_32 /= 255.0;
+  // REMOVE BELOW LINE (img_32 is already normalized)
+  //img_32 /= 255.0;
 
   // Set the akaze options.
   libAKAZE::AKAZEOptions options;
