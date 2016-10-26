@@ -71,12 +71,14 @@ class ExifReader {
  private:
   void LoadSensorWidthDatabase();
 
-  // Sets the focal length from the focal plane resolution.
+  // Sets the focal length from the focal plane resolution. Returns true if a
+  // valid focal length is found and false otherwise.
   bool SetFocalLengthFromExif(
       const OpenImageIO::ImageSpec& image_spec,
       CameraIntrinsicsPrior* camera_intrinsics_prior) const;
 
-  // Sets the focal length from a look up in the sensor width database.
+  // Sets the focal length from a look up in the sensor width database. Returns
+  // true if a valid focal length is found and false otherwise.
   bool SetFocalLengthFromSensorDatabase(
       const OpenImageIO::ImageSpec& image_spec,
       CameraIntrinsicsPrior* camera_intrinsics_prior) const;

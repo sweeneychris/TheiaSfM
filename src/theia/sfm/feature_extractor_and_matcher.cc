@@ -196,6 +196,7 @@ void FeatureExtractorAndMatcher::ProcessImage(
   if (options_.only_calibrated_views && !intrinsics.focal_length.is_set) {
     LOG(INFO) << "Image " << image_filepath
               << " did not contain an EXIF focal length. Skipping this image.";
+    return;
   } else {
     LOG(INFO) << "Image " << image_filepath
               << " is initialized with the focal length: "
