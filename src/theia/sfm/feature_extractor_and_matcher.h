@@ -94,7 +94,8 @@ class FeatureExtractorAndMatcher {
 
   // Sort and fill the vector of masks in order to make a correspondance between
   // the idexes of 'image_filepaths_' and 'mask_filepaths_'.
-  bool SetMasksForFeaturesExtraction(std::vector<std::string> mask_filepaths);
+  bool SetMasksForFeaturesExtraction(
+      const std::vector<std::string>& mask_filepaths);
 
   // Performs feature matching between all images provided by the image
   // filepaths. Features are extracted and matched between the images according
@@ -112,8 +113,8 @@ class FeatureExtractorAndMatcher {
 
   const Options options_;
 
-  // Local copies of the images to be matches, masks for use and any priors on the camera
-  // intrinsics.
+  // Local copies of the images to be matches, masks for use and any priors on
+  // the camera intrinsics.
   std::vector<std::string> image_filepaths_;
   std::unordered_map<std::string, CameraIntrinsicsPrior> intrinsics_;
 

@@ -66,7 +66,6 @@ void ExtractFeatures(
     std::vector<Keypoint>* keypoints,
     std::vector<Eigen::VectorXf>* descriptors) {
   static const float kMaskThreshold = 0.5;
-
   std::unique_ptr<FloatImage> image(new FloatImage(image_filepath));
   // We create these variable here instead of upon the construction of the
   // object so that they can be thread-safe. We *should* be able to use the
@@ -164,7 +163,7 @@ bool FeatureExtractorAndMatcher::AddImage(
 }
 
 bool FeatureExtractorAndMatcher::SetMasksForFeaturesExtraction(
-    std::vector<std::string> mask_filepaths) {
+    const std::vector<std::string> &mask_filepaths) {
   for (const std::string& image_filepath : image_filepaths_) {
     std::string image_filename;
     CHECK(theia::GetFilenameFromFilepath(image_filepath,
@@ -192,7 +191,6 @@ bool FeatureExtractorAndMatcher::SetMasksForFeaturesExtraction(
 void FeatureExtractorAndMatcher::ExtractAndMatchFeatures(
     std::vector<CameraIntrinsicsPrior>* intrinsics,
     std::vector<ImagePairMatch>* matches) {
-
   CHECK_NOTNULL(intrinsics)->resize(image_filepaths_.size());
   CHECK_NOTNULL(matches);
   CHECK_NOTNULL(matcher_.get());
