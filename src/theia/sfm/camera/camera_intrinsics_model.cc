@@ -273,7 +273,7 @@ void CameraIntrinsicsModel::SetParameter(const int parameter_index,
   parameters_[parameter_index] = parameter_value;
 }
 
-const double CameraIntrinsicsModel::GetParameter(
+double CameraIntrinsicsModel::GetParameter(
     const int parameter_index) const {
   DCHECK_GE(parameter_index, 0);
   DCHECK_LT(parameter_index, parameters_.size());
