@@ -201,7 +201,7 @@ class CameraIntrinsicsModel {
   // of indices for the intrinsic parameters as a public enum.
   virtual void SetParameter(const int parameter_index,
                             const double parameter_value);
-  virtual const double GetParameter(const int parameter_index) const;
+  virtual double GetParameter(const int parameter_index) const;
 
   virtual const double* parameters() const;
   virtual double* mutable_parameters();
