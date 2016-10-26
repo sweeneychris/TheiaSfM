@@ -72,6 +72,10 @@ std::string ToLowercase(const std::string& str) {
   return str2;
 }
 
+bool IsValidFocalLength(const double focal_length) {
+  return std::isfinite(focal_length) && focal_length > 0;
+}
+
 }  // namespace
 
 std::vector<std::string> SplitString(const std::string &s, const char delim) {
@@ -144,11 +148,10 @@ bool ExifReader::ExtractEXIFMetadata(
       return true;
   }
 
-  // Make sure the focal length value is sane. If so, indicate the prior as
-  // being set.
-  const double focal_length = camera_intrinsics_prior->focal_length.value[0];
-  camera_intrinsics_prior->focal_length.is_set = std::isfinite(focal_length) &&
-      focal_length > 0.0;
+  // If we passed the if statement above, then we know that the focal length
+  // gathered from EXIF is valid and so we set the camera intrinsics prior for
+  // focal lengths to true.
+  camera_intrinsics_prior->focal_length.is_set = true;
 
   // Set GPS latitude.
   const OpenImageIO::ImageIOParameter* latitude =
@@ -259,9 +262,9 @@ bool ExifReader::SetFocalLengthFromExif(
 
   // Normalize for the image size in case the original size is different
   // than the current size.
-  camera_intrinsics_prior->focal_length.value[0] =
-      (focal_length_x + focal_length_y) / 2.0;
-  camera_intrinsics_prior->focal_length.is_set = true;
+  const double focal_length = (focal_length_x + focal_length_y) / 2.0;
+  camera_intrinsics_prior->focal_length.value[0] = focal_length;
+  return IsValidFocalLength(focal_length);
 }
 
 bool ExifReader::SetFocalLengthFromSensorDatabase(
@@ -287,9 +290,10 @@ bool ExifReader::SetFocalLengthFromSensorDatabase(
     return false;
   }
 
-  camera_intrinsics_prior->focal_length.value[0] =
+  const double focal_length =
       max_image_dimension * exif_focal_length / sensor_width;
-  return true;
+  camera_intrinsics_prior->focal_length.value[0] = focal_length;
+  return IsValidFocalLength(focal_length);
 }
 
 }  // namespace theia
