@@ -65,23 +65,9 @@ void ExtractFeatures(
     const std::string& imagemask_filepath,
     std::vector<Keypoint>* keypoints,
     std::vector<Eigen::VectorXf>* descriptors) {
+  static const float kMaskThreshold = 0.5;
+
   std::unique_ptr<FloatImage> image(new FloatImage(image_filepath));
-  std::unique_ptr<FloatImage> image_mask(new FloatImage(imagemask_filepath));
-
-  if (imagemask_filepath != "") {
-  // Check the size of the image and its associated mask.
-    if (image_mask.get()->Width() != image.get()->Width() ||
-        image_mask.get()->Height() != image.get()->Height()) {
-      LOG(FATAL) << "Mask and image don't have the same size: \n"
-                 << "- Mask: " << imagemask_filepath
-                 << " (" << image_mask.get()->Width()
-                 << "x" << image_mask.get()->Height() << "),\n"
-                 << "- Image: "<< image_filepath << " (" << image.get()->Width()
-                 << "x" << image.get()->Height() << ")";
-      return;
-    }
-  }
-
   // We create these variable here instead of upon the construction of the
   // object so that they can be thread-safe. We *should* be able to use the
   // static thread_local keywords, but apparently Mac OS-X's version of clang
@@ -101,16 +87,32 @@ void ExtractFeatures(
     return;
   }
 
-  if (imagemask_filepath != "") {
+  if (imagemask_filepath.size() > 0) {
+    std::unique_ptr<FloatImage> image_mask(new FloatImage(imagemask_filepath));
+    // Check the size of the image and its associated mask.
+    CHECK_EQ(image_mask->Width(), image->Width())
+             << "Mask and image don't have the same size: \n"
+             << "- Mask: " << imagemask_filepath << " (" << image_mask->Width()
+             << "x" << image_mask->Height() << "),\n"
+             << "- Image: "<< image_filepath << " (" << image->Width()
+             << "x" << image->Height() << ")";
+    CHECK_EQ(image_mask->Height(), image->Height())
+             << "Mask and image don't have the same size: \n"
+             << "- Mask: " << imagemask_filepath
+             << " (" << image_mask->Width()
+             << "x" << image_mask->Height() << "),\n"
+             << "- Image: "<< image_filepath << " (" << image->Width()
+             << "x" << image->Height() << ")";
     // Convert the mask to grayscale.
-    image_mask.get()->ConvertToGrayscaleImage();
+    image_mask->ConvertToGrayscaleImage();
     // Remove keypoints according to the associated mask (remove kp. in black
     // part).
     for (int i=keypoints->size()-1; i>-1; i--) {
-      if (image_mask.get()->GetXY(keypoints->at(i).x(),
-          keypoints->at(i).y(), 0) < 0.5) {
-        *keypoints->erase(keypoints->begin() + i);
-        *descriptors->erase(descriptors->begin() + i);
+      if (image_mask->BilinearInterpolate(keypoints->at(i).x(),
+                                          keypoints->at(i).y(),
+                                          0) < kMaskThreshold) {
+        keypoints->erase(keypoints->begin() + i);
+        descriptors->erase(descriptors->begin() + i);
       }
     }
   }
@@ -120,7 +122,7 @@ void ExtractFeatures(
     descriptors->resize(options.max_num_features);
   }
 
-  if (imagemask_filepath != "") {
+  if (imagemask_filepath.size() > 0) {
     VLOG(1) << "Successfully extracted " << descriptors->size()
             << " features from image " << image_filepath
             << " with an image mask.";
