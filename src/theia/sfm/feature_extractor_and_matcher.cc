@@ -62,9 +62,9 @@ namespace {
 void ExtractFeatures(
     const FeatureExtractorAndMatcher::Options& options,
     const std::string& image_filepath,
+    const std::string& imagemask_filepath,
     std::vector<Keypoint>* keypoints,
-    std::vector<Eigen::VectorXf>* descriptors,
-    const std::string& imagemask_filepath = "") {
+    std::vector<Eigen::VectorXf>* descriptors) {
   std::unique_ptr<FloatImage> image(new FloatImage(image_filepath));
   std::unique_ptr<FloatImage> image_mask(new FloatImage(imagemask_filepath));
 
@@ -285,14 +285,15 @@ void FeatureExtractorAndMatcher::ProcessImage(
   if (mask_filepaths_.empty()) {
     ExtractFeatures(options_,
                     image_filepath,
+                    "",
                     &keypoints,
                     &descriptors);
   } else {
     ExtractFeatures(options_,
                     image_filepath,
+                    mask_filepaths_[i],
                     &keypoints,
-                    &descriptors,
-                    mask_filepaths_[i]);
+                    &descriptors);
   }
   // Add the relevant image and feature data to the feature matcher. This allows
   // the feature matcher to control fine-grained things like multi-threading and
