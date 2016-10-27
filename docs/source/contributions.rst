@@ -71,7 +71,7 @@ project.
 
    .. code-block:: bash
 
-      curl -o .git/hooks/commit-msg http://cs.ucsb.edu/~cmsweeney/theia/commit-msg
+      curl -o .git/hooks/commit-msg http://www.theia-sfm.org/_static/commit-msg
       chmod +x .git/hooks/commit-msg
 
 5. Configure your GerritHub password.
