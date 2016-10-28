@@ -100,16 +100,20 @@ struct CameraIntrinsicsPrior {
   friend class cereal::access;
   template <class Archive>
   void serialize(Archive& ar, const std::uint32_t version) {  // NOLINT
-    if (version >= 3) {
+    if (version >= 4) {
       ar(image_width, image_height, camera_intrinsics_model_type, focal_length,
          principal_point, aspect_ratio, skew, radial_distortion,
          tangential_distortion, position, orientation,
          latitude, longitude, altitude);
+    } else if (version == 3) {
+      ar(image_width, image_height, camera_intrinsics_model_type, focal_length,
+         aspect_ratio, skew, radial_distortion, tangential_distortion, position,
+	 orientation, latitude, longitude, altitude);
     } else if (version == 2) {
       Prior<2> old_radial_distortion;
-      ar(image_width, image_height, focal_length, principal_point,
-         aspect_ratio, skew, old_radial_distortion, tangential_distortion,
-         position, orientation, latitude, longitude, altitude);
+      ar(image_width, image_height, focal_length, aspect_ratio, skew,
+         old_radial_distortion, tangential_distortion, position,
+	 orientation, latitude, longitude, altitude);
       radial_distortion.is_set = old_radial_distortion.is_set;
       radial_distortion.value[0] = old_radial_distortion.value[0];
       radial_distortion.value[1] = old_radial_distortion.value[1];
@@ -138,6 +142,6 @@ struct CameraIntrinsicsPrior {
 // Note that this version will correspond to both the Prior class and the
 // CameraIntrinsiscPrior class until we figure out how to pass templated classes
 // to the cereal macro.
-CEREAL_CLASS_VERSION(theia::CameraIntrinsicsPrior, 3);
+CEREAL_CLASS_VERSION(theia::CameraIntrinsicsPrior, 4);
 
 #endif  // THEIA_SFM_CAMERA_INTRINSICS_PRIOR_H_
