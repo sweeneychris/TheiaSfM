@@ -35,6 +35,7 @@
 #ifndef THEIA_SFM_CAMERA_FOV_CAMERA_MODEL_H_
 #define THEIA_SFM_CAMERA_FOV_CAMERA_MODEL_H_
 
+#include <ceres/jet.h>
 #include <cereal/access.hpp>
 #include <cereal/cereal.hpp>
 #include <cereal/types/base_class.hpp>

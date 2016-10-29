@@ -79,6 +79,9 @@ void SetLensDistortionToZero(Camera* camera) {
     case CameraIntrinsicsModelType::FOV:
       intrinsics[FisheyeCameraModel::RADIAL_DISTORTION_1] = 0.0;
       break;
+    default:
+      LOG(FATAL) << "Invalid camera intrinsics type.";
+      break;
   }
 }
 

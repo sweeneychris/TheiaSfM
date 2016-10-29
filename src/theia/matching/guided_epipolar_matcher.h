@@ -36,19 +36,20 @@
 #define THEIA_MATCHING_GUIDED_EPIPOLAR_MATCHER_H_
 
 #include <Eigen/Core>
-#include <functional>
 #include <memory>
-#include <vector>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
+#include <vector>
 
-#include "theia/matching/indexed_feature_match.h"
+#include "theia/alignment/alignment.h"
 #include "theia/matching/keypoints_and_descriptors.h"
 #include "theia/sfm/camera/camera.h"
 #include "theia/util/hash.h"
-#include "theia/util/random.h"
 
 namespace theia {
+class RandomNumberGenerator;
+struct IndexedFeatureMatch;
 
 class GuidedEpipolarMatcher {
  public:

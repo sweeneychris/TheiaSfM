@@ -42,6 +42,7 @@
 #include "theia/sfm/pose/essential_matrix_utils.h"
 #include "theia/sfm/pose/test_util.h"
 #include "theia/sfm/pose/util.h"
+#include "theia/util/random.h"
 
 namespace theia {
 

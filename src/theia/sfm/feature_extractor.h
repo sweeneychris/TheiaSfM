@@ -36,16 +36,14 @@
 #define THEIA_SFM_FEATURE_EXTRACTOR_H_
 
 #include <Eigen/Core>
-#include <memory>
 #include <string>
-#include <vector>
 
 #include "theia/alignment/alignment.h"
 #include "theia/image/descriptor/create_descriptor_extractor.h"
-#include "theia/image/image.h"
-#include "theia/image/keypoint_detector/sift_parameters.h"
+#include "theia/util/util.h"
 
 namespace theia {
+class Keypoint;
 
 // Reads in the set of images provided then extracts descriptors using the
 // desired descriptor type. This method can be run with multiple threads.

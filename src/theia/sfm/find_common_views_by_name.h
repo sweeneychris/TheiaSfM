@@ -37,9 +37,9 @@
 
 #include <string>
 #include <vector>
-#include "theia/sfm/reconstruction.h"
 
 namespace theia {
+class Reconstruction;
 
 // Finds all views that are common to both reconstructions. Views are considered
 // to be the same if they have the same view name. The names of all common views

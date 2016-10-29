@@ -41,14 +41,13 @@
 
 #include "theia/sfm/camera/camera.h"
 #include "theia/sfm/create_and_initialize_ransac_variant.h"
-#include "theia/sfm/estimators/feature_correspondence_2d_3d.h"
 #include "theia/sfm/feature.h"
-#include "theia/sfm/similarity_transformation.h"
 
 namespace theia {
 
 struct RansacParameters;
 struct RansacSummary;
+struct SimilarityTransformation;
 
 // A struct to manage the correspondences between 3d points and the respective
 // camera and feature observation.

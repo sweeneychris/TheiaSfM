@@ -39,7 +39,6 @@
 #include <unordered_set>
 
 #include "theia/sfm/types.h"
-#include "theia/sfm/reconstruction_estimator_options.h"
 
 namespace theia {
 

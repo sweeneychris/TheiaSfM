@@ -38,11 +38,12 @@
 #include <Eigen/Core>
 #include <vector>
 
-#include "theia/matching/feature_correspondence.h"
 #include "theia/sfm/bundle_adjustment/bundle_adjustment.h"
-#include "theia/sfm/camera/camera.h"
 
 namespace theia {
+class Camera;
+struct FeatureCorrespondence;
+struct TwoViewInfo;
 
 struct TwoViewInfo;
 

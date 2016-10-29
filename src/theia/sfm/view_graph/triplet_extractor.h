@@ -42,12 +42,11 @@
 
 #include "theia/util/util.h"
 #include "theia/util/hash.h"
-#include "theia/sfm/twoview_info.h"
 #include "theia/sfm/types.h"
 #include "theia/sfm/view_triplet.h"
 
 namespace theia {
-
+class TwoViewInfo;
 template<typename T> class ConnectedComponents;
 
 // Extract all loops of size 3 (i.e., triplets) in a set of view pairs. Triplets

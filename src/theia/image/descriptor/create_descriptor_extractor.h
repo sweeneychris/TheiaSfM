@@ -37,11 +37,8 @@
 
 #include <memory>
 
-#include "theia/image/descriptor/akaze_descriptor.h"
-#include "theia/image/descriptor/descriptor_extractor.h"
-#include "theia/image/keypoint_detector/sift_parameters.h"
-
 namespace theia {
+class DescriptorExtractor;
 
 // The various types of feature descriptors you can choose. We use the default
 // keypoint extractor for each feature type. Since this is a convenience class

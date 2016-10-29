@@ -39,7 +39,6 @@
 #include "theia/sfm/filter_view_pairs_from_relative_translation.h"
 #include "theia/sfm/reconstruction_estimator.h"
 #include "theia/sfm/reconstruction_estimator_options.h"
-#include "theia/sfm/twoview_info.h"
 #include "theia/sfm/types.h"
 #include "theia/solvers/sample_consensus_estimator.h"
 #include "theia/util/util.h"

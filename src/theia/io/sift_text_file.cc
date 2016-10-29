@@ -45,6 +45,8 @@
 #include <string>
 #include <vector>
 
+#include "theia/image/keypoint_detector/keypoint.h"
+
 namespace theia {
 
 // The sift key file has the following format:

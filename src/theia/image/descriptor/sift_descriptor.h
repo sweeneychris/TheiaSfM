@@ -41,13 +41,13 @@ extern "C" {
 #include <vector>
 
 #include "theia/image/descriptor/descriptor_extractor.h"
-#include "theia/image/keypoint_detector/keypoint.h"
 #include "theia/image/keypoint_detector/sift_parameters.h"
 #include "theia/util/util.h"
 
 namespace theia {
 
 class FloatImage;
+class Keypoint;
 
 class SiftDescriptorExtractor : public DescriptorExtractor {
  public:

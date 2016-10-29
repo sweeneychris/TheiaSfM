@@ -35,7 +35,7 @@
 #ifndef THEIA_SFM_EXIF_READER_H_
 #define THEIA_SFM_EXIF_READER_H_
 
-#include <OpenImageIO/imagebuf.h>
+#include <OpenImageIO/imageio.h>
 #include <string>
 #include <unordered_map>
 

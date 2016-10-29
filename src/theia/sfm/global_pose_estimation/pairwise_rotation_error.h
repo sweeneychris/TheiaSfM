@@ -35,9 +35,12 @@
 #ifndef THEIA_SFM_GLOBAL_POSE_ESTIMATION_PAIRWISE_ROTATION_ERROR_H_
 #define THEIA_SFM_GLOBAL_POSE_ESTIMATION_PAIRWISE_ROTATION_ERROR_H_
 
-#include <ceres/ceres.h>
 #include <ceres/rotation.h>
 #include <Eigen/Core>
+
+namespace ceres {
+class CostFunction;
+}  // namespace ceres
 
 namespace theia {
 

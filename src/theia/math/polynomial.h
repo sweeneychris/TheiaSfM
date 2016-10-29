@@ -71,8 +71,6 @@
 #define THEIA_MATH_POLYNOMIAL_H_
 
 #include <Eigen/Core>
-#include <complex>
-#include <vector>
 
 namespace theia {
 
