@@ -39,10 +39,9 @@
 #include <vector>
 
 #include "theia/sfm/create_and_initialize_ransac_variant.h"
-#include "theia/sfm/estimators/feature_correspondence_2d_3d.h"
 
 namespace theia {
-
+struct FeatureCorrespondence2D3D;
 struct RansacParameters;
 struct RansacSummary;
 

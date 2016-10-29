@@ -35,13 +35,14 @@
 #ifndef THEIA_SFM_ESTIMATE_TRACK_H_
 #define THEIA_SFM_ESTIMATE_TRACK_H_
 
+#include <unordered_set>
+#include <vector>
+
 #include "theia/sfm/bundle_adjustment/bundle_adjustment.h"
-#include "theia/sfm/reconstruction.h"
 #include "theia/sfm/types.h"
 
-#include <unordered_set>
-
 namespace theia {
+class Reconstruction;
 
 // Estimates the 3D point of a track by using all estimated views to compute a
 // (potentially nonminimal) triangulation of track. The the angle between all

@@ -39,9 +39,9 @@
 #include <unordered_map>
 
 #include "theia/sfm/types.h"
-#include "theia/sfm/view_graph/view_graph.h"
 
 namespace theia {
+class ViewGraph;
 
 // Computes orientations of each view in the view graph by computing the maximum
 // spanning tree (by edge weight) and solving for the global orientations by

@@ -39,7 +39,10 @@
 #include <string>
 #include <vector>
 
+#include "theia/io/write_matches.h"
+#include "theia/matching/image_pair_match.h"
 #include "theia/sfm/camera_intrinsics_prior.h"
+#include "theia/sfm/feature_extractor_and_matcher.h"
 #include "theia/sfm/reconstruction.h"
 #include "theia/sfm/reconstruction_estimator.h"
 #include "theia/sfm/track_builder.h"

@@ -46,6 +46,7 @@
 #include "theia/sfm/pose/sim_transform_partial_rotation.h"
 #include "theia/sfm/pose/test_util.h"
 #include "theia/test/test_utils.h"
+#include "theia/util/random.h"
 #include "theia/util/util.h"
 
 namespace theia {

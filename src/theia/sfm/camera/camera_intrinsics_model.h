@@ -40,12 +40,12 @@
 #include <cereal/types/vector.hpp>
 #include <stdint.h>
 #include <Eigen/Core>
+#include <memory>
 #include <vector>
 
 #include "theia/sfm/bundle_adjustment/bundle_adjustment.h"
 #include "theia/sfm/camera/camera_intrinsics_model_type.h"
 #include "theia/sfm/camera_intrinsics_prior.h"
-#include "theia/sfm/types.h"
 
 namespace theia {
 

@@ -36,17 +36,8 @@
 #define THEIA_IMAGE_IMAGE_H_
 
 #include <Eigen/Core>
-#include <glog/logging.h>
 #include <OpenImageIO/imagebuf.h>
-
-#include <algorithm>
-#include <cmath>
-#include <limits>
-#include <memory>
 #include <string>
-#include <vector>
-
-#include "theia/util/util.h"
 
 namespace theia {
 

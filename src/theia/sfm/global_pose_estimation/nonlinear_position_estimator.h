@@ -35,20 +35,23 @@
 #ifndef THEIA_SFM_GLOBAL_POSE_ESTIMATION_NONLINEAR_POSITION_ESTIMATOR_H_
 #define THEIA_SFM_GLOBAL_POSE_ESTIMATION_NONLINEAR_POSITION_ESTIMATOR_H_
 
-#include <ceres/ceres.h>
+#include <ceres/problem.h>
+#include <ceres/solver.h>
 #include <Eigen/Core>
 #include <memory>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
-#include "theia/util/random.h"
-#include "theia/util/util.h"
 #include "theia/sfm/global_pose_estimation/position_estimator.h"
-#include "theia/sfm/reconstruction.h"
 #include "theia/sfm/types.h"
-#include "theia/sfm/view_triplet.h"
+#include "theia/util/util.h"
 
 namespace theia {
+class RandomNumberGenerator;
+class Reconstruction;
+class TwoViewInfo;
+class View;
 
 // Estimates the camera position of views given pairwise relative poses and the
 // absolute orientations of cameras. Positions are estimated using a nonlinear

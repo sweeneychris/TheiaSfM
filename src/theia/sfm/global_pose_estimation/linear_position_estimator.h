@@ -41,12 +41,15 @@
 #include <vector>
 
 #include "theia/sfm/global_pose_estimation/position_estimator.h"
-#include "theia/sfm/reconstruction.h"
+#include "theia/sfm/feature.h"
 #include "theia/sfm/types.h"
 #include "theia/sfm/view_triplet.h"
 #include "theia/util/util.h"
 
 namespace theia {
+class Reconstruction;
+class TwoViewInfo;
+class View;
 
 // Estimates the camera position of views given global orientations and view
 // triplets. The constraints formed by each triplet are used to create a sparse

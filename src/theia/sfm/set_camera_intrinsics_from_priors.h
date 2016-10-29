@@ -35,13 +35,9 @@
 #ifndef THEIA_SFM_SET_CAMERA_INTRINSICS_FROM_PRIORS_H_
 #define THEIA_SFM_SET_CAMERA_INTRINSICS_FROM_PRIORS_H_
 
-#include "theia/sfm/camera_intrinsics_prior.h"
-
 namespace theia {
 
-class Camera;
 class Reconstruction;
-class View;
 
 // Sets the camera intrinsics from the CameraIntrinsicsPrior for every view in
 // the reconstruction. If the prior does not have a focal length prior then the

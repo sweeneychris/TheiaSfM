@@ -35,7 +35,7 @@
 #ifndef THEIA_SFM_BUNDLE_ADJUSTMENT_BUNDLE_ADJUSTMENT_H_
 #define THEIA_SFM_BUNDLE_ADJUSTMENT_BUNDLE_ADJUSTMENT_H_
 
-#include <ceres/ceres.h>
+#include <ceres/types.h>
 #include <unordered_set>
 
 #include "theia/sfm/bundle_adjustment/create_loss_function.h"

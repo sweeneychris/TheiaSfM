@@ -46,6 +46,7 @@
 #include <utility>
 #include <vector>
 
+#include "theia/sfm/feature.h"
 #include "theia/sfm/track.h"
 #include "theia/sfm/types.h"
 #include "theia/sfm/view.h"

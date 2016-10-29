@@ -39,7 +39,10 @@
 #include <vector>
 
 #include "theia/io/import_nvm_file.h"
+#include "theia/sfm/camera/camera.h"
 #include "theia/sfm/reconstruction.h"
+#include "theia/sfm/track.h"
+#include "theia/sfm/view.h"
 #include "theia/util/filesystem.h"
 #include "theia/util/map_util.h"
 

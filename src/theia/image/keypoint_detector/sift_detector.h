@@ -42,12 +42,12 @@ extern "C" {
 #include <vector>
 
 #include "theia/image/keypoint_detector/keypoint_detector.h"
-#include "theia/image/keypoint_detector/keypoint.h"
 #include "theia/image/keypoint_detector/sift_parameters.h"
 #include "theia/util/util.h"
 
 namespace theia {
 class FloatImage;
+class Keypoint;
 
 // SIFT detector as originally proposed by David Lowe. This relies on the open
 // source software VLFeat (www.vlfeat.org) to detect keypoints.

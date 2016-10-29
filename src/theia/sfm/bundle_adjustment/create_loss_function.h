@@ -35,8 +35,11 @@
 #ifndef THEIA_SFM_BUNDLE_ADJUSTMENT_CREATE_LOSS_FUNCTION_H_
 #define THEIA_SFM_BUNDLE_ADJUSTMENT_CREATE_LOSS_FUNCTION_H_
 
-#include <ceres/ceres.h>
 #include <memory>
+
+namespace ceres {
+class LossFunction;
+}  // namespace ceres
 
 namespace theia {
 

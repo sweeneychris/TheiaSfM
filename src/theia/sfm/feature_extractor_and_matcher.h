@@ -41,14 +41,13 @@
 
 #include "theia/image/descriptor/create_descriptor_extractor.h"
 #include "theia/matching/create_feature_matcher.h"
+#include "theia/matching/feature_matcher.h"
 #include "theia/matching/feature_matcher_options.h"
-#include "theia/matching/image_pair_match.h"
-#include "theia/sfm/camera_intrinsics_prior.h"
-#include "theia/sfm/estimate_twoview_info.h"
 #include "theia/sfm/exif_reader.h"
-#include "theia/sfm/two_view_match_geometric_verification.h"
 
 namespace theia {
+struct CameraIntrinsicsPrior;
+struct ImagePairMatch;
 
 class FeatureExtractorAndMatcher {
  public:
