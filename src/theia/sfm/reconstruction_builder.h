@@ -39,20 +39,21 @@
 #include <string>
 #include <vector>
 
-#include "theia/image/keypoint_detector/sift_parameters.h"
-#include "theia/io/write_matches.h"
-#include "theia/util/util.h"
+#include "theia/image/descriptor/create_descriptor_extractor.h"
 #include "theia/matching/create_feature_matcher.h"
 #include "theia/matching/feature_matcher_options.h"
-#include "theia/sfm/camera_intrinsics_prior.h"
-#include "theia/sfm/feature_extractor_and_matcher.h"
 #include "theia/sfm/reconstruction_estimator_options.h"
+#include "theia/sfm/types.h"
+#include "theia/util/util.h"
 
 namespace theia {
-
+class FeatureExtractorAndMatcher;
+class RandomNumberGenerator;
 class Reconstruction;
 class TrackBuilder;
 class ViewGraph;
+struct CameraIntrinsicsPrior;
+struct ImagePairMatch;
 
 struct ReconstructionBuilderOptions {
   // The random number generator used to generate random numbers through the

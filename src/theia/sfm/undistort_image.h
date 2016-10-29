@@ -35,14 +35,10 @@
 #ifndef THEIA_SFM_UNDISTORT_IMAGE_H_
 #define THEIA_SFM_UNDISTORT_IMAGE_H_
 
-#include "theia/sfm/camera/camera.h"
-#include "theia/image/image.h"
-
-#include "theia/sfm/camera/camera_intrinsics_model.h"
-#include "theia/sfm/types.h"
-#include "theia/sfm/view.h"
-
 namespace theia {
+class Camera;
+class FloatImage;
+class Reconstruction;
 
 // Given an image with lens distortion distortion described by the camera
 // parameters, undistort the image according to the parameters of the

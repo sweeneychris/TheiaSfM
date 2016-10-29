@@ -38,10 +38,10 @@
 #include <string>
 #include <vector>
 
-#include "theia/matching/image_pair_match.h"
-#include "theia/sfm/camera_intrinsics_prior.h"
 
 namespace theia {
+struct CameraIntrinsicsPrior;
+struct ImagePairMatch;
 
 // Reads the feature matches between view pairs as well as the two view geometry
 // (i.e., TwoViewInfo) that describes the relative pose between the two

@@ -43,10 +43,8 @@
 #include "theia/sfm/localize_view_to_reconstruction.h"
 #include "theia/sfm/reconstruction_estimator.h"
 #include "theia/sfm/reconstruction_estimator_options.h"
-#include "theia/sfm/twoview_info.h"
 #include "theia/sfm/types.h"
 #include "theia/solvers/sample_consensus_estimator.h"
-#include "theia/util/timer.h"
 #include "theia/util/util.h"
 
 namespace theia {

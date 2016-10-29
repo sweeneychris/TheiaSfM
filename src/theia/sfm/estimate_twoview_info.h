@@ -39,10 +39,10 @@
 #include <vector>
 
 #include "theia/sfm/create_and_initialize_ransac_variant.h"
-#include "theia/util/random.h"
 
 namespace theia {
 
+class RandomNumberGenerator;
 struct CameraIntrinsicsPrior;
 struct FeatureCorrespondence;
 struct TwoViewInfo;

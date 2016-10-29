@@ -42,7 +42,6 @@
 #include "glog/logging.h"
 
 #include "theia/image/image.h"
-#include "theia/image/descriptor/descriptor_extractor.h"
 #include "theia/image/keypoint_detector/keypoint.h"
 
 namespace theia {

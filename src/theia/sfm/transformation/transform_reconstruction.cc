@@ -45,15 +45,15 @@
 namespace theia {
 namespace {
 
-void TransformPoint(const Eigen::Matrix3d rotation,
-                    const Eigen::Vector3d translation,
+void TransformPoint(const Eigen::Matrix3d& rotation,
+                    const Eigen::Vector3d& translation,
                     const double scale,
                     Eigen::Vector3d* point) {
   *point = scale * rotation * (*point) + translation;
 }
 
-void TransformCamera(const Eigen::Matrix3d rotation,
-                     const Eigen::Vector3d translation,
+void TransformCamera(const Eigen::Matrix3d& rotation,
+                     const Eigen::Vector3d& translation,
                      const double scale,
                      Camera* camera) {
   const Eigen::Matrix3d camera_rotation =
@@ -70,8 +70,8 @@ void TransformCamera(const Eigen::Matrix3d rotation,
 
 // Applies the similarity transformation to the reconstruction, transforming the
 // 3d points and the cameras poses appropriately.
-void TransformReconstruction(const Eigen::Matrix3d rotation,
-                             const Eigen::Vector3d translation,
+void TransformReconstruction(const Eigen::Matrix3d& rotation,
+                             const Eigen::Vector3d& translation,
                              const double scale,
                              Reconstruction* reconstruction) {
   const auto& view_ids = reconstruction->ViewIds();

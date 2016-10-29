@@ -35,9 +35,8 @@
 #ifndef THEIA_SFM_TRANSFORMATION_ALIGN_RECONSTRUCTIONS_H_
 #define THEIA_SFM_TRANSFORMATION_ALIGN_RECONSTRUCTIONS_H_
 
-#include "theia/sfm/reconstruction.h"
-
 namespace theia {
+class Reconstruction;
 
 // Aligns the reconstructions so that their commons cameras have the closest
 // positions in an L2 sense.

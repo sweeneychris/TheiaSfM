@@ -38,9 +38,8 @@
 #include <Eigen/Core>
 #include <vector>
 
-#include "theia/matching/feature_correspondence.h"
-
 namespace theia {
+struct FeatureCorrespondence;
 
 // Using known relative rotations, optimize the relative position that minimizes
 // the epipolar constraint x2' * [t]_x * R * x1 = 0 for all

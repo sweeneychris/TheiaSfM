@@ -41,12 +41,14 @@
 #include <vector>
 
 #include "theia/matching/cascade_hasher.h"
-#include "theia/matching/distance.h"
 #include "theia/matching/feature_matcher.h"
-#include "theia/matching/indexed_feature_match.h"
 #include "theia/util/hash.h"
 
 namespace theia {
+class Keypoint;
+struct CameraIntrinsicsPrior;
+struct IndexedFeatureMatch;
+struct KeypointsAndDescriptors;
 
 // Performs features matching between two sets of features using a cascade
 // hashing approach. This hashing does not require any training and is extremely

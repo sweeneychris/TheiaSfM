@@ -38,10 +38,10 @@
 #include <memory>
 #include <string>
 
-#include "theia/image/image.h"
 #include "theia/util/lru_cache.h"
 
 namespace theia {
+class FloatImage;
 
 // An LRU cache for retreiving images from disk. It is assumed that all images
 // are held in the same directory and are referenced by their filename

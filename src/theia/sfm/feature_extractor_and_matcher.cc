@@ -43,6 +43,7 @@
 
 #include "theia/image/image.h"
 #include "theia/image/descriptor/create_descriptor_extractor.h"
+#include "theia/image/descriptor/descriptor_extractor.h"
 #include "theia/image/keypoint_detector/keypoint.h"
 #include "theia/matching/create_feature_matcher.h"
 #include "theia/matching/feature_correspondence.h"

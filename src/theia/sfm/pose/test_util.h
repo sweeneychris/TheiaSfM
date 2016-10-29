@@ -38,9 +38,8 @@
 #include <Eigen/Core>
 #include <vector>
 
-#include "theia/util/random.h"
-
 namespace theia {
+class RandomNumberGenerator;
 
 // Adds noise to the 3D point passed in.
 void AddNoiseToPoint(const double noise_factor,

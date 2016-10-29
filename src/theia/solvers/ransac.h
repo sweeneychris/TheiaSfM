@@ -35,15 +35,12 @@
 #ifndef THEIA_SOLVERS_RANSAC_H_
 #define THEIA_SOLVERS_RANSAC_H_
 
-#include <math.h>
-#include <cstdlib>
-#include <vector>
-
-#include "theia/solvers/estimator.h"
+#include "theia/solvers/sampler.h"
 #include "theia/solvers/random_sampler.h"
 #include "theia/solvers/sample_consensus_estimator.h"
 
 namespace theia {
+
 template <class ModelEstimator>
 class Ransac : public SampleConsensusEstimator<ModelEstimator> {
  public:

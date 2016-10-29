@@ -38,11 +38,12 @@
 #include <Eigen/Core>
 #include <vector>
 
-#include "theia/matching/feature_correspondence.h"
 #include "theia/sfm/create_and_initialize_ransac_variant.h"
-#include "theia/solvers/estimator.h"
 
 namespace theia {
+struct FeatureCorrespondence;
+struct RansacParameters;
+struct RansacSummary;
 
 // Estimates the essential matrix from feature correspondences using the 5-pt
 // algorithm. The feature correspondences must be normalized such that the
