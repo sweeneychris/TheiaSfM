@@ -394,7 +394,20 @@ void AddImagesToReconstructionBuilder(
           << FLAGS_image_masks
           << ". NOTE that the ~ filepath is not supported.";
     if (mask_files.size() > 0) {
-      CHECK(reconstruction_builder->SetMasksForFeaturesExtraction(mask_files));
+      for (const std::string& image_file : image_files) {
+        std::string image_filename;
+        CHECK(theia::GetFilenameFromFilepath(image_file,
+                                             false,
+                                             &image_filename));
+        // Find and add the associated mask
+        for (const std::string& mask_file : mask_files) {
+          if (mask_file.find(image_filename) != std::string::npos) {
+            CHECK(reconstruction_builder->AddMaskForFeaturesExtraction(
+                image_file,
+                mask_file));
+          }
+        }
+      }
     } else {
       LOG(WARNING) << "No image masks found in: " << FLAGS_image_masks;
     }

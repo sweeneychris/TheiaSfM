@@ -159,6 +159,8 @@ bool FeatureExtractorAndMatcher::AddMaskForFeaturesExtraction(
     const std::string& image_filepath,
     const std::string& mask_filepath) {
   image_masks_[image_filepath] = mask_filepath;
+  LOG(INFO) << "Image: " << image_filepath << " || "
+            << "Associated mask: " << mask_filepath;
   return true;
 }
 
