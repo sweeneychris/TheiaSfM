@@ -91,7 +91,8 @@ class FeatureExtractorAndMatcher {
   bool AddImage(const std::string& image_filepath,
                 const CameraIntrinsicsPrior& intrinsics);
 
-  // Add a mask to the 'image_masks_' map.
+  // Associate a black and white mask (jpg, png, tif etc. format) with an image.
+  // Only features inside the white area of the mask are extracted and matched.
   bool AddMaskForFeaturesExtraction(
       const std::string& image_filepath,
       const std::string& mask_filepath);
