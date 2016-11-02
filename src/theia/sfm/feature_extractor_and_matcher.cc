@@ -90,10 +90,13 @@ void ExtractFeatures(
   if (imagemask_filepath.size() > 0) {
     std::unique_ptr<FloatImage> image_mask(new FloatImage(imagemask_filepath));
     // Check the size of the image and its associated mask.
-    CHECK_EQ(image_mask->Width(), image->Width())
-        << "Masks and images don't have the same size.";
-    CHECK_EQ(image_mask->Height(), image->Height())
-        << "Masks and images don't have the same size.";
+    CHECK(image_mask->Width() == image->Width() &&
+          image_mask->Height() == image->Height())
+      << "The image and the mask don't have the same size. \n"
+      << "- Image: " << image_filepath
+      << "\t(" << image->Width() << " x " << image->Height() << ")\n"
+      << "- Mask: " << imagemask_filepath
+      << "\t(" << image_mask->Width() << " x " << image_mask->Height() << ")";
 
     // Convert the mask to grayscale.
     image_mask->ConvertToGrayscaleImage();
