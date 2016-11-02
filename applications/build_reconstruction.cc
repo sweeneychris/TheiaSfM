@@ -386,7 +386,7 @@ void AddImagesToReconstructionBuilder(
     }
   }
 
-  // Load image masks files if it is provided
+  // Add image masks for any images if those are provided.
   std::vector<std::string> mask_files;
   if (FLAGS_image_masks.size() != 0) {
     CHECK(theia::GetFilepathsFromWildcard(FLAGS_image_masks, &mask_files))
