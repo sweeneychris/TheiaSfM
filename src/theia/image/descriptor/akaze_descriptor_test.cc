@@ -39,6 +39,7 @@
 
 #include "theia/image/image.h"
 #include "theia/image/descriptor/akaze_descriptor.h"
+#include "theia/image/keypoint_detector/keypoint.h"
 
 DEFINE_string(test_img, "image/descriptor/img1.png",
               "Name of test image file.");

@@ -49,6 +49,7 @@
 #include "theia/sfm/global_pose_estimation/nonlinear_position_estimator.h"
 #include "theia/sfm/reconstruction.h"
 #include "theia/sfm/reconstruction_estimator.h"
+#include "theia/sfm/reconstruction_estimator_options.h"
 #include "theia/sfm/triangulation/triangulation.h"
 #include "theia/sfm/twoview_info.h"
 #include "theia/sfm/view_graph/view_graph.h"

@@ -37,9 +37,8 @@
 
 #include <vector>
 
-#include "theia/matching/indexed_feature_match.h"
-
 namespace theia {
+struct IndexedFeatureMatch;
 
 // Modifies forward matches so that it removes all matches that are not
 // contained in the backwards matches.

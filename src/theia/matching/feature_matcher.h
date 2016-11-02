@@ -35,10 +35,8 @@
 #ifndef THEIA_MATCHING_FEATURE_MATCHER_H_
 #define THEIA_MATCHING_FEATURE_MATCHER_H_
 
-#include <glog/logging.h>
+#include <Eigen/Core>
 
-#include <algorithm>
-#include <limits>
 #include <memory>
 #include <mutex>  // NOLINT
 #include <string>
@@ -46,16 +44,16 @@
 #include <utility>
 #include <vector>
 
-#include "theia/matching/feature_correspondence.h"
 #include "theia/matching/feature_matcher_options.h"
-#include "theia/matching/image_pair_match.h"
-#include "theia/matching/keypoints_and_descriptors.h"
-#include "theia/sfm/camera_intrinsics_prior.h"
-#include "theia/sfm/two_view_match_geometric_verification.h"
 #include "theia/util/lru_cache.h"
 #include "theia/util/util.h"
 
 namespace theia {
+class Keypoint;
+struct CameraIntrinsicsPrior;
+struct ImagePairMatch;
+struct IndexedFeatureMatche;
+struct KeypointsAndDescriptors;
 
 // Class for matching features between images. The intended use for these
 // classes is for matching photos in image collections, so all pairwise matches

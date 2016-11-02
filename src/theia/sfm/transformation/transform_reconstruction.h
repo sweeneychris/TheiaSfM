@@ -36,14 +36,14 @@
 #define THEIA_SFM_TRANSFORMATION_TRANSFORM_RECONSTRUCTION_H_
 
 #include <Eigen/Core>
-#include "theia/sfm/reconstruction.h"
 
 namespace theia {
+class Reconstruction;
 
 // Applies the similarity transformation to the reconstruction, transforming the
 // 3d points and the cameras poses appropriately.
-void TransformReconstruction(const Eigen::Matrix3d rotation,
-                             const Eigen::Vector3d translation,
+void TransformReconstruction(const Eigen::Matrix3d& rotation,
+                             const Eigen::Vector3d& translation,
                              const double scale,
                              Reconstruction* reconstruction);
 

@@ -46,6 +46,7 @@
 #include <vector>
 
 #include "theia/sfm/camera/camera_intrinsics_model.h"
+#include "theia/sfm/camera/camera_intrinsics_model_type.h"
 #include "theia/sfm/camera_intrinsics_prior.h"
 #include "theia/sfm/types.h"
 

@@ -39,9 +39,8 @@
 #include <string>
 #include <vector>
 
-#include "theia/image/keypoint_detector/keypoint.h"
-
 namespace theia {
+class Keypoint;
 
 // Reads a SIFT key files as computed by Lowe's SIFT software:
 // http://www.cs.ubc.ca/~lowe/keypoints/

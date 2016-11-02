@@ -37,16 +37,17 @@
 
 #include <vector>
 
-#include "theia/matching/feature_correspondence.h"
+#include "theia/alignment/alignment.h"
 #include "theia/matching/indexed_feature_match.h"
 #include "theia/matching/keypoints_and_descriptors.h"
-#include "theia/sfm/camera_intrinsics_prior.h"
 #include "theia/sfm/camera/camera.h"
+#include "theia/sfm/camera_intrinsics_prior.h"
 #include "theia/sfm/estimate_twoview_info.h"
-#include "theia/sfm/twoview_info.h"
 #include "theia/util/util.h"
 
 namespace theia {
+class TwoViewInfo;
+struct FeatureCorrespondence;
 
 class TwoViewMatchGeometricVerification {
  public:

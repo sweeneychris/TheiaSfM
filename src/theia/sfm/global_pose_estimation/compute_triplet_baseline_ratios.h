@@ -39,9 +39,10 @@
 #include <vector>
 
 #include "theia/sfm/feature.h"
-#include "theia/sfm/view_triplet.h"
 
 namespace theia {
+
+struct ViewTriplet;
 
 // The baselines of the relative poses between views are estimated by
 // triangulating features common to all 3 views. Based on the depth of the

@@ -44,6 +44,7 @@
 #include "theia/image/descriptor/descriptor_extractor.h"
 #include "theia/io/write_keypoints_and_descriptors.h"
 #include "theia/image/image.h"
+#include "theia/image/keypoint_detector/keypoint.h"
 #include "theia/util/filesystem.h"
 #include "theia/util/threadpool.h"
 

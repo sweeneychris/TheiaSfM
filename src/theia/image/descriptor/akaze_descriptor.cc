@@ -42,7 +42,6 @@
 #include "glog/logging.h"
 
 #include "theia/image/image.h"
-#include "theia/image/descriptor/descriptor_extractor.h"
 #include "theia/image/keypoint_detector/keypoint.h"
 
 namespace theia {
@@ -66,7 +65,6 @@ bool AkazeDescriptorExtractor::DetectAndExtractDescriptors(
       Eigen::Map<const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic,
                                      Eigen::RowMajor> >(
           gray_image.Data(), gray_image.Rows(), gray_image.Cols());
-  img_32 /= 255.0;
 
   // Set the akaze options.
   libAKAZE::AKAZEOptions options;

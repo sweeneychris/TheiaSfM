@@ -40,10 +40,9 @@
 #include <unordered_map>
 
 #include "theia/sfm/types.h"
-#include "theia/util/random.h"
 
 namespace theia {
-
+class RandomNumberGenerator;
 class ViewGraph;
 
 struct FilterViewPairsFromRelativeTranslationOptions {

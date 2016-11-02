@@ -47,6 +47,7 @@
 #include "theia/sfm/reconstruction.h"
 #include "theia/sfm/types.h"
 #include "theia/util/map_util.h"
+#include "theia/util/random.h"
 #include "theia/util/util.h"
 
 namespace theia {

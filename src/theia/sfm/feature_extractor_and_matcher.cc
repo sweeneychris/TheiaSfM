@@ -43,6 +43,7 @@
 
 #include "theia/image/image.h"
 #include "theia/image/descriptor/create_descriptor_extractor.h"
+#include "theia/image/descriptor/descriptor_extractor.h"
 #include "theia/image/keypoint_detector/keypoint.h"
 #include "theia/matching/create_feature_matcher.h"
 #include "theia/matching/feature_correspondence.h"
@@ -236,6 +237,7 @@ void FeatureExtractorAndMatcher::ProcessImage(
   if (options_.only_calibrated_views && !intrinsics.focal_length.is_set) {
     LOG(INFO) << "Image " << image_filepath
               << " did not contain an EXIF focal length. Skipping this image.";
+    return;
   } else {
     LOG(INFO) << "Image " << image_filepath
               << " is initialized with the focal length: "

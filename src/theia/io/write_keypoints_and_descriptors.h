@@ -39,10 +39,8 @@
 #include <string>
 #include <vector>
 
-#include "theia/alignment/alignment.h"
-#include "theia/image/keypoint_detector/keypoint.h"
-
 namespace theia {
+class Keypoint;
 
 // Writes the features to a single file.
 bool WriteKeypointsAndDescriptors(

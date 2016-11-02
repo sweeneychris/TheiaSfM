@@ -39,12 +39,14 @@
 #include <Eigen/SparseCore>
 #include <unordered_map>
 
-#include "theia/util/hash.h"
-#include "theia/util/util.h"
 #include "theia/sfm/global_pose_estimation/position_estimator.h"
 #include "theia/sfm/types.h"
+#include "theia/util/hash.h"
+#include "theia/util/util.h"
 
 namespace theia {
+
+class TwoViewInfo;
 
 // Estimates the camera position of views given pairwise relative poses and the
 // absolute orientations of cameras. Positions are estimated using a least
