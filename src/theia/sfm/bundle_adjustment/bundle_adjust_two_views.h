@@ -42,10 +42,8 @@
 
 namespace theia {
 class Camera;
+class TwoViewInfo;
 struct FeatureCorrespondence;
-struct TwoViewInfo;
-
-struct TwoViewInfo;
 
 // Configuration parameters for two-view bundle adjustment. The two bools
 // control whether intrinsics are additionally optimized which is useful for

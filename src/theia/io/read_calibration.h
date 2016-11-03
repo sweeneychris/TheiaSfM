@@ -39,7 +39,7 @@
 #include <unordered_map>
 
 namespace theia {
-class CameraIntrinsicsPrior;
+struct CameraIntrinsicsPrior;
 
 // Reads calibration data for images that are to be reconstructed. The
 // calibration file should be a text file where each line is in the form of:

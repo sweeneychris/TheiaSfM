@@ -43,9 +43,9 @@
 namespace theia {
 
 class RandomNumberGenerator;
+class TwoViewInfo;
 struct CameraIntrinsicsPrior;
 struct FeatureCorrespondence;
-struct TwoViewInfo;
 
 // Options for estimating two view infos.
 struct EstimateTwoViewInfoOptions {
