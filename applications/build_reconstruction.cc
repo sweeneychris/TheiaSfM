@@ -386,7 +386,11 @@ void AddImagesToReconstructionBuilder(
     }
   }
 
-  // Add image masks for any images if those are provided.
+  // Add black and write image masks for any images if those are provided.
+  // The white part of the mask indicates the area for the keypoints extraction.
+  // The mask is a basic black and white image (jpg, png, tif etc.), where white
+  // is 1.0 and black is 0.0. Its name must content the associated image's name
+  // (e.g. 'image0001_mask.jpg' is the mask of 'image0001.png').
   std::vector<std::string> mask_files;
   if (FLAGS_image_masks.size() != 0) {
     CHECK(theia::GetFilepathsFromWildcard(FLAGS_image_masks, &mask_files))
@@ -405,6 +409,7 @@ void AddImagesToReconstructionBuilder(
             CHECK(reconstruction_builder->AddMaskForFeaturesExtraction(
                 image_file,
                 mask_file));
+            break;
           }
         }
       }
