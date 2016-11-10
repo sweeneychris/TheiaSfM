@@ -32,6 +32,7 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
+#include <ceres/ceres.h>
 #include <ceres/rotation.h>
 #include <Eigen/Core>
 #include <algorithm>

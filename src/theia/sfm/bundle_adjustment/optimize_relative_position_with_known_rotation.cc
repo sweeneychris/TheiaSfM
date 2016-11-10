@@ -34,6 +34,7 @@
 
 #include "theia/sfm/bundle_adjustment/optimize_relative_position_with_known_rotation.h"
 
+#include <ceres/ceres.h>
 #include <ceres/rotation.h>
 #include <Eigen/Core>
 #include <algorithm>
