@@ -34,6 +34,7 @@
 
 #include <ceres/rotation.h>
 #include <Eigen/Core>
+#include <glog/logging.h>
 #include <algorithm>
 
 #include "theia/sfm/twoview_info.h"
