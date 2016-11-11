@@ -251,6 +251,24 @@ const float* FloatImage::Data() const {
   return reinterpret_cast<const float*>(image_.localpixels());
 }
 
+FloatImage FloatImage::ComputeGradientX() const {
+  float sobel_filter_x[9] = {-.125, 0, .125, -.25, 0, .25, -.125, 0, .125};
+  OpenImageIO::ImageSpec spec(3, 3, 1, OpenImageIO::TypeDesc::FLOAT);
+  OpenImageIO::ImageBuf kernel_x(spec, sobel_filter_x);
+  OpenImageIO::ImageBuf gradient_x;
+  OpenImageIO::ImageBufAlgo::convolve(gradient_x, image_, kernel_x, false);
+  return FloatImage(gradient_x);
+}
+
+FloatImage FloatImage::ComputeGradientY() const {
+  float sobel_filter_y[9] = {-.125, -.25, -.125, 0, 0, 0, .125, .25, .125};
+  OpenImageIO::ImageSpec spec(3, 3, 1, OpenImageIO::TypeDesc::FLOAT);
+  OpenImageIO::ImageBuf kernel_y(spec, sobel_filter_y);
+  OpenImageIO::ImageBuf gradient_y;
+  OpenImageIO::ImageBufAlgo::convolve(gradient_y, image_, kernel_y, false);
+  return FloatImage(gradient_y);
+}
+
 FloatImage FloatImage::ComputeGradient() const {
   // Get Dx and Dy.
   float sobel_filter_x[9] = {-.125, 0, .125, -.25, 0, .25, -.125, 0, .125};

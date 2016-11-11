@@ -132,6 +132,9 @@ class FloatImage {
   float* Data();
   const float* Data() const;
 
+  // Computes the gradient in each respective dimension.
+  FloatImage ComputeGradientX() const;
+  FloatImage ComputeGradientY() const;
   // Computes the gradient in x and y and returns the summation to obtain the
   // gradient magnitude at each pixel.
   FloatImage ComputeGradient() const;
