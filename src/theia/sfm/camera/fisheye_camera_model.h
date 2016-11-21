@@ -272,7 +272,7 @@ void FisheyeCameraModel::UndistortPoint(const T* intrinsic_parameters,
                                         T* undistorted_point) {
   static const T kVerySmallNumber = T(1e-8);
   const int kNumUndistortionIterations = 100;
-  const T kUndistortionEpsilon = 1e-10;
+  const T kUndistortionEpsilon = T(1e-10);
 
   // Get convenient references to the lens distortion camera parameters.
   const T& radial_distortion1 =
@@ -325,9 +325,9 @@ void FisheyeCameraModel::UndistortPoint(const T* intrinsic_parameters,
     undistorted_point[1] = r * distorted_point[1] / theta_d;
 
     // Repeat until convergence.
-    if (std::abs(undistorted_point[0] - prev_undistorted_point[0]) <
+    if (ceres::abs(undistorted_point[0] - prev_undistorted_point[0]) <
             kUndistortionEpsilon &&
-        std::abs(undistorted_point[1] - prev_undistorted_point[1]) <
+        ceres::abs(undistorted_point[1] - prev_undistorted_point[1]) <
             kUndistortionEpsilon) {
       break;
     }

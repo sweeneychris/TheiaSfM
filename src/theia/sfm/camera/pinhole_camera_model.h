@@ -261,7 +261,7 @@ void PinholeCameraModel::UndistortPoint(const T* intrinsic_parameters,
                                         const T* distorted_point,
                                         T* undistorted_point) {
   const int kNumUndistortionIterations = 100;
-  const T kUndistortionEpsilon = 1e-10;
+  const T kUndistortionEpsilon = T(1e-10);
 
   T prev_undistorted_point[2];
   undistorted_point[0] = distorted_point[0];
