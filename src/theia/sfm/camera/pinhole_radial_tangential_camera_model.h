@@ -296,7 +296,7 @@ void PinholeRadialTangentialCameraModel::UndistortPoint(
     const T* distorted_point,
     T* undistorted_point) {
   const int kNumUndistortionIterations = 100;
-  const T kUndistortionEpsilon = 1e-10;
+  const T kUndistortionEpsilon = T(1e-10);
 
   const T& radial_distortion1 = intrinsic_parameters
       [PinholeRadialTangentialCameraModel::RADIAL_DISTORTION_1];
