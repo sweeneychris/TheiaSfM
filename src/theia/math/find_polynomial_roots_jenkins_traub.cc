@@ -583,12 +583,12 @@ bool JenkinsTraubSolver::ApplyLinearShiftToKPolynomial(
                       EvaluatePolynomial(k_polynomial_, root)).real();
 
   VectorXd deflated_polynomial, deflated_k_polynomial;
-  double polynomial_at_root, k_polynomial_at_root;
+  double polynomial_at_root(0), k_polynomial_at_root(0);
 
   // This container maintains a history of the predicted roots. The convergence
   // of the algorithm is determined by the convergence of the root value.
   std::vector<double> roots;
-  roots.push_back(real_root);;
+  roots.push_back(real_root);
   for (int i = 0; i < max_iterations; i++) {
     // Terminate if the root evaluation is within our tolerance. This will
     // return false if we do not have enough samples.
