@@ -33,7 +33,7 @@
 # Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
 # Add headers
-file(GLOB THEIA_HDRS *.h)
+file(GLOB_RECURSE THEIA_HDRS *.h)
 
 # Add sources
 set(THEIA_SRC
