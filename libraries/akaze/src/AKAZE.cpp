@@ -559,6 +559,10 @@ void AKAZE::Compute_Main_Orientation(AKAZEKeypoint& kpt) const {
         resX[idx] = gweight * evolution_[level].Lx(iy, ix);
         resY[idx] = gweight * evolution_[level].Ly(iy, ix);
         Ang[idx] = atan2(resY[idx], resX[idx]);
+	if (Ang[idx] < 0.0)
+	{
+	  Ang[idx] += (2.0 * M_PI);
+	}
         ++idx;
       }
     }
