@@ -68,7 +68,7 @@ class DominantPlaneEstimator : public Estimator<Vector3d, Plane> {
     const Vector3d b = points[2] - points[0];
     const Vector3d cross = a.cross(b);
     if (cross.squaredNorm() < kTolerance) {
-      LOG(WARNING)
+      VLOG(3)
           << "The 3 world points are collinear! No solution for a plane "
              "exists.";
       return false;
