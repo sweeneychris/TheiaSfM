@@ -117,6 +117,7 @@ TEST(L1Solver, Decoding) {
   // Recover the code word.
   L1Solver<Eigen::MatrixXd>::Options options;
   options.absolute_tolerance = 1e-8;
+  options.relative_tolerance = 1e-8;
   L1Solver<Eigen::MatrixXd> l1_solver(options, mat);
   // Set the initial noisy guess.
   Eigen::VectorXd solution =
