@@ -55,15 +55,4 @@ void serialize(Archive& ar, theia::Feature& feature) {  // NOLINT
   ar(feature);
 }
 
-// Hashing function for the Feature type.
-namespace std {
-template <> struct hash<theia::Feature> {
-  size_t operator()(const theia::Feature& feature) const {
-    hash<std::pair<double, double> > h1;
-    return h1(std::make_pair(feature.x(), feature.y()));
-  }
-};
-
-}  // namespace std
-
 #endif  // THEIA_SFM_FEATURE_H_

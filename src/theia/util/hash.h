@@ -70,6 +70,20 @@ template <> struct hash<Eigen::Vector2i> {
   }
 };
 
+template <> struct hash<Eigen::Vector2f> {
+  size_t operator()(const Eigen::Vector2f& point) const {
+    hash<std::pair<float, float> > h1;
+    return h1(std::make_pair(point.x(), point.y()));
+  }
+};
+
+template <> struct hash<Eigen::Vector2d> {
+  size_t operator()(const Eigen::Vector2d& point) const {
+    hash<std::pair<double, double> > h1;
+    return h1(std::make_pair(point.x(), point.y()));
+  }
+};
+
 }  // namespace std
 
 #endif  // THEIA_UTIL_HASH_H_
