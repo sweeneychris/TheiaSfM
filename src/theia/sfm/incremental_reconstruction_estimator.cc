@@ -325,11 +325,6 @@ bool IncrementalReconstructionEstimator::ChooseInitialViewPair() {
     return false;
   }
 
-  // Find the k view pairs that contain the highest number of verified matches
-  // and contain a sufficient baseline between them.
-  OrderViewPairsByInitializationCriterion(kMinNumInitialTracks,
-                                          &candidate_initial_view_pairs);
-
   // Try to initialize the reconstruction from the candidate view pairs. An
   // initial seed is only considered valid if the baseline relative to the 3D
   // point depths is sufficient. This robustness is measured by the angle of all
