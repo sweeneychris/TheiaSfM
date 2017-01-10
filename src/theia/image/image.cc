@@ -314,4 +314,8 @@ void FloatImage::ResizeRowsCols(int new_rows, int new_cols) {
   Resize(new_cols, new_rows);
 }
 
+void FloatImage::Resize(double scale) {
+  Resize(static_cast<int>(scale * Width()), static_cast<int>(scale * Height()));
+}
+
 }  // namespace theia
