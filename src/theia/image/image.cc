@@ -65,6 +65,12 @@ FloatImage::FloatImage(const int width, const int height, const int channels) {
   image_.reset(image_spec);
 }
 
+FloatImage::FloatImage(const int width, const int height, const int channels,
+                       float* buffer)
+    : image_(OpenImageIO::ImageSpec(width, height, channels,
+                                    OpenImageIO::TypeDesc::FLOAT),
+             reinterpret_cast<void*>(buffer)) {}
+
 FloatImage::FloatImage(const OpenImageIO::ImageBuf& image) {
   image_.copy(image);
 }
@@ -292,6 +298,29 @@ void FloatImage::ApproximateGaussianBlur(const double sigma) {
   OpenImageIO::ImageBuf kernel;
   OpenImageIO::ImageBufAlgo::make_kernel(kernel, "gaussian", 5.0f, 5.0f);
   OpenImageIO::ImageBufAlgo::convolve(image_, image_, kernel);
+}
+
+void FloatImage::MedianFilter(const int patch_width) {
+  CHECK(OpenImageIO::ImageBufAlgo::median_filter(image_, image_, patch_width));
+}
+
+void FloatImage::Integrate(FloatImage* integral) const {
+  integral->ResizeRowsCols(Rows() + 1, Cols() + 1);
+  for (int i = 0; i < Channels(); i++) {
+    // Fill the first row with zeros.
+    for (int x = 0; x < Width(); x++) {
+      integral->SetXY(x, 0, i, 0);
+    }
+    for (int y = 1; y <= Height(); y++) {
+      // This variable is to correct floating point round off.
+      float sum = 0;
+      integral->SetXY(0, y, i, 0);
+      for (int x = 1; x <= Width(); x++) {
+        sum += this->GetXY(x - 1, y - 1, i);
+        integral->SetXY(x, y, i, integral->GetXY(x, y - 1, i) + sum);
+      }
+    }
+  }
 }
 
 void FloatImage::Resize(int new_width, int new_height) {

@@ -53,6 +53,15 @@ class FloatImage {
   explicit FloatImage(const std::string& filename);
   FloatImage(const int width, const int height, const int channels);
 
+  // The image class may also be used as a wrapper around an existing buffer of
+  // image data. The data is assumed to be in row-major order. When constructing
+  // an image as a buffer in this way, the image cannot be resized and will
+  // throw an error if the caller attempts to do so.
+  FloatImage(const int width,
+             const int height,
+             const int channels,
+             float* buffer);
+
   // Copy function. This is a deep copy of the image.
   FloatImage(const FloatImage& image_to_copy);
   explicit FloatImage(const OpenImageIO::ImageBuf& image);
@@ -138,6 +147,11 @@ class FloatImage {
   // Computes the gradient in x and y and returns the summation to obtain the
   // gradient magnitude at each pixel.
   FloatImage ComputeGradient() const;
+
+  // Apply a median filter to the image. Each pixel value is replaced by taking
+  // the median value in a patch_width x patch_width window centered at the
+  // pixel.
+  void MedianFilter(const int patch_width);
 
   // Compute the integral image where pixel (x, y) is equal to the sum of all
   // values in the rectangle from (0, 0) to (x, y) non-inclusive. This means
