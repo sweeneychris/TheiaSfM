@@ -92,9 +92,9 @@ int FloatImage::Rows() const { return Height(); }
 
 int FloatImage::Cols() const { return Width(); }
 
-int FloatImage::Width() const { return image_.oriented_width(); }
+int FloatImage::Width() const { return image_.spec().width; }
 
-int FloatImage::Height() const { return image_.oriented_height(); }
+int FloatImage::Height() const { return image_.spec().height; }
 
 int FloatImage::Channels() const { return image_.nchannels(); }
 
