@@ -38,7 +38,6 @@
 #include <theia/theia.h>
 
 #include <algorithm>
-#include <memory>
 #include <string>
 
 DEFINE_string(input_reconstruction, "",
@@ -128,7 +127,6 @@ int main(int argc, char* argv[]) {
              distorted_view->Camera(),
              undistorted_view->Camera());
   }
-  pool.WaitForTasksToFinish();
 
   return 0;
 }

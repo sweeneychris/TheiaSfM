@@ -36,6 +36,7 @@
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
+#include <memory>
 #include <vector>
 
 #include "theia/math/util.h"
@@ -174,15 +175,15 @@ TrackEstimator::Summary TrackEstimator::EstimateTracks(
       std::min(options_.multithreaded_step_size,
                static_cast<int>(tracks_to_estimate_.size()) / num_threads);
 
-  ThreadPool pool(num_threads);
+  std::unique_ptr<ThreadPool> pool(new ThreadPool(num_threads));
   for (int i = 0; i < tracks_to_estimate_.size(); i += interval_step) {
     const int end_interval = std::min(
         static_cast<int>(tracks_to_estimate_.size()), i + interval_step);
-    pool.Add(&TrackEstimator::EstimateTrackSet, this, i, end_interval);
+    pool->Add(&TrackEstimator::EstimateTrackSet, this, i, end_interval);
   }
 
   // Wait for all tracks to be estimated.
-  pool.WaitForTasksToFinish();
+  pool.reset(nullptr);
 
   // Find the tracks that were newly estimated.
   for (const TrackId track_id : tracks_to_estimate_) {

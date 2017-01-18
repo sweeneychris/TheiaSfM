@@ -37,6 +37,7 @@
 #include <Eigen/Core>
 #include <glog/logging.h>
 #include <algorithm>
+#include <memory>
 #include <string>
 #include <thread>  // NOLINT
 #include <vector>
@@ -182,17 +183,17 @@ void FeatureExtractorAndMatcher::ExtractAndMatchFeatures(
   // For each image, process the features and add it to the matcher.
   const int num_threads =
       std::min(options_.num_threads, static_cast<int>(image_filepaths_.size()));
-  ThreadPool thread_pool(num_threads);
+  std::unique_ptr<ThreadPool> thread_pool(new ThreadPool(num_threads));
   for (int i = 0; i < image_filepaths_.size(); i++) {
     if (!FileExists(image_filepaths_[i])) {
       LOG(ERROR) << "Could not extract features for " << image_filepaths_[i]
                  << " because the file cannot be found.";
       continue;
     }
-    thread_pool.Add(&FeatureExtractorAndMatcher::ProcessImage, this, i);
+    thread_pool->Add(&FeatureExtractorAndMatcher::ProcessImage, this, i);
   }
   // This forces all tasks to complete before proceeding.
-  thread_pool.WaitForTasksToFinish();
+  thread_pool.reset(nullptr);
 
   // After all threads complete feature extraction, perform matching.
 

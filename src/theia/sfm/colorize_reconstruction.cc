@@ -36,9 +36,9 @@
 
 #include <Eigen/Core>
 
+#include <memory>
 #include <mutex>  // NOLINT
 #include <string>
-#include <memory>
 
 #include "theia/image/image.h"
 #include "theia/sfm/reconstruction.h"
@@ -94,9 +94,6 @@ void ColorizeReconstruction(const std::string& image_directory,
   CHECK_GT(num_threads, 0);
   CHECK_NOTNULL(reconstruction);
 
-  ThreadPool pool(num_threads);
-  std::mutex mutex_lock;
-
   // Initialize the colors to be (0, 0, 0).
   const auto& track_ids = reconstruction->TrackIds();
   std::unordered_map<TrackId, Eigen::Vector3f> colors;
@@ -106,19 +103,22 @@ void ColorizeReconstruction(const std::string& image_directory,
 
   // For each image, find the color of each feature and add the value to the
   // colors map.
+  std::unique_ptr<ThreadPool> pool(new ThreadPool(num_threads));
+  std::mutex mutex_lock;
   const auto& view_ids = reconstruction->ViewIds();
   for (const ViewId view_id : view_ids) {
     const View* view = reconstruction->View(view_id);
     const std::string image_filepath = image_directory + view->Name();
     CHECK(FileExists(image_filepath)) << "The image file: " << image_filepath
                                       << " does not exist!";
-    pool.Add(ExtractColorsFromImage,
-             image_filepath,
-             *view,
-             &colors,
-             &mutex_lock);
+    pool->Add(ExtractColorsFromImage,
+              image_filepath,
+              *view,
+              &colors,
+              &mutex_lock);
   }
-  pool.WaitForTasksToFinish();
+  // Wait for all threads to finish before proceeding.
+  pool.reset(nullptr);
 
   // The colors map now contains a sum of all colors, so to get the mean we must
   // divide by the number of observations in each track.

@@ -38,6 +38,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <memory>
 #include <mutex>  // NOLINT
 #include <string>
 #include <unordered_map>
@@ -211,19 +212,19 @@ void FeatureMatcher::MatchImages(std::vector<ImagePairMatch>* matches) {
   const int num_matches = pairs_to_match_.size();
   const int num_threads =
       std::min(options_.num_threads, static_cast<int>(num_matches));
-  ThreadPool pool(num_threads);
+  std::unique_ptr<ThreadPool> pool(new ThreadPool(num_threads));
   const int interval_step =
       std::min(this->kMaxThreadingStepSize_, num_matches / num_threads);
   for (int i = 0; i < num_matches; i += interval_step) {
     const int end_interval = std::min(num_matches, i + interval_step);
-    pool.Add(&FeatureMatcher::MatchAndVerifyImagePairs,
-             this,
-             i,
-             end_interval,
-             matches);
+    pool->Add(&FeatureMatcher::MatchAndVerifyImagePairs,
+              this,
+              i,
+              end_interval,
+              matches);
   }
   // Wait for all threads to finish.
-  pool.WaitForTasksToFinish();
+  pool.reset(nullptr);
 
   VLOG(1) << "Matched " << matches->size() << " image pairs out of "
           << num_matches << " possible image pairs.";
