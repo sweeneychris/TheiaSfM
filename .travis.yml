@@ -1,0 +1,11 @@
+language: cpp
+sudo: required
+services: docker
+install:
+    - docker pull zwn97/theiasfm-docker-base
+script:
+    - docker build -t theiasfm-test . && docker run --rm theiasfm-test
+branches:
+    only:
+        - master
+        - travis
