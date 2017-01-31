@@ -38,6 +38,7 @@
 #include <string>
 
 #include "theia/image/image.h"
+#include "theia/util/filesystem.h"
 #include "theia/util/lru_cache.h"
 #include "theia/util/string.h"
 
@@ -74,6 +75,7 @@ const std::shared_ptr<FloatImage> ImageCache::FetchGrayscaleImage(
 std::shared_ptr<FloatImage> ImageCache::FetchImagesFromDisk(
     const std::string& image_filename) {
   const std::string image_filepath = image_directory_ + image_filename;
+  CHECK(FileExists(image_filepath));
   std::shared_ptr<theia::FloatImage> image =
       std::make_shared<FloatImage>(image_filepath);
   return image;
