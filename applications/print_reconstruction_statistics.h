@@ -86,12 +86,36 @@ inline void PrintTrackLengthHistogram(
   std::vector<int> histogram_bins = {2, 3,  4,  5,  6,  7, 8,
                                      9, 10, 15, 20, 25, 50};
   theia::Histogram<int> histogram(histogram_bins);
+  std::vector<int> track_lengths;
   for (const theia::TrackId track_id : reconstruction.TrackIds()) {
     const theia::Track* track = reconstruction.Track(track_id);
+    track_lengths.emplace_back(track->NumViews());
     histogram.Add(track->NumViews());
   }
+
+  // Exit if there were no tracks found.
+  if (track_lengths.size() == 0) {
+    LOG(INFO) << "No valid tracks were present in the reconstruction.";
+    return;
+  }
+
+  // Compute the mean and median track lengths.
+  const float mean_track_length =
+      std::accumulate(track_lengths.begin(), track_lengths.end(), 0) /
+      static_cast<float>(track_lengths.size());
+  LOG(INFO) << "Mean track length: " << mean_track_length;
+
+  // Sort the median track length.
+  std::nth_element(track_lengths.begin(),
+                   track_lengths.begin() + track_lengths.size() / 2,
+                   track_lengths.end());
+  const int median_track_length = track_lengths[track_lengths.size() / 2];
+  LOG(INFO) << "Median track length: " << median_track_length;
+
+  // Display the track length histogram.
   const std::string hist_msg = histogram.PrintString();
-  LOG(INFO) << "Track lengths = \n" << hist_msg;
+  LOG(INFO) << "Track length histogram = \n" << hist_msg;
+
 }
 
 #endif  // APPLICATIONS_PRINT_RECONSTRUCTION_STATISTICS_H_
