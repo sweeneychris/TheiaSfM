@@ -50,7 +50,7 @@ ImageCache::ImageCache(const std::string& image_directory,
   AppendTrailingSlashIfNeeded(&image_directory_);
 
   // Set up the LRU image cache.
-  const std::function<std::shared_ptr<FloatImage>(const std::string)>
+  const std::function<std::shared_ptr<const FloatImage>(const std::string)>
       fetch_images = std::bind(&ImageCache::FetchImagesFromDisk,
                                this,
                                std::placeholders::_1);
@@ -59,25 +59,18 @@ ImageCache::ImageCache(const std::string& image_directory,
 
 ImageCache::~ImageCache() {}
 
-const std::shared_ptr<FloatImage> ImageCache::FetchImage(
+const std::shared_ptr<const FloatImage> ImageCache::FetchImage(
     const std::string& image_filename) const {
-  const std::shared_ptr<FloatImage> image = images_->Fetch(image_filename);
+  const std::shared_ptr<const FloatImage> image = images_->Fetch(image_filename);
   return image;
 }
 
-const std::shared_ptr<FloatImage> ImageCache::FetchGrayscaleImage(
-    const std::string& image_filename) const {
-  std::shared_ptr<FloatImage> image = images_->Fetch(image_filename);
-  image->ConvertToGrayscaleImage();
-  return image;
-}
-
-std::shared_ptr<FloatImage> ImageCache::FetchImagesFromDisk(
+std::shared_ptr<const FloatImage> ImageCache::FetchImagesFromDisk(
     const std::string& image_filename) {
   const std::string image_filepath = image_directory_ + image_filename;
   CHECK(FileExists(image_filepath));
-  std::shared_ptr<theia::FloatImage> image =
-      std::make_shared<FloatImage>(image_filepath);
+  std::shared_ptr<const theia::FloatImage> image =
+      std::make_shared<const FloatImage>(image_filepath);
   return image;
 }
 

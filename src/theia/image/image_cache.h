@@ -64,18 +64,15 @@ public:
  // successfully fetched (i.e. if the returned image is not a nullptr). A
  // shared_ptr is used to monitor when images may be ejected from the cache and
  // prevent them from going out of scope while the caller is still using them.
- const std::shared_ptr<theia::FloatImage> FetchImage(
-     const std::string& image_filename) const;
-
- const std::shared_ptr<theia::FloatImage> FetchGrayscaleImage(
+ const std::shared_ptr<const theia::FloatImage> FetchImage(
      const std::string& image_filename) const;
 
  private:
-  typedef LRUCache<std::string, std::shared_ptr<theia::FloatImage> >
+  typedef LRUCache<std::string, std::shared_ptr<const theia::FloatImage> >
       ImageLRUCache;
 
   // Method to fetch images from disk.
-  std::shared_ptr<theia::FloatImage> FetchImagesFromDisk(
+  std::shared_ptr<const theia::FloatImage> FetchImagesFromDisk(
       const std::string& image_filename);
 
   // The directory where the images are stored.
