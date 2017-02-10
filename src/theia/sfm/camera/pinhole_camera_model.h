@@ -250,7 +250,7 @@ void PinholeCameraModel::DistortPoint(const T* intrinsic_parameters,
   const T r_sq = undistorted_point[0] * undistorted_point[0] +
                  undistorted_point[1] * undistorted_point[1];
   const T d =
-      T(1.0) + r_sq * (radial_distortion1 + radial_distortion2 * r_sq);
+      1.0 + r_sq * (radial_distortion1 + radial_distortion2 * r_sq);
 
   distorted_point[0] = undistorted_point[0] * d;
   distorted_point[1] = undistorted_point[1] * d;
@@ -275,7 +275,7 @@ void PinholeCameraModel::UndistortPoint(const T* intrinsic_parameters,
     const T r_sq = undistorted_point[0] * undistorted_point[0] +
                    undistorted_point[1] * undistorted_point[1];
     // Compute the distortion factor.
-    const T d = T(1.0) +
+    const T d = 1.0 +
                 r_sq * (intrinsic_parameters[RADIAL_DISTORTION_1] +
                         intrinsic_parameters[RADIAL_DISTORTION_2] * r_sq);
 
