@@ -78,9 +78,9 @@ struct RotationAlignmentError {
         aligned_rotation.data());
 
     // Compute the error of the aligned rotation to the gt_rotation.
-    residuals[0] = T(gt_rotation_[0]) - aligned_rotation[0];
-    residuals[1] = T(gt_rotation_[1]) - aligned_rotation[1];
-    residuals[2] = T(gt_rotation_[2]) - aligned_rotation[2];
+    residuals[0] = gt_rotation_[0] - aligned_rotation[0];
+    residuals[1] = gt_rotation_[1] - aligned_rotation[1];
+    residuals[2] = gt_rotation_[2] - aligned_rotation[2];
 
     return true;
   }

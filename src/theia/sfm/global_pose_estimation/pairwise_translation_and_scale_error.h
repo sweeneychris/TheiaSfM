@@ -72,16 +72,16 @@ bool PairwiseTranslationAndScaleError::operator() (const T* position1,
   static const T kVeryLargeNumber = T(1e24);
 
   residuals[0] =
-      position2[0] - position1[0] - scale[0] * T(translation_direction_[0]);
+      position2[0] - position1[0] - scale[0] * translation_direction_[0];
   residuals[1] =
-      position2[1] - position1[1] - scale[0] * T(translation_direction_[1]);
+      position2[1] - position1[1] - scale[0] * translation_direction_[1];
   residuals[2] =
-      position2[2] - position1[2] - scale[0] * T(translation_direction_[2]);
+      position2[2] - position1[2] - scale[0] * translation_direction_[2];
   // Penalize the scale as it approaches 1.0.
   if (scale[0] <= T(1.0)) {
     residuals[3] = kVeryLargeNumber;
   } else {
-    residuals[3] = T(1.0) / (scale[0] - T(1.0));
+    residuals[3] = 1.0 / (scale[0] - 1.0);
   }
   return true;
 }

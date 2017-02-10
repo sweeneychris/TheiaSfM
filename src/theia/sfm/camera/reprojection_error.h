@@ -89,8 +89,8 @@ struct ReprojectionError {
                                           reprojection);
 
     // Compute the reprojection error.
-    reprojection_error[0] = reprojection[0] - T(feature_.x());
-    reprojection_error[1] = reprojection[1] - T(feature_.y());
+    reprojection_error[0] = reprojection[0] - feature_.x();
+    reprojection_error[1] = reprojection[1] - feature_.y();
     return true;
   }
 

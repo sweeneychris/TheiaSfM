@@ -252,7 +252,7 @@ void FisheyeCameraModel::DistortPoint(const T* intrinsic_parameters,
   const T theta = ceres::atan2(r_numerator, ceres::abs(undistorted_point[2]));
   const T theta_sq = theta * theta;
   const T theta_d =
-      theta * (T(1.0) + radial_distortion1 * theta_sq +
+      theta * (1.0 + radial_distortion1 * theta_sq +
                radial_distortion2 * theta_sq * theta_sq +
                radial_distortion3 * theta_sq * theta_sq * theta_sq +
                radial_distortion4 * theta_sq * theta_sq * theta_sq * theta_sq);
@@ -261,8 +261,8 @@ void FisheyeCameraModel::DistortPoint(const T* intrinsic_parameters,
   distorted_point[1] = theta_d * undistorted_point[1] / r_numerator;
 
   if (undistorted_point[2] < T(0.0)) {
-    distorted_point[0] *= T(-1.0);
-    distorted_point[1] *= T(-1.0);
+    distorted_point[0] = -distorted_point[0];
+    distorted_point[1] = -distorted_point[1];
   }
 }
 
@@ -312,7 +312,7 @@ void FisheyeCameraModel::UndistortPoint(const T* intrinsic_parameters,
     // Compute the distortion factor.
     const T theta_d =
         theta *
-        (T(1.0) + radial_distortion1 * theta_sq +
+        (1.0 + radial_distortion1 * theta_sq +
          radial_distortion2 * theta_sq * theta_sq +
          radial_distortion3 * theta_sq * theta_sq * theta_sq +
          radial_distortion4 * theta_sq * theta_sq * theta_sq * theta_sq);

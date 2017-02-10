@@ -66,11 +66,6 @@ template <typename T>
 bool PairwiseRotationError::operator() (const T* rotation1,
                                         const T* rotation2,
                                         T* residuals) const {
-  T relative_rotation[3];
-  relative_rotation[0] = T(relative_rotation_[0]);
-  relative_rotation[1] = T(relative_rotation_[1]);
-  relative_rotation[2] = T(relative_rotation_[2]);
-
   // Convert angle axis rotations to rotation matrices.
   Eigen::Matrix<T, 3, 3> rotation1_mat, rotation2_mat;
   ceres::AngleAxisToRotationMatrix(
@@ -85,9 +80,9 @@ bool PairwiseRotationError::operator() (const T* rotation1,
   ceres::RotationMatrixToAngleAxis(
       ceres::ColumnMajorAdapter3x3(loop_rotation_mat.data()),
       loop_rotation.data());
-  residuals[0] = T(weight_) * (loop_rotation(0) - relative_rotation[0]);
-  residuals[1] = T(weight_) * (loop_rotation(1) - relative_rotation[1]);
-  residuals[2] = T(weight_) * (loop_rotation(2) - relative_rotation[2]);
+  residuals[0] = weight_ * (loop_rotation(0) - relative_rotation_[0]);
+  residuals[1] = weight_ * (loop_rotation(1) - relative_rotation_[1]);
+  residuals[2] = weight_ * (loop_rotation(2) - relative_rotation_[2]);
 
   return true;
 }

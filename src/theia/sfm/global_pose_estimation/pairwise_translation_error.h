@@ -81,12 +81,9 @@ bool PairwiseTranslationError::operator() (const T* position1,
     norm = T(1.0);
   }
 
-  residuals[0] =
-      T(weight_) * (translation[0] / norm - T(translation_direction_[0]));
-  residuals[1] =
-      T(weight_) * (translation[1] / norm - T(translation_direction_[1]));
-  residuals[2] =
-      T(weight_) * (translation[2] / norm - T(translation_direction_[2]));
+  residuals[0] = weight_ * (translation[0] / norm - translation_direction_[0]);
+  residuals[1] = weight_ * (translation[1] / norm - translation_direction_[1]);
+  residuals[2] = weight_ * (translation[2] / norm - translation_direction_[2]);
   return true;
 }
 

@@ -232,7 +232,7 @@ void FOVCameraModel::DistortPoint(const T* intrinsic_parameters,
     // factor(radius) = tan(radius * omega) / ...
     //                  (radius * 2*tan(omega/2));
     // simplify(taylor(factor, omega, 'order', 3))
-    r_d = (omega * omega * r_u_sq) / T(3) - omega * omega / T(12) + T(1);
+    r_d = (omega * omega * r_u_sq) / 3.0 - omega * omega / 12.0 + 1.0;
   } else if (r_u_sq < kVerySmallNumber) {
     // Derivation of this case with Matlab borrowed from COLMAP:
     // https://github.com/colmap/colmap/blob/master/src/base/camera_models.h#L1107
@@ -242,15 +242,15 @@ void FOVCameraModel::DistortPoint(const T* intrinsic_parameters,
     //                  (radius * 2*tan(omega/2));
     // simplify(taylor(factor, radius, 'order', 3))
     const T tan_half_omega = ceres::tan(omega / T(2));
-    r_d = (T(-2) * tan_half_omega *
-           (T(4) * r_u_sq * tan_half_omega * tan_half_omega - T(3))) /
-          (T(3) * omega);
+    r_d = (-2.0 * tan_half_omega *
+           (4.0 * r_u_sq * tan_half_omega * tan_half_omega - 3.0)) /
+          (3.0 * omega);
   } else {
     // Compute the radius of the distorted image point based on the FOV model
     // equations.
     const T r_u = ceres::sqrt(r_u_sq);
     r_d =
-        ceres::atan(T(2.0) * r_u * ceres::tan(omega / T(2.0))) / (r_u * omega);
+        ceres::atan(2.0 * r_u * ceres::tan(omega / 2.0)) / (r_u * omega);
   }
 
   // Compute the radius of the distorted image point based on the FOV model
@@ -283,7 +283,7 @@ void FOVCameraModel::UndistortPoint(const T* intrinsic_parameters,
     // factor(radius) = tan(radius * omega) / ...
     //                  (radius * 2*tan(omega/2));
     // simplify(taylor(factor, omega, 'order', 3))
-    r_u = (omega * omega * r_d_sq) / T(3) - omega * omega / T(12) + T(1);
+    r_u = (omega * omega * r_d_sq) / 3.0 - omega * omega / 12.0 + T(.0);
   } else if (r_d_sq < kVerySmallNumber) {
     // Derivation of this case with Matlab borrowed from COLMAP:
     // https://github.com/colmap/colmap/blob/master/src/base/camera_models.h#L1146
@@ -292,13 +292,13 @@ void FOVCameraModel::UndistortPoint(const T* intrinsic_parameters,
     // factor(radius) = tan(radius * omega) / ...
     //                  (radius * 2*tan(omega/2));
     // simplify(taylor(factor, radius, 'order', 3))
-    r_u = (omega * (omega * omega * r_d_sq + T(3))) /
-          (T(6) * ceres::tan(omega / T(2)));
+    r_u = (omega * (omega * omega * r_d_sq + 3.0)) /
+          (6.0 * ceres::tan(omega / 2.0));
   } else {
     // Compute the radius of the distorted image point based on the FOV model
     // equations.
     const T r_d = ceres::sqrt(r_d_sq);
-    r_u = ceres::tan(r_d * omega) / (T(2.0) * r_d * ceres::tan(omega / T(2.0)));
+    r_u = ceres::tan(r_d * omega) / (2.0 * r_d * ceres::tan(omega / 2.0));
   }
 
   undistorted_point[0] = r_u * distorted_point[0];

@@ -267,22 +267,22 @@ void PinholeRadialTangentialCameraModel::DistortPoint(
   const T r_sq = undistorted_point[0] * undistorted_point[0] +
                  undistorted_point[1] * undistorted_point[1];
   // Find
-  const T rd = T(1.0) + radial_distortion1 * r_sq +
+  const T rd = 1.0 + radial_distortion1 * r_sq +
                radial_distortion2 * r_sq * r_sq +
                radial_distortion3 * r_sq * r_sq * r_sq;
 
   // Tangential distortion x = T2 * (r_sq + 2 * x * x) + 2 * T1 * x * y.
   const T tangential_x =
       tangential_distortion2 *
-          (r_sq + T(2.0) * undistorted_point[0] * undistorted_point[0]) +
-      T(2.0) * tangential_distortion1 * undistorted_point[0] *
+          (r_sq + 2.0 * undistorted_point[0] * undistorted_point[0]) +
+      2.0 * tangential_distortion1 * undistorted_point[0] *
           undistorted_point[1];
 
   // Tangential distortion y = T1 * (r_sq + 2 * y * y) + 2 * T2 * x * y.
   const T tangential_y =
       tangential_distortion1 *
-          (r_sq + T(2.0) * undistorted_point[1] * undistorted_point[1]) +
-      T(2.0) * tangential_distortion2 * undistorted_point[0] *
+          (r_sq + 2.0 * undistorted_point[1] * undistorted_point[1]) +
+      2.0 * tangential_distortion2 * undistorted_point[0] *
           undistorted_point[1];
 
   // Apply the distortion to the undistorted point.
@@ -320,22 +320,22 @@ void PinholeRadialTangentialCameraModel::UndistortPoint(
     const T r_sq = undistorted_point[0] * undistorted_point[0] +
                    undistorted_point[1] * undistorted_point[1];
     // Find
-    const T rd = T(1.0) + radial_distortion1 * r_sq +
+    const T rd = 1.0 + radial_distortion1 * r_sq +
                  radial_distortion2 * r_sq * r_sq +
                  radial_distortion3 * r_sq * r_sq * r_sq;
 
     // Tangential distortion x = T2 * (r_sq + 2 * x * x) + 2 * T1 * x * y.
     const T tangential_x =
         tangential_distortion2 *
-            (r_sq + T(2.0) * undistorted_point[0] * undistorted_point[0]) +
-        T(2.0) * tangential_distortion1 * undistorted_point[0] *
+            (r_sq + 2.0 * undistorted_point[0] * undistorted_point[0]) +
+        2.0 * tangential_distortion1 * undistorted_point[0] *
             undistorted_point[1];
 
     // Tangential distortion y = T1 * (r_sq + 2 * y * y) + 2 * T2 * x * y.
     const T tangential_y =
         tangential_distortion1 *
-            (r_sq + T(2.0) * undistorted_point[1] * undistorted_point[1]) +
-        T(2.0) * tangential_distortion2 * undistorted_point[0] *
+            (r_sq + 2.0 * undistorted_point[1] * undistorted_point[1]) +
+        2.0 * tangential_distortion2 * undistorted_point[0] *
             undistorted_point[1];
 
     // We know that the distorted point = d * undistorted point, so we can solve
