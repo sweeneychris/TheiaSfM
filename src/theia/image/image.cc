@@ -294,9 +294,11 @@ FloatImage FloatImage::ComputeGradient() const {
   return FloatImage(gradient);
 }
 
-void FloatImage::ApproximateGaussianBlur(const double sigma) {
+void FloatImage::ApproximateGaussianBlur(const int kernel_size) {
   OpenImageIO::ImageBuf kernel;
-  OpenImageIO::ImageBufAlgo::make_kernel(kernel, "gaussian", 5.0f, 5.0f);
+  OpenImageIO::ImageBufAlgo::make_kernel(kernel, "gaussian",
+                                         static_cast<float>(kernel_size),
+                                         static_cast<float>(kernel_size));
   OpenImageIO::ImageBufAlgo::convolve(image_, image_, kernel);
 }
 

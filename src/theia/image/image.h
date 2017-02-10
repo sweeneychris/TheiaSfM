@@ -162,8 +162,8 @@ class FloatImage {
   // otherwise floating roundoff errors are sure to occur.
   void Integrate(FloatImage* integral) const;
 
-  // Computes a fast approximate gaussian blur of te image.
-  void ApproximateGaussianBlur(const double sigma);
+  // Computes a fast approximate gaussian blur of the image.
+  void ApproximateGaussianBlur(const int kernel_size);
 
   // Resize using a Lanczos 3 filter.
   void Resize(int new_width, int new_height);
