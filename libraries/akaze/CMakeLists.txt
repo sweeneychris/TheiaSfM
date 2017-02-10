@@ -52,15 +52,6 @@ IF (OPENMP)
       MESSAGE("-- Building with OpenMP.")
       ADD_DEFINITIONS(-DAKAZE_USE_OPENMP)
       SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-      IF (UNIX)
-        # At least on Linux, we need pthreads to be enabled for mutex to
-        # compile.  This may not work on Windows or Android.
-        FIND_PACKAGE(Threads REQUIRED)
-        SET(STATIC_LIBRARY_FLAGS
-          "${STATIC_LIBRARY_FLAGS} ${CMAKE_THREAD_LIBS_INIT}")
-        SET(CMAKE_SHARED_LINKER_FLAGS
-          "${CMAKE_SHARED_LINKER_FLAGS} ${CMAKE_THREAD_LIBS_INIT}")
-      ENDIF (UNIX)
     ELSE (OPENMP_FOUND)
       MESSAGE("-- Failed to find OpenMP, disabling.")
       # Retain the help string associated with the OPENMP option
@@ -72,6 +63,18 @@ IF (OPENMP)
 ELSE (OPENMP)
   MESSAGE("-- Building without OpenMP.")
 ENDIF (OPENMP)
+
+IF (UNIX)
+  # At least on Linux, we need pthreads to be enabled for mutex to
+  # compile.  This may not work on Windows or Android.
+  FIND_PACKAGE(Threads REQUIRED)
+  SET(STATIC_LIBRARY_FLAGS
+    "${STATIC_LIBRARY_FLAGS} ${CMAKE_THREAD_LIBS_INIT}")
+  SET(CMAKE_SHARED_LINKER_FLAGS
+    "${CMAKE_SHARED_LINKER_FLAGS} ${CMAKE_THREAD_LIBS_INIT}")
+  SET(AKAZE_MATCH_BASE_LIBRARIES
+    "${CMAKE_THREAD_LIBS_INIT}")
+ENDIF (UNIX)
 
 Include("${PROJECT_SOURCE_DIR}/cmake/OptimizeCompilerFlags.cmake")
 OptimizeCompilerFlags()
@@ -105,7 +108,7 @@ TARGET_LINK_LIBRARIES(akaze_features akaze ${CIMG_LIBRARIES})
 
 # Demo program matching akaze features.
 ADD_EXECUTABLE(akaze_match akaze_match.cpp)
-TARGET_LINK_LIBRARIES(akaze_match akaze ${CIMG_LIBRARIES})
+TARGET_LINK_LIBRARIES(akaze_match akaze ${CIMG_LIBRARIES} ${AKAZE_MATCH_BASE_LIBRARIES})
 
 install(TARGETS akaze
   EXPORT  TheiaExport
