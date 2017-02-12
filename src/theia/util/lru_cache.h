@@ -42,6 +42,7 @@
 #include <mutex>  // NOLINT
 #include <unordered_map>
 #include <utility>
+#include <functional>
 
 #include "theia/util/map_util.h"
 #include "theia/util/util.h"
