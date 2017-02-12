@@ -79,16 +79,19 @@ void ReadInput(Reconstruction* gt_reconstruction,
   std::vector<ImagePairMatch> image_matches;
 
   // Read in match file.
-  ReadMatchesAndGeometry(matches_filename,
-                         &image_files,
-                         &camera_intrinsics_prior,
-                         &image_matches);
+  CHECK(ReadMatchesAndGeometry(matches_filename,
+                               &image_files,
+                               &camera_intrinsics_prior,
+                               &image_matches));
 
   // Add the matches to the view graph.
   for (const ImagePairMatch& match : image_matches) {
     TwoViewInfo info = match.twoview_info;
     const ViewId view_id1 = reconstruction->ViewIdFromName(match.image1);
     const ViewId view_id2 = reconstruction->ViewIdFromName(match.image2);
+    if (view_id1 == kInvalidViewId || view_id2 == kInvalidViewId) {
+      continue;
+    }
     if (view_id1 > view_id2) {
       SwapCameras(&info);
     }
