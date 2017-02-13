@@ -61,6 +61,24 @@ bool ReadBundlerFiles(const std::string& lists_file,
                       const std::string& bundle_file,
                       Reconstruction* reconstruction);
 
+// Bundler files & image lists don't usually contain image sizes.
+// This function loads the images with names defined in the reconstruction from
+// the 'image_directory' folder.
+// If any of the files defined in the reconstruction do not exist, the function
+// will return false (and no values will be changed in the reconstruction),
+// otherwise the function will return true.
+// This function is to be called after ReadBundlerFiles().
+// Assumes principal points to be at the image center.
+//
+// Input params are as follows:
+//   image_directory: The directory containing all the image files from the
+//   reconstruction.
+//   reconstruction: A Theia Reconstruction containing the camera, track, and
+//       point cloud information. See theia/sfm/reconstruction.h for more
+//       information.
+bool PopulateImageSizesAndPrincipalPoints(const std::string& image_directory,
+                                          Reconstruction* reconstruction);
+
 }  // namespace theia
 
 #endif  // THEIA_IO_READ_BUNDLER_FILES_H_
