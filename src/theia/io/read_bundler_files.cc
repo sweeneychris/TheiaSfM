@@ -34,18 +34,17 @@
 
 #include "theia/io/read_bundler_files.h"
 
-#include <glog/logging.h>
 #include <Eigen/Core>
+#include <glog/logging.h>
 
 #include <cstdio>
 #include <cstdlib>
-#include <fstream>   // NOLINT
+#include <fstream>  // NOLINT
 #include <iostream>  // NOLINT
 #include <string>
 #include <utility>
 #include <vector>
 
-#include "theia/image/image.h"
 #include "theia/sfm/camera/camera.h"
 #include "theia/sfm/camera/pinhole_camera_model.h"
 #include "theia/sfm/reconstruction.h"
@@ -350,33 +349,6 @@ bool ReadBundlerFiles(const std::string& lists_file,
 
   std::cout << std::endl;
   ifs.close();
-
-  return true;
-}
-
-// Loads all images from the defined directory, and sets each of the
-// recontruction's cameras to have an image size corresponding to the found
-// image and a principal point at the center of that image.
-bool PopulateImageSizesAndPrincipalPoints(const std::string& image_directory,
-                                          Reconstruction* reconstruction) {
-  std::vector<ViewId> view_ids = reconstruction->ViewIds();
-  for (int i = 0; i < view_ids.size(); i++) {
-    if (!FileExists(image_directory + "/" +
-                    reconstruction->View(view_ids[i])->Name())) {
-      return false;
-    }
-  }
-
-  for (int i = 0; i < view_ids.size(); i++) {
-    FloatImage image(image_directory + "/" +
-                     reconstruction->View(view_ids[i])->Name());
-    reconstruction->MutableView(view_ids[i])
-        ->MutableCamera()
-        ->SetImageSize(image.Cols(), image.Rows());
-    reconstruction->MutableView(view_ids[i])
-        ->MutableCamera()
-        ->SetPrincipalPoint(image.Cols() / 2.0, image.Rows() / 2.0);
-  }
 
   return true;
 }
