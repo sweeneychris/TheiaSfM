@@ -45,6 +45,7 @@ set(THEIA_SRC
   image/image_cache.cc
   image/keypoint_detector/sift_detector.cc
   io/import_nvm_file.cc
+  io/populate_image_sizes.cc
   io/read_1dsfm.cc
   io/read_bundler_files.cc
   io/read_calibration.cc
