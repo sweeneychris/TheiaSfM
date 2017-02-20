@@ -48,6 +48,7 @@
 #include "theia/image/keypoint_detector/sift_parameters.h"
 #include "theia/io/eigen_serializable.h"
 #include "theia/io/import_nvm_file.h"
+#include "theia/io/populate_image_sizes.h"
 #include "theia/io/read_1dsfm.h"
 #include "theia/io/read_bundler_files.h"
 #include "theia/io/read_calibration.h"
