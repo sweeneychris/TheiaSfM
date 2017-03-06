@@ -167,6 +167,7 @@ class FloatImage {
 
   // Resize using a Lanczos 3 filter.
   void Resize(int new_width, int new_height);
+  void Resize(int new_width, int new_height, int num_channels);
   void ResizeRowsCols(int new_rows, int new_cols);
   void Resize(double scale);
 

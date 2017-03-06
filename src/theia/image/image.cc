@@ -325,15 +325,15 @@ void FloatImage::Integrate(FloatImage* integral) const {
   }
 }
 
-void FloatImage::Resize(int new_width, int new_height) {
+void FloatImage::Resize(int new_width, int new_height, int num_channels) {
   // If the image has not been initialized then initialize it with the image
   // spec. Otherwise resize the image and interpolate pixels accordingly.
   if (!image_.initialized()) {
-    OpenImageIO::ImageSpec image_spec(new_width, new_height, Channels(),
+    OpenImageIO::ImageSpec image_spec(new_width, new_height, num_channels,
                                       OpenImageIO::TypeDesc::FLOAT);
     image_.reset(image_spec);
   } else {
-    OpenImageIO::ROI roi(0, new_width, 0, new_height, 0, 1, 0, Channels());
+    OpenImageIO::ROI roi(0, new_width, 0, new_height, 0, 1, 0, num_channels);
     OpenImageIO::ImageBuf dst;
     CHECK(OpenImageIO::ImageBufAlgo::resize(dst, image_, nullptr, roi))
       << OpenImageIO::geterror();
@@ -341,12 +341,18 @@ void FloatImage::Resize(int new_width, int new_height) {
   }
 }
 
+void FloatImage::Resize(int new_width, int new_height) {
+  Resize(new_width, new_height, Channels());
+}
+
 void FloatImage::ResizeRowsCols(int new_rows, int new_cols) {
-  Resize(new_cols, new_rows);
+  Resize(new_cols, new_rows, Channels());
 }
 
 void FloatImage::Resize(double scale) {
-  Resize(static_cast<int>(scale * Width()), static_cast<int>(scale * Height()));
+  Resize(static_cast<int>(scale * Width()),
+         static_cast<int>(scale * Height()),
+         Channels());
 }
 
 }  // namespace theia
