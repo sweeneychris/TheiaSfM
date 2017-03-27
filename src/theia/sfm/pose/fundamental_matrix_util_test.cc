@@ -52,7 +52,7 @@ using Eigen::Vector3d;
 RandomNumberGenerator rng(51);
 
 TEST(FundamentalMatrixUtil, FocalLengths) {
-  static const double kTolerance = 1e-8;
+  static const double kTolerance = 1e-6;
 
   for (int i = 0; i < 100; i++) {
     const double gt_focal_length1 = 800.0;

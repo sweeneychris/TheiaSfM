@@ -241,7 +241,7 @@ void FOVCameraModel::DistortPoint(const T* intrinsic_parameters,
     // factor(radius) = tan(radius * omega) / ...
     //                  (radius * 2*tan(omega/2));
     // simplify(taylor(factor, radius, 'order', 3))
-    const T tan_half_omega = ceres::tan(omega / T(2));
+    const T tan_half_omega = ceres::tan(omega / 2.0);
     r_d = (-2.0 * tan_half_omega *
            (4.0 * r_u_sq * tan_half_omega * tan_half_omega - 3.0)) /
           (3.0 * omega);
@@ -283,7 +283,7 @@ void FOVCameraModel::UndistortPoint(const T* intrinsic_parameters,
     // factor(radius) = tan(radius * omega) / ...
     //                  (radius * 2*tan(omega/2));
     // simplify(taylor(factor, omega, 'order', 3))
-    r_u = (omega * omega * r_d_sq) / 3.0 - omega * omega / 12.0 + T(.0);
+    r_u = (omega * omega * r_d_sq) / 3.0 - omega * omega / 12.0 + 1.0;
   } else if (r_d_sq < kVerySmallNumber) {
     // Derivation of this case with Matlab borrowed from COLMAP:
     // https://github.com/colmap/colmap/blob/master/src/base/camera_models.h#L1146
