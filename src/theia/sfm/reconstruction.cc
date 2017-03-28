@@ -221,6 +221,50 @@ int Reconstruction::NumCameraIntrinsicGroups() const {
   return camera_intrinsics_groups_.size();
 }
 
+TrackId Reconstruction::AddTrack() {
+  const TrackId new_track_id = next_track_id_;
+  CHECK(!ContainsKey(tracks_, new_track_id))
+      << "The reconstruction already contains a track with id: "
+      << new_track_id;
+
+  class Track new_track;
+  tracks_.emplace(new_track_id, new_track);
+  ++next_track_id_;
+  return new_track_id;
+}
+
+bool Reconstruction::AddObservation(const ViewId view_id,
+                                    const TrackId track_id,
+                                    const Feature& feature) {
+  CHECK(ContainsKey(views_, view_id))
+      << "View does not exist. AddObservation may only be used to add "
+         "observations to an existing view.";
+  CHECK(ContainsKey(tracks_, track_id))
+      << "Track does not exist. AddObservation may only be used to add "
+         "observations to an existing track.";
+
+  class View* view = FindOrNull(views_, view_id);
+  class Track* track = FindOrNull(tracks_, track_id);
+  if (view->GetFeature(track_id) != nullptr) {
+    LOG(WARNING)
+        << "Cannot add a new observation of track " << track_id
+        << " because the view already contains an observation of the track.";
+    return false;
+  }
+
+  const std::unordered_set<ViewId>& views_observing_track = track->ViewIds();
+  if (ContainsKey(views_observing_track, view_id)) {
+    LOG(WARNING)
+        << "Cannot add a new observation of track " << track_id
+        << " because the track is already observed by view " << view_id;
+    return false;
+  }
+
+  view->AddFeature(track_id, feature);
+  track->AddView(view_id);
+  return true;
+}
+
 TrackId Reconstruction::AddTrack(
     const std::vector<std::pair<ViewId, Feature> >& track) {
   if (track.size() < 2) {

@@ -187,6 +187,45 @@ TEST(Reconstruction, CameraIntrinsicsGroupIds) {
   EXPECT_TRUE(ContainsKey(group_ids, intrinsics_id3));
 }
 
+TEST(Reconstruction, AddEmptyTrack) {
+  Reconstruction reconstruction;
+  const TrackId track_id = reconstruction.AddTrack();
+  EXPECT_NE(track_id, kInvalidTrackId);
+}
+
+TEST(Reconstruction, AddObservationValid) {
+  Reconstruction reconstruction;
+
+  const ViewId view_id1 = reconstruction.AddView(view_names[0]);;
+  const ViewId view_id2 = reconstruction.AddView(view_names[1]);;
+  EXPECT_NE(view_id1, kInvalidViewId);
+  EXPECT_NE(view_id2, kInvalidViewId);
+
+  const TrackId track_id = reconstruction.AddTrack();
+  EXPECT_NE(track_id, kInvalidTrackId);
+
+  EXPECT_TRUE(reconstruction.AddObservation(view_id1, track_id, features[0]));
+
+  // Ensure that the observation adds the correct information to the view.
+  const View* view1 = reconstruction.View(view_id1);
+  const View* view2 = reconstruction.View(view_id2);
+  EXPECT_EQ(view1->NumFeatures(), 1);
+  EXPECT_EQ(view2->NumFeatures(), 0);
+
+  const Feature* feature1 = view1->GetFeature(track_id);
+  EXPECT_NE(feature1, nullptr);
+  EXPECT_EQ(feature1->x(), features[0].x());
+  EXPECT_EQ(feature1->y(), features[0].y());
+
+  const Feature* feature2 = view2->GetFeature(track_id);
+  EXPECT_EQ(feature2, nullptr);
+
+  // Ensure that the observation adds the correct information to the track.
+  const Track* track = reconstruction.Track(track_id);
+  EXPECT_EQ(track->NumViews(), 1);
+  EXPECT_TRUE(ContainsKey(track->ViewIds(), view_id1));
+}
+
 TEST(Reconstruction, AddTrackValid) {
   Reconstruction reconstruction;
 

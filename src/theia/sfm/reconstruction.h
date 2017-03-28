@@ -105,6 +105,19 @@ class Reconstruction {
   // Returns all group ids.
   std::unordered_set<CameraIntrinsicsGroupId> CameraIntrinsicsGroupIds() const;
 
+  // Adds an empty track to the reconstruction. Note that this assumes that the
+  // user will manage the visibility of the track.
+  TrackId AddTrack();
+
+  // Adds an observation between the track and the view to the
+  // reconstruction. Returns true upon successful insertion of the
+  // observation. If the track already contains an observation to this view then
+  // false is returned. If the view/track does not exist, or another failure is
+  // encountered then a failure is thrown.
+  bool AddObservation(const ViewId view_id,
+                      const TrackId track_id,
+                      const Feature& feature);
+
   // Add a new track to the reconstruction. If successful, the new track id is
   // returned. Failure results when multiple features from the same image are
   // present, and kInvalidTrackId is returned.
