@@ -128,7 +128,7 @@ int SolvePlaneRotation(const Vector3d normalized_image_points[3],
                     (-f_1 * cos_theta[i] * p_2 / f_2 + p_1 - d_12);
   }
 
-  return roots.size();
+  return static_cast<int>(roots.size());
 }
 
 // Given the complete transformation between intermediate world and camera

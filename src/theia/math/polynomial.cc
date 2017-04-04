@@ -99,7 +99,7 @@ VectorXd RemoveLeadingZeros(const VectorXd& polynomial_in) {
 }
 
 VectorXd DifferentiatePolynomial(const VectorXd& polynomial) {
-  const int degree = polynomial.rows() - 1;
+  const int degree = static_cast<int>(polynomial.rows()) - 1;
   CHECK_GE(degree, 0);
 
   // Degree zero polynomials are constants, and their derivative does
