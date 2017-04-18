@@ -106,7 +106,7 @@ bool WriteBundleFile(const Reconstruction& reconstruction,
                     "cameras from the reconstruction and try again.";
       continue;
     }
-    const CameraIntrinsicsModel& intrinsics = camera.CameraIntrinsics();
+    const CameraIntrinsicsModel& intrinsics = *camera.CameraIntrinsics();
     ofs_bundle
         << camera.FocalLength() << " "
         << intrinsics.GetParameter(PinholeCameraModel::RADIAL_DISTORTION_1)

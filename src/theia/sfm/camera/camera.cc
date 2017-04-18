@@ -59,7 +59,8 @@ using Eigen::Vector4d;
 Camera::Camera() {
   // Set rotation and position to zero (i.e. identity).
   Map<Matrix<double, 1, 6> >(mutable_extrinsics()).setZero();
-  camera_intrinsics_.reset(new PinholeCameraModel());
+  camera_intrinsics_ =
+      std::make_shared<PinholeCameraModel>(PinholeCameraModel());
 
   image_size_[0] = 0;
   image_size_[1] = 0;
@@ -79,16 +80,8 @@ Camera::Camera(const Camera& camera) {
   std::copy(camera.parameters(),
             camera.parameters() + kExtrinsicsSize,
             camera_parameters_);
-
-  camera_intrinsics_ =
-      CameraIntrinsicsModel::Create(camera.GetCameraIntrinsicsModelType());
-  const CameraIntrinsicsModel& other_camera_intrinsics =
-      camera.CameraIntrinsics();
-  std::copy(other_camera_intrinsics.parameters(),
-            other_camera_intrinsics.parameters() +
-                other_camera_intrinsics.NumParameters(),
-            camera_intrinsics_->mutable_parameters());
-
+  // Perform a shallow copy of the camera intrinsics.
+  camera_intrinsics_ = camera.camera_intrinsics_;
   image_size_[0] = camera.image_size_[0];
   image_size_[1] = camera.image_size_[1];
 }
@@ -98,11 +91,23 @@ Camera& Camera::operator=(const Camera& camera) {
   std::copy(camera.parameters(),
             camera.parameters() + kExtrinsicsSize,
             camera_parameters_);
+  // Perform a shallow copy of the camera intrinsics.
+  camera_intrinsics_ = camera.camera_intrinsics_;
+  image_size_[0] = camera.image_size_[0];
+  image_size_[1] = camera.image_size_[1];
+  return *this;
+}
+
+void Camera::DeepCopy(const Camera& camera) {
+  // Copy the extrinsics.
+  std::copy(camera.parameters(),
+            camera.parameters() + kExtrinsicsSize,
+            camera_parameters_);
 
   camera_intrinsics_ =
       CameraIntrinsicsModel::Create(camera.GetCameraIntrinsicsModelType());
   const CameraIntrinsicsModel& other_camera_intrinsics =
-      camera.CameraIntrinsics();
+      *camera.CameraIntrinsics();
   std::copy(other_camera_intrinsics.parameters(),
             other_camera_intrinsics.parameters() +
                 other_camera_intrinsics.NumParameters(),
@@ -110,14 +115,15 @@ Camera& Camera::operator=(const Camera& camera) {
 
   image_size_[0] = camera.image_size_[0];
   image_size_[1] = camera.image_size_[1];
-  return *this;
 }
 
 void Camera::SetFromCameraIntrinsicsPriors(const CameraIntrinsicsPrior& prior) {
   const CameraIntrinsicsModelType camera_intrinsics_model_type =
       StringToCameraIntrinsicsModelType(prior.camera_intrinsics_model_type);
-  camera_intrinsics_ =
-      CameraIntrinsicsModel::Create(camera_intrinsics_model_type);
+  if (camera_intrinsics_->Type() != camera_intrinsics_model_type) {
+    camera_intrinsics_ =
+        CameraIntrinsicsModel::Create(camera_intrinsics_model_type);
+  }
   image_size_[0] = prior.image_width;
   image_size_[1] = prior.image_height;
   camera_intrinsics_->SetFromCameraIntrinsicsPriors(prior);
@@ -137,8 +143,8 @@ CameraIntrinsicsModelType Camera::GetCameraIntrinsicsModelType() const {
 
 void Camera::SetCameraIntrinsicsModelType(
     const CameraIntrinsicsModelType& camera_model_type) {
-  // Only reset and change the camera model if the camera intrinsics model type
-  // has changed.
+  // Only change the camera model if the camera intrinsics model type has
+  // changed.
   if (GetCameraIntrinsicsModelType() != camera_model_type) {
     camera_intrinsics_ = CameraIntrinsicsModel::Create(camera_model_type);
   }
@@ -153,7 +159,8 @@ bool Camera::InitializeFromProjectionMatrix(
   image_size_[0] = image_width;
   image_size_[1] = image_height;
 
-  camera_intrinsics_.reset(new PinholeCameraModel());
+  camera_intrinsics_ =
+      std::make_shared<PinholeCameraModel>(PinholeCameraModel());
 
   Vector3d orientation, position;
   Matrix3d calibration_matrix;

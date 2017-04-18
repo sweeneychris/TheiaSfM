@@ -89,7 +89,7 @@ bool WriteNVMFile(const std::string& nvm_filepath,
              << " " << quat.x() << " " << quat.y() << " " << quat.z() << " "
              << position.x() << " " << position.y() << " " << position.z()
              << " "
-             << camera.CameraIntrinsics().GetParameter(
+             << camera.CameraIntrinsics()->GetParameter(
                     PinholeCameraModel::RADIAL_DISTORTION_1)
              << " 0" << std::endl;
 

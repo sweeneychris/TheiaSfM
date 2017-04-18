@@ -86,7 +86,7 @@ class CameraIntrinsicsModel {
   virtual CameraIntrinsicsModel& operator=(const CameraIntrinsicsModel& camera);
   virtual ~CameraIntrinsicsModel() {}
   // Creates a camera model object based on the model type.
-  static std::unique_ptr<CameraIntrinsicsModel> Create(
+  static std::shared_ptr<CameraIntrinsicsModel> Create(
       const CameraIntrinsicsModelType& camera_type);
 
   // All derived clases must implement this enum class to describe how the

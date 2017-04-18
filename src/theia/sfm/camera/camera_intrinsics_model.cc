@@ -45,28 +45,27 @@
 namespace theia {
 
 // Creates a camera model object based on the model type.
-std::unique_ptr<CameraIntrinsicsModel>
-CameraIntrinsicsModel::Create(const CameraIntrinsicsModelType& camera_type) {
-  std::unique_ptr<CameraIntrinsicsModel> camera_model;
+std::shared_ptr<CameraIntrinsicsModel> CameraIntrinsicsModel::Create(
+    const CameraIntrinsicsModelType& camera_type) {
   switch (camera_type) {
     case CameraIntrinsicsModelType::PINHOLE:
-      camera_model.reset(new PinholeCameraModel());
+      return std::make_shared<PinholeCameraModel>();
       break;
     case CameraIntrinsicsModelType::PINHOLE_RADIAL_TANGENTIAL:
-      camera_model.reset(new PinholeRadialTangentialCameraModel());
+      return std::make_shared<PinholeRadialTangentialCameraModel>();
       break;
     case CameraIntrinsicsModelType::FISHEYE:
-      camera_model.reset(new FisheyeCameraModel());
+      return std::make_shared<FisheyeCameraModel>();
       break;
     case CameraIntrinsicsModelType::FOV:
-      camera_model.reset(new FOVCameraModel());
+      return std::make_shared<FOVCameraModel>();
       break;
     default:
-      LOG(FATAL) << "Invalid Camera model chosen.";
       break;
   }
 
-  return camera_model;
+  LOG(FATAL) << "Invalid Camera model chosen.";
+  return NULL;
 }
 
 CameraIntrinsicsModel& CameraIntrinsicsModel::operator=(

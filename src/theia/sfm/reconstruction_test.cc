@@ -141,6 +141,9 @@ TEST(Reconstruction, GetViewValidInvalid) {
 }
 
 TEST(Reconstruction, GetViewsInCameraIntrinsicGroup) {
+  static const double kFocalLength1 = 800.0;
+  static const double kFocalLength2 = 1200.0;
+
   Reconstruction reconstruction;
   const ViewId view_id1 = reconstruction.AddView(view_names[0]);
   const CameraIntrinsicsGroupId intrinsics_id1 =
@@ -158,6 +161,21 @@ TEST(Reconstruction, GetViewsInCameraIntrinsicGroup) {
       reconstruction.CameraIntrinsicsGroupIdFromViewId(view_id3);
   EXPECT_NE(intrinsics_id1, intrinsics_id3);
   EXPECT_EQ(reconstruction.NumCameraIntrinsicGroups(), 2);
+
+  // Change a value in view 1's camera intrinsics and ensure that it propagates
+  // to view 2.
+  Camera* camera1 = reconstruction.MutableView(view_id1)->MutableCamera();
+  Camera* camera2 = reconstruction.MutableView(view_id2)->MutableCamera();
+  Camera* camera3 = reconstruction.MutableView(view_id3)->MutableCamera();
+  camera1->SetFocalLength(kFocalLength1);
+  EXPECT_EQ(camera1->FocalLength(), camera2->FocalLength());
+  EXPECT_NE(camera1->FocalLength(), camera3->FocalLength());
+
+  // Alter the intrinsics through camera 2 and ensure that camera 1 is updated
+  // and camera 3 is not.
+  camera2->SetFocalLength(kFocalLength2);
+  EXPECT_EQ(camera1->FocalLength(), camera2->FocalLength());
+  EXPECT_NE(camera2->FocalLength(), camera3->FocalLength());
 }
 
 TEST(Reconstruction, CameraIntrinsicsGroupIds) {

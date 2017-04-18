@@ -43,18 +43,82 @@
 #include "theia/sfm/view.h"
 
 namespace theia {
+namespace {
+
+// Choose the representative camera for the intrinsics group, and initialize its
+// intrinsics.
+ViewId InitializeRepresentativeCameraInGroup(
+    const std::unordered_set<ViewId>& views_in_intrinsics_group,
+    Reconstruction* reconstruction) {
+  ViewId representative_view_id = kInvalidViewId;
+  for (const ViewId view_id : views_in_intrinsics_group) {
+    View* view = reconstruction->MutableView(view_id);
+    // Skip this view if it does not exist in the reconstruction.
+    if (view == nullptr) {
+      continue;
+    }
+
+    // Set the representative view to the current view. It should not matter
+    // much which view we choose if none of them are already estimated. We
+    // simply assign the representative views here to avoid any conditionals.
+    representative_view_id = view_id;
+
+    // If the views is already estimated, use its intrinsics as the
+    // initialization point for the group's intrinsics.
+    if (view->IsEstimated()) {
+      break;
+    }
+  }
+
+  return representative_view_id;
+}
+
+}  // namespace
 
 // Sets the camera intrinsics from the CameraIntrinsicsPrior of each view. Views
 // that do not have a focal length prior will set a value corresponding to a
 // median viewing angle. Principal points that are not provided by the priors
 // are simply initialized as half of the corresponding image size dimension.
 void SetCameraIntrinsicsFromPriors(Reconstruction* reconstruction) {
-  const auto& view_ids = reconstruction->ViewIds();
-  for (const ViewId view_id : view_ids) {
-    View* view = CHECK_NOTNULL(reconstruction->MutableView(view_id));
-    if (!view->IsEstimated()) {
-      view->MutableCamera()->SetFromCameraIntrinsicsPriors(
-          view->CameraIntrinsicsPrior());
+  // Set the camera intrinsics from the priors one group at a time.
+  const std::unordered_set<CameraIntrinsicsGroupId>
+      camera_intrinsics_group_ids = reconstruction->CameraIntrinsicsGroupIds();
+  for (const CameraIntrinsicsGroupId intrinsics_group_id :
+       camera_intrinsics_group_ids) {
+    // Get all views in this camera intrinsics group.
+    const std::unordered_set<ViewId> views_in_intrinsics_group =
+        reconstruction->GetViewsInCameraIntrinsicGroup(intrinsics_group_id);
+
+    // We choose a "representative view" for the intrinsics group. We set the
+    // intrinsics for this view from the priors, then set the intrinsics of all
+    // other views in the same intrinsics group to point to the representative
+    // intrinsics. Since shared_ptrs are used, the shared intrinsics remain
+    // alive until all cameras in the group go out of context.
+    const ViewId representative_view_id = InitializeRepresentativeCameraInGroup(
+        views_in_intrinsics_group, reconstruction);
+    // Set the representative camera intrinsics.
+    View* representative_view =
+      reconstruction->MutableView(representative_view_id);
+    Camera* representative_camera = representative_view->MutableCamera();
+    representative_camera->SetFromCameraIntrinsicsPriors(
+        representative_view->CameraIntrinsicsPrior());
+    CHECK_NOTNULL(representative_camera->CameraIntrinsics().get());
+
+    // Set all intrinsics for this group.
+    for (const ViewId view_in_intrinsics_group : views_in_intrinsics_group) {
+      View* view = reconstruction->MutableView(view_in_intrinsics_group);
+      // Skip this view if it does not exist in the reconstruction or it is the
+      // representative view.
+      if (view == nullptr ||
+          representative_view_id == view_in_intrinsics_group) {
+        continue;
+      }
+
+      // Set the view's intrinsics to point to the shared intrinsics. This
+      // includes estimated views who may have estimated intrinsics parameters
+      // that are different than the shared intrinsics.
+      view->MutableCamera()->MutableCameraIntrinsics() =
+        representative_camera->CameraIntrinsics();
     }
   }
 }

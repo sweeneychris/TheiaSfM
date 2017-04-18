@@ -77,7 +77,7 @@ void AddCameraParametersToProblem(const bool constant_extrinsic_parameters,
                                   ceres::Problem* problem) {
   double* camera_extrinsics = camera->mutable_extrinsics();
   double* camera_intrinsics = camera->mutable_intrinsics();
-  const int num_intrinsics = camera->CameraIntrinsics().NumParameters();
+  const int num_intrinsics = camera->CameraIntrinsics()->NumParameters();
 
   // Add extrinsics to problem
   problem->AddParameterBlock(camera_extrinsics, Camera::kExtrinsicsSize);
