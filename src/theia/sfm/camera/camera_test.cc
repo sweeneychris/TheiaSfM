@@ -80,7 +80,8 @@ TEST(Camera, ProjectionMatrix) {
 TEST(Camera, InternalParameterGettersAndSetters) {
   Camera camera;
 
-  CameraIntrinsicsModel* intrinsics = camera.MutableCameraIntrinsics();
+  std::shared_ptr<CameraIntrinsicsModel> intrinsics =
+      camera.MutableCameraIntrinsics();
   PinholeCameraModel pinhole_intrinsics;
 
   // Check that default values are set

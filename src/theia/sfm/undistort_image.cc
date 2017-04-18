@@ -95,9 +95,9 @@ void FindUndistortedImageBoundary(const Camera& distorted_camera,
                                   const Camera& undistorted_camera,
                                   Eigen::Vector4d* bounds) {
   const CameraIntrinsicsModel& distorted_intrinsics =
-      distorted_camera.CameraIntrinsics();
+      *distorted_camera.CameraIntrinsics();
   const CameraIntrinsicsModel& undistorted_intrinsics =
-      undistorted_camera.CameraIntrinsics();
+      *undistorted_camera.CameraIntrinsics();
 
   // Find the max and min locations of the undistorted pixels.
   double left_max_x = std::numeric_limits<double>::lowest();
@@ -153,9 +153,9 @@ void RemoveImageLensDistortion(const Camera& distorted_camera,
                                const Camera& undistorted_camera,
                                FloatImage* undistorted_image) {
   const CameraIntrinsicsModel& distorted_intrinsics =
-      distorted_camera.CameraIntrinsics();
+      *distorted_camera.CameraIntrinsics();
   const CameraIntrinsicsModel& undistorted_intrinsics =
-      undistorted_camera.CameraIntrinsics();
+      *undistorted_camera.CameraIntrinsics();
 
   // For each pixel in the undistorted image, find the coordinate in the
   // distorted image and set the pixel color accordingly.
@@ -275,9 +275,9 @@ bool UndistortReconstruction(Reconstruction* reconstruction) {
     // The camera intrinsics models describe how to distort and undistort the
     // pixels.
     const CameraIntrinsicsModel& distorted_intrinsics =
-        distorted_camera.CameraIntrinsics();
+        *distorted_camera.CameraIntrinsics();
     const CameraIntrinsicsModel& undistorted_intrinsics =
-        undistorted_camera->CameraIntrinsics();
+        *undistorted_camera->CameraIntrinsics();
 
     // Undisort all features seen by the view.
     const auto track_ids = view->TrackIds();

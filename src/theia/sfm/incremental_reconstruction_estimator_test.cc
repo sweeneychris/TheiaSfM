@@ -67,6 +67,11 @@ void ReadInput(Reconstruction* gt_reconstruction,
   const auto view_ids = reconstruction->ViewIds();
   for (const ViewId view_id : view_ids) {
     reconstruction->MutableView(view_id)->SetEstimated(false);
+    Camera* camera = reconstruction->MutableView(view_id)->MutableCamera();
+    LOG(INFO) << "Camera intrinsics group "
+              << reconstruction->CameraIntrinsicsGroupIdFromViewId(view_id)
+              << " at memory location " << camera->mutable_intrinsics()
+              << " should be constant.";
   }
   const auto track_ids = reconstruction->TrackIds();
   for (const TrackId track_id : track_ids) {

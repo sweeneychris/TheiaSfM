@@ -43,6 +43,7 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <algorithm>
+#include <memory>
 #include <vector>
 
 #include "theia/sfm/camera/camera_intrinsics_model.h"
@@ -64,10 +65,17 @@ class Camera {
 
   Camera();
   explicit Camera(const CameraIntrinsicsModelType& camera_type);
-  Camera(const Camera& camera);
   ~Camera() {}
 
+  // NOTE: These two copy constructors will perform a shallow copy of camera
+  // intrinsics such that the underlying camera intrinsics will point to the
+  // same memory. Consider using DeepCopy below when appropriate.
+  Camera(const Camera& camera);
   Camera& operator=(const Camera& rhs);
+
+  // Performs a deep copy of all camera parameters such that this object owns
+  // all of the underlying data.
+  void DeepCopy(const Camera& camera);
 
   // Initializes the camera intrinsic and extrinsic parameters from the
   // projection matrix by decomposing the matrix.
@@ -162,12 +170,12 @@ class Camera {
   int ImageWidth() const { return image_size_[0]; }
   int ImageHeight() const { return image_size_[1]; }
 
-  const CameraIntrinsicsModel& CameraIntrinsics() const {
-    return *camera_intrinsics_;
+  const std::shared_ptr<CameraIntrinsicsModel>& CameraIntrinsics() const {
+    return camera_intrinsics_;
   }
 
-  CameraIntrinsicsModel* MutableCameraIntrinsics() {
-    return camera_intrinsics_.get();
+  std::shared_ptr<CameraIntrinsicsModel>& MutableCameraIntrinsics() {
+    return camera_intrinsics_;
   }
 
   const double* parameters() const { return camera_parameters_; }
@@ -238,7 +246,7 @@ class Camera {
 
   double camera_parameters_[kExtrinsicsSize];
 
-  std::unique_ptr<CameraIntrinsicsModel> camera_intrinsics_;
+  std::shared_ptr<CameraIntrinsicsModel> camera_intrinsics_;
 
   // The image size as width then height.
   int image_size_[2];

@@ -110,9 +110,34 @@ ViewId Reconstruction::AddView(const std::string& view_name,
   }
 
   class View new_view(view_name);
+
+  // If the camera intrinsics group already exists, set the internal intrinsics
+  // of each camera to point to the same underlying intrinsics.
+  if (camera_intrinsics_groups_[group_id].size() > 0) {
+    const ViewId view_id_in_intrinsics_group =
+        *camera_intrinsics_groups_[group_id].begin();
+    const Camera& intrinsics_group_camera =
+        FindOrDie(views_, view_id_in_intrinsics_group).Camera();
+    LOG(INFO) << "Attempting to set the intrinsics of view " << next_view_id_
+              << " and " << view_id_in_intrinsics_group
+              << " to shared intrinsics.";
+
+    // Set the shared_ptr objects to point to the same place so that the
+    // intrinsics are truly shared.
+    new_view.MutableCamera()->MutableCameraIntrinsics() =
+        intrinsics_group_camera.CameraIntrinsics();
+    LOG(INFO)
+        << "New view location: "
+        << new_view.MutableCamera()->MutableCameraIntrinsics()->parameters()
+        << " vs old location: "
+        << intrinsics_group_camera.CameraIntrinsics()->parameters();
+  }
+
+  // Add the view to the reconstruction.
   views_.emplace(next_view_id_, new_view);
   view_name_to_id_.emplace(view_name, next_view_id_);
 
+  // Add this view to the camera intrinsics group, and vice versa.
   view_id_to_camera_intrinsics_group_id_.emplace(next_view_id_, group_id);
   camera_intrinsics_groups_[group_id].emplace(next_view_id_);
 

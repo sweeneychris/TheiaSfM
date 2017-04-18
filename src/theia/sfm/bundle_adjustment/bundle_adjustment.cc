@@ -81,28 +81,57 @@ void SetSolverOptions(const BundleAdjustmentOptions& options,
 
 // Adds camera intrinsic parameters to the problem while optionally holding some
 // intrinsics parameters constant.
-void AddCameraIntrinsicsToProblem(
+std::unordered_set<CameraIntrinsicsGroupId> AddCameraIntrinsicsToProblem(
     const OptimizeIntrinsicsType& intrinsics_to_optimize,
-    CameraIntrinsicsModel* intrinsics,
+    const std::unordered_set<ViewId>& view_ids,
+    Reconstruction* reconstruction,
     ceres::Problem* problem) {
-  double* camera_intrinsics = intrinsics->mutable_parameters();
-  const std::vector<int> constant_intrinsics =
-      intrinsics->GetSubsetFromOptimizeIntrinsicsType(intrinsics_to_optimize);
+  std::unordered_set<CameraIntrinsicsGroupId>
+      optimized_camera_intrinsics_groups;
+  optimized_camera_intrinsics_groups.reserve(view_ids.size());
 
-  // Set the constant parameters if any exist.
-  if (constant_intrinsics.size() == intrinsics->NumParameters()) {
-    problem->AddParameterBlock(camera_intrinsics, intrinsics->NumParameters());
-    problem->SetParameterBlockConstant(camera_intrinsics);
-  } else if (constant_intrinsics.size() > 0) {
-    ceres::SubsetParameterization* subset_parameterization =
-        new ceres::SubsetParameterization(intrinsics->NumParameters(),
-                                          constant_intrinsics);
-    problem->AddParameterBlock(camera_intrinsics,
-                               intrinsics->NumParameters(),
-                               subset_parameterization);
-  } else {
-    problem->AddParameterBlock(camera_intrinsics, intrinsics->NumParameters());
+  // Loop through all views to optimize and add the intrinsics to the problem.
+  for (const ViewId view_id : view_ids) {
+    const CameraIntrinsicsGroupId camera_intrinsics_group =
+        reconstruction->CameraIntrinsicsGroupIdFromViewId(view_id);
+
+    // If the camera intrinsics group for this camera was already added, skip
+    // this view.
+    if (ContainsKey(optimized_camera_intrinsics_groups,
+                    camera_intrinsics_group)) {
+      continue;
+    }
+
+    // Otherwise add the camera intrinsics group to the problem.
+    optimized_camera_intrinsics_groups.emplace(camera_intrinsics_group);
+    std::shared_ptr<CameraIntrinsicsModel>& camera_intrinsics =
+        reconstruction->MutableView(view_id)
+            ->MutableCamera()
+            ->MutableCameraIntrinsics();
+    const std::vector<int> constant_intrinsics =
+        camera_intrinsics->GetSubsetFromOptimizeIntrinsicsType(
+            intrinsics_to_optimize);
+
+    // Set the constant parameters if any are requested.
+    if (constant_intrinsics.size() == camera_intrinsics->NumParameters()) {
+      problem->AddParameterBlock(camera_intrinsics->mutable_parameters(),
+                                 camera_intrinsics->NumParameters());
+      problem->SetParameterBlockConstant(
+          camera_intrinsics->mutable_parameters());
+    } else if (constant_intrinsics.size() > 0) {
+      ceres::SubsetParameterization* subset_parameterization =
+          new ceres::SubsetParameterization(camera_intrinsics->NumParameters(),
+                                            constant_intrinsics);
+      problem->AddParameterBlock(camera_intrinsics->mutable_parameters(),
+                                 camera_intrinsics->NumParameters(),
+                                 subset_parameterization);
+    } else {
+      problem->AddParameterBlock(camera_intrinsics->mutable_parameters(),
+                                 camera_intrinsics->NumParameters());
+    }
   }
+
+  return optimized_camera_intrinsics_groups;
 }
 
 // Add camera extrinsics to the problem, setting certain values constant based
@@ -152,63 +181,6 @@ void AddCameraExtrinsicsToProblem(const bool constant_camera_orientation,
   }
 }
 
-// For each camera intrinsics group, choose one view to use as the reference for
-// shared camera intrinsics.
-std::unordered_map<CameraIntrinsicsGroupId, CameraIntrinsicsModel*>
-GetSharedIntrinsicsMap(const std::unordered_set<ViewId>& view_ids,
-                       Reconstruction* reconstruction) {
-  std::unordered_map<CameraIntrinsicsGroupId, CameraIntrinsicsModel*>
-      shared_intrinsics_by_group_id;
-
-  // For each view, find its camera intrinsics group and provide a pointer to
-  // the shared intrinsics if one has not already been provided.
-  for (const ViewId view_id : view_ids) {
-    View* view = CHECK_NOTNULL(reconstruction->MutableView(view_id));
-    if (!view->IsEstimated()) {
-      continue;
-    }
-
-    // Find the camera intrinsics group for this view.
-    const CameraIntrinsicsGroupId intrinsics_group_id =
-        reconstruction->CameraIntrinsicsGroupIdFromViewId(view_id);
-
-    // Provide a pointer to the shared camera intrinsics if this group does not
-    // have one.
-    if (!ContainsKey(shared_intrinsics_by_group_id, intrinsics_group_id)) {
-      shared_intrinsics_by_group_id[intrinsics_group_id] =
-          view->MutableCamera()->MutableCameraIntrinsics();
-    }
-  }
-  return shared_intrinsics_by_group_id;
-}
-
-// Copy the output of the shared intrinsic camera parameters to all other
-// cameras (including ones that were not optimized during BA) that share these
-// intrinsics.
-void CopySharedIntrinsicsToViews(
-    const std::unordered_map<CameraIntrinsicsGroupId, CameraIntrinsicsModel*>&
-        shared_intrinsics_by_group_id,
-    Reconstruction* reconstruction) {
-  for (const auto& shared_intrinsics : shared_intrinsics_by_group_id) {
-    const CameraIntrinsicsModel* shared_intrinsics_for_group =
-        shared_intrinsics.second;
-    // Get all views in this intrinsics group.
-    const auto& views_in_intrinsics_group =
-        reconstruction->GetViewsInCameraIntrinsicGroup(shared_intrinsics.first);
-    // For all views in this group, copy the shared intrinsics into the view's
-    // intrinsics.
-    for (const ViewId view_id : views_in_intrinsics_group) {
-      Camera* camera = reconstruction->MutableView(view_id)->MutableCamera();
-      CameraIntrinsicsModel* intrinsics = camera->MutableCameraIntrinsics();
-      if (intrinsics == shared_intrinsics_for_group) {
-        continue;
-      } else {
-        *intrinsics = *shared_intrinsics_for_group;
-      }
-    }
-  }
-}
-
 }  // namespace
 
 // Bundle adjust the entire model.
@@ -237,19 +209,12 @@ BundleAdjustmentSummary BundleAdjustPartialReconstruction(
   ceres::ParameterBlockOrdering* parameter_ordering =
       solver_options.linear_solver_ordering.get();
 
-  // Get pointers to the shared camera intrinsics.
-  std::unordered_map<CameraIntrinsicsGroupId, CameraIntrinsicsModel*>
-      shared_intrinsics_by_group_id =
-          GetSharedIntrinsicsMap(view_ids, reconstruction);
-
-  // Add all camera intrinsics to the problem.
-  for (auto& shared_intrinsics : shared_intrinsics_by_group_id) {
-    // This function will add all camera parameters to the problem and will keep
-    // the intrinsic params constant if desired.
-    AddCameraIntrinsicsToProblem(options.intrinsics_to_optimize,
-                                 shared_intrinsics.second,
-                                 &problem);
-  }
+  // Add all camera intrinsics to the problem. We keep track of which camera
+  // intrinsics groups are optimized so that later on we can determine which
+  // intrinsics need to be constant or variable during the optimization.
+  const std::unordered_set<CameraIntrinsicsGroupId>
+      optimized_camera_intrinsics_groups = AddCameraIntrinsicsToProblem(
+          options.intrinsics_to_optimize, view_ids, reconstruction, &problem);
 
   // Add all of the camera extrinsics to the problem, setting orientation and/or
   // position constant as appropriate.
@@ -269,14 +234,12 @@ BundleAdjustmentSummary BundleAdjustPartialReconstruction(
       continue;
     }
 
-    // Add the camera extrinsic parameters to the problem.
+    // Fetch the camera that will be optimized.
     Camera* camera = view->MutableCamera();
 
     // Get a pointer to the shared camera intrinsics.
-    const CameraIntrinsicsGroupId intrinsics_group_id =
-        reconstruction->CameraIntrinsicsGroupIdFromViewId(view_id);
-    CameraIntrinsicsModel* shared_intrinsics =
-        FindOrDie(shared_intrinsics_by_group_id, intrinsics_group_id);
+    std::shared_ptr<CameraIntrinsicsModel>& shared_intrinsics =
+        camera->MutableCameraIntrinsics();
 
     // Add camera parameters to groups 1 and 2. The extrinsics *must* belong to
     // group 2. This is because inner iterations uses a reverse ordering of
@@ -286,7 +249,7 @@ BundleAdjustmentSummary BundleAdjustPartialReconstruction(
     // in group 2.
     parameter_ordering->AddElementToGroup(camera->mutable_extrinsics(), 2);
     parameter_ordering->AddElementToGroup(
-        shared_intrinsics->mutable_parameters(), 1);
+        camera->mutable_intrinsics(), 1);
 
     // Add residuals for all tracks in the view.
     for (const TrackId track_id : view->TrackIds()) {
@@ -302,7 +265,7 @@ BundleAdjustmentSummary BundleAdjustPartialReconstruction(
               camera->GetCameraIntrinsicsModelType(), *feature),
           loss_function.get(),
           camera->mutable_extrinsics(),
-          shared_intrinsics->mutable_parameters(),
+          camera->mutable_intrinsics(),
           track->MutablePoint()->data());
       // Add the point to group 0.
       parameter_ordering->AddElementToGroup(track->MutablePoint()->data(), 0);
@@ -314,13 +277,16 @@ BundleAdjustmentSummary BundleAdjustPartialReconstruction(
   // we want to optimize. However, the tracks should still be constrained by
   // *all* views that observe it, not just the ones we want to optimize. Here,
   // we add in any views that were not part of the first loop and we keep them
-  // constant during the optimization.
+  // constant during the optimization. We need to take care to ensure that
+  std::unordered_set<ViewId> potentially_constant_camera_intrinsics_groups;
   for (const TrackId track_id : track_ids) {
     Track* track = CHECK_NOTNULL(reconstruction->MutableTrack(track_id));
     if (!track->IsEstimated()) {
       continue;
     }
 
+    // Add the track to the problem and set the parameter ordering for Schur
+    // elimination.
     problem.AddParameterBlock(track->MutablePoint()->data(), kTrackSize);
     parameter_ordering->AddElementToGroup(track->MutablePoint()->data(), 0);
     problem.SetParameterBlockVariable(track->MutablePoint()->data());
@@ -335,44 +301,56 @@ BundleAdjustmentSummary BundleAdjustPartialReconstruction(
 
       const Feature* feature = CHECK_NOTNULL(view->GetFeature(track_id));
       Camera* camera = view->MutableCamera();
-      const CameraIntrinsicsGroupId intrinsics_group_id =
-        reconstruction->CameraIntrinsicsGroupIdFromViewId(view_id);
-      const bool variable_shared_intrinsics =
-          ContainsKey(shared_intrinsics_by_group_id, intrinsics_group_id);
 
-      // To properly add the intrinsics, we need to know if the shared
-      // intrinsics have already been added to the problem. If they have, then
-      // we will keep the parameter block corresponding to the intrinsics
-      // variable. If the shared intrinsics have not already been added in the
-      // previous loop then they should remain constant.
-      CameraIntrinsicsModel* shared_intrinsics;
-      if (variable_shared_intrinsics) {
-        shared_intrinsics =
-            FindOrDie(shared_intrinsics_by_group_id, intrinsics_group_id);
-      } else {
-        shared_intrinsics = camera->MutableCameraIntrinsics();
-      }
+      // Add the residual for the track to the problem. The shared intrinsics
+      // parameter block will be set to constant after the loop if no optimized
+      // cameras share the same camera intrinsics.
       problem.AddResidualBlock(
           CreateReprojectionErrorCostFunction(
               camera->GetCameraIntrinsicsModelType(), *feature),
           loss_function.get(),
           camera->mutable_extrinsics(),
-          shared_intrinsics->mutable_parameters(),
+          camera->mutable_intrinsics(),
           track->MutablePoint()->data());
 
       // Add camera parameters to groups 1 and 2.
       parameter_ordering->AddElementToGroup(camera->mutable_extrinsics(), 2);
-      parameter_ordering->AddElementToGroup(
-          shared_intrinsics->mutable_parameters(), 1);
+      parameter_ordering->AddElementToGroup(camera->mutable_intrinsics(), 1);
+
       // Any camera that reaches this point was not part of the first loop, so
       // we do not want to optimize it.
       problem.SetParameterBlockConstant(camera->mutable_extrinsics());
-      // Only set the parameter block to constant if the shared intrinsics are
-      // not shared with cameras that are being optimized.
-      if (!variable_shared_intrinsics) {
-        problem.SetParameterBlockConstant(
-            shared_intrinsics->mutable_parameters());
-      }
+
+      // Mark the camera intrinsics as "potentially constant." We only set the
+      // parameter block to constant if the shared intrinsics are not shared
+      // with cameras that are being optimized.
+      const CameraIntrinsicsGroupId intrinsics_group_id =
+        reconstruction->CameraIntrinsicsGroupIdFromViewId(view_id);
+      potentially_constant_camera_intrinsics_groups.emplace(
+          intrinsics_group_id);
+    }
+  }
+
+  // Set any potentially constant camera intrinsics groups that do not have a
+  // mutable view to be constant.
+  for (const CameraIntrinsicsGroupId shared_intrinsics_id :
+       potentially_constant_camera_intrinsics_groups) {
+    // If the camera intrinsics group does not contain a view that is being
+    // optimized, then we set the intrinsics to be constant.
+    if (!ContainsKey(optimized_camera_intrinsics_groups,
+                     shared_intrinsics_id)) {
+      // First, fetch any view from the camera intrinsics group.
+      const ViewId view_id_in_intrinsics_group =
+          *reconstruction->GetViewsInCameraIntrinsicGroup(shared_intrinsics_id)
+               .begin();
+      // Then, set the intrinsics to be constant. Since the intrinsics share the
+      // same memory for the whole group, this will set the entire camera
+      // intrinsics group to be constant.
+      Camera* intrinsics_group_camera =
+          reconstruction->MutableView(view_id_in_intrinsics_group)
+              ->MutableCamera();
+      problem.SetParameterBlockConstant(
+          intrinsics_group_camera->mutable_intrinsics());
     }
   }
 
@@ -390,9 +368,6 @@ BundleAdjustmentSummary BundleAdjustPartialReconstruction(
   ceres::Solver::Summary solver_summary;
   ceres::Solve(solver_options, &problem, &solver_summary);
   LOG_IF(INFO, options.verbose) << solver_summary.FullReport();
-
-  // Copy the shared intrinsics to all views that share those intrinsics.
-  CopySharedIntrinsicsToViews(shared_intrinsics_by_group_id, reconstruction);
 
   // Set the BundleAdjustmentSummary.
   summary.setup_time_in_seconds =
