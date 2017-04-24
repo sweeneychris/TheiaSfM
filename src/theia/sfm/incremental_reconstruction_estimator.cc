@@ -55,6 +55,7 @@
 #include "theia/sfm/reconstruction_estimator_options.h"
 #include "theia/sfm/reconstruction_estimator_utils.h"
 #include "theia/sfm/set_camera_intrinsics_from_priors.h"
+#include "theia/sfm/set_outlier_tracks_to_unestimated.h"
 #include "theia/sfm/twoview_info.h"
 #include "theia/sfm/types.h"
 #include "theia/sfm/view_graph/view_graph.h"
@@ -544,7 +545,7 @@ void IncrementalReconstructionEstimator::RemoveOutlierTracks(
     const double max_reprojection_error_in_pixels) {
   // Remove the outlier points based on the reprojection error and how
   // well-constrained the 3D points are.
-  int num_points_removed = RemoveOutlierFeatures(
+  int num_points_removed = SetOutlierTracksToUnestimated(
       tracks_to_check,
       max_reprojection_error_in_pixels,
       options_.min_triangulation_angle_degrees,

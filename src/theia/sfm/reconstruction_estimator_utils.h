@@ -98,19 +98,6 @@ void RefineRelativeTranslationsWithKnownRotations(
     const int num_threads,
     ViewGraph* view_graph);
 
-// Removes features that have a reprojection error larger than the
-// reprojection error threshold. Additionally, any features that are poorly
-// constrained because of a small viewing angle are removed. Returns the number
-// of features removed. Only the input tracks are checked.
-int RemoveOutlierFeatures(const std::unordered_set<TrackId>& tracks,
-                          const double max_inlier_reprojection_error,
-                          const double min_triangulation_angle_degrees,
-                          Reconstruction* reconstruction);
-// Same as above, but checks all tracks.
-int RemoveOutlierFeatures(const double max_inlier_reprojection_error,
-                          const double min_triangulation_angle_degrees,
-                          Reconstruction* reconstruction);
-
 // Sets all tracks that are not seen by enough estimated views to unestimated.
 // Returns the number of tracks set to unestimated.
 int SetUnderconstrainedTracksToUnestimated(Reconstruction* reconstruction);
