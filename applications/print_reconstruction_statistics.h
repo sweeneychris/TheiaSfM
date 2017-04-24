@@ -66,6 +66,12 @@ inline void PrintReprojectionErrors(
     }
   }
 
+  if (reprojection_errors.size() == 0) {
+    LOG(INFO) << "No estimated 3d points were found. Cannot compute "
+                 "reprojection error statistics.";
+    return;
+  }
+
   std::sort(reprojection_errors.begin(), reprojection_errors.end());
   const double mean_reprojection_error =
       std::accumulate(reprojection_errors.begin(),
