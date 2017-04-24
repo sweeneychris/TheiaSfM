@@ -193,7 +193,7 @@ We will illustrate the use of the RANSAC class with a simple line estimation exa
 
      // Calculate the error as the y distance of the point to the line.
      double Error(const Point& point, const Line& line) const {
-       return point.y - (line.m*point.x + line.b);
+       return std::abs(point.y - (line.m*point.x + line.b));
      }
    };
 
