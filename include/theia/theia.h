@@ -174,6 +174,7 @@
 #include "theia/sfm/reconstruction_estimator_options.h"
 #include "theia/sfm/reconstruction_estimator_utils.h"
 #include "theia/sfm/set_camera_intrinsics_from_priors.h"
+#include "theia/sfm/set_outlier_tracks_to_unestimated.h"
 #include "theia/sfm/similarity_transformation.h"
 #include "theia/sfm/track.h"
 #include "theia/sfm/track_builder.h"

@@ -55,6 +55,7 @@
 #include "theia/sfm/reconstruction_estimator_options.h"
 #include "theia/sfm/reconstruction_estimator_utils.h"
 #include "theia/sfm/set_camera_intrinsics_from_priors.h"
+#include "theia/sfm/set_outlier_tracks_to_unestimated.h"
 #include "theia/sfm/twoview_info.h"
 #include "theia/sfm/view_graph/orientations_from_maximum_spanning_tree.h"
 #include "theia/sfm/view_graph/remove_disconnected_view_pairs.h"
@@ -254,7 +255,7 @@ ReconstructionEstimatorSummary GlobalReconstructionEstimator::Estimate(
     }
     summary.bundle_adjustment_time += timer.ElapsedTimeInSeconds();
 
-    int num_points_removed = RemoveOutlierFeatures(
+    int num_points_removed = SetOutlierTracksToUnestimated(
         options_.max_reprojection_error_in_pixels,
         options_.min_triangulation_angle_degrees,
         reconstruction_);
