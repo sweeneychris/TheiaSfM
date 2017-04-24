@@ -54,6 +54,7 @@
 #include "theia/sfm/reconstruction_estimator.h"
 #include "theia/sfm/reconstruction_estimator_options.h"
 #include "theia/sfm/reconstruction_estimator_utils.h"
+#include "theia/sfm/select_good_tracks_for_bundle_adjustment.h"
 #include "theia/sfm/set_camera_intrinsics_from_priors.h"
 #include "theia/sfm/set_outlier_tracks_to_unestimated.h"
 #include "theia/sfm/twoview_info.h"
@@ -481,8 +482,31 @@ bool IncrementalReconstructionEstimator::FullBundleAdjustment() {
   // disabled because they slow down BA a lot.
   bundle_adjustment_options_.use_inner_iterations = false;
 
-  const BundleAdjustmentSummary ba_summary =
-    BundleAdjustReconstruction(bundle_adjustment_options_, reconstruction_);
+  // If desired, select good tracks to optimize for BA. This dramatically
+  // reduces the number of parameters in bundle adjustment, and does a decent
+  // job of filtering tracks with outliers that may slow down the nonlinear
+  // optimization.
+  std::unordered_set<TrackId> tracks_to_optimize;
+  if (!options_.subsample_tracks_for_bundle_adjustment ||
+      !SelectGoodTracksForBundleAdjustment(
+          *reconstruction_,
+          options_.track_subset_selection_long_track_length_threshold,
+          options_.track_selection_image_grid_cell_size_pixels,
+          options_.min_num_optimized_tracks_per_view,
+          &tracks_to_optimize)) {
+    GetEstimatedTracksFromReconstruction(*reconstruction_, &tracks_to_optimize);
+  }
+  LOG(INFO) << "Selected " << tracks_to_optimize.size()
+            << " tracks to optimize.";
+
+  std::unordered_set<ViewId> views_to_optimize;
+  GetEstimatedViewsFromReconstruction(*reconstruction_,
+                                      &views_to_optimize);
+  const auto& ba_summary =
+      BundleAdjustPartialReconstruction(bundle_adjustment_options_,
+                                        views_to_optimize,
+                                        tracks_to_optimize,
+                                        reconstruction_);
   num_optimized_views_ = reconstructed_views_.size();
 
   const auto& track_ids = reconstruction_->TrackIds();
@@ -530,6 +554,10 @@ bool IncrementalReconstructionEstimator::PartialBundleAdjustment() {
     }
   }
 
+  // TODO: We should write an interface to allow for track subset selection
+  // during partial BA. This would provide obvious speedups, however, it may
+  // actually be beneficial to optimize the entire local reconstruction and only
+  // perform track subset selection for full BA. More testing should be done.
   ba_summary = BundleAdjustPartialReconstruction(bundle_adjustment_options_,
                                                  views_to_optimize,
                                                  tracks_to_optimize,

@@ -143,6 +143,7 @@ set(THEIA_SRC
   sfm/reconstruction_builder.cc
   sfm/reconstruction_estimator.cc
   sfm/reconstruction_estimator_utils.cc
+  sfm/select_good_tracks_for_bundle_adjustment.cc
   sfm/set_camera_intrinsics_from_priors.cc
   sfm/set_outlier_tracks_to_unestimated.cc
   sfm/track.cc

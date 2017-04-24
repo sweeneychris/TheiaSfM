@@ -84,11 +84,11 @@ void CreateEstimatedSubreconstruction(
 
 // Outputs the ViewId of all estimated views in the reconstruction.
 void GetEstimatedViewsFromReconstruction(const Reconstruction& reconstruction,
-                                std::unordered_set<ViewId>* views);
+                                         std::unordered_set<ViewId>* views);
 
 // Outputs the TrackId of all estimated tracks in the reconstruction.
 void GetEstimatedTracksFromReconstruction(const Reconstruction& reconstruction,
-                                 std::unordered_set<TrackId>* tracks);
+                                          std::unordered_set<TrackId>* tracks);
 
 // Refine the relative translation estimates between view pairs by optimizing
 // the epipolar constraint given the known rotation estimation.
