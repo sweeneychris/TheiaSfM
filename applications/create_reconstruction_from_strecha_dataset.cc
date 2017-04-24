@@ -61,6 +61,8 @@ using theia::ViewId;
 
 void AddCameraToReconstruction(const std::string& camera_filepath,
                                Reconstruction* reconstruction) {
+  static const int kCameraIntrinsicsGroup = 0;
+
   std::ifstream ifs(camera_filepath, std::ios::in);
   if (!ifs.is_open()) {
     LOG(FATAL) << "Cannot read the camera file from: " << camera_filepath;
@@ -75,7 +77,9 @@ void AddCameraToReconstruction(const std::string& camera_filepath,
   const std::size_t dot_camera_pos = image_name.find(".camera");
   image_name = image_name.substr(0, dot_camera_pos);
 
-  const ViewId view_id = reconstruction->AddView(image_name);
+  // Add the view and ensure that the camera intrinsics are all the same.
+  const ViewId view_id =
+      reconstruction->AddView(image_name, kCameraIntrinsicsGroup);
   CHECK_NE(view_id, theia::kInvalidViewId)
       << "The image " << image_name
       << " could not be added to the reconstruction.";
