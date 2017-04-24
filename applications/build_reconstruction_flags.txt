@@ -123,6 +123,30 @@
 # than this.
 --max_reprojection_error_pixels=4.0
 
+############### Track Subsampling Options ###############
+
+# If true, the estimated tracks are subsampled for bundle adjustment to increase
+# the efficiency of BA. Tracks are chosen in a way which attempts to constraint
+# BA as best as possible. This has been shown to provide a significant speedup
+# without reducing the accuracy much (in fact, it increases the accuracy in some
+# cases).
+--subsample_tracks_for_bundle_adjustment=false
+
+# Subsampled tracks are chosen with a probability related to their track
+# length. We limit the effect of long tracks by capping the track length at this
+# value for the purpose of selecting tracks.
+--track_subset_selection_long_track_length_threshold=10
+
+# Tracks are chosen in a way that ensures each view is spatially
+# constraind. Tracks are first binned in an image grid and the top ranked track
+# is chosen for optimization from each grid cell to ensure good spatial coverage
+# of the image. The grid cells are set to be this size.
+--track_selection_image_grid_cell_size_pixels=100
+
+# Tracks are chosen such that each image observes at least this many tracks
+#  which are being optimized. This ensures that each image is well-constrained.
+--min_num_optimized_tracks_per_view=100
+
 ############### Triangulation Options ###############
 --min_triangulation_angle_degrees=4.0
 --triangulation_reprojection_error_pixels=15.0

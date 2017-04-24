@@ -105,15 +105,6 @@ struct ReconstructionEstimatorOptions {
   // be removed as an initial filtering step.
   int min_num_two_view_inliers = 30;
 
-  // After computing a model and performing an initial BA, the reconstruction
-  // can be further improved (and even densified) if we attempt (again) to
-  // retriangulate any tracks that are currently unestimated. For each
-  // retriangulation iteration we do the following:
-  //   1. Remove features that are above max_reprojection_error_in_pixels.
-  //   2. Triangulate all unestimated tracks.
-  //   3. Perform full bundle adjustment.
-  int num_retriangulation_iterations = 1;
-
   // --------------- RANSAC Options --------------- //
   double ransac_confidence = 0.9999;
   int ransac_min_iterations = 50;
@@ -221,6 +212,18 @@ struct ReconstructionEstimatorOptions {
 
   // --------------- Bundle Adjustment Options --------------- //
 
+  // After computing a model and performing an initial BA, the reconstruction
+  // can be further improved (and even densified) if we attempt (again) to
+  // retriangulate any tracks that are currently unestimated. For each
+  // retriangulation iteration we do the following:
+  //   1. Remove features that are above max_reprojection_error_in_pixels.
+  //   2. Triangulate all unestimated tracks.
+  //   3. Perform full bundle adjustment.
+  //
+  // NOTE: This is only utilized in the Global SfM module.
+  int num_retriangulation_iterations = 1;
+
+
   // For bundle adjustment, we may want to use a robust loss function to improve
   // robustness to outliers. The various types of robust loss functions used can
   // be found at //theia/sfm/bundle_adjustment/create_loss_function.h
@@ -243,6 +246,48 @@ struct ReconstructionEstimatorOptions {
   OptimizeIntrinsicsType intrinsics_to_optimize =
       OptimizeIntrinsicsType::FOCAL_LENGTH |
       OptimizeIntrinsicsType::RADIAL_DISTORTION;
+
+  // --------------- Track Subsampling Options --------------- //
+
+  // Bundle adjustment performs joint nonlinear optimization of point positions
+  // and camera poses by minimizing reprojection error. For many scenes, the 3d
+  // points can be highly redundant such that adding more points only marginally
+  // improves the reconstruction quality (if at all) despite a large increase in
+  // runtime. As such, we can reduce the number of 3d points used in bundle
+  // adjustment and still achieve similar or even better quality reconstructions
+  // by carefully choosing the points such that they properly constrain the
+  // optimization.
+  //
+  // If subsampling the tracks is set to true, then the 3d points are chosen
+  // such that they fit the following criteria:
+  //
+  //    a) High confidence (i.e. low reprojection error).
+  //    b) Long tracks are preferred.
+  //    c) The tracks used for optimization provide a good spatial coverage in
+  //       each image.
+  //    d) Each view observes at least K optimized tracks.
+  //
+  // Tracks are selected to optimize for these criteria using the thresholds
+  // below.
+  bool subsample_tracks_for_bundle_adjustment = true;
+
+  // Long tracks are preferred during the track subsampling, but csweeney has
+  // observed that long tracks often are more likely to contain outlier. Thus,
+  // we cap the track length for track selection at 10 then sort tracks first by
+  // the truncated track length, then secondarily by their mean reprojection
+  // error. This allows us to choose the high quality tracks among all the long
+  // tracks.
+  int track_subset_selection_long_track_length_threshold = 10;
+
+  // To satisfy c) above, we divide each image into an image grid with grid cell
+  // widths specified by this threshold. The top ranked track in each grid cell
+  // is chosen to be optimized so that each image has a good spatial coverage.
+  int track_selection_image_grid_cell_size_pixels = 100;
+
+  // The minimum number of optimized tracks required for each view when using
+  // track subsampling. If the view does not observe this many tracks, then all
+  // tracks in the view are optimized.
+  int min_num_optimized_tracks_per_view = 100;
 };
 
 }  // namespace theia

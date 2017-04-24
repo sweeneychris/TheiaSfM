@@ -149,6 +149,25 @@ DEFINE_double(bundle_adjustment_robust_loss_width, 10.0,
               "where the robust loss begins with respect to reprojection error "
               "in pixels.");
 
+// Track Subsampling parameters.
+DEFINE_bool(subsample_tracks_for_bundle_adjustment, false,
+            "Set to true to subsample tracks used for bundle adjustment. This "
+            "can help improve efficiency of bundle adjustment dramatically "
+            "when used properly.");
+DEFINE_int32(track_subset_selection_long_track_length_threshold, 10,
+             "When track subsampling is enabled, longer tracks are chosen with "
+             "a higher probability with the track length capped to this value "
+             "for selection.");
+DEFINE_int32(track_selection_image_grid_cell_size_pixels, 100,
+             "When track subsampling is enabled, tracks are chosen such that "
+             "each view has a good spatial coverage. This is achieved by "
+             "binning tracks into an image grid in each view and choosing the "
+             "best tracks in each grid cell to guarantee spatial coverage. The "
+             "image grid cells are defined to be this width in pixels.");
+DEFINE_int32(min_num_optimized_tracks_per_view, 100,
+             "When track subsampling is enabled, tracks are selected such that "
+             "each view observes a minimum number of optimized tracks.");
+
 using theia::Reconstruction;
 using theia::ReconstructionBuilder;
 using theia::ReconstructionBuilderOptions;
@@ -230,6 +249,18 @@ ReconstructionBuilderOptions SetReconstructionBuilderOptions() {
       StringToLossFunction(FLAGS_bundle_adjustment_robust_loss_function);
   reconstruction_estimator_options.bundle_adjustment_robust_loss_width =
       FLAGS_bundle_adjustment_robust_loss_width;
+
+  // Track subsampling options.
+  reconstruction_estimator_options.subsample_tracks_for_bundle_adjustment =
+      FLAGS_subsample_tracks_for_bundle_adjustment;
+  reconstruction_estimator_options
+      .track_subset_selection_long_track_length_threshold =
+      FLAGS_track_subset_selection_long_track_length_threshold;
+  reconstruction_estimator_options.track_selection_image_grid_cell_size_pixels =
+      FLAGS_track_selection_image_grid_cell_size_pixels;
+  reconstruction_estimator_options.min_num_optimized_tracks_per_view =
+      FLAGS_min_num_optimized_tracks_per_view;
+
   return options;
 }
 
