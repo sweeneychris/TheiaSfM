@@ -44,6 +44,7 @@
 #include "theia/sfm/types.h"
 
 namespace theia {
+class Camera;
 
 // A struct to hold match and projection data between two views. It is assumed
 // that the first view is at the origin with an identity rotation.
@@ -90,6 +91,11 @@ class TwoViewInfo {
 // rotation and position are inverted.
 void SwapCameras(TwoViewInfo* twoview_info);
 
+// Constructs a TwoViewInfo object where camera1 is the "base" camera. In other
+// words, the twoview info provides the relative pose of camera2 w.r.t. camera1.
+void TwoViewInfoFromTwoCameras(const Camera& camera1,
+                               const Camera& camera2,
+                               TwoViewInfo* info);
 }  // namespace theia
 
 CEREAL_CLASS_VERSION(theia::TwoViewInfo, 0);

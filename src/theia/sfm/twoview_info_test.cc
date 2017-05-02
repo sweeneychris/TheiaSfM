@@ -34,6 +34,7 @@
 
 #include "gtest/gtest.h"
 
+#include "theia/sfm/camera/camera.h"
 #include "theia/sfm/twoview_info.h"
 #include "theia/util/random.h"
 
@@ -78,6 +79,95 @@ TEST(TwoViewInfo, SwapCameras) {
     SwapCameras(&info2);
     CheckSwappedCamera(info, info2);
   }
+}
+
+// Test constructing a TwoViewInfo when camera1 has an identity pose. The
+// TwoViewInfo should exactly contain camera2's "global" pose.
+TEST(TwoViewInfo, TwoViewInfoFromTwoCamerasIdentity) {
+  static const double kFocalLength1 = 800.0;
+  static const double kFocalLength2 = 1200.0;
+  static const Eigen::Vector3d kOrientation1(0.0, 0.0, 0.0);
+  static const Eigen::Vector3d kOrientation2(0.1, 0.7, -0.2);
+  static const Eigen::Vector3d kPosition1(0.0, 0.0, 0.0);
+  static const Eigen::Vector3d kPosition2(10.4, 11.3, 4.2);
+  Camera camera1, camera2;
+  camera1.SetFocalLength(kFocalLength1);
+  camera1.SetOrientationFromAngleAxis(kOrientation1);
+  camera1.SetPosition(kPosition1);
+  camera2.SetFocalLength(kFocalLength2);
+  camera2.SetOrientationFromAngleAxis(kOrientation2);
+  camera2.SetPosition(kPosition2);
+
+  TwoViewInfo info_camera1_reference;
+  TwoViewInfoFromTwoCameras(camera1, camera2, &info_camera1_reference);
+  EXPECT_EQ(info_camera1_reference.focal_length_1, kFocalLength1);
+  EXPECT_EQ(info_camera1_reference.focal_length_2, kFocalLength2);
+  const Eigen::Vector3d normalized_position2 = kPosition2.normalized();
+  for (int i = 0; i < 3; i++) {
+    EXPECT_DOUBLE_EQ(info_camera1_reference.rotation_2[i], kOrientation2[i]);
+    EXPECT_DOUBLE_EQ(info_camera1_reference.position_2[i],
+                     normalized_position2[i]);
+  }
+}
+
+// Test constructing a TwoViewInfo when camera1 has an identity pose. The
+// TwoViewInfo should exactly contain camera2's "global" pose. Unlike the
+// previous test, we first construct the TwoViewInfo with camera 2 as the
+// reference, then swap the cameras. This is a nice test for both the swap and
+// TwoViewInfoFromTwoCameras function to ensure they work in harmony as
+// expected.
+TEST(TwoViewInfo, TwoViewInfoFromTwoCamerasIdentitySwap) {
+  static const double kFocalLength1 = 800.0;
+  static const double kFocalLength2 = 1200.0;
+  static const Eigen::Vector3d kOrientation1(0.0, 0.0, 0.0);
+  static const Eigen::Vector3d kOrientation2(0.1, 0.7, -0.2);
+  static const Eigen::Vector3d kPosition1(0.0, 0.0, 0.0);
+  static const Eigen::Vector3d kPosition2(10.4, 11.3, 4.2);
+  Camera camera1, camera2;
+  camera1.SetFocalLength(kFocalLength1);
+  camera1.SetOrientationFromAngleAxis(kOrientation1);
+  camera1.SetPosition(kPosition1);
+  camera2.SetFocalLength(kFocalLength2);
+  camera2.SetOrientationFromAngleAxis(kOrientation2);
+  camera2.SetPosition(kPosition2);
+
+  TwoViewInfo info_camera2_reference;
+  TwoViewInfoFromTwoCameras(camera2, camera1, &info_camera2_reference);
+  TwoViewInfo info_camera1_reference = info_camera2_reference;
+  SwapCameras(&info_camera1_reference);
+
+  EXPECT_EQ(info_camera1_reference.focal_length_1, kFocalLength1);
+  EXPECT_EQ(info_camera1_reference.focal_length_2, kFocalLength2);
+  const Eigen::Vector3d normalized_position2 = kPosition2.normalized();
+  for (int i = 0; i < 3; i++) {
+    EXPECT_DOUBLE_EQ(info_camera1_reference.rotation_2[i], kOrientation2[i]);
+    EXPECT_DOUBLE_EQ(info_camera1_reference.position_2[i],
+                     normalized_position2[i]);
+  }
+}
+
+// Construct TwoViewInfos with each camera as the reference. Then check that the
+// swap function works in both directions.
+TEST(TwoViewInfo, TwoViewInfoFromTwoCameras) {
+  static const double kFocalLength1 = 800.0;
+  static const double kFocalLength2 = 1200.0;
+  static const Eigen::Vector3d kOrientation1(0.3, 1.2, -0.5);
+  static const Eigen::Vector3d kOrientation2(0.1, 0.7, -0.2);
+  static const Eigen::Vector3d kPosition1(10.1, 12.2, 3.3);
+  static const Eigen::Vector3d kPosition2(10.4, 11.3, 4.2);
+  Camera camera1, camera2;
+  camera1.SetFocalLength(kFocalLength1);
+  camera1.SetOrientationFromAngleAxis(kOrientation1);
+  camera1.SetPosition(kPosition1);
+  camera2.SetFocalLength(kFocalLength2);
+  camera2.SetOrientationFromAngleAxis(kOrientation2);
+  camera2.SetPosition(kPosition2);
+
+  TwoViewInfo info_camera1_reference, info_camera2_reference;
+  TwoViewInfoFromTwoCameras(camera1, camera2, &info_camera1_reference);
+  TwoViewInfoFromTwoCameras(camera2, camera1, &info_camera2_reference);
+  CheckSwappedCamera(info_camera1_reference, info_camera2_reference);
+  CheckSwappedCamera(info_camera2_reference, info_camera1_reference);
 }
 
 }  // namespace theia
