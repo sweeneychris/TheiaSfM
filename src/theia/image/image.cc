@@ -34,10 +34,10 @@
 
 #include "theia/image/image.h"
 
-#include <Eigen/Core>
-#include <glog/logging.h>
 #include <OpenImageIO/imagebuf.h>
 #include <OpenImageIO/imagebufalgo.h>
+#include <glog/logging.h>
+#include <Eigen/Core>
 
 #include <algorithm>
 #include <cmath>
@@ -51,9 +51,7 @@
 namespace theia {
 
 // Read from file.
-FloatImage::FloatImage(const std::string& filename) {
-  Read(filename);
-}
+FloatImage::FloatImage(const std::string& filename) { Read(filename); }
 
 FloatImage::FloatImage(const FloatImage& image_to_copy) {
   CHECK(image_.copy(image_to_copy.image_));
@@ -80,9 +78,7 @@ FloatImage& FloatImage::operator=(const FloatImage& image2) {
   return *this;
 }
 
-OpenImageIO::ImageBuf& FloatImage::GetOpenImageIOImageBuf() {
-  return image_;
-}
+OpenImageIO::ImageBuf& FloatImage::GetOpenImageIOImageBuf() { return image_; }
 
 const OpenImageIO::ImageBuf& FloatImage::GetOpenImageIOImageBuf() const {
   return image_;
@@ -98,9 +94,7 @@ int FloatImage::Height() const { return image_.spec().height; }
 
 int FloatImage::Channels() const { return image_.nchannels(); }
 
-void FloatImage::SetXY(const int x,
-                       const int y,
-                       const int c,
+void FloatImage::SetXY(const int x, const int y, const int c,
                        const float value) {
   DCHECK_GE(x, 0);
   DCHECK_LT(x, Width());
@@ -143,32 +137,26 @@ Eigen::Vector3f FloatImage::GetXY(const int x, const int y) const {
   return rgb;
 }
 
-void FloatImage::SetRowCol(const int row,
-                           const int col,
-                           const int channel,
+void FloatImage::SetRowCol(const int row, const int col, const int channel,
                            const float value) {
   SetXY(col, row, channel, value);
 }
 
-void FloatImage::SetRowCol(const int row,
-                           const int col,
+void FloatImage::SetRowCol(const int row, const int col,
                            const Eigen::Vector3f& rgb) {
   SetXY(col, row, rgb);
 }
 
-float FloatImage::GetRowCol(const int row,
-                            const int col,
+float FloatImage::GetRowCol(const int row, const int col,
                             const int channel) const {
   return GetXY(col, row, channel);
 }
 
-Eigen::Vector3f FloatImage::GetRowCol(const int row,
-                                      const int col) const {
+Eigen::Vector3f FloatImage::GetRowCol(const int row, const int col) const {
   return GetXY(col, row);
 }
 
-float FloatImage::BilinearInterpolate(const double x,
-                                      const double y,
+float FloatImage::BilinearInterpolate(const double x, const double y,
                                       const int c) const {
   DCHECK_GE(c, 0);
   DCHECK_LT(c, Channels());
@@ -206,14 +194,26 @@ void FloatImage::ConvertToRGBImage() {
     return;
   }
 
-  // Copy the single grayscale channel into r, g, and b.
-  const OpenImageIO::ImageBuf source(image_);
-  OpenImageIO::ImageSpec image_spec(Width(), Height(), 3,
-                                    OpenImageIO::TypeDesc::FLOAT);
-  image_.reset(image_spec);
-  OpenImageIO::ImageBufAlgo::paste(image_, 0, 0, 0, 0, source);
-  OpenImageIO::ImageBufAlgo::paste(image_, 0, 0, 0, 1, source);
-  OpenImageIO::ImageBufAlgo::paste(image_, 0, 0, 0, 2, source);
+  if (Channels() == 1) {
+    // Copy the single grayscale channel into r, g, and b.
+    const OpenImageIO::ImageBuf source(image_);
+    const OpenImageIO::ImageSpec image_spec(Width(), Height(), 3,
+                                            OpenImageIO::TypeDesc::FLOAT);
+    image_.reset(image_spec);
+    OpenImageIO::ImageBufAlgo::paste(image_, 0, 0, 0, 0, source);
+    OpenImageIO::ImageBufAlgo::paste(image_, 0, 0, 0, 1, source);
+    OpenImageIO::ImageBufAlgo::paste(image_, 0, 0, 0, 2, source);
+  } else if (Channels() > 3) {
+    // Copy only the r,g,b channels and drop the rest.
+    const OpenImageIO::ImageBuf source(image_);
+    const OpenImageIO::ImageSpec image_spec(Width(), Height(), 3,
+                                            OpenImageIO::TypeDesc::FLOAT);
+    image_.reset(image_spec);
+    OpenImageIO::ImageBufAlgo::channels(image_, source, 3, NULL);
+  } else {
+    LOG(FATAL) << "Converting from " << Channels()
+               << " channels to RGB is unsupported.";
+  }
 }
 
 FloatImage FloatImage::AsGrayscaleImage() const {
@@ -333,10 +333,13 @@ void FloatImage::Resize(int new_width, int new_height, int num_channels) {
                                       OpenImageIO::TypeDesc::FLOAT);
     image_.reset(image_spec);
   } else {
+    CHECK(Channels() < num_channels) << "Decreasing channels is not supported. "
+                                        "Try ConvertToRGBImage() or "
+                                        "ConvertToGrayscaleImage().";
     OpenImageIO::ROI roi(0, new_width, 0, new_height, 0, 1, 0, num_channels);
     OpenImageIO::ImageBuf dst;
     CHECK(OpenImageIO::ImageBufAlgo::resize(dst, image_, nullptr, roi))
-      << OpenImageIO::geterror();
+        << OpenImageIO::geterror();
     image_.copy(dst);
   }
 }
@@ -350,8 +353,7 @@ void FloatImage::ResizeRowsCols(int new_rows, int new_cols) {
 }
 
 void FloatImage::Resize(double scale) {
-  Resize(static_cast<int>(scale * Width()),
-         static_cast<int>(scale * Height()),
+  Resize(static_cast<int>(scale * Width()), static_cast<int>(scale * Height()),
          Channels());
 }
 
