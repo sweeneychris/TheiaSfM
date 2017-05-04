@@ -206,14 +206,24 @@ void FloatImage::ConvertToRGBImage() {
     return;
   }
 
-  // Copy the single grayscale channel into r, g, and b.
-  const OpenImageIO::ImageBuf source(image_);
-  OpenImageIO::ImageSpec image_spec(Width(), Height(), 3,
-                                    OpenImageIO::TypeDesc::FLOAT);
-  image_.reset(image_spec);
-  OpenImageIO::ImageBufAlgo::paste(image_, 0, 0, 0, 0, source);
-  OpenImageIO::ImageBufAlgo::paste(image_, 0, 0, 0, 1, source);
-  OpenImageIO::ImageBufAlgo::paste(image_, 0, 0, 0, 2, source);
+  if (Channels() == 1) {
+    // Copy the single grayscale channel into r, g, and b.
+    const OpenImageIO::ImageBuf source(image_);
+    OpenImageIO::ImageSpec image_spec(Width(), Height(), 3,
+        OpenImageIO::TypeDesc::FLOAT);
+    image_.reset(image_spec);
+    OpenImageIO::ImageBufAlgo::paste(image_, 0, 0, 0, 0, source);
+    OpenImageIO::ImageBufAlgo::paste(image_, 0, 0, 0, 1, source);
+    OpenImageIO::ImageBufAlgo::paste(image_, 0, 0, 0, 2, source);
+  }
+  else if (Channels() > 3) {
+    // Copy only the r,g,b channels and drop the rest.
+    const OpenImageIO::ImageBuf source(image_);
+    OpenImageIO::ImageSpec image_spec(Width(), Height(), 3,
+        OpenImageIO::TypeDesc::FLOAT);
+    image_.reset(image_spec);
+    OpenImageIO::ImageBufAlgo::channels (image_, source, 3, NULL);
+  }
 }
 
 FloatImage FloatImage::AsGrayscaleImage() const {
