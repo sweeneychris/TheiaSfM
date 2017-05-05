@@ -32,7 +32,7 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#ifndef THEIA_SFM_CHOOSE_GOOD_TRACKS_FOR_BUNDLE_ADJUSTMENT_H_
+#ifndef THEIA_SFM_SELECT_GOOD_TRACKS_FOR_BUNDLE_ADJUSTMENT_H_
 #define THEIA_SFM_SELECT_GOOD_TRACKS_FOR_BUNDLE_ADJUSTMENT_H_
 
 #include <unordered_set>
@@ -67,6 +67,15 @@ class Reconstruction;
 // 100.
 bool SelectGoodTracksForBundleAdjustment(
     const Reconstruction& reconstruction,
+    const int long_track_length_threshold,
+    const int image_grid_cell_size_pixels,
+    const int min_num_optimized_tracks_per_view,
+    std::unordered_set<TrackId>* tracks_to_optimize);
+
+// Same as above, but only selecting tracks from the set of views provided.
+bool SelectGoodTracksForBundleAdjustment(
+    const Reconstruction& reconstruction,
+    const std::unordered_set<ViewId>& view_ids,
     const int long_track_length_threshold,
     const int image_grid_cell_size_pixels,
     const int min_num_optimized_tracks_per_view,

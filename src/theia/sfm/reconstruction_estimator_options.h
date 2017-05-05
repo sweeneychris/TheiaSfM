@@ -287,7 +287,7 @@ struct ReconstructionEstimatorOptions {
   // The minimum number of optimized tracks required for each view when using
   // track subsampling. If the view does not observe this many tracks, then all
   // tracks in the view are optimized.
-  int min_num_optimized_tracks_per_view = 100;
+  int min_num_optimized_tracks_per_view = 200;
 };
 
 }  // namespace theia

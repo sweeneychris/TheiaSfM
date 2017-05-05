@@ -186,6 +186,16 @@ TEST(IncrementalReconstructionEstimator, VariableIntrinsics) {
   BuildAndVerifyReconstruction(kPositionToleranceMeters, options);
 }
 
+TEST(IncrementalReconstructionEstimator, TrackSubsetSelection) {
+  static const double kPositionToleranceMeters = 1e-2;
+
+  ReconstructionEstimatorOptions options;
+  options.reconstruction_estimator_type =
+      ReconstructionEstimatorType::INCREMENTAL;
+  options.subsample_tracks_for_bundle_adjustment = true;
+  BuildAndVerifyReconstruction(kPositionToleranceMeters, options);
+}
+
 TEST(IncrementalReconstructionEstimator, InitializedReconstruction) {
   static const double kPositionToleranceMeters = 1e-2;
 
