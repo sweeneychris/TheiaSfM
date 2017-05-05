@@ -544,20 +544,34 @@ bool IncrementalReconstructionEstimator::PartialBundleAdjustment() {
   std::unordered_set<ViewId> views_to_optimize(
       reconstructed_views_.end() - partial_ba_size,
       reconstructed_views_.end());
-  // Get the tracks observed in these views.
+
+  // If desired, select good tracks to optimize for BA. This dramatically
+  // reduces the number of parameters in bundle adjustment, and does a decent
+  // job of filtering tracks with outliers that may slow down the nonlinear
+  // optimization.
   std::unordered_set<TrackId> tracks_to_optimize;
-  for (const ViewId view_to_optimize : views_to_optimize) {
-    const View* view = reconstruction_->View(view_to_optimize);
-    const auto& tracks_in_view = view->TrackIds();
-    for (const TrackId track_in_view : tracks_in_view) {
-      tracks_to_optimize.insert(track_in_view);
+  if (!options_.subsample_tracks_for_bundle_adjustment ||
+      !SelectGoodTracksForBundleAdjustment(
+          *reconstruction_,
+          views_to_optimize,
+          options_.track_subset_selection_long_track_length_threshold,
+          options_.track_selection_image_grid_cell_size_pixels,
+          options_.min_num_optimized_tracks_per_view,
+          &tracks_to_optimize)) {
+    // If the track selection fails or is not desired, then add all tracks from
+    // the views we wish to optimize.
+    for (const ViewId view_to_optimize : views_to_optimize) {
+      const View* view = reconstruction_->View(view_to_optimize);
+      const auto& tracks_in_view = view->TrackIds();
+      for (const TrackId track_in_view : tracks_in_view) {
+        tracks_to_optimize.insert(track_in_view);
+      }
     }
   }
+  LOG(INFO) << "Selected " << tracks_to_optimize.size()
+            << " tracks to optimize.";
 
-  // TODO: We should write an interface to allow for track subset selection
-  // during partial BA. This would provide obvious speedups, however, it may
-  // actually be beneficial to optimize the entire local reconstruction and only
-  // perform track subset selection for full BA. More testing should be done.
+  // Perform partial BA.
   ba_summary = BundleAdjustPartialReconstruction(bundle_adjustment_options_,
                                                  views_to_optimize,
                                                  tracks_to_optimize,
