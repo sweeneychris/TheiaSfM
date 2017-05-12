@@ -46,8 +46,11 @@
 #include "theia/sfm/reconstruction_estimator_utils.h"
 #include "theia/sfm/transformation/align_reconstructions.h"
 #include "theia/sfm/view_graph/view_graph.h"
+#include "theia/util/random.h"
 
 namespace theia {
+RandomNumberGenerator rng(52);
+
 void ReadInput(Reconstruction* gt_reconstruction,
                Reconstruction* reconstruction,
                ViewGraph* view_graph) {
@@ -159,6 +162,7 @@ TEST(IncrementalReconstructionEstimator, BasicTest) {
   static const double kPositionToleranceMeters = 1e-2;
 
   ReconstructionEstimatorOptions options;
+  options.rng = std::make_shared<RandomNumberGenerator>(rng);
   options.reconstruction_estimator_type =
       ReconstructionEstimatorType::INCREMENTAL;
   options.intrinsics_to_optimize = OptimizeIntrinsicsType::NONE;
@@ -169,6 +173,7 @@ TEST(IncrementalReconstructionEstimator, RobustCostFunction) {
   static const double kPositionToleranceMeters = 1e-2;
 
   ReconstructionEstimatorOptions options;
+  options.rng = std::make_shared<RandomNumberGenerator>(rng);
   options.reconstruction_estimator_type =
       ReconstructionEstimatorType::INCREMENTAL;
   options.bundle_adjustment_loss_function_type = LossFunctionType::HUBER;
@@ -180,6 +185,7 @@ TEST(IncrementalReconstructionEstimator, VariableIntrinsics) {
   static const double kPositionToleranceMeters = 1e-2;
 
   ReconstructionEstimatorOptions options;
+  options.rng = std::make_shared<RandomNumberGenerator>(rng);
   options.reconstruction_estimator_type =
       ReconstructionEstimatorType::INCREMENTAL;
   options.intrinsics_to_optimize = OptimizeIntrinsicsType::FOCAL_LENGTH;
@@ -190,6 +196,7 @@ TEST(IncrementalReconstructionEstimator, TrackSubsetSelection) {
   static const double kPositionToleranceMeters = 1e-2;
 
   ReconstructionEstimatorOptions options;
+  options.rng = std::make_shared<RandomNumberGenerator>(rng);
   options.reconstruction_estimator_type =
       ReconstructionEstimatorType::INCREMENTAL;
   options.subsample_tracks_for_bundle_adjustment = true;
@@ -201,6 +208,7 @@ TEST(IncrementalReconstructionEstimator, InitializedReconstruction) {
   static const double kPositionToleranceMeters = 1e-2;
 
   ReconstructionEstimatorOptions options;
+  options.rng = std::make_shared<RandomNumberGenerator>(rng);
   options.reconstruction_estimator_type =
       ReconstructionEstimatorType::INCREMENTAL;
   options.intrinsics_to_optimize = OptimizeIntrinsicsType::NONE;
