@@ -269,7 +269,7 @@ struct ReconstructionEstimatorOptions {
   //
   // Tracks are selected to optimize for these criteria using the thresholds
   // below.
-  bool subsample_tracks_for_bundle_adjustment = true;
+  bool subsample_tracks_for_bundle_adjustment = false;
 
   // Long tracks are preferred during the track subsampling, but csweeney has
   // observed that long tracks often are more likely to contain outlier. Thus,

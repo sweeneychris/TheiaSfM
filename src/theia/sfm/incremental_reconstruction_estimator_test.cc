@@ -193,6 +193,7 @@ TEST(IncrementalReconstructionEstimator, TrackSubsetSelection) {
   options.reconstruction_estimator_type =
       ReconstructionEstimatorType::INCREMENTAL;
   options.subsample_tracks_for_bundle_adjustment = true;
+  options.intrinsics_to_optimize = OptimizeIntrinsicsType::NONE;
   BuildAndVerifyReconstruction(kPositionToleranceMeters, options);
 }
 
