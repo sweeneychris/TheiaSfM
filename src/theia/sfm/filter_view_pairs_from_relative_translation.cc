@@ -214,9 +214,10 @@ void TranslationFilteringIteration(
 
   // Get a random vector to project all relative translations on to.
   const Vector3d random_axis =
-      Vector3d(local_rng->RandGaussian(direction_mean[0], direction_variance[0]),
-               local_rng->RandGaussian(direction_mean[1], direction_variance[1]),
-               local_rng->RandGaussian(direction_mean[2], direction_variance[2]))
+      Vector3d(
+          local_rng->RandGaussian(direction_mean[0], direction_variance[0]),
+          local_rng->RandGaussian(direction_mean[1], direction_variance[1]),
+          local_rng->RandGaussian(direction_mean[2], direction_variance[2]))
           .normalized();
 
   // Project all vectors.

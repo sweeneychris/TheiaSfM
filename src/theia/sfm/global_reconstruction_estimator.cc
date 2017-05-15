@@ -461,13 +461,20 @@ bool GlobalReconstructionEstimator::BundleAdjustment() {
   // job of filtering tracks with outliers that may slow down the nonlinear
   // optimization.
   std::unordered_set<TrackId> tracks_to_optimize;
-  if (!options_.subsample_tracks_for_bundle_adjustment ||
-      !SelectGoodTracksForBundleAdjustment(
+  if (options_.subsample_tracks_for_bundle_adjustment &&
+      SelectGoodTracksForBundleAdjustment(
           *reconstruction_,
           options_.track_subset_selection_long_track_length_threshold,
           options_.track_selection_image_grid_cell_size_pixels,
           options_.min_num_optimized_tracks_per_view,
           &tracks_to_optimize)) {
+    // Set all tracks that were not chosen for BA to be unestimated so that they
+    // do not affect the bundle adjustment optimization.
+    const auto& view_ids = reconstruction_->ViewIds();
+    SetTracksInViewsToUnestimated(view_ids,
+                                  tracks_to_optimize,
+                                  reconstruction_);
+  } else {
     GetEstimatedTracksFromReconstruction(*reconstruction_, &tracks_to_optimize);
   }
   LOG(INFO) << "Selected " << tracks_to_optimize.size()

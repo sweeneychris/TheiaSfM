@@ -46,7 +46,7 @@ class Reconstruction;
 // by choosing only a subset of 3d points to optimize, as the 3d points tend to
 // have increasing scene redundancy. If the points are chosen in a way that
 // properly constrains the nonlinear optimization, similar results in quality
-// may be observed compared to optimized all tracks.
+// may be observed compared to optimizing all tracks.
 //
 // The 3d points are chosen such that they fit the following criteria:
 //    a) High confidence (i.e. low reprojection error).

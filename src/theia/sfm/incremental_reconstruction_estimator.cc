@@ -40,6 +40,7 @@
 #include <algorithm>
 #include <functional>
 #include <sstream>  // NOLINT
+#include <tuple>
 #include <unordered_map>
 #include <utility>
 #include <vector>
@@ -275,7 +276,6 @@ ReconstructionEstimatorSummary IncrementalReconstructionEstimator::Estimate(
         summary_.success = false;
         return summary_;
       }
-
     }
   }
 
@@ -487,13 +487,17 @@ bool IncrementalReconstructionEstimator::FullBundleAdjustment() {
   // job of filtering tracks with outliers that may slow down the nonlinear
   // optimization.
   std::unordered_set<TrackId> tracks_to_optimize;
-  if (!options_.subsample_tracks_for_bundle_adjustment ||
-      !SelectGoodTracksForBundleAdjustment(
+  if (options_.subsample_tracks_for_bundle_adjustment &&
+      SelectGoodTracksForBundleAdjustment(
           *reconstruction_,
           options_.track_subset_selection_long_track_length_threshold,
           options_.track_selection_image_grid_cell_size_pixels,
           options_.min_num_optimized_tracks_per_view,
           &tracks_to_optimize)) {
+    SetTracksInViewsToUnestimated(reconstructed_views_,
+                                  tracks_to_optimize,
+                                  reconstruction_);
+  } else {
     GetEstimatedTracksFromReconstruction(*reconstruction_, &tracks_to_optimize);
   }
   LOG(INFO) << "Selected " << tracks_to_optimize.size()
@@ -550,14 +554,18 @@ bool IncrementalReconstructionEstimator::PartialBundleAdjustment() {
   // job of filtering tracks with outliers that may slow down the nonlinear
   // optimization.
   std::unordered_set<TrackId> tracks_to_optimize;
-  if (!options_.subsample_tracks_for_bundle_adjustment ||
-      !SelectGoodTracksForBundleAdjustment(
+  if (options_.subsample_tracks_for_bundle_adjustment &&
+      SelectGoodTracksForBundleAdjustment(
           *reconstruction_,
           views_to_optimize,
           options_.track_subset_selection_long_track_length_threshold,
           options_.track_selection_image_grid_cell_size_pixels,
           options_.min_num_optimized_tracks_per_view,
           &tracks_to_optimize)) {
+    SetTracksInViewsToUnestimated(views_to_optimize,
+                                  tracks_to_optimize,
+                                  reconstruction_);
+  } else {
     // If the track selection fails or is not desired, then add all tracks from
     // the views we wish to optimize.
     for (const ViewId view_to_optimize : views_to_optimize) {
