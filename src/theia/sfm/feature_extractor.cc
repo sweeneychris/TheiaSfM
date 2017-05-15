@@ -81,6 +81,31 @@ bool FeatureExtractor::Extract(
   return true;
 }
 
+bool FeatureExtractor::Extract(
+    const std::vector<FloatImage>& images,
+    std::vector<std::vector<Keypoint> >* keypoints,
+    std::vector<std::vector<Eigen::VectorXf> >* descriptors) {
+  CHECK_GT(images.size(), 0) << "FeatureExtractor::Extract requires at "
+            "least one image in order to extract "
+            "features.";
+  CHECK_NOTNULL(keypoints)->resize(images.size());
+  CHECK_NOTNULL(descriptors)->resize(images.size());
+
+  // The thread pool will wait to finish all jobs when it goes out of scope.
+  const int num_threads =
+          std::min(options_.num_threads, static_cast<int>(images.size()));
+  ThreadPool feature_extractor_pool(num_threads);
+  for (int i = 0; i < images.size(); i++) {
+    feature_extractor_pool.Add(
+            &FeatureExtractor::ExtractFeaturesFromImage,
+            this,
+            images[i],
+            &(*keypoints)[i],
+            &(*descriptors)[i]);
+  }
+  return true;
+}
+
 bool FeatureExtractor::ExtractToDisk(
     const std::vector<std::string>& filenames) {
   write_features_to_disk_ = true;
@@ -102,33 +127,13 @@ bool FeatureExtractor::ExtractFeatures(
     std::vector<Keypoint>* keypoints,
     std::vector<Eigen::VectorXf>* descriptors) {
   std::unique_ptr<FloatImage> image(new FloatImage(filename));
-
-  // We create these variable here instead of upon the construction of the
-  // object so that they can be thread-safe. We *should* be able to use the
-  // static thread_local keywords, but apparently Mac OS-X's version of clang
-  // does not actually support it!
-  //
-  // TODO(cmsweeney): Change this so that each thread in the threadpool receives
-  // exactly one object.
-  std::unique_ptr<DescriptorExtractor> descriptor_extractor =
-      CreateDescriptorExtractor(options_.descriptor_extractor_type,
-                                options_.feature_density);
-
-  // Exit if the descriptor extraction fails.
-  if (!descriptor_extractor->DetectAndExtractDescriptors(*image,
-                                                         keypoints,
-                                                         descriptors)) {
+  if (!ExtractFeaturesFromImage(*image, keypoints, descriptors)) {
     LOG(ERROR) << "Could not extract descriptors in image " << filename;
     return false;
+  } else {
+    VLOG(1) << "Successfully extracted " << descriptors->size()
+            << " features from image " << filename;
   }
-
-  if (keypoints->size() > options_.max_num_features) {
-    keypoints->resize(options_.max_num_features);
-    descriptors->resize(options_.max_num_features);
-  }
-
-  VLOG(1) << "Successfully extracted " << descriptors->size()
-          << " features from image " << filename;
 
   if (write_features_to_disk_) {
     std::string output_dir = options_.output_directory;
@@ -144,12 +149,40 @@ bool FeatureExtractor::ExtractFeatures(
 
     // Write the features to disk.
     CHECK(WriteKeypointsAndDescriptors(features_file, *keypoints, *descriptors))
-        << "Could not write features for image " << image_filename
-        << " from file " << features_file;
+      << "Could not write features for image " << image_filename
+      << " from file " << features_file;
 
     // Remove the features from memory.
     keypoints->clear();
     descriptors->clear();
+  }
+}
+
+bool FeatureExtractor::ExtractFeaturesFromImage(
+    const FloatImage& image,
+    std::vector<Keypoint>* keypoints,
+    std::vector<Eigen::VectorXf>* descriptors) {
+  // We create these variable here instead of upon the construction of the
+  // object so that they can be thread-safe. We *should* be able to use the
+  // static thread_local keywords, but apparently Mac OS-X's version of clang
+  // does not actually support it!
+  //
+  // TODO(cmsweeney): Change this so that each thread in the threadpool receives
+  // exactly one object.
+  std::unique_ptr<DescriptorExtractor> descriptor_extractor =
+      CreateDescriptorExtractor(options_.descriptor_extractor_type,
+                                options_.feature_density);
+
+  // Exit if the descriptor extraction fails.
+  if (!descriptor_extractor->DetectAndExtractDescriptors(image,
+                                                         keypoints,
+                                                         descriptors)) {
+    return false;
+  }
+
+  if (keypoints->size() > options_.max_num_features) {
+    keypoints->resize(options_.max_num_features);
+    descriptors->resize(options_.max_num_features);
   }
 
   return true;
