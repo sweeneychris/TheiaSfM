@@ -63,24 +63,16 @@ template <typename T1, typename T2> struct hash<std::pair<T1, T2> > {
   }
 };
 
-template <> struct hash<Eigen::Vector2i> {
-  size_t operator()(const Eigen::Vector2i& point) const {
-    hash<std::pair<int, int> > h1;
-    return h1(std::make_pair(point.x(), point.y()));
-  }
-};
-
-template <> struct hash<Eigen::Vector2f> {
-  size_t operator()(const Eigen::Vector2f& point) const {
-    hash<std::pair<float, float> > h1;
-    return h1(std::make_pair(point.x(), point.y()));
-  }
-};
-
-template <> struct hash<Eigen::Vector2d> {
-  size_t operator()(const Eigen::Vector2d& point) const {
-    hash<std::pair<double, double> > h1;
-    return h1(std::make_pair(point.x(), point.y()));
+// A generic hash function that hashes constant size Eigen matrices and vectors.
+template <typename T, int N, int M>
+struct hash<Eigen::Matrix<T, N, M> > {
+  size_t operator()(const Eigen::Matrix<T, N, M>& matrix) const {
+    size_t seed = 0;
+    const T* data = matrix.data();
+    for (size_t i = 0; i < matrix.size(); ++i) {
+      seed ^= std::hash<T>()(data[i]) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    }
+    return seed;
   }
 };
 
