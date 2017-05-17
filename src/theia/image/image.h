@@ -47,7 +47,7 @@ namespace theia {
 // the caller to choose to appropriate RGB vs grayscale method.
 class FloatImage {
  public:
-  FloatImage() {}
+  FloatImage();
 
   // Read from file.
   explicit FloatImage(const std::string& filename);

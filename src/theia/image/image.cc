@@ -50,6 +50,8 @@
 
 namespace theia {
 
+FloatImage::FloatImage() : FloatImage(0, 0, 1) {}
+
 // Read from file.
 FloatImage::FloatImage(const std::string& filename) { Read(filename); }
 
@@ -333,9 +335,9 @@ void FloatImage::Resize(int new_width, int new_height, int num_channels) {
                                       OpenImageIO::TypeDesc::FLOAT);
     image_.reset(image_spec);
   } else {
-    CHECK(Channels() < num_channels) << "Decreasing channels is not supported. "
-                                        "Try ConvertToRGBImage() or "
-                                        "ConvertToGrayscaleImage().";
+    CHECK_LE(Channels(), num_channels) << "Decreasing channels is not "
+                                          "supported. Try ConvertToRGBImage() "
+                                          "or ConvertToGrayscaleImage().";
     OpenImageIO::ROI roi(0, new_width, 0, new_height, 0, 1, 0, num_channels);
     OpenImageIO::ImageBuf dst;
     CHECK(OpenImageIO::ImageBufAlgo::resize(dst, image_, nullptr, roi))
