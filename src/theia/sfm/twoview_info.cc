@@ -60,37 +60,4 @@ void SwapCameras(TwoViewInfo* twoview_info) {
   twoview_info->rotation_2 *= -1.0;
 }
 
-// Constructs the TwoViewInfo object from two cameras
-void TwoViewInfoFromTwoCameras(const Camera& camera1,
-                               const Camera& camera2,
-                               TwoViewInfo* info) {
-  CHECK_NOTNULL(info);
-
-  // Fetch the "world-to-camera" rotation matrices for convenience.
-  const Eigen::Matrix3d rotation1 = camera1.GetOrientationAsRotationMatrix();
-  const Eigen::Matrix3d rotation2 = camera2.GetOrientationAsRotationMatrix();
-
-  // Construct the two view info such that camera1 is the reference view.
-  info->focal_length_1 = camera1.FocalLength();
-  info->focal_length_2 = camera2.FocalLength();
-
-  // The relative rotation of camera2 is: R_12 = R2 * R1^t. This is constructed
-  // such that rotations map from the coordinate system of camera 1 into the
-  // coordinate system of camera2.
-  const Eigen::Matrix3d relative_rotation = rotation2 * rotation1.transpose();
-  ceres::RotationMatrixToAngleAxis(
-      ceres::ColumnMajorAdapter3x3(relative_rotation.data()),
-      info->rotation_2.data());
-
-  // Compute the position of camera 2 in the coordinate system of camera 1 using
-  // the standard projection equation:
-  //    X' = R * (X - c)
-  // which yields:
-  //    c2' = R1 * (c2 - c1).
-  info->position_2 =
-      rotation1 * (camera2.GetPosition() - camera1.GetPosition());
-  // Scale the relative position to be a unit-length vector.
-  info->position_2.normalize();
-}
-
 }  // namespace theia
