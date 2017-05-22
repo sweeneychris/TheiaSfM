@@ -159,6 +159,65 @@ class EstimatePositionsLinearTest : public ::testing::Test {
     }
   }
 
+  void TestLinearPositionEstimatorWithBaselines(
+      const int num_views,
+      const int num_tracks,
+      const int num_view_pairs,
+      const double pose_noise,
+      const double position_tolerance) {
+    // Set up the camera.
+    SetupReconstruction(num_views, num_tracks);
+
+    // Set up the linear positions estimator.
+    options_.estimate_relative_baselines_from_features = false;
+    LinearPositionEstimator position_estimator(options_, reconstruction_);
+
+    // Extract triplets from the reconstruction and save the baseline.
+    const auto& view_ids = reconstruction_.ViewIds();
+    for (int i = 0; i < view_ids.size(); i++) {
+      const View* view1 = reconstruction_.View(view_ids[i]);
+      ViewTriplet triplet;
+      triplet.view_ids[0] = view_ids[i];
+      for (int j = i + 1; j < view_ids.size(); j++) {
+        const View* view2 = reconstruction_.View(view_ids[j]);
+        triplet.view_ids[1] = view_ids[j];
+        TwoViewInfoFromTwoCameras<false>(view1->Camera(),
+                                         view2->Camera(),
+                                         &triplet.info_one_two);
+
+        for (int k = j + 1; k < view_ids.size(); k++) {
+          const View* view3 = reconstruction_.View(view_ids[k]);
+          triplet.view_ids[2] = view_ids[k];
+          TwoViewInfoFromTwoCameras<false>(view1->Camera(),
+                                           view3->Camera(),
+                                           &triplet.info_one_three);
+          TwoViewInfoFromTwoCameras<false>(view2->Camera(),
+                                           view3->Camera(),
+                                           &triplet.info_two_three);
+          // Add the triplet constraint to the problem.
+          position_estimator.AddTripletConstraint(triplet);
+        }
+      }
+    }
+
+    std::unordered_map<ViewId, Vector3d> estimated_positions;
+    EXPECT_TRUE(position_estimator.EstimatePositions(orientations_,
+                                                     &estimated_positions));
+    EXPECT_EQ(estimated_positions.size(), positions_.size());
+
+    // Align the positions and measure the error.
+    AlignPositions(positions_, &estimated_positions);
+    for (const auto& position : positions_) {
+      const Vector3d& estimated_position =
+          FindOrDie(estimated_positions, position.first);
+      const double position_error =
+          (position.second - estimated_position).norm();
+      EXPECT_LT(position_error, position_tolerance)
+          << "\ng.t. position = " << position.second.transpose()
+          << "\nestimated position = " << estimated_position.transpose();
+    }
+  }
+
  protected:
   void SetUp() {}
 
@@ -278,6 +337,31 @@ TEST_F(EstimatePositionsLinearTest, SmallTestWithNoise) {
                               kNumViewPairs,
                               kPoseNoiseDegrees,
                               kTolerance);
+}
+
+TEST_F(EstimatePositionsLinearTest, SmallTestNoNoiseWithBaselines) {
+  static const double kTolerance = 1e-4;
+  static const int kNumViews = 4;
+  static const int kNumTracksPerView = 50;
+  static const int kNumViewPairs = 6;
+  TestLinearPositionEstimatorWithBaselines(kNumViews,
+                                           kNumTracksPerView,
+                                           kNumViewPairs,
+                                           0.0,
+                                           kTolerance);
+}
+
+TEST_F(EstimatePositionsLinearTest, SmallTestWithNoiseWithBaselines) {
+  static const double kTolerance = 0.25;
+  static const int kNumViews = 4;
+  static const int kNumTracksPerView = 50;
+  static const int kNumViewPairs = 6;
+  static const double kPoseNoiseDegrees = 1.0;
+  TestLinearPositionEstimatorWithBaselines(kNumViews,
+                                           kNumTracksPerView,
+                                           kNumViewPairs,
+                                           kPoseNoiseDegrees,
+                                           kTolerance);
 }
 
 }  // namespace theia
