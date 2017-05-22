@@ -79,6 +79,25 @@ class RobustRotationEstimator : public RotationEstimator {
       const std::unordered_map<ViewIdPair, TwoViewInfo>& view_pairs,
       std::unordered_map<ViewId, Eigen::Vector3d>* global_orientations);
 
+  // An alternative interface is to instead add relative rotation constraints
+  // one by one with AddRelativeRotationConstraint, then call the
+  // EstimateRotations interface below. This allows the caller to add multiple
+  // constraints for the same view id pair, which may lead to more accurate
+  // rotation estimates. Please see the following reference for an example of
+  // how to obtain multiple constraints for pairs of views:
+  //
+  //   "Parallel Structure from Motion from Local Increment to Global Averaging"
+  //   by Zhu et al (Arxiv 2017). https://arxiv.org/abs/1702.08601
+  void AddRelativeRotationConstraint(const ViewIdPair& view_id_pair,
+                                     const Eigen::Vector3d& relative_rotation);
+
+  // Given the relative rotation constraints added with
+  // AddRelativeRotationConstraint, this method returns the robust estimation of
+  // global camera orientations. Like the method above, this requires an initial
+  // estimate of the global orientations.
+  bool EstimateRotations(
+      std::unordered_map<ViewId, Eigen::Vector3d>* global_orientations);
+
  protected:
   // Sets up the sparse linear system such that dR_ij = dR_j - dR_i. This is the
   // first-order approximation of the angle-axis rotations. This should only be
@@ -106,7 +125,7 @@ class RobustRotationEstimator : public RotationEstimator {
   const Options options_;
 
   // The pairwise relative rotations used to compute the global rotations.
-  const std::unordered_map<ViewIdPair, TwoViewInfo>* view_pairs_;
+  std::vector<std::pair<ViewIdPair, Eigen::Vector3d> > relative_rotations_;
 
   // The global orientation estimates for each camera.
   std::unordered_map<ViewId, Eigen::Vector3d>* global_orientations_;

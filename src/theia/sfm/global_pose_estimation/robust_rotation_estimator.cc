@@ -52,10 +52,23 @@ namespace theia {
 bool RobustRotationEstimator::EstimateRotations(
     const std::unordered_map<ViewIdPair, TwoViewInfo>& view_pairs,
     std::unordered_map<ViewId, Eigen::Vector3d>* global_orientations) {
-  view_pairs_ = &view_pairs;
+  for (const auto& view_pair : view_pairs) {
+    AddRelativeRotationConstraint(view_pair.first, view_pair.second.rotation_2);
+  }
+  return EstimateRotations(global_orientations);
+}
+
+void RobustRotationEstimator::AddRelativeRotationConstraint(
+    const ViewIdPair& view_id_pair, const Eigen::Vector3d& relative_rotation) {
+  // Store the relative orientation constraint.
+  relative_rotations_.emplace_back(view_id_pair, relative_rotation);
+}
+
+bool RobustRotationEstimator::EstimateRotations(
+    std::unordered_map<ViewId, Eigen::Vector3d>* global_orientations) {
   global_orientations_ = global_orientations;
 
-  // Compute a mapping of view ids to indices in the linear system. One matrix
+  // Compute a mapping of view ids to indices in the linear system. One rotation
   // will have an index of -1 and will not be added to the linear system. This
   // will remove the gauge freedom (effectively holding one camera as the
   // identity rotation).
@@ -87,8 +100,8 @@ void RobustRotationEstimator::SetupLinearSystem() {
   // The rotation change is one less than the number of global rotations because
   // we keep one rotation constant.
   rotation_change_.resize((global_orientations_->size() - 1) * 3);
-  relative_rotation_error_.resize(view_pairs_->size() * 3);
-  sparse_matrix_.resize(view_pairs_->size() * 3,
+  relative_rotation_error_.resize(relative_rotations_.size() * 3);
+  sparse_matrix_.resize(relative_rotations_.size() * 3,
                         (global_orientations_->size() - 1) * 3);
 
   // For each relative rotation constraint, add an entry to the sparse
@@ -97,9 +110,9 @@ void RobustRotationEstimator::SetupLinearSystem() {
   // matrices.
   int rotation_error_index = 0;
   std::vector<Eigen::Triplet<double> > triplet_list;
-  for (const auto& view_pair : *view_pairs_) {
+  for (const auto& relative_rotation : relative_rotations_) {
     const int view1_index =
-        FindOrDie(view_id_to_index_, view_pair.first.first);
+        FindOrDie(view_id_to_index_, relative_rotation.first.first);
     if (view1_index != kConstantRotationIndex) {
       triplet_list.emplace_back(3 * rotation_error_index,
                                 3 * view1_index,
@@ -113,7 +126,7 @@ void RobustRotationEstimator::SetupLinearSystem() {
     }
 
     const int view2_index =
-        FindOrDie(view_id_to_index_, view_pair.first.second);
+        FindOrDie(view_id_to_index_, relative_rotation.first.second);
     if (view2_index != kConstantRotationIndex) {
       triplet_list.emplace_back(3 * rotation_error_index + 0,
                                 3 * view2_index + 0,
@@ -135,18 +148,18 @@ void RobustRotationEstimator::SetupLinearSystem() {
 // orientation estimates.
 void RobustRotationEstimator::ComputeRotationError() {
   int rotation_error_index = 0;
-  for (const auto& view_pair : *view_pairs_) {
-    const Eigen::Vector3d& relative_rotation = view_pair.second.rotation_2;
+  for (const auto& relative_rotation : relative_rotations_) {
+    const Eigen::Vector3d& relative_rotation_aa = relative_rotation.second;
     const Eigen::Vector3d& rotation1 =
-        FindOrDie(*global_orientations_, view_pair.first.first);
+        FindOrDie(*global_orientations_, relative_rotation.first.first);
     const Eigen::Vector3d& rotation2 =
-        FindOrDie(*global_orientations_, view_pair.first.second);
+        FindOrDie(*global_orientations_, relative_rotation.first.second);
 
     // Compute the relative rotation error as:
     //   R_err = R2^t * R_12 * R1.
     relative_rotation_error_.segment<3>(3 * rotation_error_index) =
         MultiplyRotations(-rotation2,
-                          MultiplyRotations(relative_rotation, rotation1));
+                          MultiplyRotations(relative_rotation_aa, rotation1));
     ++rotation_error_index;
   }
 }
