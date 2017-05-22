@@ -67,6 +67,13 @@ class LinearPositionEstimator : public PositionEstimator {
     // The threshold at which to the iterative eigensolver method is considered
     // to be converged.
     double eigensolver_threshold = 1e-8;
+
+    // By default, it is assumed that the relative positions and triplet
+    // constraints only contain *relative* translation constraints. Thus, the
+    // relative baseline must be estimated from 3d points. If this is set to
+    // false then the input view triplets are assumed to include baseline and
+    // the relative baselines are extracted from them directly.
+    bool estimate_relative_baselines_from_features = true;
   };
 
   LinearPositionEstimator(const Options& options,
@@ -78,20 +85,36 @@ class LinearPositionEstimator : public PositionEstimator {
       const std::unordered_map<ViewId, Eigen::Vector3d>& orientation,
       std::unordered_map<ViewId, Eigen::Vector3d>* positions);
 
+  // An alternative interface is to instead add triplets one by one to linear
+  // estimator. This allows for adding redundant observations of triplets, which
+  // may be useful if there are multiple estimates of the data.
+  void AddTripletConstraint(const ViewTriplet& view_triplet);
+
+  // Estimates the positions of all input cameras that have valid triplet
+  // constraints. The global orientation estimates of each camera are required
+  // for estimating the camera positions.
+  bool EstimatePositions(
+      const std::unordered_map<ViewId, Eigen::Vector3d>& orientation,
+      std::unordered_map<ViewId, Eigen::Vector3d>* positions);
+
  private:
   // Returns the features as a unit-norm pixel ray after camera intrinsics
   // (i.e. focal length an principal point) have been removed.
   Feature GetNormalizedFeature(const View& view, const TrackId track_id);
 
+  // Computes the baseline ratios for each view pair in each triplet.
+  void ComputeBaselineRatios();
+
   // Computes the relative baselines between three views in a triplet. The
-  // baseline is estimated from the depths of triangulated 3D points.
+  // baseline is estimated from the depths of triangulated 3D points. The
+  // relative positions of the triplets are then scaled to account for the
+  // baseline ratios.
   void ComputeBaselineRatioForTriplet(const ViewTriplet& triplet,
                                       Eigen::Vector3d* baseline);
 
   // Sets up the linear system with the constraints that each triplet adds.
   void CreateLinearSystem(
       const std::unordered_map<ViewId, Eigen::Vector3d>& orientations,
-      const std::vector<Eigen::Vector3d>& baselines,
       Eigen::SparseMatrix<double>* constraint_matrix);
 
   // Positions are estimated from an eigenvector that is unit-norm with an
@@ -106,6 +129,7 @@ class LinearPositionEstimator : public PositionEstimator {
   const Options options_;
   const Reconstruction& reconstruction_;
   std::vector<ViewTriplet> triplets_;
+  std::vector<Eigen::Vector3d> baselines_;
 
   // We keep one of the positions as constant to remove the ambiguity of the
   // origin of the linear system.

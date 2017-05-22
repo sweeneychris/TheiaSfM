@@ -64,28 +64,53 @@ using Eigen::Vector3d;
 
 namespace {
 
-// Adds the 3x3 matrix to the triplet list with the top-left corner in the
-// sparse matrix corresponding to (row, col).
-void Add3x3MatrixToTripletList(
-    const Matrix3d& mat,
-    const int row,
-    const int col,
-    std::vector<Eigen::Triplet<double> >* triplet_list) {
-  // If col < 0 then we are holding this particular view constant so it should
-  // not be added to the linear system.
-  if (col < 0) {
-    return;
-  }
+// Adds the constraint from the triplet to the symmetric matrix. Our standard
+// constraint matrix A is a 3M x 3N matrix with M triplet constraints and N
+// cameras. We seek to construct A^t * A directly. For each triplet constraint
+// in our matrix A (i.e. a 3-row block), we can compute the corresponding
+// entries in A^t * A with the following summation:
+//
+//   A^t * A += Row(i)^t * Row(i)
+//
+// for each triplet constraint i.
+void AddTripletConstraintToSymmetricMatrix(
+    const std::vector<Matrix3d>& constraints,
+    const std::vector<int>& view_indices,
+    std::unordered_map<std::pair<int, int>, double>* sparse_matrix_entries) {
+  // Construct Row(i)^t * Row(i). If we denote the row as a block matrix:
+  //
+  //   Row(i) = [A | B | C]
+  //
+  // then we have:
+  //
+  //   Row(i)^t * Row(i) = [A | B | C]^t * [A | B | C]
+  //                     = [ A^t * A  |  A^t * B  |  A^t * C]
+  //                       [ B^t * A  |  B^t * B  |  B^t * C]
+  //                       [ C^t * A  |  C^t * B  |  C^t * C]
+  //
+  // Since A^t * A is symmetric, we only store the upper triangular portion.
+  for (int i = 0; i < 3; i++) {
+    for (int j = 0; j < 3; j++) {
+      // Skip any block entries that correspond to the lower triangular portion
+      // of the matrix.
+      if (view_indices[i] > view_indices[j]) {
+        continue;
+      }
 
-  triplet_list->emplace_back(row + 0, col + 0, mat(0, 0));
-  triplet_list->emplace_back(row + 1, col + 0, mat(1, 0));
-  triplet_list->emplace_back(row + 2, col + 0, mat(2, 0));
-  triplet_list->emplace_back(row + 0, col + 1, mat(0, 1));
-  triplet_list->emplace_back(row + 1, col + 1, mat(1, 1));
-  triplet_list->emplace_back(row + 2, col + 1, mat(2, 1));
-  triplet_list->emplace_back(row + 0, col + 2, mat(0, 2));
-  triplet_list->emplace_back(row + 1, col + 2, mat(1, 2));
-  triplet_list->emplace_back(row + 2, col + 2, mat(2, 2));
+      // Compute the A^t * B, etc. matrix.
+      const Eigen::Matrix3d symmetric_constraint =
+          constraints[i].transpose() * constraints[j];
+
+      // Add to the 3x3 block corresponding to (i, j)
+      for (int r = 0; r < 3; r++) {
+        for (int c = 0; c < 3; c++) {
+          const std::pair<int, int> row_col(view_indices[i] + r,
+                                            view_indices[j] + c);
+          (*sparse_matrix_entries)[row_col] += symmetric_constraint(r, c);
+        }
+      }
+    }
+  }
 }
 
 inline Matrix3d AngleAxisToRotationMatrix(const Vector3d angle_axis) {
@@ -97,13 +122,13 @@ inline Matrix3d AngleAxisToRotationMatrix(const Vector3d angle_axis) {
 // Adds a triplet constraint to the linear system. The weight of the constraint
 // (w), the global orientations, baseline (ratios), and view triplet information
 // are needed to form the constraint.
-void AddTripletConstraint(const ViewTriplet& triplet,
-                          const int start_row,
-                          const std::vector<int> cols,
-                          const double w,
-                          const std::vector<Vector3d>& orientations,
-                          const Vector3d& baselines,
-                          std::vector<Eigen::Triplet<double> >* triplet_list) {
+void AddTripletConstraintToSparseMatrix(
+    const ViewTriplet& triplet,
+    const std::vector<int>& view_indices,
+    const double w,
+    const std::vector<Vector3d>& orientations,
+    const Vector3d& baselines,
+    std::unordered_map<std::pair<int, int>, double>* sparse_matrix_entries) {
   // Relative camera positions.
   const Matrix3d orientation0 = AngleAxisToRotationMatrix(orientations[0]);
   const Matrix3d orientation1 = AngleAxisToRotationMatrix(orientations[1]);
@@ -128,30 +153,35 @@ void AddTripletConstraint(const ViewTriplet& triplet,
   const double s_120 = baselines[2] / baselines[1];
 
   // Assume that t01 is perfect and solve for c2.
-  Matrix3d m1 =
+  std::vector<Eigen::Matrix3d> constraints(3);
+  constraints[0] =
       (-s_201 * r201 + r012.transpose() / s_012 + Matrix3d::Identity()) * w;
-  Matrix3d m2 =
+  constraints[1] =
       (s_201 * r201 - r012.transpose() / s_012 + Matrix3d::Identity()) * w;
-  Matrix3d m3 = -2.0 * w * Matrix3d::Identity();
-  Add3x3MatrixToTripletList(m1, start_row, cols[0], triplet_list);
-  Add3x3MatrixToTripletList(m2, start_row, cols[1], triplet_list);
-  Add3x3MatrixToTripletList(m3, start_row, cols[2], triplet_list);
+  constraints[2] = -2.0 * w * Matrix3d::Identity();
+  AddTripletConstraintToSymmetricMatrix(constraints,
+                                        view_indices,
+                                        sparse_matrix_entries);
 
   // Assume t02 is perfect and solve for c1.
-  m1 = (-r201.transpose() / s_201 + s_120 * r120 + Matrix3d::Identity()) * w;
-  m2 = -2.0 * w * Matrix3d::Identity();
-  m3 = (r201.transpose() / s_201 - s_120 * r120 + Matrix3d::Identity()) * w;
-  Add3x3MatrixToTripletList(m1, start_row + 3, cols[0], triplet_list);
-  Add3x3MatrixToTripletList(m2, start_row + 3, cols[1], triplet_list);
-  Add3x3MatrixToTripletList(m3, start_row + 3, cols[2], triplet_list);
+  constraints[0] =
+      (-r201.transpose() / s_201 + s_120 * r120 + Matrix3d::Identity()) * w;
+  constraints[1] = -2.0 * w * Matrix3d::Identity();
+  constraints[2] =
+      (r201.transpose() / s_201 - s_120 * r120 + Matrix3d::Identity()) * w;
+  AddTripletConstraintToSymmetricMatrix(constraints,
+                                        view_indices,
+                                        sparse_matrix_entries);
 
   // Assume t12 is perfect and solve for c0.
-  m1 = -2.0  * w * Matrix3d::Identity();
-  m2 = (-s_012 * r012 + r120.transpose() / s_120 + Matrix3d::Identity()) * w;
-  m3 = (s_012 * r012 - r120.transpose() / s_120 + Matrix3d::Identity()) * w;
-  Add3x3MatrixToTripletList(m1, start_row + 6, cols[0], triplet_list);
-  Add3x3MatrixToTripletList(m2, start_row + 6, cols[1], triplet_list);
-  Add3x3MatrixToTripletList(m3, start_row + 6, cols[2], triplet_list);
+  constraints[0] = -2.0  * w * Matrix3d::Identity();
+  constraints[1] =
+      (-s_012 * r012 + r120.transpose() / s_120 + Matrix3d::Identity()) * w;
+  constraints[2] =
+      (s_012 * r012 - r120.transpose() / s_120 + Matrix3d::Identity()) * w;
+  AddTripletConstraintToSymmetricMatrix(constraints,
+                                        view_indices,
+                                        sparse_matrix_entries);
 }
 
 // Returns true if the vector R1 * (c2 - c1) is in the same direction as t_12.
@@ -197,65 +227,61 @@ bool LinearPositionEstimator::EstimatePositions(
       largest_triplet_graph = i;
     }
   }
-  triplets_ = triplets_vec[largest_triplet_graph];
 
-  // Count the number of times each view is in a triplet.
-  for (int i = 0; i < triplets_.size(); i++) {
-    num_triplets_for_view_[triplets_[i].view_ids[0]] =
-        num_triplets_for_view_[triplets_[i].view_ids[0]] + 1;
-    num_triplets_for_view_[triplets_[i].view_ids[1]] =
-        num_triplets_for_view_[triplets_[i].view_ids[1]] + 1;
-    num_triplets_for_view_[triplets_[i].view_ids[2]] =
-        num_triplets_for_view_[triplets_[i].view_ids[2]] + 1;
-
-    // Determine the order of the views in the linear system. We subtract 1 from
-    // the linear system index so that the first position added to the system
-    // will be set constant (index of -1 is intentionally not evaluated later).
-    InsertIfNotPresent(&linear_system_index_,
-                       triplets_[i].view_ids[0],
-                       linear_system_index_.size() - 1);
-    InsertIfNotPresent(&linear_system_index_,
-                       triplets_[i].view_ids[1],
-                       linear_system_index_.size() - 1);
-    InsertIfNotPresent(&linear_system_index_,
-                       triplets_[i].view_ids[2],
-                       linear_system_index_.size() - 1);
+  // Add all triplets in the largest connected component to the problem.
+  for (int i = 0; i < triplets_vec[largest_triplet_graph].size(); i++) {
+    AddTripletConstraint(triplets_vec[largest_triplet_graph][i]);
   }
 
+  return EstimatePositions(orientations, positions);
+}
+
+// An alternative interface is to instead add triplets one by one to linear
+// estimator. This allows for adding redundant observations of triplets, which
+// may be useful if there are multiple estimates of the data.
+void LinearPositionEstimator::AddTripletConstraint(
+    const ViewTriplet& view_triplet) {
+  triplets_.emplace_back(view_triplet);
+  num_triplets_for_view_[view_triplet.view_ids[0]] += 1;
+  num_triplets_for_view_[view_triplet.view_ids[1]] += 1;
+  num_triplets_for_view_[view_triplet.view_ids[2]] += 1;
+
+  // Determine the order of the views in the linear system. We subtract 1 from
+  // the linear system index so that the first position added to the system
+  // will be set constant (index of -1 is intentionally not evaluated later).
+  InsertIfNotPresent(&linear_system_index_,
+                     view_triplet.view_ids[0],
+                     linear_system_index_.size() - 1);
+  InsertIfNotPresent(&linear_system_index_,
+                     view_triplet.view_ids[1],
+                     linear_system_index_.size() - 1);
+  InsertIfNotPresent(&linear_system_index_,
+                     view_triplet.view_ids[2],
+                     linear_system_index_.size() - 1);
+}
+
+bool LinearPositionEstimator::EstimatePositions(
+    const std::unordered_map<ViewId, Eigen::Vector3d>& orientations,
+    std::unordered_map<ViewId, Eigen::Vector3d>* positions) {
   VLOG(2) << "Determining baseline ratios within each triplet...";
-  // Baselines where (x, y, z) corresponds to the baseline of the first, second,
-  // and third view pair in the triplet.
-  std::vector<Vector3d> baselines(triplets_.size());
-  std::unique_ptr<ThreadPool> pool(new ThreadPool(options_.num_threads));
-  for (int i = 0; i < triplets_.size(); i++) {
-    pool->Add(&LinearPositionEstimator::ComputeBaselineRatioForTriplet,
-              this,
-              triplets_[i],
-              &baselines[i]);
-  }
-  // Wait for the baseline ratio computation to finish.
-  pool.reset(nullptr);
+  ComputeBaselineRatios();
 
   VLOG(2) << "Building the constraint matrix...";
   // Create the linear system based on triplet constraints.
   Eigen::SparseMatrix<double> constraint_matrix;
-  CreateLinearSystem(orientations, baselines, &constraint_matrix);
-  // Try to remove any 0 elements that were accidentally added.
-  constraint_matrix.makeCompressed();
-
-  const Eigen::SparseMatrix<double> aTa(constraint_matrix.transpose() *
-                                        constraint_matrix);
+  CreateLinearSystem(orientations, &constraint_matrix);
 
   // Solve for positions by examining the smallest eigenvalues. Since we have
   // set one position constant at the origin, we only need to solve for the
   // eigenvector corresponding to the smallest eigenvalue. This can be done
   // efficiently with inverse power iterations.
   VLOG(2) << "Solving for positions from the sparse eigenvalue problem...";
-  SparseSymShiftSolveLLT op(aTa);
+  SparseSymShiftSolveLLT op(constraint_matrix);
   Spectra::SymEigsShiftSolver<double, Spectra::LARGEST_MAGN,
                               SparseSymShiftSolveLLT> eigs(&op, 1, 6, 0.0);
   eigs.init();
   eigs.compute();
+
   // Compute with power iterations.
   const Eigen::VectorXd solution = eigs.eigenvectors().col(0);
 
@@ -274,6 +300,31 @@ bool LinearPositionEstimator::EstimatePositions(
   FlipSignOfPositionsIfNecessary(orientations, positions);
 
   return true;
+}
+
+void LinearPositionEstimator::ComputeBaselineRatios() {
+  baselines_.resize(triplets_.size());
+
+  // Only estimate the baseline ratio from features if requested. Otherwise, use
+  // the scale of the relative translations provided from the input as the
+  // baselines.
+  if (!options_.estimate_relative_baselines_from_features) {
+    for (int i = 0; i < triplets_.size(); i++) {
+      baselines_[i][0] = triplets_[i].info_one_two.position_2.norm();
+      baselines_[i][1] = triplets_[i].info_one_three.position_2.norm();
+      baselines_[i][2] = triplets_[i].info_two_three.position_2.norm();
+    }
+  } else {
+    // Baselines where (x, y, z) corresponds to the baseline of the first,
+    // second, and third view pair in the triplet.
+    ThreadPool pool(options_.num_threads);
+    for (int i = 0; i < triplets_.size(); i++) {
+      pool.Add(&LinearPositionEstimator::ComputeBaselineRatioForTriplet,
+               this,
+               triplets_[i],
+               &baselines_[i]);
+    }
+  }
 }
 
 void LinearPositionEstimator::ComputeBaselineRatioForTriplet(
@@ -308,28 +359,20 @@ void LinearPositionEstimator::ComputeBaselineRatioForTriplet(
 // Sets up the linear system with the constraints that each triplet adds.
 void LinearPositionEstimator::CreateLinearSystem(
     const std::unordered_map<ViewId, Vector3d>& orientations,
-    const std::vector<Vector3d>& baselines,
     Eigen::SparseMatrix<double>* constraint_matrix) {
   const int num_views = num_triplets_for_view_.size();
 
-  std::vector<Eigen::Triplet<double> > triplet_list;
-
-  int num_valid_triplets = 0;
+  std::unordered_map<std::pair<int, int>, double> sparse_matrix_entries;
+  sparse_matrix_entries.reserve(27 * num_triplets_for_view_.size());
   for (int i = 0; i < triplets_.size(); i++) {
-    // If we were not able to extract a stable baseline for this triplet then
-    // skip this triplet.
-    if (baselines[i] == Eigen::Vector3d::Zero()) {
-      continue;
-    }
-
     const ViewTriplet& triplet = triplets_[i];
     const std::vector<Vector3d> triplet_orientations = {
       FindOrDie(orientations, triplet.view_ids[0]),
       FindOrDie(orientations, triplet.view_ids[1]),
       FindOrDie(orientations, triplet.view_ids[2])
     };
-    // Get the row and columns that we will modify.
-    const std::vector<int> cols = {
+    // Get the index of each camera in the sparse matrix.
+    const std::vector<int> view_indices = {
         static_cast<int>(3 *
                          FindOrDie(linear_system_index_, triplet.view_ids[0])),
         static_cast<int>(3 *
@@ -338,21 +381,38 @@ void LinearPositionEstimator::CreateLinearSystem(
                          FindOrDie(linear_system_index_, triplet.view_ids[2]))};
 
     const double w =
-        1.0 / sqrt(std::min({num_triplets_for_view_[triplet.view_ids[0]],
-                             num_triplets_for_view_[triplet.view_ids[1]],
-                             num_triplets_for_view_[triplet.view_ids[2]]}));
-    AddTripletConstraint(triplet,
-                         9 * num_valid_triplets,
-                         cols,
-                         w,
-                         triplet_orientations,
-                         baselines[i],
-                         &triplet_list);
-    ++num_valid_triplets;
+        1.0 /
+        std::sqrt(std::min({num_triplets_for_view_[triplet.view_ids[0]],
+                            num_triplets_for_view_[triplet.view_ids[1]],
+                            num_triplets_for_view_[triplet.view_ids[2]]}));
+    AddTripletConstraintToSparseMatrix(triplet,
+                                       view_indices,
+                                       w,
+                                       triplet_orientations,
+                                       baselines_[i],
+                                       &sparse_matrix_entries);
   }
-  // One position is set constant, which is why we use (num_views - 1) * 3
-  // columns.
-  constraint_matrix->resize(num_valid_triplets * 9, (num_views - 1) * 3);
+
+  // Set the sparse matrix from the container of the accumulated entries.
+  std::vector<Eigen::Triplet<double> > triplet_list;
+  triplet_list.reserve(sparse_matrix_entries.size());
+  for (const auto& sparse_matrix_entry : sparse_matrix_entries) {
+    // Skip this entry if the indices are invalid. This only occurs when we
+    // encounter a constraint with the constant camera (which has a view index
+    // of -1).
+    if (sparse_matrix_entry.first.first < 0 ||
+        sparse_matrix_entry.first.second < 0) {
+      continue;
+    }
+    triplet_list.emplace_back(sparse_matrix_entry.first.first,
+                              sparse_matrix_entry.first.second,
+                              sparse_matrix_entry.second);
+  }
+
+  // We construct the constraint matrix A^t * A directly, which is an
+  // N - 1 x N - 1 matrix where N is the number of cameras (and 3 entries per
+  // camera, corresponding to the camera position entries).
+  constraint_matrix->resize((num_views - 1) * 3, (num_views - 1) * 3);
   constraint_matrix->setFromTriplets(triplet_list.begin(), triplet_list.end());
 }
 
