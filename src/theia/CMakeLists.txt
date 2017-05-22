@@ -73,6 +73,7 @@ set(THEIA_SRC
   math/matrix/sparse_cholesky_llt.cc
   math/polynomial.cc
   math/probability/sequential_probability_ratio.cc
+  math/rotation.cc
   math/qp_solver.cc
   sfm/bundle_adjustment/bundle_adjust_two_views.cc
   sfm/bundle_adjustment/bundle_adjustment.cc
@@ -235,6 +236,7 @@ if (BUILD_TESTING)
   gtest(math/polynomial)
   gtest(math/probability/sprt)
   gtest(math/qp_solver)
+  gtest(math/rotation)
   gtest(sfm/bundle_adjustment/optimize_relative_position_with_known_rotation)
   gtest(sfm/camera/camera)
   gtest(sfm/camera/fisheye_camera_model)

@@ -91,6 +91,7 @@
 #include "theia/math/polynomial.h"
 #include "theia/math/probability/sequential_probability_ratio.h"
 #include "theia/math/qp_solver.h"
+#include "theia/math/rotation.h"
 #include "theia/math/util.h"
 #include "theia/sfm/bundle_adjustment/angular_epipolar_error.h"
 #include "theia/sfm/bundle_adjustment/bundle_adjust_two_views.h"
