@@ -79,7 +79,7 @@ struct BundleAdjustmentOptions {
   // The type of loss function used for BA. By default, we use a standard L2
   // loss function, but robust cost functions could be used.
   LossFunctionType loss_function_type = LossFunctionType::TRIVIAL;
-  double robust_loss_width = 10.0;
+  double robust_loss_width = 2.0;
 
   // For larger problems (> 1000 cameras) it is recommended to use the
   // ITERATIVE_SCHUR solver.
@@ -105,7 +105,7 @@ struct BundleAdjustmentOptions {
       OptimizeIntrinsicsType::RADIAL_DISTORTION;
 
   int num_threads = 1;
-  int max_num_iterations = 500;
+  int max_num_iterations = 100;
 
   // Max BA time is 1 hour.
   double max_solver_time_in_seconds = 3600.0;
