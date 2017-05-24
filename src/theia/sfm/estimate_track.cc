@@ -62,8 +62,8 @@ void GetObservationsFromTrackViews(
     std::vector<Eigen::Vector2d>* features,
     std::vector<Eigen::Vector3d>* origins,
     std::vector<Eigen::Vector3d>* ray_directions) {
-  const Track track = *reconstruction.Track(track_id);
-  for (const ViewId view_id : track.ViewIds()) {
+  const Track* track = reconstruction.Track(track_id);
+  for (const ViewId view_id : track->ViewIds()) {
     const View* view = reconstruction.View(view_id);
 
     // Skip this view if it does not exist or has not been estimated yet.
