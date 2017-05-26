@@ -54,9 +54,7 @@ class TwoViewInfo;
 // Estimation in Multiview Geometry" by Martinec and Pajdla (CVPR 2007).
 class LinearRotationEstimator : public RotationEstimator {
  public:
-  LinearRotationEstimator() : weight_terms_by_inliers_(false) {}
-  explicit LinearRotationEstimator(const bool weight_terms_by_inliers)
-      : weight_terms_by_inliers_(weight_terms_by_inliers) {}
+  LinearRotationEstimator() {}
 
   // Estimates the global orientations of all views based on an initial
   // guess. Returns true on successful estimation and false otherwise.
@@ -64,23 +62,31 @@ class LinearRotationEstimator : public RotationEstimator {
       const std::unordered_map<ViewIdPair, TwoViewInfo>& view_pairs,
       std::unordered_map<ViewId, Eigen::Vector3d>* global_orientations);
 
+  // An alternative interface is to instead add relative rotation constraints
+  // one by one with AddRelativeRotationConstraint, then call the
+  // EstimateRotations interface below. This allows the caller to add multiple
+  // constraints for the same view id pair, which may lead to more accurate
+  // rotation estimates. Please see the following reference for an example of
+  // how to obtain multiple constraints for pairs of views:
+  //
+  //   "Parallel Structure from Motion from Local Increment to Global Averaging"
+  //   by Zhu et al (Arxiv 2017). https://arxiv.org/abs/1702.08601
+  void AddRelativeRotationConstraint(const ViewIdPair& view_id_pair,
+                                     const Eigen::Vector3d& relative_rotation);
+
+  // Given the relative rotation constraints added with
+  // AddRelativeRotationConstraint, this method returns the robust estimation of
+  // global camera orientations. Like the method above, this requires an initial
+  // estimate of the global orientations.
+  bool EstimateRotations(
+      std::unordered_map<ViewId, Eigen::Vector3d>* global_orientations);
+
  private:
-  // Create an index of view ids corresponding to rows in the linear system.
-  void IndexInputViews(
-      const std::unordered_map<ViewIdPair, TwoViewInfo>& view_pairs);
-
-  // Set up the sparse linear system that we use to solve the problem.
-  void SetupSparseLinearSystem(
-      const std::unordered_map<ViewIdPair, TwoViewInfo>& view_pairs);
-
-  const bool weight_terms_by_inliers_;
-
   // Lookup map to keep track of the global orientation estimates by view id.
   std::unordered_map<ViewId, int> view_id_map_;
 
-  // Our linear system will be set up such that lhs * x = rhs.
-  Eigen::SparseMatrix<double> lhs_;
-  Eigen::MatrixXd rhs_;
+  // The sparse matrix is built up as new constraints are added.
+  std::vector<Eigen::Triplet<double> > constraint_entries_;
 };
 
 }  // namespace theia

@@ -40,6 +40,7 @@
 #include <vector>
 
 #include "gtest/gtest.h"
+#include "theia/math/rotation.h"
 #include "theia/math/util.h"
 #include "theia/sfm/global_pose_estimation/linear_rotation_estimator.h"
 #include "theia/sfm/transformation/align_rotations.h"
@@ -103,14 +104,13 @@ class EstimateRotationsLinearTest : public ::testing::Test {
   void TestLinearRotationEstimator(const int num_views,
                                    const int num_view_pairs,
                                    const double rotation_noise,
-                                   const double rotation_tolerance_degrees,
-                                   const bool weight_terms_by_inliers) {
+                                   const double rotation_tolerance_degrees) {
     // Set up the camera.
     CreateGTOrientations(num_views);
     GetRelativeRotations(num_view_pairs, rotation_noise);
 
     // Estimate the rotations.
-    LinearRotationEstimator rotation_estimator(weight_terms_by_inliers);
+    LinearRotationEstimator rotation_estimator;
 
     // Set the initial rotation estimations.
     std::unordered_map<ViewId, Vector3d> estimated_rotations;
@@ -123,8 +123,8 @@ class EstimateRotationsLinearTest : public ::testing::Test {
     for (const auto& rotation : orientations_) {
       const Vector3d& estimated_rotation =
           FindOrDie(estimated_rotations, rotation.first);
-      const Vector3d relative_rotation = RelativeRotationFromTwoRotations(
-          estimated_rotation, rotation.second, 0.0);
+      const Vector3d relative_rotation =
+          MultiplyRotations(estimated_rotation, -rotation.second);
       const double angular_error = RadToDeg(relative_rotation.norm());
 
       EXPECT_LT(angular_error, rotation_tolerance_degrees)
@@ -184,22 +184,21 @@ class EstimateRotationsLinearTest : public ::testing::Test {
 };
 
 TEST_F(EstimateRotationsLinearTest, SmallTestNoNoise) {
-  static const double kTolerance = 1e-8;
+  static const double kTolerance = 1e-6;
   static const int kNumViews = 4;
   static const int kNumViewPairs = 6;
-  TestLinearRotationEstimator(kNumViews, kNumViewPairs, 0.0, kTolerance, false);
+  TestLinearRotationEstimator(kNumViews, kNumViewPairs, 0.0, kTolerance);
 }
 
 TEST_F(EstimateRotationsLinearTest, SmallTestWithNoise) {
-  static const double kToleranceDegrees = 10.0;
+  static const double kToleranceDegrees = 2.0;
   static const int kNumViews = 4;
   static const int kNumViewPairs = 6;
   static const double kPoseNoiseDegrees = 1.0;
   TestLinearRotationEstimator(kNumViews,
                               kNumViewPairs,
                               kPoseNoiseDegrees,
-                              kToleranceDegrees,
-                              false);
+                              kToleranceDegrees);
 }
 
 TEST_F(EstimateRotationsLinearTest, LargeTestWithNoise) {
@@ -210,39 +209,7 @@ TEST_F(EstimateRotationsLinearTest, LargeTestWithNoise) {
   TestLinearRotationEstimator(kNumViews,
                               kNumViewPairs,
                               kPoseNoiseDegrees,
-                              kToleranceDegrees,
-                              false);
-}
-
-TEST_F(EstimateRotationsLinearTest, SmallTestNoNoiseWeighted) {
-  static const double kTolerance = 1e-8;
-  static const int kNumViews = 4;
-  static const int kNumViewPairs = 6;
-  TestLinearRotationEstimator(kNumViews, kNumViewPairs, 0.0, kTolerance, true);
-}
-
-TEST_F(EstimateRotationsLinearTest, SmallTestWithNoiseWeighted) {
-  static const double kToleranceDegrees = 5.0;
-  static const int kNumViews = 4;
-  static const int kNumViewPairs = 6;
-  static const double kPoseNoiseDegrees = 0.0;
-  TestLinearRotationEstimator(kNumViews,
-                              kNumViewPairs,
-                              kPoseNoiseDegrees,
-                              kToleranceDegrees,
-                              true);
-}
-
-TEST_F(EstimateRotationsLinearTest, LargeTestWithNoiseWeighted) {
-  static const double kToleranceDegrees = 5.0;
-  static const int kNumViews = 100;
-  static const int kNumViewPairs = 800;
-  static const double kPoseNoiseDegrees = 2.0;
-  TestLinearRotationEstimator(kNumViews,
-                              kNumViewPairs,
-                              kPoseNoiseDegrees,
-                              kToleranceDegrees,
-                              true);
+                              kToleranceDegrees);
 }
 
 }  // namespace theia

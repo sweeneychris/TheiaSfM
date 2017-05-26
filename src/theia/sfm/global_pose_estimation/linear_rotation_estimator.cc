@@ -41,6 +41,9 @@
 #include <unordered_map>
 #include <vector>
 
+#include "spectra/include/SymEigsSolver.h"
+
+#include "theia/math/matrix/linear_operator.h"
 #include "theia/sfm/pose/util.h"
 #include "theia/sfm/twoview_info.h"
 #include "theia/sfm/types.h"
@@ -63,142 +66,122 @@ void Fill3x3SparseMatrix(const Eigen::Matrix3d& mat,
   for (int i = 0; i < 3; i++) {
     for (int j = 0; j < 3; j++) {
       // Only add the value if it is not zero.
-      if (mat(i, j) != 0.0) {
-        triplet_list->emplace_back(row + i, col + j, mat(i, j));
-      }
+      triplet_list->emplace_back(row + i, col + j, mat(i, j));
     }
   }
 }
 
 }  // namespace
 
-// Set up linear system R_j - R_{i,j} * R_i = 0. This is a (3 * m) x (3 * n)
-// system where m is the number of relative rotations and n is the number of
-// views. Instead of the standard Ax = 0 formulation, we instead assume that one
-// of the rotations is the identity and hold it constant. Using a bit of math,
-// this ends up being a Cy = Z equation were C is all columns of A except the
-// ones corresonding to the constant rotation. Z then, is the negative of the
-// columns of A that were held constant. The constant rotation is indicated by
-// an index of -1.
-void LinearRotationEstimator::SetupSparseLinearSystem(
-    const std::unordered_map<ViewIdPair, TwoViewInfo>& view_pairs) {
-  static const int kRotationMatrixDimSize = 3;
-
-  // Reserve size of matrices.
-  lhs_.resize(kRotationMatrixDimSize * view_pairs.size(),
-              kRotationMatrixDimSize * (view_id_map_.size() - 1));
-
-  rhs_.resize(kRotationMatrixDimSize * view_pairs.size(),
-              kRotationMatrixDimSize);
-  rhs_.setZero();
-
-  // Iterate through the relative rotation constraints and add them to the
-  // sparse matrix.
-  std::vector<TripletEntry> lhs_triplet_list, rhs_triplet_list;
-  lhs_triplet_list.reserve(12 * view_pairs.size());
-  int current_relative_rotation_index = 0;
-  for (const auto& view_pair : view_pairs) {
-    const int view1_index =
-        FindOrDie(view_id_map_, view_pair.first.first);
-    const int view2_index =
-        FindOrDie(view_id_map_, view_pair.first.second);
-
-    // Convert the relative rotation to a rotation matrix and store it.
-    Eigen::Matrix3d relative_rotation;
-    ceres::AngleAxisToRotationMatrix(
-        view_pair.second.rotation_2.data(),
-        ceres::ColumnMajorAdapter3x3(relative_rotation.data()));
-
-    Eigen::Matrix3d identity_rotation = Eigen::Matrix3d::Identity();
-
-    // Weight the terms by the inlier count, if desired.
-    if (weight_terms_by_inliers_) {
-      relative_rotation *= view_pair.second.num_verified_matches;
-      identity_rotation *= view_pair.second.num_verified_matches;
-    }
-
-    // Set R_j term to identity.
-    if (view2_index == -1) {
-      rhs_.block<3, 3>(kRotationMatrixDimSize * current_relative_rotation_index,
-                       0) = -identity_rotation;
-    } else {
-      Fill3x3SparseMatrix(
-          identity_rotation,
-          kRotationMatrixDimSize * current_relative_rotation_index,
-          kRotationMatrixDimSize * view2_index,
-          &lhs_triplet_list);
-    }
-
-    // Set R_i term to -R_{ij}.
-    if (view1_index == -1) {
-      rhs_.block<3, 3>(kRotationMatrixDimSize * current_relative_rotation_index,
-                       0) = relative_rotation;
-    } else {
-      Fill3x3SparseMatrix(
-          -relative_rotation,
-          kRotationMatrixDimSize * current_relative_rotation_index,
-          kRotationMatrixDimSize * view1_index,
-          &lhs_triplet_list);
-    }
-
-    ++current_relative_rotation_index;
-  }
-
-  lhs_.setFromTriplets(lhs_triplet_list.begin(), lhs_triplet_list.end());
-}
-
-void LinearRotationEstimator::IndexInputViews(
-    const std::unordered_map<ViewIdPair, TwoViewInfo>& view_pairs) {
-  // Set one index to -1 because we keep it constant during the minimization.
-  int current_index = -1;
-  for (const auto& view_pair : view_pairs) {
-    // Set the index of the view if it has not already been set.
-    if (!ContainsKey(view_id_map_, view_pair.first.first)) {
-      view_id_map_[view_pair.first.first] = current_index;
-      ++current_index;
-    }
-    if (!ContainsKey(view_id_map_, view_pair.first.second)) {
-      view_id_map_[view_pair.first.second] = current_index;
-      ++current_index;
-    }
-  }
-
-  return;
-}
-
 // Estimates the global orientations of all views based on an initial
 // guess. Returns true on successful estimation and false otherwise.
 bool LinearRotationEstimator::EstimateRotations(
     const std::unordered_map<ViewIdPair, TwoViewInfo>& view_pairs,
     std::unordered_map<ViewId, Eigen::Vector3d>* global_orientations) {
-  CHECK_GT(view_pairs.size(), 0);
-  CHECK_NOTNULL(global_orientations);
+  for (const auto& view_pair : view_pairs) {
+    AddRelativeRotationConstraint(view_pair.first, view_pair.second.rotation_2);
+  }
+  return EstimateRotations(global_orientations);
+}
 
-  IndexInputViews(view_pairs);
+// Add the relative rotation matrix constraint that minimizes the Frobenius norm
+// of the matrices. That is, set up the linear system such that
+// ||R_j - R_ij * R_i|| is minimized
+void LinearRotationEstimator::AddRelativeRotationConstraint(
+    const ViewIdPair& view_id_pair, const Eigen::Vector3d& relative_rotation) {
+  static const int kNumRotationMatrixDimensions = 3;
+
+  // Add a new view-id to sparse matrix index mapping. This is a no-op if the
+  // view has already been assigned to a matrix index.
+  InsertIfNotPresent(&view_id_map_, view_id_pair.first, view_id_map_.size());
+  InsertIfNotPresent(&view_id_map_, view_id_pair.second, view_id_map_.size());
+  const int view1_index = view_id_map_[view_id_pair.first];
+  const int view2_index = view_id_map_[view_id_pair.second];
+
+  // Add the corresponding entries to A^t * A. Note that for each row, we may
+  // represent the row as a block matrix: [B | C]. Thus, the corresponding
+  // entries for A^t * A are:
+  //
+  //   [B | C]^t * [B | C] = [B^t * B | B^t * C]
+  //                         [C^t * B | C^t * C]
+  //
+  // Note that for rotation matrices, B^t * B = C^t * B = I. Thus we have:
+  //
+  //   [B | C]^t * [B | C] = [   I    | B^t * C]
+  //                         [C^t * B |    I   ]
+  //
+  // We only store the upper triangular portion of the matrix since it is
+  // symmetric. In our case, one of B or C will be the identity, which further
+  // simplifies the matrix entries.
+  //
+  // First, add the identity entries along the diagonal.
+  for (int i = 0; i < 3; i++) {
+    constraint_entries_.emplace_back(
+        kNumRotationMatrixDimensions * view1_index + i,
+        kNumRotationMatrixDimensions * view1_index + i,
+        1.0);
+    constraint_entries_.emplace_back(
+        kNumRotationMatrixDimensions * view2_index + i,
+        kNumRotationMatrixDimensions * view2_index + i,
+        1.0);
+  }
+
+  // Add the 3x3 matrix B^t * C. This corresponds either to -R_ij or -R_ij^t
+  // depending on the order of the view indices.
+  Eigen::Matrix3d relative_rotation_matrix;
+  ceres::AngleAxisToRotationMatrix(
+      relative_rotation.data(),
+      ceres::ColumnMajorAdapter3x3(relative_rotation_matrix.data()));
+
+  // We seek to insert B^t * C into the linear system as noted above. If the
+  // view1 index comes before the view2 index, then B = -R_ij and C =
+  // I. Otherwise, B = I and C = -R_ij.
+  if (view1_index < view2_index) {
+    Fill3x3SparseMatrix(
+        -relative_rotation_matrix.transpose(),
+        kNumRotationMatrixDimensions * view1_index,
+        kNumRotationMatrixDimensions * view2_index,
+        &constraint_entries_);
+  } else {
+    Fill3x3SparseMatrix(
+        -relative_rotation_matrix,
+        kNumRotationMatrixDimensions * view2_index,
+        kNumRotationMatrixDimensions * view1_index,
+        &constraint_entries_);
+  }
+}
+
+// Given the relative rotation constraints added with
+// AddRelativeRotationConstraint, this method returns the robust estimation of
+// global camera orientations. Like the method above, this requires an initial
+// estimate of the global orientations.
+bool LinearRotationEstimator::EstimateRotations(
+    std::unordered_map<ViewId, Eigen::Vector3d>* global_orientations) {
+  CHECK_GT(constraint_entries_.size(), 0);
+  CHECK_NOTNULL(global_orientations);
+  static const int kNumRotationMatrixDimensions = 3;
 
   // Setup the sparse linear system.
-  SetupSparseLinearSystem(view_pairs);
+  Eigen::SparseMatrix<double> constraint_matrix(
+      view_id_map_.size() * kNumRotationMatrixDimensions,
+      view_id_map_.size() * kNumRotationMatrixDimensions);
+  constraint_matrix.setFromTriplets(constraint_entries_.begin(),
+                                    constraint_entries_.end());
 
-  // Setup sparse QR solver.
-  Eigen::SparseQR<Eigen::SparseMatrix<double>, Eigen::COLAMDOrdering<int> >
-      sparse_qr_solver(lhs_);
+  // Compute the 3 eigenvectors corresponding to the smallest eigenvalues. These
+  // orthogonal vectors will contain the solution rotation matrices. We actually
+  // need to compute the first 4 eigenvalues since there is a gauge ambiguity
+  // that corresponds to the first eigenvalue.
+  SparseSymShiftSolveLLT op(constraint_matrix);
+  Spectra::SymEigsShiftSolver<double, Spectra::LARGEST_MAGN,
+                              SparseSymShiftSolveLLT> eigs(&op, 4, 6, 0.0);
+  eigs.init();
+  eigs.compute();
 
-  // Check that the input to SparseQR was valid and could be succesffully
-  // factorized.
-  if (sparse_qr_solver.info() != Eigen::Success) {
-    VLOG(2) << "The sparse matrix of relative rotation constraints could not "
-               "be factorized.";
-    return false;
-  }
-
-  // Solve the linear least squares system.
-  const Eigen::MatrixXd solution = sparse_qr_solver.solve(rhs_);
-
-  // Check that the system could be solved successfully.
-  if (sparse_qr_solver.info() != Eigen::Success) {
-    VLOG(2) << "The sparse linear system could not be solved.";
-    return false;
-  }
+  // The solution appears in the second through fourth eigenvectors of the
+  // constraint matrix (the first corresponds to a gauge ambiguity).
+  const Eigen::MatrixXd solution =
+      eigs.eigenvectors().rightCols<kNumRotationMatrixDimensions>();
 
   // Project all solutions into a valid SO3 rotation space. The linear system
   // above makes no constraint on the space of the solutions, so the final
@@ -206,14 +189,10 @@ bool LinearRotationEstimator::EstimateRotations(
   // +1).
   global_orientations->reserve(view_id_map_.size());
   for (const auto& view_id_map : view_id_map_) {
-    // If this is the view held constant, set it to the identity.
-    if (view_id_map.second == -1) {
-      global_orientations->emplace(view_id_map.first, Eigen::Vector3d::Zero());
-      continue;
-    }
-
     const Matrix3d non_so3_rotation =
-        solution.block<3, 3>(3 * view_id_map.second, 0);
+        solution
+            .block<kNumRotationMatrixDimensions, kNumRotationMatrixDimensions>(
+                kNumRotationMatrixDimensions * view_id_map.second, 0);
     const Matrix3d rotation = ProjectToRotationMatrix(non_so3_rotation);
 
     // Convert to angle axis.

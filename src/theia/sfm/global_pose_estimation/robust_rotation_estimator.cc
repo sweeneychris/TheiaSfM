@@ -66,7 +66,10 @@ void RobustRotationEstimator::AddRelativeRotationConstraint(
 
 bool RobustRotationEstimator::EstimateRotations(
     std::unordered_map<ViewId, Eigen::Vector3d>* global_orientations) {
-  global_orientations_ = global_orientations;
+  CHECK_GT(relative_rotations_.size(), 0)
+      << "Relative rotation constraints must be added to the robust rotation "
+         "solver before estimating global rotations.";
+  global_orientations_ = CHECK_NOTNULL(global_orientations);
 
   // Compute a mapping of view ids to indices in the linear system. One rotation
   // will have an index of -1 and will not be added to the linear system. This

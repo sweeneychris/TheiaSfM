@@ -342,7 +342,7 @@ bool GlobalReconstructionEstimator::EstimateGlobalRotations() {
     case GlobalRotationEstimatorType::LINEAR: {
       // Set the constructor variable to true to weigh each term by the inlier
       // count.
-      rotation_estimator.reset(new LinearRotationEstimator(false));
+      rotation_estimator.reset(new LinearRotationEstimator());
       break;
     }
     default: {
