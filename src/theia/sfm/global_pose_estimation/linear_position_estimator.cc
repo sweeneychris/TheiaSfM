@@ -310,6 +310,9 @@ void LinearPositionEstimator::ComputeBaselineRatios() {
   // baselines.
   if (!options_.estimate_relative_baselines_from_features) {
     for (int i = 0; i < triplets_.size(); i++) {
+      // NOTE: We do not need to normalize the relative positions here since
+      // they are only used to compute the rotation between relative
+      // translations in the triplet constraint (i.e. scale is not considered).
       baselines_[i][0] = triplets_[i].info_one_two.position_2.norm();
       baselines_[i][1] = triplets_[i].info_one_three.position_2.norm();
       baselines_[i][2] = triplets_[i].info_two_three.position_2.norm();
