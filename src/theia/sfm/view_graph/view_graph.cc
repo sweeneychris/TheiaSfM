@@ -172,4 +172,38 @@ const std::unordered_map<ViewIdPair, TwoViewInfo>& ViewGraph::GetAllEdges()
   return edges_;
 }
 
+// Extract a subgraph containing only the specified views.
+void ViewGraph::ExtractSubgraph(
+    const std::unordered_set<ViewId>& views_in_subgraph,
+    ViewGraph* subgraph) const {
+  CHECK_NOTNULL(subgraph);
+
+  // Iterate over each vertex and add all edges to that vertex that are part of
+  // the subgraph.
+  for (const auto& vertex : vertices_) {
+    // If the vertex is not contained in the subgraph, skip it.
+    if (!ContainsKey(views_in_subgraph, vertex.first)) {
+      continue;
+    }
+
+    // Iterate over all edges to the current vertex and find edges to add to the
+    // subgraph. An edge will be added to the subgraph only if both vertices are
+    // in the subgraph.
+    for (const ViewId& second_vertex : vertex.second) {
+      // Skip this vertex (and thus, edge) if it is not in the subgraph. Also,
+      // only consider edges where vertex1 < vertex2 so as not to add redundant
+      // to the subgraph.
+      if (!ContainsKey(views_in_subgraph, second_vertex) ||
+          second_vertex < vertex.first) {
+        continue;
+      }
+
+      // Add the edge to the subgraph.
+      const TwoViewInfo& edge =
+          FindOrDieNoPrint(edges_, ViewIdPair(vertex.first, second_vertex));
+      subgraph->AddEdge(vertex.first, second_vertex, edge);
+    }
+  }
+}
+
 }  // namespace theia

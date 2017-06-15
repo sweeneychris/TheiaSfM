@@ -99,6 +99,12 @@ class ViewGraph {
   // view id 2.
   const std::unordered_map<ViewIdPair, TwoViewInfo>& GetAllEdges() const;
 
+  // Extract a subgraph from this view graph which contains only the input
+  // views. Note that this means that only edges between the input views will be
+  // preserved in the subgraph.
+  void ExtractSubgraph(const std::unordered_set<ViewId>& views_in_subgraph,
+                       ViewGraph* subgraph) const;
+
  private:
   // The underlying adjacency map. ViewIds are the vertices which are mapped to
   // a collection of its neighbors and the edges themselves are stored
