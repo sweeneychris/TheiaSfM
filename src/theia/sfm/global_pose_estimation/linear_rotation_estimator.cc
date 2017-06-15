@@ -169,19 +169,16 @@ bool LinearRotationEstimator::EstimateRotations(
                                     constraint_entries_.end());
 
   // Compute the 3 eigenvectors corresponding to the smallest eigenvalues. These
-  // orthogonal vectors will contain the solution rotation matrices. We actually
-  // need to compute the first 4 eigenvalues since there is a gauge ambiguity
-  // that corresponds to the first eigenvalue.
+  // orthogonal vectors will contain the solution rotation matrices.
   SparseSymShiftSolveLLT op(constraint_matrix);
   Spectra::SymEigsShiftSolver<double, Spectra::LARGEST_MAGN,
-                              SparseSymShiftSolveLLT> eigs(&op, 4, 6, 0.0);
+                              SparseSymShiftSolveLLT> eigs(&op, 3, 6, 0.0);
   eigs.init();
   eigs.compute();
 
-  // The solution appears in the second through fourth eigenvectors of the
-  // constraint matrix (the first corresponds to a gauge ambiguity).
+  // The solution appears in the first three eigenvectors.
   const Eigen::MatrixXd solution =
-      eigs.eigenvectors().rightCols<kNumRotationMatrixDimensions>();
+      eigs.eigenvectors().leftCols<kNumRotationMatrixDimensions>();
 
   // Project all solutions into a valid SO3 rotation space. The linear system
   // above makes no constraint on the space of the solutions, so the final
