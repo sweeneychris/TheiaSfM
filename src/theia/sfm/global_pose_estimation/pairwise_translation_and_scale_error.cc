@@ -35,19 +35,33 @@
 #include "theia/sfm/global_pose_estimation/pairwise_translation_and_scale_error.h"
 
 #include <ceres/ceres.h>
+#include <ceres/rotation.h>
 #include <glog/logging.h>
 
 namespace theia {
 
 PairwiseTranslationAndScaleError::PairwiseTranslationAndScaleError(
-    const Eigen::Vector3d& translation_direction)
-    : translation_direction_(translation_direction) {}
+    const Eigen::Vector3d& orientation1,
+    const Eigen::Vector3d& local_position1,
+    const Eigen::Vector3d& local_position2) {
+  // Compute the local relative translation as:
+  //   t_ij,k = R_i^t * (c_j' - c_i');
+  const Eigen::Vector3d relative_translation =
+      local_position2 - local_position1;
+  const Eigen::Vector3d orientation2_transpose = -orientation1;
+  ceres::AngleAxisRotatePoint(orientation2_transpose.data(),
+                              relative_translation.data(),
+                              local_relative_translation_.data());
+}
 
 ceres::CostFunction* PairwiseTranslationAndScaleError::Create(
-    const Eigen::Vector3d& translation_direction) {
-  return (new ceres::AutoDiffCostFunction<PairwiseTranslationAndScaleError,
-          4, 3, 3, 1>(
-      new PairwiseTranslationAndScaleError(translation_direction)));
+    const Eigen::Vector3d& orientation1,
+    const Eigen::Vector3d& local_position1,
+    const Eigen::Vector3d& local_position2) {
+  return (
+      new ceres::AutoDiffCostFunction<PairwiseTranslationAndScaleError, 3, 3, 3,
+                                      1>(new PairwiseTranslationAndScaleError(
+          orientation1, local_position1, local_position2)));
 }
 
 }  // namespace theia

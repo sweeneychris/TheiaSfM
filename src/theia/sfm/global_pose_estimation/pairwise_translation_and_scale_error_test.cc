@@ -32,7 +32,7 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#include <ceres/ceres.h>
+#include <ceres/rotation.h>
 #include <glog/logging.h>
 
 #include "gtest/gtest.h"
@@ -42,31 +42,38 @@ namespace theia {
 
 using Eigen::Matrix3d;
 using Eigen::Vector3d;
-using Eigen::Vector4d;
 
 namespace {
 
 static const double kScale = 1.0;
 
-void PairwiseTranslationAndScaleErrorTest(const Vector3d& known_translation,
+void PairwiseTranslationAndScaleErrorTest(const Vector3d& orientation,
                                           const double scale,
                                           const Vector3d& position_1,
                                           const Vector3d& position_2) {
-  // Compute ground truth angular error.
-  Vector3d translation = position_2 - position_1;
-  const Vector3d expected_error = translation - scale * known_translation;
+  static const double kTolerance = 1e-8;
+
+  Matrix3d rotation;
+  ceres::AngleAxisToRotationMatrix(orientation.data(), rotation.data());
+
+  const Vector3d local_position1 = (rotation * position_1) / scale;
+  const Vector3d local_position2 = (rotation * position_2) / scale;
+  const Vector3d expected_error =
+      (position_2 - position_1) -
+    scale * rotation.transpose() * (local_position2 - local_position1);
 
   // Initialize error function and compute rotation error.
-  const PairwiseTranslationAndScaleError translation_error(known_translation);
-  Vector4d error = Vector4d::Zero();
+  const PairwiseTranslationAndScaleError translation_error(
+      orientation, local_position1, local_position2);
+  Vector3d error = Vector3d::Random();
   translation_error(position_1.data(),
                     position_2.data(),
                     &scale,
                     error.data());
 
-  EXPECT_DOUBLE_EQ(error(0), expected_error(0));
-  EXPECT_DOUBLE_EQ(error(1), expected_error(1));
-  EXPECT_DOUBLE_EQ(error(2), expected_error(2));
+  EXPECT_NEAR(error(0), expected_error(0), kTolerance);
+  EXPECT_NEAR(error(1), expected_error(1), kTolerance);
+  EXPECT_NEAR(error(2), expected_error(2), kTolerance);
 }
 
 }  // namespace
@@ -74,54 +81,13 @@ void PairwiseTranslationAndScaleErrorTest(const Vector3d& known_translation,
 TEST(PairwiseTranslationAndScaleError, TranslationNoNoise) {
   const Vector3d position_1(0.0, 0.0, 0.0);
   const Vector3d position_2(1.0, 0.0, 0.0);
-  const Vector3d relative_translation = (position_2 - position_1).normalized();
+  const Vector3d orientation(0.1, -0.3, 0.2);
 
   const double scale = (position_2 - position_1).norm();
-  PairwiseTranslationAndScaleErrorTest(relative_translation,
+  PairwiseTranslationAndScaleErrorTest(orientation,
                                        scale,
                                        position_1,
                                        position_2);
-}
-
-TEST(PairwiseTranslationAndScaleError, TranslationWithNoise) {
-  const Vector3d position_1(0.0, 0.0, 0.0);
-  const Vector3d position_2(1.0, 0.0, 0.0);
-  Vector3d relative_translation = (position_2 - position_1).normalized();
-
-  // Add noise.
-  relative_translation =
-      (relative_translation + Vector3d(0.01, 0.01, 0.01)).normalized();
-  const double scale = (position_2 - position_1).norm();
-  PairwiseTranslationAndScaleErrorTest(relative_translation,
-                                       scale,
-                                       position_1,
-                                       position_2);
-}
-
-TEST(PairwiseTranslationAndScaleError, TranslationNoNoiseAndBadScale) {
-  const Vector3d position_1(0.0, 0.0, 0.0);
-  const Vector3d position_2(5.0, 0.0, 0.0);
-  const Vector3d relative_translation = (position_2 - position_1).normalized();
-
-  PairwiseTranslationAndScaleErrorTest(relative_translation,
-                                       kScale,
-                                       position_1,
-                                       position_2);
-}
-
-TEST(PairwiseTranslationAndScaleError, TranslationWithNoiseAndBadScale) {
-  const Vector3d position_1(0.0, 0.0, 0.0);
-  const Vector3d position_2(5.0, 0.0, 0.0);
-  Vector3d relative_translation = (position_2 - position_1).normalized();
-
-  // Add noise.
-  relative_translation =
-      (relative_translation + Vector3d(0.01, 0.01, 0.01)).normalized();
-
-  PairwiseTranslationAndScaleErrorTest(relative_translation,
-                               kScale,
-                               position_1,
-                               position_2);
 }
 
 }  // namespace theia
