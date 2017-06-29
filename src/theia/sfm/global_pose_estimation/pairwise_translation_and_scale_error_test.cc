@@ -64,7 +64,7 @@ void PairwiseTranslationAndScaleErrorTest(const Vector3d& orientation,
 
   // Initialize error function and compute rotation error.
   const PairwiseTranslationAndScaleError translation_error(
-      orientation, local_position1, local_position2);
+      orientation, local_position2 - local_position1);
   Vector3d error = Vector3d::Random();
   translation_error(position_1.data(),
                     position_2.data(),
