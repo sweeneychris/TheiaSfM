@@ -218,24 +218,71 @@ include_directories(
 # as system headers.
 include_directories(SYSTEM ${EIGEN_INCLUDE_DIRS})
 
+
+set(THEIA_USE_EXTERNAL_CEREAL OFF CACHE BOOL "Use a system Cereal library")
+set(THEIA_USE_EXTERNAL_FLANN OFF CACHE BOOL "Use a system Flann library")
+
 # build Third party libraries included in distro.
-add_subdirectory(libraries)
-include_directories(
-  libraries
-  libraries/spectra
-  ${akaze_SOURCE_DIR}
-  ${akaze_INCLUDE_DIR}
-  ${cereal_SOURCE_DIR}
-  ${cereal_SOURCE_DIR}/include
-  ${flann_SOURCE_DIR}
-  ${flann_SOURCE_DIR}/src/cpp
-  ${gtest_SOURCE_DIR}/include
-  ${gtest_SOURCE_DIR}
-  ${optimo_SOURCE_DIR}
-  ${statx_SOURCE_DIR}
-  ${stlplus3_SOURCE_DIR}
-  ${vlfeat_SOURCE_DIR}
-  ${visual_sfm_SOURCE_DIR})
+if (${BUILD_TESTING})
+  add_subdirectory(libraries/gtest)
+  include_directories(${gtest_SOURCE_DIR}/include ${gtest_SOURCE_DIR})
+endif (${BUILD_TESTING})
+
+# AKAZE feature extractor.
+add_subdirectory(libraries/akaze)
+include_directories(${akaze_SOURCE_DIR} ${akaze_INCLUDE_DIR})
+
+# Cereal for portable IO.
+if(NOT THEIA_USE_EXTERNAL_CEREAL)
+  add_subdirectory(libraries/cereal)
+
+  include_directories(${cereal_SOURCE_DIR} ${cereal_SOURCE_DIR}/include)
+  set(THEIA_INTERNAL_CEREAL_LIB ${THEIA_INTERNAL_LIB_PREFIX}/cereal ${THEIA_INTERNAL_LIB_PREFIX}/cereal/include)
+else()
+  find_package(cereal REQUIRED)
+
+  set(_THEIA_CEREAL_LIBRARIES cereal)
+endif()
+
+# Flann for fast approximate nearest neighbor searches.
+if(NOT THEIA_USE_EXTERNAL_FLANN)
+  add_subdirectory(libraries/flann)
+
+  include_directories(${flann_SOURCE_DIR} ${flann_SOURCE_DIR}/src/cpp)
+  set(_THEIA_FLANN_LIBRARIES flann_cpp)
+  set(THEIA_INTERNAL_FLANN_LIB ${THEIA_INTERNAL_LIB_PREFIX}/flann)
+else()
+  find_package(Flann REQUIRED)
+
+  include_directories(${FLANN_INCLUDE_DIR})
+  set(_THEIA_FLANN_LIBRARIES ${FLANN_LIBRARY})
+endif()
+
+# Add Optimo.
+add_subdirectory(libraries/optimo)
+include_directories(${optimo_SOURCE_DIR})
+
+# Add Spectra.
+include_directories(libraries/spectra)
+
+# Add Statx.
+add_subdirectory(libraries/statx)
+include_directories(${statx_SOURCE_DIR})
+
+# STLPlus for filepath tools.
+add_subdirectory(libraries/stlplus3)
+include_directories(${stlplus3_SOURCE_DIR})
+
+# Add VLFeat.
+add_subdirectory(libraries/vlfeat)
+include_directories(${vlfeat_SOURCE_DIR})
+
+# Add VisualSfM files.
+add_subdirectory(libraries/visual_sfm)
+include_directories(${visual_sfm_SOURCE_DIR})
+
+include_directories(libraries)
+
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 include(OptimizeTheiaCompilerFlags)
@@ -260,7 +307,19 @@ install(FILES ${THEIA_HDRS} DESTINATION include/theia)
 file(GLOB_RECURSE THEIA_INTERNAL_HDRS ${CMAKE_SOURCE_DIR}/src/theia/*.h)
 install(DIRECTORY src/theia/ DESTINATION include/theia FILES_MATCHING PATTERN "*.h")
 
-install(DIRECTORY libraries/ DESTINATION include/theia/libraries FILES_MATCHING PATTERN "*.h*")
+install(DIRECTORY libraries/akaze/ DESTINATION include/theia/libraries/akaze FILES_MATCHING PATTERN "*.h*")
+if(NOT THEIA_USE_EXTERNAL_CEREAL)
+  install(DIRECTORY libraries/cereal/ DESTINATION include/theia/libraries/cereal FILES_MATCHING PATTERN "*.h*")
+endif()
+if(NOT THEIA_USE_EXTERNAL_FLANN)
+  install(DIRECTORY libraries/flann/ DESTINATION include/theia/libraries/flann FILES_MATCHING PATTERN "*.h*")
+endif()
+install(DIRECTORY libraries/optimo/ DESTINATION include/theia/libraries/optimo FILES_MATCHING PATTERN "*.h*")
+install(DIRECTORY libraries/spectra/ DESTINATION include/theia/libraries/spectra FILES_MATCHING PATTERN "*.h*")
+install(DIRECTORY libraries/statx/ DESTINATION include/theia/libraries/statx FILES_MATCHING PATTERN "*.h*")
+install(DIRECTORY libraries/stlplus3/ DESTINATION include/theia/libraries/stlplus3 FILES_MATCHING PATTERN "*.h*")
+install(DIRECTORY libraries/visual_sfm/ DESTINATION include/theia/libraries/visual_sfm FILES_MATCHING PATTERN "*.h*")
+install(DIRECTORY libraries/vlfeat/ DESTINATION include/theia/libraries/vlfeat FILES_MATCHING PATTERN "*.h*")
 
 # Add an uninstall target to remove all installed files.
 configure_file("${CMAKE_SOURCE_DIR}/cmake/uninstall.cmake.in"
@@ -320,8 +379,9 @@ configure_file("${CMAKE_SOURCE_DIR}/cmake/TheiaConfigVersion.cmake.in"
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/TheiaConfig.cmake"
               "${CMAKE_CURRENT_BINARY_DIR}/TheiaConfigVersion.cmake"
               "${CMAKE_SOURCE_DIR}/cmake/FindEigen.cmake"
-              "${CMAKE_SOURCE_DIR}/cmake/FindGlog.cmake"
+              "${CMAKE_SOURCE_DIR}/cmake/FindFlann.cmake"
               "${CMAKE_SOURCE_DIR}/cmake/FindGflags.cmake"
-	      "${CMAKE_SOURCE_DIR}/cmake/FindOpenImageIO.cmake"
+              "${CMAKE_SOURCE_DIR}/cmake/FindGlog.cmake"
+              "${CMAKE_SOURCE_DIR}/cmake/FindOpenImageIO.cmake"
               "${CMAKE_SOURCE_DIR}/cmake/FindSuiteSparse.cmake"
               DESTINATION ${CMAKECONFIG_INSTALL_DIR})

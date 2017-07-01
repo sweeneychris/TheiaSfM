@@ -163,7 +163,7 @@ else (GFLAGS_FOUND)
 endif (GFLAGS_FOUND)
 list(APPEND THEIA_INCLUDE_DIRS ${GFLAGS_INCLUDE_DIRS})
 
-# OpenImageIO
+# OpenImageIO.
 find_package(OpenImageIO QUIET)
 if (OPENIMAGEIO_FOUND)
   message(STATUS "Found Theia dependency: OpenImageIO in ${OPENIMAGEIO_INCLUDE_DIRS}")
@@ -173,6 +173,7 @@ else (OPENIMAGEIO_FOUND)
 endif (OPENIMAGEIO_FOUND)
 list(APPEND THEIA_INCLUDE_DIRS ${OPENIMAGEIO_INCLUDE_DIRS})
 
+# SuiteSparse.
 find_package(SuiteSparse QUIET)
 if (SUITESPARSE_FOUND)
   # On Ubuntu the system install of SuiteSparse (v3.4.0) up to at least
@@ -207,22 +208,47 @@ endif (NOT TARGET theia AND NOT Theia_BINARY_DIR)
 # Set the expected XX_LIBRARIES variable for FindPackage().
 set(THEIA_LIBRARIES theia)
 
+set(THEIA_USE_EXTERNAL_CEREAL @THEIA_USE_EXTERNAL_CEREAL@)
+set(THEIA_USE_EXTERNAL_FLANN @THEIA_USE_EXTERNAL_FLANN@)
+
+# Cereal.
+if (THEIA_USE_EXTERNAL_CEREAL)
+  find_package(cereal QUIET)
+  if (TARGET cereal)
+    message(STATUS "Found required Theia dependency: Cereal")
+  else (TARGET cereal)
+    theia_report_not_found("Missing required Theia dependency: Cereal.")
+  endif (TARGET cereal)
+  list(APPEND THEIA_LIBRARIES cereal)
+endif (THEIA_USE_EXTERNAL_CEREAL)
+
+# Flann.
+if (THEIA_USE_EXTERNAL_FLANN)
+  find_package(Flann QUIET)
+  if (FLANN_FOUND)
+    message(STATUS "Found required Theia dependency: Flann")
+  else (FLANN_FOUND)
+    theia_report_not_found("Missing required Theia dependency: Flann.")
+  endif (FLANN_FOUND)
+  list(APPEND THEIA_INCLUDE_DIRS ${FLANN_INCLUDE_DIR})
+  list(APPEND THEIA_LIBRARIES ${FLANN_LIBRARY})
+endif (THEIA_USE_EXTERNAL_FLANN)
+
 # Add the libraries included with the distribution.
 set(THEIA_INTERNAL_LIB_PREFIX ${THEIA_INCLUDE_DIR}/theia/libraries)
 set(THEIA_INTERNAL_LIBS_INCLUDES
   ${THEIA_INTERNAL_LIB_PREFIX}
   ${THEIA_INTERNAL_LIB_PREFIX}/akaze
-  ${THEIA_INTERNAL_LIB_PREFIX}/cereal
-  ${THEIA_INTERNAL_LIB_PREFIX}/cereal/include
-  ${THEIA_INTERNAL_LIB_PREFIX}/flann
+  @THEIA_INTERNAL_CEREAL_LIB@
+  @THEIA_INTERNAL_FLANN_LIB@
   ${THEIA_INTERNAL_LIB_PREFIX}/gtest
   ${THEIA_INTERNAL_LIB_PREFIX}/gtest/include
   ${THEIA_INTERNAL_LIB_PREFIX}/optimo
   ${THEIA_INTERNAL_LIB_PREFIX}/spectra
   ${THEIA_INTERNAL_LIB_PREFIX}/statx
   ${THEIA_INTERNAL_LIB_PREFIX}/stlplus3
-  ${THEIA_INTERNAL_LIB_PREFIX}/vlfeat
-  ${THEIA_INTERNAL_LIB_PREFIX}/visual_sfm)
+  ${THEIA_INTERNAL_LIB_PREFIX}/visual_sfm
+  ${THEIA_INTERNAL_LIB_PREFIX}/vlfeat)
 
 list(APPEND THEIA_INCLUDE_DIRS ${THEIA_INTERNAL_LIBS_INCLUDES})
 
