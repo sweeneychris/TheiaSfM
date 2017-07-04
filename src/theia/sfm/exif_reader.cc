@@ -49,6 +49,9 @@
 #include "theia/sfm/camera_intrinsics_prior.h"
 #include "theia/util/map_util.h"
 
+// Generated file
+#include "camera_sensor_database.h"
+
 namespace theia {
 namespace {
 
@@ -93,14 +96,7 @@ ExifReader::ExifReader() {
 }
 
 void ExifReader::LoadSensorWidthDatabase() {
-  const std::string sensor_width_file =
-      std::string(THEIA_DATA_DIR) + "/camera_sensor_database.txt";
-
-  std::ifstream ifs(sensor_width_file.c_str(), std::ios::in);
-  if (!ifs.is_open()) {
-    LOG(FATAL) << "Cannot read the sensor width file from "
-               << sensor_width_file;
-  }
+  std::stringstream ifs(camera_sensor_database_txt, std::ios::in);
 
   while (!ifs.eof()) {
     // Read in the filename.
