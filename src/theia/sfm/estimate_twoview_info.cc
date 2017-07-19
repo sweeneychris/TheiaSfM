@@ -73,6 +73,16 @@ void NormalizeFeatures(
   Camera camera1, camera2;
   camera1.SetFromCameraIntrinsicsPriors(prior1);
   camera2.SetFromCameraIntrinsicsPriors(prior2);
+  // If no focal length prior is given, the SetFromCameraIntrinsicsPrior method
+  // will set the focal length to a reasonable guess. However, for cameras with
+  // no focal length priors we DO NOT want the feature normalization below to
+  // divide by the focal length, so we must reset the focal lengths to 1.0 so
+  // that the feature normalization is unaffected.
+  if (!prior1.focal_length.is_set || !prior2.focal_length.is_set){
+    camera1.SetFocalLength(1.0);
+    camera2.SetFocalLength(1.0);
+  }
+
   normalized_correspondences->reserve(correspondences.size());
   for (const FeatureCorrespondence& correspondence : correspondences) {
     FeatureCorrespondence normalized_correspondence;
