@@ -162,11 +162,11 @@ ReconstructionEstimatorSummary IncrementalReconstructionEstimator::Estimate(
   view_graph_ = view_graph;
 
   // Initialize the unlocalized_views_ variable.
-  const auto& view_ids = reconstruction_->ViewIds();
+  const auto& view_ids = view_graph_->ViewIds();
   unlocalized_views_.reserve(view_ids.size());
   for (const ViewId view_id : view_ids) {
     const View* view = reconstruction_->View(view_id);
-    if (!view->IsEstimated()) {
+    if (view != nullptr && !view->IsEstimated()) {
       unlocalized_views_.insert(view_id);
     }
   }
@@ -616,9 +616,10 @@ void IncrementalReconstructionEstimator::SetUnderconstrainedAsUnestimated() {
   // If any views were removed then we need to update the localization container
   // so that we can try to re-estimate the view.
   if (num_underconstrained_views > 0) {
-    const auto& view_ids = reconstruction_->ViewIds();
+    const auto& view_ids = view_graph_->ViewIds();
     for (const ViewId view_id : view_ids) {
-      if (!reconstruction_->View(view_id)->IsEstimated() &&
+      const theia::View* view = reconstruction_->View(view_id);
+      if (view != nullptr && !view->IsEstimated() &&
           !ContainsKey(unlocalized_views_, view_id)) {
         unlocalized_views_.insert(view_id);
 
