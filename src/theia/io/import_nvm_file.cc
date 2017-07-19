@@ -138,6 +138,7 @@ bool ImportNVMFile(const std::string& nvm_filepath,
                           vsfm_reconstruction.point_colors[3 * i + 2]);
     const auto& features = FindOrDie(tracks, i);
     const TrackId track_id = reconstruction->AddTrack(features);
+    CHECK_NE(track_id, kInvalidTrackId);
     Track* track = reconstruction->MutableTrack(track_id);
     track->SetEstimated(true);
     *track->MutablePoint() = point.cast<double>();
