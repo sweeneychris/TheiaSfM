@@ -47,7 +47,10 @@
 #include <utility>
 #include <vector>
 
-#include "spectra/include/SymEigsShiftSolver.h"
+#include "cppoptlib/solver/neldermeadsolver.h"
+#include "spectra/include/Util/CompInfo.h"
+#include "spectra/include/MatOp/SparseCholesky.h"
+#include "spectra/include/SymGEigsSolver.h"
 
 #include "theia/math/matrix/linear_operator.h"
 #include "theia/util/hash.h"
@@ -91,13 +94,10 @@ class NormalizedGraphCut {
 
     edge_weight_.resize(node_to_index_map_.size(), node_to_index_map_.size());
     node_weight_.resize(node_to_index_map_.size(), node_to_index_map_.size());
-    node_weight_inv_sqrt_.resize(node_to_index_map_.size(),
-                                 node_to_index_map_.size());
 
     // Remove the non-zero entries from any previous calls to this function.
     edge_weight_.setZero();
     node_weight_.setZero();
-    node_weight_inv_sqrt_.setZero();
 
     // Create symmetric weight matrix W where w(i, j) is the weight of the
     // edge
@@ -120,34 +120,75 @@ class NormalizedGraphCut {
     //
     //   (D - W) * y = \lambda * D * y
     //
-    // This can be easily transformed into a standard eigenvalue problem:
-    //
-    //   D^{-1/2} * (D - W) * D^{-1/2} * z = \lambda * z
-    //
-    // where z = D^{1/2} * y.
-    const Eigen::SparseMatrix<double> lhs = node_weight_inv_sqrt_ *
-                                            (node_weight_ - edge_weight_) *
-                                            node_weight_inv_sqrt_;
-
-    // Note that D^{-1/2} * (D - W) * D^{-1/2} is a symmetric positive
-    // semi-definite matrix, so we may use the symmetric eigensolver to find the
-    // eigenvalues of lhs.
-    SparseSymShiftSolveLLT op(lhs);
-    Spectra::SymEigsShiftSolver<double, Spectra::LARGEST_MAGN,
-                                SparseSymShiftSolveLLT> eigs(&op, 2, 4, 1e-4);
+    // This can be solved using Rayleigh iterations with a sparse eigensolver.
+    const Eigen::SparseMatrix<double> lhs = node_weight_ - edge_weight_;
+    Spectra::SparseSymMatProd<double> lhs_op(lhs);
+    Spectra::SparseCholesky<double> rhs_op(node_weight_);
+    Spectra::SymGEigsSolver<double,
+                            Spectra::SMALLEST_MAGN,
+                            Spectra::SparseSymMatProd<double>,
+                            Spectra::SparseCholesky<double>,
+                            Spectra::GEIGS_CHOLESKY>
+        eigs(&lhs_op, &rhs_op, 2, 6);
     eigs.init();
     eigs.compute();
 
     // The eigenvalues will appear in decreasing order. We only care about the
     // eigenvector corresponding to the 2nd smallest eigenvalue.
-    const Eigen::VectorXd& z = eigs.eigenvectors().col(0);
-    const Eigen::VectorXd y = node_weight_inv_sqrt_ * z;
+    const Eigen::VectorXd& y = eigs.eigenvectors().col(0);
     FindOptimalCut(y, subgraph1, subgraph2, cost_or_null);
 
     return true;
   }
 
  private:
+  // The optimal partition point is determined by using a Simplex algorithm to
+  // search for the partition that gives the optimal NCut value. This helper
+  // class simply computes the NCut cost for the optimization algorithm.
+  class ComputeNCutCost : public cppoptlib::Problem<double, 1> {
+   public:
+    using cppoptlib::Problem<double, 1>::TVector;
+
+    ComputeNCutCost(const Eigen::SparseMatrix<double>& node_weight,
+                    const Eigen::SparseMatrix<double>& edge_weight,
+                    const Eigen::VectorXd& y)
+        : node_weight_(node_weight),
+          edge_weight_(edge_weight),
+          y_(y),
+          node_weight_diag_(node_weight_.diagonal()),
+          node_weight_sum_(node_weight_diag_.sum()) {}
+
+    double value(const TVector& cut_value) {
+      // Cut the group based on the cut value such that 1 is in group A and 0 is
+      // group B.
+      const Eigen::VectorXd cut_grouping =
+          (y_.array() > cut_value(0))
+              .select(Eigen::VectorXd::Ones(y_.size()), 0);
+
+      // Based on our current threshold used for the cut, discretize y so that
+      // all values are {1, -b} where
+      //   b = \sum_{x_i > 0) d_i / (\sum_{x_i < 0} d_i).
+      const double k = node_weight_diag_.dot(cut_grouping) / node_weight_sum_;
+      const double b = k / (1.0 - k);
+      const Eigen::VectorXd y_discrete =
+          (y_.array() > cut_value(0))
+              .select(Eigen::VectorXd::Ones(y_.size()), -b);
+
+      // The cost may be computed from y:
+      //   ncut cost = y^t * (D - W) * y / (y^t * D * y)
+      double cut_cost =
+          y_discrete.transpose() * (node_weight_ - edge_weight_) * y_discrete;
+      cut_cost /= y_discrete.transpose() * node_weight_ * y_discrete;
+      return cut_cost;
+    }
+   private:
+    const Eigen::SparseMatrix<double>& node_weight_;
+    const Eigen::SparseMatrix<double>& edge_weight_;
+    const Eigen::VectorXd& y_;
+    const Eigen::VectorXd node_weight_diag_;
+    const double node_weight_sum_;
+  };
+
   // Find the optimal cut by searching at evenly spaced points and seeing which
   // point has the lowest cut value. Ideally, the eigenvector y is perfectly
   // split such that the value 0 perfectly divides the graph into the two
@@ -158,50 +199,22 @@ class NormalizedGraphCut {
   // threshold that produces the lowest cost.
   void FindOptimalCut(const Eigen::VectorXd& y,
                       std::unordered_set<T>* subgraph1,
-                      std::unordered_set<T>* subgraph2, double* cost_or_null) {
-    const double start_y = y.minCoeff();
-    const double stop_y = y.maxCoeff();
-    const int num_steps =
-        std::min(static_cast<int>(y.size()), options_.num_cuts_to_test);
-    const double step_size =
-        (stop_y - start_y) / static_cast<double>(num_steps);
-
-    double best_cut_value = start_y;
-    double best_cut_cost = std::numeric_limits<double>::max();
-
-    const Eigen::VectorXd node_weight_diag = node_weight_.diagonal();
-    const double node_weight_sum = node_weight_diag.sum();
-    for (int i = 0; i < num_steps; i++) {
-      const double cut_value = start_y + i * step_size;
-      // Cut the group based on the cut value such that 1 is in group A and 0 is
-      // group B.
-      const Eigen::VectorXd cut_grouping =
-          (y.array() > cut_value).select(Eigen::VectorXd::Ones(y.size()), 0);
-
-      // Based on our current threshold used for the cut, discretize y so that
-      // all values are {1, -b} where
-      //   b = \sum_{x_i > 0) d_i / (\sum_{x_i < 0} d_i).
-      const double k = node_weight_diag.dot(cut_grouping) / node_weight_sum;
-      const double b = k / (1.0 - k);
-      const Eigen::VectorXd y_discrete =
-          (y.array() > cut_value).select(Eigen::VectorXd::Ones(y.size()), -b);
-
-      // The cost may be computed from y:
-      //   ncut cost = y^t * (D - W) * y / (y^t * D * y)
-      double cut_cost =
-          y_discrete.transpose() * (node_weight_ - edge_weight_) * y_discrete;
-      cut_cost /= y_discrete.transpose() * node_weight_ * y_discrete;
-
-      // Select this as the cut if it produces a lower cut cost.
-      if (cut_cost < best_cut_cost) {
-        best_cut_cost = cut_cost;
-        best_cut_value = cut_value;
-      }
-    }
+                      std::unordered_set<T>* subgraph2,
+                      double* cost_or_null) {
+    // We solve for the optimal partition value by performing a minimization
+    // using the Nelder-Mead simplex algorithm. The optimal partition will
+    // minimize the NCut value (only a local minima is guaranteed).
+    ComputeNCutCost ncut_cost(node_weight_, edge_weight_, y);
+    // Set the initial value to be the mean of the eigenvector entries.
+    typename ComputeNCutCost::TVector best_cut_value(1);
+    best_cut_value(0) = y.mean();
+    // Try to find partition value where the NCut value is minimized.
+    cppoptlib::NelderMeadSolver<ComputeNCutCost> solver;
+    solver.minimize(ncut_cost, best_cut_value);
 
     // Based on the chosen threshold for the y-values, form the two subgraphs.
     for (const auto& node_id : node_to_index_map_) {
-      if (y(node_id.second) <= best_cut_value) {
+      if (y(node_id.second) <= best_cut_value(0)) {
         subgraph1->emplace(node_id.first);
       } else {
         subgraph2->emplace(node_id.first);
@@ -210,7 +223,7 @@ class NormalizedGraphCut {
 
     // Output the cost if desired.
     if (cost_or_null != nullptr) {
-      *cost_or_null = best_cut_cost;
+      *cost_or_null = ncut_cost(best_cut_value);
     }
   }
 
@@ -254,32 +267,22 @@ class NormalizedGraphCut {
   // Creates the diagonal node weight matrix such that d(i) = sum_j w(i, j)
   void CreateNodeWeightMatrix() {
     std::vector<Eigen::Triplet<double> > node_weight_coefficients;
-    std::vector<Eigen::Triplet<double> > node_weight_inv_sqrt_coefficients;
     node_weight_coefficients.reserve(node_to_index_map_.size());
-    node_weight_inv_sqrt_coefficients.reserve(node_to_index_map_.size());
     for (const auto& node : node_to_index_map_) {
       // The sum of all edge weights connected to node i is equal to the sum of
       // col(i) in the edge weight matrix.
       const double d_i = edge_weight_.row(node.second).sum();
       node_weight_coefficients.emplace_back(node.second, node.second, d_i);
-
-      // Create D^{-1/2}. Since D is a diagonal matrix the inverse is simply the
-      // reciprical of each diagonal matrix.
-      node_weight_inv_sqrt_coefficients.emplace_back(node.second, node.second,
-                                                     std::sqrt(1.0 / d_i));
     }
 
     node_weight_.setFromTriplets(node_weight_coefficients.begin(),
                                  node_weight_coefficients.end());
-    node_weight_inv_sqrt_.setFromTriplets(
-        node_weight_inv_sqrt_coefficients.begin(),
-        node_weight_inv_sqrt_coefficients.end());
   }
 
  private:
   Options options_;
   std::unordered_map<T, int> node_to_index_map_;
-  Eigen::SparseMatrix<double> edge_weight_, node_weight_, node_weight_inv_sqrt_;
+  Eigen::SparseMatrix<double> edge_weight_, node_weight_;
 };
 
 }  // namespace theia
