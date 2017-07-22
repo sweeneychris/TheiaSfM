@@ -41,7 +41,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "spectra/include/SymEigsSolver.h"
+#include "spectra/include/SymEigsShiftSolver.h"
 
 #include "theia/math/matrix/linear_operator.h"
 #include "theia/sfm/pose/util.h"

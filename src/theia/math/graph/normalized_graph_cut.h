@@ -36,6 +36,7 @@
 #define THEIA_MATH_GRAPH_NORMALIZED_GRAPH_CUT_H_
 
 #include <Eigen/Core>
+#include <Eigen/Eigenvalues>
 #include <Eigen/SparseCore>
 #include <glog/logging.h>
 
@@ -46,7 +47,7 @@
 #include <utility>
 #include <vector>
 
-#include "spectra/include/SymEigsSolver.h"
+#include "spectra/include/SymEigsShiftSolver.h"
 
 #include "theia/math/matrix/linear_operator.h"
 #include "theia/util/hash.h"
@@ -133,7 +134,7 @@ class NormalizedGraphCut {
     // eigenvalues of lhs.
     SparseSymShiftSolveLLT op(lhs);
     Spectra::SymEigsShiftSolver<double, Spectra::LARGEST_MAGN,
-                                SparseSymShiftSolveLLT> eigs(&op, 2, 6, 0.0);
+                                SparseSymShiftSolveLLT> eigs(&op, 2, 4, 1e-4);
     eigs.init();
     eigs.compute();
 
@@ -162,14 +163,15 @@ class NormalizedGraphCut {
     const double stop_y = y.maxCoeff();
     const int num_steps =
         std::min(static_cast<int>(y.size()), options_.num_cuts_to_test);
-    const double step_size = (stop_y - start_y) / num_steps;
+    const double step_size =
+        (stop_y - start_y) / static_cast<double>(num_steps);
 
-    double best_cut_value = 0;
+    double best_cut_value = start_y;
     double best_cut_cost = std::numeric_limits<double>::max();
 
-    const auto& node_weight_diag = node_weight_.diagonal();
+    const Eigen::VectorXd node_weight_diag = node_weight_.diagonal();
     const double node_weight_sum = node_weight_diag.sum();
-    for (int i = 1; i < num_steps; i++) {
+    for (int i = 0; i < num_steps; i++) {
       const double cut_value = start_y + i * step_size;
       // Cut the group based on the cut value such that 1 is in group A and 0 is
       // group B.
@@ -258,7 +260,7 @@ class NormalizedGraphCut {
     for (const auto& node : node_to_index_map_) {
       // The sum of all edge weights connected to node i is equal to the sum of
       // col(i) in the edge weight matrix.
-      const double d_i = edge_weight_.col(node.second).sum();
+      const double d_i = edge_weight_.row(node.second).sum();
       node_weight_coefficients.emplace_back(node.second, node.second, d_i);
 
       // Create D^{-1/2}. Since D is a diagonal matrix the inverse is simply the

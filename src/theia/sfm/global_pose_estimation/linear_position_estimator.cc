@@ -45,7 +45,7 @@
 #include <unordered_set>
 #include <vector>
 
-#include "spectra/include/SymEigsSolver.h"
+#include "spectra/include/SymEigsShiftSolver.h"
 
 #include "theia/math/matrix/linear_operator.h"
 #include "theia/sfm/find_common_tracks_in_views.h"
