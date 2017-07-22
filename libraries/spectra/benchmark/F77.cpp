@@ -7,10 +7,11 @@ using Eigen::MatrixXd;
 using Eigen::VectorXd;
 using Eigen::MatrixXcd;
 using Eigen::VectorXcd;
+using Eigen::Lower;
 typedef Eigen::Map<VectorXd> MapVec;
 
 void eigs_sym_F77(MatrixXd &M, VectorXd &init_resid, int k, int m,
-                  double &time_used, double &prec_err)
+                  double &time_used, double &prec_err, int &nops)
 {
     double start, end;
     prec_err = -1.0;
@@ -74,7 +75,7 @@ void eigs_sym_F77(MatrixXd &M, VectorXd &init_resid, int k, int m,
     {
         MapVec vec_in(&workd[ipntr[0] - 1], n);
         MapVec vec_out(&workd[ipntr[1] - 1], n);
-        vec_out.noalias() = M * vec_in;
+        vec_out.noalias() = M.selfadjointView<Lower>() * vec_in;
 
         saupd(ido, bmat, n, which,
               nev, tol, resid,
@@ -166,12 +167,13 @@ void eigs_sym_F77(MatrixXd &M, VectorXd &init_resid, int k, int m,
     time_used = (end - start) * 1000;
     MatrixXd err = M * evecs.leftCols(nev) - evecs.leftCols(nev) * evals.asDiagonal();
     prec_err = err.cwiseAbs().maxCoeff();
+    nops = niter;
 }
 
 
 
 void eigs_gen_F77(MatrixXd &M, VectorXd &init_resid, int k, int m,
-                  double &time_used, double &prec_err)
+                  double &time_used, double &prec_err, int &nops)
 {
     double start, end;
     prec_err = -1.0;
@@ -333,5 +335,5 @@ void eigs_gen_F77(MatrixXd &M, VectorXd &init_resid, int k, int m,
 
     end = get_wall_time();
     time_used = (end - start) * 1000;
-    // std::cout << "nops77 = " << niter << std::endl;
+    nops = niter;
 }

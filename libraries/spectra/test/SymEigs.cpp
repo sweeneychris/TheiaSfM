@@ -1,8 +1,11 @@
 #include <Eigen/Core>
+#include <Eigen/SparseCore>
 #include <iostream>
+#include <random> // Requires C++ 11
 
 #include <SymEigsSolver.h>
-#include <MatOp/DenseGenMatProd.h>
+#include <MatOp/DenseSymMatProd.h>
+#include <MatOp/SparseSymMatProd.h>
 
 using namespace Spectra;
 
@@ -11,92 +14,165 @@ using namespace Spectra;
 
 typedef Eigen::MatrixXd Matrix;
 typedef Eigen::VectorXd Vector;
+typedef Eigen::SparseMatrix<double> SpMatrix;
 
-template <int SelectionRule>
-void run_test(const Matrix &mat, int k, int m)
+// Traits to obtain operation type from matrix type
+template <typename MatType>
+struct OpTypeTrait
 {
-    // Eigen::SelfAdjointEigenSolver<MatrixXd> eig(mat);
-    // std::cout << "all eigenvalues = \n" << eig.eigenvalues().transpose() << "\n";
+    typedef DenseSymMatProd<double> OpType;
+};
 
-    DenseGenMatProd<double> op(mat);
-    SymEigsSolver<double, SelectionRule, DenseGenMatProd<double>> eigs(&op, k, m);
+template <>
+struct OpTypeTrait<SpMatrix>
+{
+    typedef SparseSymMatProd<double> OpType;
+};
+
+// Generate data for testing
+Matrix gen_dense_data(int n)
+{
+    const Matrix mat = Eigen::MatrixXd::Random(n, n);
+    return mat + mat.transpose();
+}
+
+SpMatrix gen_sparse_data(int n, double prob = 0.5)
+{
+    // Eigen solver only uses the lower triangle of mat,
+    // so we don't need to make mat symmetric here.
+    SpMatrix mat(n, n);
+    std::default_random_engine gen;
+    gen.seed(0);
+    std::uniform_real_distribution<double> distr(-1.0, 1.0);
+    for(int i = 0; i < n; i++)
+    {
+        for(int j = 0; j < n; j++)
+        {
+            if(distr(gen) < prob)
+                mat.insert(i, j) = distr(gen);
+        }
+    }
+    return mat;
+}
+
+
+
+template <typename MatType, int SelectionRule>
+void run_test(const MatType& mat, int k, int m)
+{
+    typename OpTypeTrait<MatType>::OpType op(mat);
+    SymEigsSolver<double, SelectionRule, typename OpTypeTrait<MatType>::OpType>
+        eigs(&op, k, m);
     eigs.init();
     int nconv = eigs.compute();
     int niter = eigs.num_iterations();
-    int nops = eigs.num_operations();
+    int nops  = eigs.num_operations();
 
-    REQUIRE( nconv > 0 );
+    INFO( "nconv = " << nconv );
+    INFO( "niter = " << niter );
+    INFO( "nops  = " << nops  );
+    REQUIRE( eigs.info() == SUCCESSFUL );
 
     Vector evals = eigs.eigenvalues();
     Matrix evecs = eigs.eigenvectors();
 
-    // std::cout << "computed eigenvalues D = \n" << evals.transpose() << "\n";
-    // std::cout << "computed eigenvectors U = \n" << evecs << "\n\n";
-    Matrix err = mat * evecs - evecs * evals.asDiagonal();
+    Matrix resid = mat.template selfadjointView<Eigen::Lower>() * evecs - evecs * evals.asDiagonal();
+    const double err = resid.array().abs().maxCoeff();
 
-    INFO( "nconv = " << nconv );
-    INFO( "niter = " << niter );
-    INFO( "nops = " << nops );
-    INFO( "||AU - UD||_inf = " << err.array().abs().maxCoeff() );
-    REQUIRE( err.array().abs().maxCoeff() == Approx(0.0) );
+    INFO( "||AU - UD||_inf = " << err );
+    REQUIRE( err == Approx(0.0) );
 }
 
-void run_test_sets(const Matrix &mat, int k, int m)
+template <typename MatType>
+void run_test_sets(const MatType& mat, int k, int m)
 {
     SECTION( "Largest Magnitude" )
     {
-        run_test<LARGEST_MAGN>(mat, k, m);
+        run_test<MatType, LARGEST_MAGN>(mat, k, m);
     }
     SECTION( "Largest Value" )
     {
-        run_test<LARGEST_ALGE>(mat, k, m);
+        run_test<MatType, LARGEST_ALGE>(mat, k, m);
     }
     SECTION( "Smallest Magnitude" )
     {
-        run_test<SMALLEST_MAGN>(mat, k, m);
+        run_test<MatType, SMALLEST_MAGN>(mat, k, m);
     }
     SECTION( "Smallest Value" )
     {
-        run_test<SMALLEST_ALGE>(mat, k, m);
+        run_test<MatType, SMALLEST_ALGE>(mat, k, m);
     }
     SECTION( "Both Ends" )
     {
-        run_test<BOTH_ENDS>(mat, k, m);
+        run_test<MatType, BOTH_ENDS>(mat, k, m);
     }
 }
 
 TEST_CASE("Eigensolver of symmetric real matrix [10x10]", "[eigs_sym]")
 {
-    srand(123);
+    std::srand(123);
 
-    Matrix A = Eigen::MatrixXd::Random(10, 10);
-    Matrix M = A + A.transpose();
+    const Matrix A = gen_dense_data(10);
     int k = 3;
     int m = 6;
 
-    run_test_sets(M, k, m);
+    run_test_sets(A, k, m);
 }
 
 TEST_CASE("Eigensolver of symmetric real matrix [100x100]", "[eigs_sym]")
 {
-    srand(123);
+    std::srand(123);
 
-    Matrix A = Eigen::MatrixXd::Random(100, 100);
-    Matrix M = A + A.transpose();
+    const Matrix A = gen_dense_data(100);
     int k = 10;
     int m = 20;
 
-    run_test_sets(M, k, m);
+    run_test_sets(A, k, m);
 }
 
 TEST_CASE("Eigensolver of symmetric real matrix [1000x1000]", "[eigs_sym]")
 {
-    srand(123);
+    std::srand(123);
 
-    Matrix A = Eigen::MatrixXd::Random(1000, 1000);
-    Matrix M = A + A.transpose();
+    const Matrix A = gen_dense_data(1000);
     int k = 20;
     int m = 50;
 
-    run_test_sets(M, k, m);
+    run_test_sets(A, k, m);
+}
+
+TEST_CASE("Eigensolver of sparse symmetric real matrix [10x10]", "[eigs_sym]")
+{
+    std::srand(123);
+
+    // Eigen solver only uses the lower triangle
+    const SpMatrix A = gen_sparse_data(10, 0.5);
+    int k = 3;
+    int m = 6;
+
+    run_test_sets(A, k, m);
+}
+
+TEST_CASE("Eigensolver of sparse symmetric real matrix [100x100]", "[eigs_sym]")
+{
+    std::srand(123);
+
+    // Eigen solver only uses the lower triangle
+    const SpMatrix A = gen_sparse_data(100, 0.5);
+    int k = 10;
+    int m = 20;
+
+    run_test_sets(A, k, m);
+}
+
+TEST_CASE("Eigensolver of sparse symmetric real matrix [1000x1000]", "[eigs_sym]")
+{
+    std::srand(123);
+
+    // Eigen solver only uses the lower triangle
+    const SpMatrix A = gen_sparse_data(1000, 0.5);
+    int k = 20;
+    int m = 50;
+
+    run_test_sets(A, k, m);
 }

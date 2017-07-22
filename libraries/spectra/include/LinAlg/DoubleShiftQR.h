@@ -1,4 +1,4 @@
-// Copyright (C) 2015 Yixuan Qiu <yixuan.qiu@cos.name>
+// Copyright (C) 2016-2017 Yixuan Qiu <yixuan.qiu@cos.name>
 //
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
@@ -11,7 +11,6 @@
 #include <vector>     // std::vector
 #include <algorithm>  // std::min, std::fill, std::copy
 #include <cmath>      // std::abs, std::sqrt, std::pow
-#include <limits>     // std::numeric_limits
 #include <stdexcept>  // std::invalid_argument, std::logic_error
 
 namespace Spectra {
@@ -24,115 +23,156 @@ private:
     typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> Matrix;
     typedef Eigen::Matrix<Scalar, 3, Eigen::Dynamic> Matrix3X;
     typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Vector;
+    typedef Eigen::Array<unsigned char, Eigen::Dynamic, 1> IntArray;
+
+    typedef typename Matrix::Index Index;
 
     typedef Eigen::Ref<Matrix> GenericMatrix;
     typedef const Eigen::Ref<const Matrix> ConstGenericMatrix;
 
-    int n;              // Dimension of the matrix
-    Matrix mat_H;       // A copy of the matrix to be factorized
-    Scalar shift_s;     // Shift constant
-    Scalar shift_t;     // Shift constant
-    Matrix3X ref_u;     // Householder reflectors
-    const Scalar prec;  // Approximately zero
-    const Scalar eps_rel;
-    const Scalar eps_abs;
-    bool computed;      // Whether matrix has been factorized
+    Index m_n;            // Dimension of the matrix
+    Matrix m_mat_H;       // A copy of the matrix to be factorized
+    Scalar m_shift_s;     // Shift constant
+    Scalar m_shift_t;     // Shift constant
+    Matrix3X m_ref_u;     // Householder reflectors
+    IntArray m_ref_nr;    // How many rows does each reflector affects
+                          // 3 - A general reflector
+                          // 2 - A Givens rotation
+                          // 1 - An identity transformation
+    const Scalar m_eps;   // the machine precision,
+                          // e.g. ~= 1e-16 for the "double" type
+    const Scalar m_eps_rel;
+    const Scalar m_eps_abs;
+    bool m_computed;      // Whether matrix has been factorized
 
-    void compute_reflector(const Scalar &x1, const Scalar &x2, const Scalar &x3, int ind)
+    void compute_reflector(const Scalar& x1, const Scalar& x2, const Scalar& x3, Index ind)
     {
-        Scalar *u = ref_u.data() + 3 * ind;
+        using std::abs;
 
-        if(std::abs(x1) + std::abs(x2) + std::abs(x3) <= 3 * prec)
+        Scalar* u = m_ref_u.data() + 3 * ind;
+        unsigned char* nr = m_ref_nr.data();
+        // In general case the reflector affects 3 rows
+        nr[ind] = 3;
+        Scalar x2x3 = Scalar(0);
+        // If x3 is zero, decrease nr by 1
+        if(abs(x3) < m_eps)
         {
-            u[0] = u[1] = u[2] = 0;
+            // If x2 is also zero, nr will be 1, and we can exit this function
+            if(abs(x2) < m_eps)
+            {
+                nr[ind] = 1;
+                return;
+            } else {
+                nr[ind] = 2;
+            }
+            x2x3 = abs(x2);
+        } else {
+            x2x3 = Eigen::numext::hypot(x2, x3);
+        }
+
+        // x1' = x1 - rho * ||x||
+        // rho = -sign(x1), if x1 == 0, we choose rho = 1
+        Scalar x1_new = x1 - ((x1 <= 0) - (x1 > 0)) * Eigen::numext::hypot(x1, x2x3);
+        Scalar x_norm = Eigen::numext::hypot(x1_new, x2x3);
+        // Double check the norm of new x
+        if(x_norm < m_eps)
+        {
+            nr[ind] = 1;
             return;
         }
-        // x1' = x1 - rho * ||x||
-        // rho = -sign(x1)
-        Scalar tmp = x2 * x2 + x3 * x3;
-        Scalar x1_new = x1 - ((x1 < 0) - (x1 > 0)) * std::sqrt(x1 * x1 + tmp);
-        Scalar x_norm = std::sqrt(x1_new * x1_new + tmp);
         u[0] = x1_new / x_norm;
         u[1] = x2 / x_norm;
         u[2] = x3 / x_norm;
     }
 
-    void compute_reflector(const Scalar *x, int ind)
+    void compute_reflector(const Scalar* x, Index ind)
     {
         compute_reflector(x[0], x[1], x[2], ind);
     }
 
-    void compute_reflectors_from_block(GenericMatrix X, int start_ind)
+    // Update the block X = H(il:iu, il:iu)
+    void update_block(Index il, Index iu)
     {
-        // For the block X, we can assume that ncol == nrow,
-        // and all sub-diagonal elements are non-zero
-        const int nrow = X.rows();
-        // For block size == 1, there is no need to apply reflectors
-        if(nrow == 1)
+        // Block size
+        Index bsize = iu - il + 1;
+
+        // If block size == 1, there is no need to apply reflectors
+        if(bsize == 1)
         {
-            compute_reflector(0, 0, 0, start_ind);
+            m_ref_nr[il] = 1;
             return;
         }
 
         // For block size == 2, do a Givens rotation on M = X * X - s * X + t * I
-        if(nrow == 2)
+        if(bsize == 2)
         {
-            Scalar x = X(0, 0) * (X(0, 0) - shift_s) + X(0, 1) * X(1, 0) + shift_t;
-            Scalar y = X(1, 0) * (X(0, 0) + X(1, 1) - shift_s);
-            compute_reflector(x, y, 0, start_ind);
-            apply_PX(X.template block<2, 2>(0, 0), n, start_ind);
-            apply_XP(X.template block<2, 2>(0, 0), n, start_ind);
-            compute_reflector(0, 0, 0, start_ind + 1);
+            // m00 = x00 * (x00 - s) + x01 * x10 + t
+            Scalar m00 = m_mat_H.coeff(il, il) * (m_mat_H.coeff(il, il) - m_shift_s) +
+                         m_mat_H.coeff(il, il + 1) * m_mat_H.coeff(il + 1, il) +
+                         m_shift_t;
+            // m10 = x10 * (x00 + x11 - s)
+            Scalar m10 = m_mat_H.coeff(il + 1, il) * (m_mat_H.coeff(il, il) + m_mat_H.coeff(il + 1, il + 1) - m_shift_s);
+            // This causes nr=2
+            compute_reflector(m00, m10, 0, il);
+            // Apply the reflector to X
+            apply_PX(m_mat_H.block(il, il, 2, m_n - il), m_n, il);
+            apply_XP(m_mat_H.block(0, il, il + 2, 2), m_n, il);
+
+            m_ref_nr[il + 1] = 1;
             return;
         }
 
         // For block size >=3, use the regular strategy
-        Scalar x = X(0, 0) * (X(0, 0) - shift_s) + X(0, 1) * X(1, 0) + shift_t;
-        Scalar y = X(1, 0) * (X(0, 0) + X(1, 1) - shift_s);
-        Scalar z = X(2, 1) * X(1, 0);
-        compute_reflector(x, y, z, start_ind);
+        Scalar m00 = m_mat_H.coeff(il, il) * (m_mat_H.coeff(il, il) - m_shift_s) +
+                     m_mat_H.coeff(il, il + 1) * m_mat_H.coeff(il + 1, il) +
+                     m_shift_t;
+        Scalar m10 = m_mat_H.coeff(il + 1, il) * (m_mat_H.coeff(il, il) + m_mat_H.coeff(il + 1, il + 1) - m_shift_s);
+        // m20 = x21 * x10
+        Scalar m20 = m_mat_H.coeff(il + 2, il + 1) * m_mat_H.coeff(il + 1, il);
+        compute_reflector(m00, m10, m20, il);
+
         // Apply the first reflector
-        apply_PX(X.template topRows<3>(), n, start_ind);
-        apply_XP(X.topLeftCorner(std::min(nrow, 4), 3), n, start_ind);
+        apply_PX(m_mat_H.block(il, il, 3, m_n - il), m_n, il);
+        apply_XP(m_mat_H.block(0, il, il + std::min(bsize, Index(4)), 3), m_n, il);
 
         // Calculate the following reflectors
-        // If entering this loop, nrow is at least 4.
-        for(int i = 1; i < nrow - 2; i++)
+        // If entering this loop, block size is at least 4.
+        for(Index i = 1; i < bsize - 2; i++)
         {
-            compute_reflector(&X(i, i - 1), start_ind + i);
+            compute_reflector(&m_mat_H.coeffRef(il + i, il + i - 1), il + i);
             // Apply the reflector to X
-            apply_PX(X.block(i, i - 1, 3, nrow - i + 1), n, start_ind + i);
-            apply_XP(X.block(0, i, std::min(nrow, i + 4), 3), n, start_ind + i);
+            apply_PX(m_mat_H.block(il + i, il + i - 1, 3, m_n - il - i + 1), m_n, il + i);
+            apply_XP(m_mat_H.block(0, il + i, il + std::min(bsize, Index(i + 4)), 3), m_n, il + i);
         }
 
         // The last reflector
-        compute_reflector(X(nrow - 2, nrow - 3), X(nrow - 1, nrow - 3), 0, start_ind + nrow - 2);
+        // This causes nr=2
+        compute_reflector(m_mat_H.coeff(iu - 1, iu - 2), m_mat_H.coeff(iu, iu - 2), 0, iu - 1);
         // Apply the reflector to X
-        apply_PX(X.template block<2, 3>(nrow - 2, nrow - 3), n, start_ind + nrow - 2);
-        apply_XP(X.block(0, nrow - 2, nrow, 2), n, start_ind + nrow - 2);
+        apply_PX(m_mat_H.block(iu - 1, iu - 2, 2, m_n - iu + 2), m_n, iu - 1);
+        apply_XP(m_mat_H.block(0, iu - 1, il + bsize, 2), m_n, iu - 1);
 
-        compute_reflector(0, 0, 0, start_ind + nrow - 1);
+        m_ref_nr[iu] = 1;
     }
 
     // P = I - 2 * u * u' = P'
     // PX = X - 2 * u * (u'X)
-    void apply_PX(GenericMatrix X, int stride, int u_ind)
+    void apply_PX(GenericMatrix X, Index stride, Index u_ind)
     {
-        Scalar *u = ref_u.data() + 3 * u_ind;
-        Scalar u2_abs = std::abs(u[2]);
-
-        if(std::abs(u[0]) + std::abs(u[1]) + u2_abs <= 3 * prec)
+        if(m_ref_nr[u_ind] == 1)
             return;
 
-        const int nrow = X.rows();
-        const int ncol = X.cols();
+        Scalar* u = m_ref_u.data() + 3 * u_ind;
+
+        const Index nrow = X.rows();
+        const Index ncol = X.cols();
         const Scalar u0_2 = 2 * u[0];
         const Scalar u1_2 = 2 * u[1];
 
-        Scalar *xptr = X.data();
-        if(u2_abs <= prec || nrow == 2)
+        Scalar* xptr = X.data();
+        if(m_ref_nr[u_ind] == 2 || nrow == 2)
         {
-            for(int i = 0; i < ncol; i++, xptr += stride)
+            for(Index i = 0; i < ncol; i++, xptr += stride)
             {
                 Scalar tmp = u0_2 * xptr[0] + u1_2 * xptr[1];
                 xptr[0] -= tmp * u[0];
@@ -140,7 +180,7 @@ private:
             }
         } else {
             const Scalar u2_2 = 2 * u[2];
-            for(int i = 0; i < ncol; i++, xptr += stride)
+            for(Index i = 0; i < ncol; i++, xptr += stride)
             {
                 Scalar tmp = u0_2 * xptr[0] + u1_2 * xptr[1] + u2_2 * xptr[2];
                 xptr[0] -= tmp * u[0];
@@ -152,55 +192,53 @@ private:
 
     // x is a pointer to a vector
     // Px = x - 2 * dot(x, u) * u
-    void apply_PX(Scalar *x, int u_ind)
+    void apply_PX(Scalar* x, Index u_ind)
     {
-        Scalar u0 = ref_u(0, u_ind),
-               u1 = ref_u(1, u_ind),
-               u2 = ref_u(2, u_ind);
-
-        if(std::abs(u0) + std::abs(u1) + std::abs(u2) <= 3 * prec)
+        if(m_ref_nr[u_ind] == 1)
             return;
 
+        Scalar u0 = m_ref_u(0, u_ind),
+               u1 = m_ref_u(1, u_ind),
+               u2 = m_ref_u(2, u_ind);
+
         // When the reflector only contains two elements, u2 has been set to zero
-        bool u2_is_zero = (std::abs(u2) <= prec);
-        Scalar dot2 = x[0] * u0 + x[1] * u1 + (u2_is_zero ? 0 : (x[2] * u2));
+        bool nr_is_2 = (m_ref_nr[u_ind] == 2);
+        Scalar dot2 = x[0] * u0 + x[1] * u1 + (nr_is_2 ? 0 : (x[2] * u2));
         dot2 *= 2;
         x[0] -= dot2 * u0;
         x[1] -= dot2 * u1;
-        if(!u2_is_zero)
+        if(!nr_is_2)
             x[2] -= dot2 * u2;
     }
 
     // XP = X - 2 * (X * u) * u'
-    void apply_XP(GenericMatrix X, int stride, int u_ind)
+    void apply_XP(GenericMatrix X, Index stride, Index u_ind)
     {
-        Scalar *u = ref_u.data() + 3 * u_ind;
-        Scalar u2_abs = std::abs(u[2]);
-
-        if(std::abs(u[0]) + std::abs(u[1]) + u2_abs <= 3 * prec)
+        if(m_ref_nr[u_ind] == 1)
             return;
 
+        Scalar* u = m_ref_u.data() + 3 * u_ind;
         const int nrow = X.rows();
         const int ncol = X.cols();
         const Scalar u0_2 = 2 * u[0];
         const Scalar u1_2 = 2 * u[1];
         Scalar *X0 = X.data(), *X1 = X0 + stride;  // X0 => X.col(0), X1 => X.col(1)
 
-        if(u2_abs <= prec || ncol == 2)
+        if(m_ref_nr[u_ind] == 2 || ncol == 2)
         {
             // tmp = 2 * u0 * X0 + 2 * u1 * X1
             // X0 => X0 - u0 * tmp
             // X1 => X1 - u1 * tmp
-            for(int i = 0; i < nrow; i++)
+            for(Index i = 0; i < nrow; i++)
             {
                 Scalar tmp = u0_2 * X0[i] + u1_2 * X1[i];
                 X0[i] -= tmp * u[0];
                 X1[i] -= tmp * u[1];
             }
         } else {
-            Scalar *X2 = X1 + stride;  // X2 => X.col(2)
+            Scalar* X2 = X1 + stride;  // X2 => X.col(2)
             const Scalar u2_2 = 2 * u[2];
-            for(int i = 0; i < nrow; i++)
+            for(Index i = 0; i < nrow; i++)
             {
                 Scalar tmp = u0_2 * X0[i] + u1_2 * X1[i] + u2_2 * X2[i];
                 X0[i] -= tmp * u[0];
@@ -211,107 +249,95 @@ private:
     }
 
 public:
-    DoubleShiftQR(int size) :
-        n(size),
-        prec(std::numeric_limits<Scalar>::epsilon()),
-        eps_rel(std::pow(prec, Scalar(2.0) / 3)),
-        eps_abs(std::min(std::pow(prec, Scalar(3.0) / 4), n * prec)),
-        computed(false)
+    DoubleShiftQR(Index size) :
+        m_n(size),
+        m_eps(Eigen::NumTraits<Scalar>::epsilon()),
+        m_eps_rel(m_eps),
+        m_eps_abs(m_eps),
+        m_computed(false)
     {}
 
-    DoubleShiftQR(ConstGenericMatrix &mat, Scalar s, Scalar t) :
-        n(mat.rows()),
-        mat_H(n, n),
-        shift_s(s),
-        shift_t(t),
-        ref_u(3, n),
-        prec(std::numeric_limits<Scalar>::epsilon()),
-        eps_rel(std::pow(prec, Scalar(2.0) / 3)),
-        eps_abs(std::min(std::pow(prec, Scalar(3.0) / 4), n * prec)),
-        computed(false)
+    DoubleShiftQR(ConstGenericMatrix& mat, Scalar s, Scalar t) :
+        m_n(mat.rows()),
+        m_mat_H(m_n, m_n),
+        m_shift_s(s),
+        m_shift_t(t),
+        m_ref_u(3, m_n),
+        m_ref_nr(m_n),
+        m_eps(Eigen::NumTraits<Scalar>::epsilon()),
+        m_eps_rel(m_eps),
+        m_eps_abs(m_eps),
+        m_computed(false)
     {
         compute(mat, s, t);
     }
 
-    void compute(ConstGenericMatrix &mat, Scalar s, Scalar t)
+    void compute(ConstGenericMatrix& mat, Scalar s, Scalar t)
     {
+        using std::abs;
+
         if(mat.rows() != mat.cols())
             throw std::invalid_argument("DoubleShiftQR: matrix must be square");
 
-        n = mat.rows();
-        mat_H.resize(n, n);
-        shift_s = s;
-        shift_t = t;
-        ref_u.resize(3, n);
+        m_n = mat.rows();
+        m_mat_H.resize(m_n, m_n);
+        m_shift_s = s;
+        m_shift_t = t;
+        m_ref_u.resize(3, m_n);
+        m_ref_nr.resize(m_n);
 
         // Make a copy of mat
-        std::copy(mat.data(), mat.data() + mat.size(), mat_H.data());
+        std::copy(mat.data(), mat.data() + mat.size(), m_mat_H.data());
 
         // Obtain the indices of zero elements in the subdiagonal,
         // so that H can be divided into several blocks
         std::vector<int> zero_ind;
-        zero_ind.reserve(n - 1);
+        zero_ind.reserve(m_n - 1);
         zero_ind.push_back(0);
-        Scalar *Hii = mat_H.data();
-        for(int i = 0; i < n - 2; i++, Hii += (n + 1))
+        Scalar* Hii = m_mat_H.data();
+        for(Index i = 0; i < m_n - 2; i++, Hii += (m_n + 1))
         {
-            // Hii[1] => mat_H(i + 1, i)
-            if(std::abs(Hii[1]) <= eps_abs || std::abs(Hii[1]) <= eps_rel * (std::abs(Hii[0]) + std::abs(Hii[n + 1])))
+            // Hii[1] => m_mat_H(i + 1, i)
+            const Scalar h = abs(Hii[1]);
+            if(h <= m_eps_abs || h <= m_eps_rel * (abs(Hii[0]) + abs(Hii[m_n + 1])))
             {
                 Hii[1] = 0;
                 zero_ind.push_back(i + 1);
             }
-            // Make sure mat_H is upper Hessenberg
-            // Zero the elements below mat_H(i + 1, i)
-            std::fill(Hii + 2, Hii + n - i, Scalar(0));
+            // Make sure m_mat_H is upper Hessenberg
+            // Zero the elements below m_mat_H(i + 1, i)
+            std::fill(Hii + 2, Hii + m_n - i, Scalar(0));
         }
-        zero_ind.push_back(n);
+        zero_ind.push_back(m_n);
 
         for(std::vector<int>::size_type i = 0; i < zero_ind.size() - 1; i++)
         {
-            int start = zero_ind[i];
-            int end = zero_ind[i + 1] - 1;
-            int block_size = end - start + 1;
-            // Compute refelctors from each block X
-            compute_reflectors_from_block(mat_H.block(start, start, block_size, block_size), start);
-            // Apply reflectors to the block right to X
-            if(end < n - 1 && block_size >= 2)
-            {
-                for(int j = start; j < end; j++)
-                {
-                    apply_PX(mat_H.block(j, end + 1, std::min(3, end - j + 1), n - 1 - end), n, j);
-                }
-            }
-            // Apply reflectors to the block above X
-            if(start > 0 && block_size >= 2)
-            {
-                for(int j = start; j < end; j++)
-                {
-                    apply_XP(mat_H.block(0, j, start, std::min(3, end - j + 1)), n, j);
-                }
-            }
+            Index start = zero_ind[i];
+            Index end = zero_ind[i + 1] - 1;
+            // Compute refelctors and update each block
+            update_block(start, end);
         }
 
-        computed = true;
+        m_computed = true;
     }
 
     Matrix matrix_QtHQ()
     {
-        if(!computed)
+        if(!m_computed)
             throw std::logic_error("DoubleShiftQR: need to call compute() first");
 
-        return mat_H;
+        return m_mat_H;
     }
 
     // Q = P0 * P1 * ...
     // Q'y = P_{n-2} * ... * P1 * P0 * y
-    void apply_QtY(Vector &y)
+    void apply_QtY(Vector& y)
     {
-        if(!computed)
+        if(!m_computed)
             throw std::logic_error("DoubleShiftQR: need to call compute() first");
 
-        Scalar *y_ptr = y.data();
-        for(int i = 0; i < n - 1; i++, y_ptr++)
+        Scalar* y_ptr = y.data();
+        for(Index i = 0; i < m_n - 1; i++, y_ptr++)
         {
             apply_PX(y_ptr, i);
         }
@@ -321,15 +347,15 @@ public:
     // YQ = Y * P0 * P1 * ...
     void apply_YQ(GenericMatrix Y)
     {
-        if(!computed)
+        if(!m_computed)
             throw std::logic_error("DoubleShiftQR: need to call compute() first");
 
-        int nrow = Y.rows();
-        for(int i = 0; i < n - 2; i++)
+        Index nrow = Y.rows();
+        for(Index i = 0; i < m_n - 2; i++)
         {
             apply_XP(Y.block(0, i, nrow, 3), nrow, i);
         }
-        apply_XP(Y.block(0, n - 2, nrow, 2), nrow, n - 2);
+        apply_XP(Y.block(0, m_n - 2, nrow, 2), nrow, m_n - 2);
     }
 };
 

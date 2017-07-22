@@ -4,8 +4,8 @@
 // Public License v. 2.0. If a copy of the MPL was not distributed
 // with this file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-#ifndef DENSE_GEN_MAT_PROD_H
-#define DENSE_GEN_MAT_PROD_H
+#ifndef DENSE_SYM_MAT_PROD_H
+#define DENSE_SYM_MAT_PROD_H
 
 #include <Eigen/Core>
 
@@ -13,21 +13,14 @@ namespace Spectra {
 
 
 ///
-/// \defgroup MatOp Matrix Operations
-///
-/// Define matrix operations on existing matrix objects
-///
-
-///
 /// \ingroup MatOp
 ///
 /// This class defines the matrix-vector multiplication operation on a
-/// general real matrix \f$A\f$, i.e., calculating \f$y=Ax\f$ for any vector
-/// \f$x\f$. It is mainly used in the GenEigsSolver and
-/// SymEigsSolver eigen solvers.
+/// symmetric real matrix \f$A\f$, i.e., calculating \f$y=Ax\f$ for any vector
+/// \f$x\f$. It is mainly used in the SymEigsSolver eigen solver.
 ///
-template <typename Scalar>
-class DenseGenMatProd
+template <typename Scalar, int Uplo = Eigen::Lower>
+class DenseSymMatProd
 {
 private:
     typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> Matrix;
@@ -49,7 +42,7 @@ public:
     /// `Eigen::MatrixXf`), or its mapped version
     /// (e.g. `Eigen::Map<Eigen::MatrixXd>`).
     ///
-    DenseGenMatProd(ConstGenericMatrix& mat_) :
+    DenseSymMatProd(ConstGenericMatrix& mat_) :
         m_mat(mat_.data(), mat_.rows(), mat_.cols())
     {}
 
@@ -73,11 +66,11 @@ public:
     {
         MapConstVec x(x_in,  m_mat.cols());
         MapVec      y(y_out, m_mat.rows());
-        y.noalias() = m_mat * x;
+        y.noalias() = m_mat.template selfadjointView<Uplo>() * x;
     }
 };
 
 
 } // namespace Spectra
 
-#endif // DENSE_GEN_MAT_PROD_H
+#endif // DENSE_SYM_MAT_PROD_H

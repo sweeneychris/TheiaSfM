@@ -1,4 +1,4 @@
-// Copyright (C) 2015 Yixuan Qiu <yixuan.qiu@cos.name>
+// Copyright (C) 2016-2017 Yixuan Qiu <yixuan.qiu@cos.name>
 //
 // This Source Code Form is subject to the terms of the Mozilla
 // Public License v. 2.0. If a copy of the MPL was not distributed
@@ -27,20 +27,23 @@ class DenseGenComplexShiftSolve
 {
 private:
     typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> Matrix;
-    typedef Eigen::Map<const Matrix> MapMat;
-    typedef Eigen::Map< Eigen::Matrix<Scalar, Eigen::Dynamic, 1> > MapVec;
+    typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> Vector;
+    typedef Eigen::Map<const Matrix> MapConstMat;
+    typedef Eigen::Map<const Vector> MapConstVec;
+    typedef Eigen::Map<Vector> MapVec;
 
     typedef std::complex<Scalar> Complex;
     typedef Eigen::Matrix<Complex, Eigen::Dynamic, Eigen::Dynamic> ComplexMatrix;
     typedef Eigen::Matrix<Complex, Eigen::Dynamic, 1> ComplexVector;
+
     typedef Eigen::PartialPivLU<ComplexMatrix> ComplexSolver;
 
     typedef const Eigen::Ref<const Matrix> ConstGenericMatrix;
 
-    const MapMat mat;
-    const int dim_n;
-    ComplexSolver solver;
-    ComplexVector x_cache;
+    const MapConstMat m_mat;
+    const int m_n;
+    ComplexSolver m_solver;
+    ComplexVector m_x_cache;
 
 public:
     ///
@@ -51,9 +54,9 @@ public:
     /// `Eigen::MatrixXf`), or its mapped version
     /// (e.g. `Eigen::Map<Eigen::MatrixXd>`).
     ///
-    DenseGenComplexShiftSolve(ConstGenericMatrix &mat_) :
-        mat(mat_.data(), mat_.rows(), mat_.cols()),
-        dim_n(mat_.rows())
+    DenseGenComplexShiftSolve(ConstGenericMatrix& mat_) :
+        m_mat(mat_.data(), mat_.rows(), mat_.cols()),
+        m_n(mat_.rows())
     {
         if(mat_.rows() != mat_.cols())
             throw std::invalid_argument("DenseGenComplexShiftSolve: matrix must be square");
@@ -62,11 +65,11 @@ public:
     ///
     /// Return the number of rows of the underlying matrix.
     ///
-    int rows() { return dim_n; }
+    int rows() const { return m_n; }
     ///
     /// Return the number of columns of the underlying matrix.
     ///
-    int cols() { return dim_n; }
+    int cols() const { return m_n; }
 
     ///
     /// Set the complex shift \f$\sigma\f$.
@@ -76,11 +79,9 @@ public:
     ///
     void set_shift(Scalar sigmar, Scalar sigmai)
     {
-        ComplexMatrix cmat = mat.template cast<Complex>();
-        cmat.diagonal().array() -= Complex(sigmar, sigmai);
-        solver.compute(cmat);
-        x_cache.resize(dim_n);
-        x_cache.setZero();
+        m_solver.compute(m_mat.template cast<Complex>() - Complex(sigmar, sigmai) * ComplexMatrix::Identity(m_n, m_n));
+        m_x_cache.resize(m_n);
+        m_x_cache.setZero();
     }
 
     ///
@@ -91,11 +92,11 @@ public:
     /// \param y_out Pointer to the \f$y\f$ vector.
     ///
     // y_out = Re( inv(A - sigma * I) * x_in )
-    void perform_op(Scalar *x_in, Scalar *y_out)
+    void perform_op(const Scalar* x_in, Scalar* y_out)
     {
-        x_cache.real() = MapVec(x_in, dim_n);
-        MapVec y(y_out, dim_n);
-        y.noalias() = solver.solve(x_cache).real();
+        m_x_cache.real() = MapConstVec(x_in, m_n);
+        MapVec y(y_out, m_n);
+        y.noalias() = m_solver.solve(m_x_cache).real();
     }
 };
 

@@ -1,0 +1,34 @@
+branches:
+  only:
+    - master
+    - develop
+
+language: cpp
+
+compiler:
+  - clang
+  - gcc
+
+addons:
+  apt:
+    sources:
+      - ubuntu-toolchain-r-test
+      - llvm-toolchain-precise-3.8
+    packages:
+      - g++-6
+      - clang-3.8
+
+before_install:
+  - if [ "$CXX" = "g++" ]; then export CXX="g++-6"; fi
+  - if [ "$CXX" = "clang++" ]; then export CXX="clang++-3.8"; fi
+  - $CXX --version
+
+install:
+  - wget https://bitbucket.org/eigen/eigen/get/3.3.3.tar.gz
+  - tar xzf 3.3.3.tar.gz
+  - mv eigen-eigen-67e894c6cd8f/Eigen include/
+
+script:
+  - cd test
+  - make -j 4 all
+  - make test

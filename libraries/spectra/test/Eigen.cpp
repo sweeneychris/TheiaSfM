@@ -17,7 +17,7 @@ using Eigen::VectorXcd;
 
 TEST_CASE("Eigen decomposition of upper Hessenberg matrix", "[Eigen]")
 {
-    srand(123);
+    std::srand(123);
     int n = 100;
     MatrixXd m = MatrixXd::Random(n, n);
     m.array() -= 0.5;
@@ -59,7 +59,7 @@ TEST_CASE("Eigen decomposition of upper Hessenberg matrix", "[Eigen]")
 
 TEST_CASE("Eigen decomposition of symmetric tridiagonal matrix", "[Eigen]")
 {
-    srand(123);
+    std::srand(123);
     int n = 100;
     MatrixXd m = MatrixXd::Random(n, n);
     m.array() -= 0.5;

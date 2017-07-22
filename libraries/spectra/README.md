@@ -1,6 +1,8 @@
-# Spectra
+# <a href="https://spectralib.org"><img src="https://spectralib.org/img/logo.png" width="200px" /></a>
 
-**Spectra** stands for **Sp**arse **E**igenvalue **C**omputation **T**oolkit
+[![Build Status](https://travis-ci.org/yixuan/spectra.svg?branch=master)](https://travis-ci.org/yixuan/spectra)
+
+[**Spectra**](https://spectralib.org) stands for **Sp**arse **E**igenvalue **C**omputation **T**oolkit
 as a **R**edesigned **A**RPACK. It is a C++ library for large scale eigenvalue
 problems, built on top of [Eigen](http://eigen.tuxfamily.org),
 an open source linear algebra library.
@@ -47,29 +49,31 @@ matrix-vector multiplication `y = A * x` or the shift-solve operation
 `y = inv(A - σ * I) * x`. **Spectra** has defined a number of
 helper classes to quickly create such operations from a matrix object.
 See the documentation of
-[DenseGenMatProd](http://yixuan.cos.name/spectra/doc/classSpectra_1_1DenseGenMatProd.html),
-[DenseSymShiftSolve](http://yixuan.cos.name/spectra/doc/classSpectra_1_1DenseSymShiftSolve.html), etc.
+[DenseGenMatProd](https://spectralib.org/doc/classSpectra_1_1DenseGenMatProd.html),
+[DenseSymShiftSolve](https://spectralib.org/doc/classSpectra_1_1DenseSymShiftSolve.html), etc.
 2. Create an object of one of the eigen solver classes, for example
-[SymEigsSolver](http://yixuan.cos.name/spectra/doc/classSpectra_1_1SymEigsSolver.html)
+[SymEigsSolver](https://spectralib.org/doc/classSpectra_1_1SymEigsSolver.html)
 for symmetric matrices, and
-[GenEigsSolver](http://yixuan.cos.name/spectra/doc/classSpectra_1_1GenEigsSolver.html)
+[GenEigsSolver](https://spectralib.org/doc/classSpectra_1_1GenEigsSolver.html)
 for general matrices. Member functions
 of this object can then be called to conduct the computation and retrieve the
 eigenvalues and/or eigenvectors.
 
 Below is a list of the available eigen solvers in **Spectra**:
-- [SymEigsSolver](http://yixuan.cos.name/spectra/doc/classSpectra_1_1SymEigsSolver.html):
-for real symmetric matrices
-- [GenEigsSolver](http://yixuan.cos.name/spectra/doc/classSpectra_1_1GenEigsSolver.html):
-for general real matrices
-- [SymEigsShiftSolver](http://yixuan.cos.name/spectra/doc/classSpectra_1_1SymEigsShiftSolver.html):
-for real symmetric matrices using the shift-and-invert mode
-- [GenEigsRealShiftSolver](http://yixuan.cos.name/spectra/doc/classSpectra_1_1GenEigsRealShiftSolver.html):
-for general real matrices using the shift-and-invert mode,
+- [SymEigsSolver](https://spectralib.org/doc/classSpectra_1_1SymEigsSolver.html):
+For real symmetric matrices
+- [GenEigsSolver](https://spectralib.org/doc/classSpectra_1_1GenEigsSolver.html):
+For general real matrices
+- [SymEigsShiftSolver](https://spectralib.org/doc/classSpectra_1_1SymEigsShiftSolver.html):
+For real symmetric matrices using the shift-and-invert mode
+- [GenEigsRealShiftSolver](https://spectralib.org/doc/classSpectra_1_1GenEigsRealShiftSolver.html):
+For general real matrices using the shift-and-invert mode,
 with a real-valued shift
-- [GenEigsComplexShiftSolver](http://yixuan.cos.name/spectra/doc/classSpectra_1_1GenEigsRealShiftSolver.html):
-for general real matrices using the shift-and-invert mode,
+- [GenEigsComplexShiftSolver](https://spectralib.org/doc/classSpectra_1_1GenEigsRealShiftSolver.html):
+For general real matrices using the shift-and-invert mode,
 with a complex-valued shift
+- [SymGEigsSolver](https://spectralib.org/doc/classSpectra_1_1SymGEigsSolver.html):
+For generalized eigen solver for real symmetric matrices
 
 ## Examples
 
@@ -78,7 +82,7 @@ matrices.
 
 ```cpp
 #include <Eigen/Core>
-#include <SymEigsSolver.h>  // Also includes <MatOp/DenseGenMatProd.h>
+#include <SymEigsSolver.h>  // Also includes <MatOp/DenseSymMatProd.h>
 #include <iostream>
 
 using namespace Spectra;
@@ -90,10 +94,10 @@ int main()
     Eigen::MatrixXd M = A + A.transpose();
 
     // Construct matrix operation object using the wrapper class DenseGenMatProd
-    DenseGenMatProd<double> op(M);
+    DenseSymMatProd<double> op(M);
 
     // Construct eigen solver object, requesting the largest three eigenvalues
-    SymEigsSolver< double, LARGEST_ALGE, DenseGenMatProd<double> > eigs(&op, 3, 6);
+    SymEigsSolver< double, LARGEST_ALGE, DenseSymMatProd<double> > eigs(&op, 3, 6);
 
     // Initialize and compute
     eigs.init();
@@ -101,7 +105,7 @@ int main()
 
     // Retrieve results
     Eigen::VectorXd evalues;
-    if(nconv > 0)
+    if(eigs.info() == SUCCESSFUL)
         evalues = eigs.eigenvalues();
 
     std::cout << "Eigenvalues found:\n" << evalues << std::endl;
@@ -149,7 +153,7 @@ int main()
 
     // Retrieve results
     Eigen::VectorXcd evalues;
-    if(nconv > 0)
+    if(eigs.info() == SUCCESSFUL)
         evalues = eigs.eigenvalues();
 
     std::cout << "Eigenvalues found:\n" << evalues << std::endl;
@@ -189,8 +193,11 @@ int main()
     SymEigsSolver<double, LARGEST_ALGE, MyDiagonalTen> eigs(&op, 3, 6);
     eigs.init();
     eigs.compute();
-    Eigen::VectorXd evalues = eigs.eigenvalues();
-    std::cout << "Eigenvalues found:\n" << evalues << std::endl;
+    if(eigs.info() == SUCCESSFUL)
+    {
+        Eigen::VectorXd evalues = eigs.eigenvalues();
+        std::cout << "Eigenvalues found:\n" << evalues << std::endl;
+    }
 
     return 0;
 }
@@ -207,14 +214,16 @@ In the shift-and-invert mode, selection rules are applied to `1/(λ - σ)`
 rather than `λ`, where `λ` are eigenvalues of `A`.
 To use this mode, users need to define the shift-solve matrix operation. See
 the documentation of
-[SymEigsShiftSolver](http://yixuan.cos.name/spectra/doc/classSpectra_1_1SymEigsShiftSolver.html)
+[SymEigsShiftSolver](https://spectralib.org/doc/classSpectra_1_1SymEigsShiftSolver.html)
 for details.
 
 ## Documentation
 
-[This page](http://yixuan.cos.name/spectra/doc/) contains the documentation
+The [API reference](https://spectralib.org/doc/) page contains the documentation
 of **Spectra** generated by [Doxygen](http://www.doxygen.org/),
 including all the background knowledge, example code and class APIs.
+
+More information can be found in the project page [https://spectralib.org](https://spectralib.org).
 
 ## License
 

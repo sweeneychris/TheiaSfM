@@ -6,7 +6,7 @@ FFLAGS = -O3
 LDFLAGS =
 LIBS = -larpack -llapack -lblas -lgfortran
 
-HEADERS = $(wildcard ../include/MatOp/*.h) $(wildcard ../include/LinAlg/*.h) $(wildcard ../include/*.h)
+HEADERS = $(wildcard ../include/MatOp/*.h) $(wildcard ../include/LinAlg/*.h) $(wildcard ../include/Util/*.h) $(wildcard ../include/*.h)
 OBJS = F77.o Cpp.o wrapper.o
 
 .PHONY: all clean

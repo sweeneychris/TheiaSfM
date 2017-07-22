@@ -90,7 +90,7 @@ void run_test(MatrixType &H)
 
 TEST_CASE("QR of upper Hessenberg matrix", "[QR]")
 {
-    srand(123);
+    std::srand(123);
     int n = 100;
     MatrixXd m = MatrixXd::Random(n, n);
     m.array() -= 0.5;
@@ -105,7 +105,7 @@ TEST_CASE("QR of upper Hessenberg matrix", "[QR]")
 
 TEST_CASE("QR of Tridiagonal matrix", "[QR]")
 {
-    srand(123);
+    std::srand(123);
     int n = 100;
     MatrixXd m = MatrixXd::Random(n, n);
     m.array() -= 0.5;
@@ -122,7 +122,7 @@ TEST_CASE("QR of Tridiagonal matrix", "[QR]")
 
 TEST_CASE("QR decomposition with double shifts", "QR")
 {
-    srand(123);
+    std::srand(123);
     int n = 100;
     MatrixXd m = MatrixXd::Random(n, n);
     m.array() -= 0.5;

@@ -13,18 +13,18 @@ using Eigen::MatrixXcd;
 using Eigen::VectorXcd;
 
 void eigs_sym_Cpp(MatrixXd &M, VectorXd &init_resid, int k, int m,
-                  double &time_used, double &prec_err)
+                  double &time_used, double &prec_err, int &nops)
 {
     double start, end;
     start = get_wall_time();
 
-    DenseGenMatProd<double> op(M);
-    SymEigsSolver< double, LARGEST_MAGN, DenseGenMatProd<double> > eigs(&op, k, m);
+    DenseSymMatProd<double> op(M);
+    SymEigsSolver< double, LARGEST_MAGN, DenseSymMatProd<double> > eigs(&op, k, m);
     eigs.init(init_resid.data());
 
     int nconv = eigs.compute();
     int niter = eigs.num_iterations();
-    int nops = eigs.num_operations();
+    nops = eigs.num_operations();
 
     VectorXd evals = eigs.eigenvalues();
     MatrixXd evecs = eigs.eigenvectors();
@@ -47,7 +47,7 @@ void eigs_sym_Cpp(MatrixXd &M, VectorXd &init_resid, int k, int m,
 
 
 void eigs_gen_Cpp(MatrixXd &M, VectorXd &init_resid, int k, int m,
-                  double &time_used, double &prec_err)
+                  double &time_used, double &prec_err, int &nops)
 {
     double start, end;
     start = get_wall_time();
@@ -58,8 +58,7 @@ void eigs_gen_Cpp(MatrixXd &M, VectorXd &init_resid, int k, int m,
 
     int nconv = eigs.compute();
     int niter = eigs.num_iterations();
-    int nops = eigs.num_operations();
-    // std::cout << "nops = " << nops << std::endl;
+    nops = eigs.num_operations();
 
     VectorXcd evals = eigs.eigenvalues();
     MatrixXcd evecs = eigs.eigenvectors();
