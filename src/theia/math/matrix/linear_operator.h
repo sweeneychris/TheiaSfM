@@ -35,12 +35,32 @@
 #ifndef THEIA_MATH_MATRIX_LINEAR_OPERATOR_H_
 #define THEIA_MATH_MATRIX_LINEAR_OPERATOR_H_
 
+#include <Eigen/Core>
 #include <Eigen/SparseCore>
 #include <glog/logging.h>
 
 #include "theia/math/matrix/sparse_cholesky_llt.h"
 
 namespace theia {
+
+// This is an abstract base class for linear operators. It supports
+// access to size information and left and right multiply operators. This class
+// is inspired by the LinearOperator class in the Ceres Solver library:
+// www.ceres-solver.org
+class LinearOperator {
+ public:
+  virtual ~LinearOperator();
+
+  // y = y + Ax;
+  virtual void RightMultiply(const Eigen::VectorXd& x,
+                             Eigen::VectorXd* y) const = 0;
+  // y = y + A'x;
+  virtual void LeftMultiply(const Eigen::VectorXd& x,
+                            Eigen::VectorXd* y) const = 0;
+
+  virtual int num_rows() const = 0;
+  virtual int num_cols() const = 0;
+};
 
 // A sparse method for computing the shift and inverse linear operator. This
 // method is intended for use with the Spectra library.
@@ -53,7 +73,7 @@ class SparseSymShiftSolveLLT {
     if (linear_solver_.Info() != Eigen::Success) {
       LOG(FATAL)
           << "Could not perform Cholesky decomposition on the matrix. Are "
-          "you sure it is positive semi-definite?";
+             "you sure it is positive semi-definite?";
     }
   }
 
@@ -69,7 +89,7 @@ class SparseSymShiftSolveLLT {
     if (linear_solver_.Info() != Eigen::Success) {
       LOG(FATAL)
           << "Could not perform Cholesky decomposition on the matrix. Are "
-          "you sure it is positive semi-definite?";
+             "you sure it is positive semi-definite?";
     }
   }
 

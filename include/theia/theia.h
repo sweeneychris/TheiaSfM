@@ -85,6 +85,8 @@
 #include "theia/math/graph/normalized_graph_cut.h"
 #include "theia/math/histogram.h"
 #include "theia/math/l1_solver.h"
+#include "theia/math/matrix/eigen_linear_operator.h"
+#include "theia/math/matrix/linear_operator.h"
 #include "theia/math/matrix/gauss_jordan.h"
 #include "theia/math/matrix/rq_decomposition.h"
 #include "theia/math/matrix/sparse_cholesky_llt.h"
