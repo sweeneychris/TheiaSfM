@@ -47,7 +47,7 @@
 
 #include "spectra/include/SymEigsShiftSolver.h"
 
-#include "theia/math/matrix/linear_operator.h"
+#include "theia/math/matrix/spectra_linear_operator.h"
 #include "theia/sfm/find_common_tracks_in_views.h"
 #include "theia/sfm/global_pose_estimation/compute_triplet_baseline_ratios.h"
 #include "theia/sfm/reconstruction.h"

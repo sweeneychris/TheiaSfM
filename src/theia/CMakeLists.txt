@@ -71,6 +71,7 @@ set(THEIA_SRC
   math/find_polynomial_roots_companion_matrix.cc
   math/find_polynomial_roots_jenkins_traub.cc
   math/matrix/sparse_cholesky_llt.cc
+  math/matrix/sparse_matrix.cc
   math/polynomial.cc
   math/probability/sequential_probability_ratio.cc
   math/rotation.cc

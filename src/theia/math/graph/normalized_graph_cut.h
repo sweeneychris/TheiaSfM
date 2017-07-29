@@ -52,7 +52,7 @@
 #include "spectra/include/MatOp/SparseCholesky.h"
 #include "spectra/include/SymGEigsSolver.h"
 
-#include "theia/math/matrix/linear_operator.h"
+#include "theia/math/matrix/spectra_linear_operator.h"
 #include "theia/util/hash.h"
 #include "theia/util/map_util.h"
 

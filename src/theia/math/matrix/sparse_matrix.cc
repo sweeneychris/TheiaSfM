@@ -32,37 +32,29 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (sweeney.chris.m@gmail.com)
 
-#ifndef THEIA_MATH_MATRIX_EIGEN_LINEAR_OPERATOR_H_
-#define THEIA_MATH_MATRIX_EIGEN_LINEAR_OPERATOR_H_
+#include "theia/math/matrix/sparse_matrix.h"
 
 #include <Eigen/Core>
 #include <Eigen/SparseCore>
 
 namespace theia {
 
-// A trivial linear operator for Eigen typed dense or sparse matrices.
-template <typename Derived>
-class EigenLinearOperator : public LinearOperator {
- public:
-  explicit EigenLinearOperator(const Eigen::EigenBase<Derived>& matrix)
-      : matrix_(matrix) {}
-  ~EigenLinearOperator() {}
+SparseMatrix::SparseMatrix(const Eigen::SparseMatrix<double>& matrix)
+    : matrix_(matrix) {}
+SparseMatrix::~SparseMatrix() {}
 
-  // y = y + Ax;
-  void RightMultiply(const Eigen::VectorXd& x, Eigen::VectorXd* y) const {
-    y->noalias() += matrix_ * x;
-  }
-  // y = y + A'x;
-  void LeftMultiply(const Eigen::VectorXd& x, Eigen::VectorXd* y) const {
-    y->noalias() += matrix_ * x;
-  }
+// y = y + Ax;
+void SparseMatrix::RightMultiply(const Eigen::VectorXd& x,
+                                 Eigen::VectorXd* y) const {
+  y->noalias() += matrix_ * x;
+}
+// y = y + A'x;
+void SparseMatrix::LeftMultiply(const Eigen::VectorXd& x,
+                                Eigen::VectorXd* y) const {
+  y->noalias() += matrix_.transpose() * x;
+}
 
-  int num_rows() const { return matrix_.rows(); };
-  int num_cols() const { return matrix_.cols(); };
+int SparseMatrix::num_rows() const { return matrix_.rows(); };
+int SparseMatrix::num_cols() const { return matrix_.cols(); };
 
- private:
-  const Eigen::EigenBase<Derived>& matrix_;
-};
 }  // namespace theia
-
-#endif  // THEIA_MATH_MATRIX_EIGEN_LINEAR_OPERATOR_H_

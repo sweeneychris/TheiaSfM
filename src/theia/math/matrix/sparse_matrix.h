@@ -30,35 +30,39 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //
 // Please contact the author of this library if you have any questions.
-// Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
+// Author: Chris Sweeney (sweeney.chris.m@gmail.com)
 
-#ifndef THEIA_MATH_MATRIX_LINEAR_OPERATOR_H_
-#define THEIA_MATH_MATRIX_LINEAR_OPERATOR_H_
+#ifndef THEIA_MATH_MATRIX_SPARSE_MATRIX_H_
+#define THEIA_MATH_MATRIX_SPARSE_MATRIX_H_
 
 #include <Eigen/Core>
-#include <glog/logging.h>
+#include <Eigen/SparseCore>
+
+#include "theia/math/matrix/linear_operator.h"
 
 namespace theia {
 
-// This is an abstract base class for linear operators. It supports
-// access to size information and left and right multiply operators. This class
-// is inspired by the LinearOperator class in the Ceres Solver library:
-// www.ceres-solver.org
-class LinearOperator {
+// A wrapper for the Eigen sparse matrix class.
+class SparseMatrix : public LinearOperator {
  public:
-  virtual ~LinearOperator();
+  explicit SparseMatrix(const Eigen::SparseMatrix<double>& matrix);
+  ~SparseMatrix();
 
   // y = y + Ax;
-  virtual void RightMultiply(const Eigen::VectorXd& x,
-                             Eigen::VectorXd* y) const = 0;
-  // y = y + A'x;
-  virtual void LeftMultiply(const Eigen::VectorXd& x,
-                            Eigen::VectorXd* y) const = 0;
+  void RightMultiply(const Eigen::VectorXd& x,
+                     Eigen::VectorXd* y) const override;
 
-  virtual int num_rows() const = 0;
-  virtual int num_cols() const = 0;
-};
+  // y = y + A'x;
+  void LeftMultiply(const Eigen::VectorXd& x,
+                    Eigen::VectorXd* y) const override;
+
+  int num_rows() const override;
+  int num_cols() const override;
+
+ private:
+  const Eigen::SparseMatrix<double>& matrix_;
+};  // namespace theia
 
 }  // namespace theia
 
-#endif  // THEIA_MATH_MATRIX_LINEAR_OPERATOR_H_
+#endif  // THEIA_MATH_MATRIX_SPARSE_MATRIX_H_

@@ -43,7 +43,7 @@
 
 #include "spectra/include/SymEigsShiftSolver.h"
 
-#include "theia/math/matrix/linear_operator.h"
+#include "theia/math/matrix/spectra_linear_operator.h"
 #include "theia/sfm/pose/util.h"
 #include "theia/sfm/twoview_info.h"
 #include "theia/sfm/types.h"
