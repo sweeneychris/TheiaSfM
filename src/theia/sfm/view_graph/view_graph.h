@@ -35,12 +35,18 @@
 #ifndef THEIA_SFM_VIEW_GRAPH_VIEW_GRAPH_H_
 #define THEIA_SFM_VIEW_GRAPH_VIEW_GRAPH_H_
 
+#include <cereal/access.hpp>
+#include <cereal/cereal.hpp>
+#include <cereal/types/string.hpp>
+#include <cereal/types/unordered_map.hpp>
+#include <cereal/types/unordered_set.hpp>
+#include <cereal/types/utility.hpp>
 #include <unordered_map>
 #include <unordered_set>
 
-#include "theia/util/hash.h"
 #include "theia/sfm/twoview_info.h"
 #include "theia/sfm/types.h"
+#include "theia/util/hash.h"
 
 namespace theia {
 
@@ -53,6 +59,10 @@ namespace theia {
 class ViewGraph {
  public:
   ViewGraph() {}
+
+  // Utilities to read and write a view graph to/from disk.
+  bool ReadFromDisk(const std::string& input_filepath);
+  bool WriteToDisk(const std::string& output_filepath);
 
   // Number of views in the graph.
   int NumViews() const;
@@ -76,7 +86,8 @@ class ViewGraph {
   // two_view_info. New vertices are added to the graph if they did not already
   // exist. If an edge already existed between the two views then the edge value
   // is updated.
-  void AddEdge(const ViewId view_id_1, const ViewId view_id_2,
+  void AddEdge(const ViewId view_id_1,
+               const ViewId view_id_2,
                const TwoViewInfo& two_view_info);
 
   // Removes the edge from the view graph. Returns true if the edge is removed
@@ -106,6 +117,14 @@ class ViewGraph {
                        ViewGraph* subgraph) const;
 
  private:
+  // Templated method for disk I/O with cereal. This method tells cereal which
+  // data members should be used when reading/writing to/from disk.
+  friend class cereal::access;
+  template <class Archive>
+  void serialize(Archive& ar, const std::uint32_t version) {  // NOLINT
+    ar(vertices_, edges_);
+  }
+
   // The underlying adjacency map. ViewIds are the vertices which are mapped to
   // a collection of its neighbors and the edges themselves are stored
   // separately.
@@ -114,5 +133,7 @@ class ViewGraph {
 };
 
 }  // namespace theia
+
+CEREAL_CLASS_VERSION(theia::ViewGraph, 0)
 
 #endif  // THEIA_SFM_VIEW_GRAPH_VIEW_GRAPH_H_
