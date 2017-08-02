@@ -36,13 +36,13 @@
 
 #include "theia/sfm/reconstruction.h"
 #include "theia/util/map_util.h"
+#include "theia/util/stringprintf.h"
 
 namespace theia {
 
 const std::vector<std::string> view_names = {"1", "2", "3"};
-const std::vector<Feature> features = { Feature(1, 1),
-                                        Feature(2, 2),
-                                        Feature(3, 3) };
+const std::vector<Feature> features = {
+    Feature(1, 1), Feature(2, 2), Feature(3, 3)};
 
 TEST(Reconstruction, ViewIdFromNameValid) {
   Reconstruction reconstruction;
@@ -214,8 +214,8 @@ TEST(Reconstruction, AddEmptyTrack) {
 TEST(Reconstruction, AddObservationValid) {
   Reconstruction reconstruction;
 
-  const ViewId view_id1 = reconstruction.AddView(view_names[0]);;
-  const ViewId view_id2 = reconstruction.AddView(view_names[1]);;
+  const ViewId view_id1 = reconstruction.AddView(view_names[0]);
+  const ViewId view_id2 = reconstruction.AddView(view_names[1]);
   EXPECT_NE(view_id1, kInvalidViewId);
   EXPECT_NE(view_id2, kInvalidViewId);
 
@@ -247,8 +247,8 @@ TEST(Reconstruction, AddObservationValid) {
 TEST(Reconstruction, AddObservationInvalid) {
   Reconstruction reconstruction;
 
-  const ViewId view_id1 = reconstruction.AddView(view_names[0]);;
-  const ViewId view_id2 = reconstruction.AddView(view_names[1]);;
+  const ViewId view_id1 = reconstruction.AddView(view_names[0]);
+  const ViewId view_id2 = reconstruction.AddView(view_names[1]);
   EXPECT_NE(view_id1, kInvalidViewId);
   EXPECT_NE(view_id2, kInvalidViewId);
 
@@ -266,9 +266,8 @@ TEST(Reconstruction, AddObservationInvalid) {
 TEST(Reconstruction, AddTrackValid) {
   Reconstruction reconstruction;
 
-  const std::vector<std::pair<ViewId, Feature> > track = {
-    { 0, features[0] }, { 1, features[1] }
-  };
+  const std::vector<std::pair<ViewId, Feature> > track = {{0, features[0]},
+                                                          {1, features[1]}};
   EXPECT_NE(reconstruction.AddView(view_names[0]), kInvalidViewId);
   EXPECT_NE(reconstruction.AddView(view_names[1]), kInvalidViewId);
 
@@ -283,8 +282,7 @@ TEST(Reconstruction, AddTrackInvalid) {
 
   // Should fail with less than two views.
   const std::vector<std::pair<ViewId, Feature> > small_track = {
-    { 0, features[0] }
-  };
+      {0, features[0]}};
   EXPECT_NE(reconstruction.AddView(view_names[0]), kInvalidViewId);
   EXPECT_EQ(reconstruction.AddTrack(small_track), kInvalidTrackId);
   EXPECT_EQ(reconstruction.NumTracks(), 0);
@@ -293,9 +291,8 @@ TEST(Reconstruction, AddTrackInvalid) {
 TEST(Reconstruction, RemoveTrackValid) {
   Reconstruction reconstruction;
 
-  const std::vector<std::pair<ViewId, Feature> > track = {
-    { 0, features[0] }, { 1, features[1] }
-  };
+  const std::vector<std::pair<ViewId, Feature> > track = {{0, features[0]},
+                                                          {1, features[1]}};
 
   // Should be able to successfully remove the track.
   EXPECT_NE(reconstruction.AddView(view_names[0]), kInvalidViewId);
@@ -314,9 +311,8 @@ TEST(Reconstruction, RemoveTrackInvalid) {
 
 TEST(Reconstruction, GetTrackValid) {
   Reconstruction reconstruction;
-  const std::vector<std::pair<ViewId, Feature> > track = {
-    { 0, features[0] }, { 1, features[1] }
-  };
+  const std::vector<std::pair<ViewId, Feature> > track = {{0, features[0]},
+                                                          {1, features[1]}};
   EXPECT_NE(reconstruction.AddView(view_names[0]), kInvalidViewId);
   EXPECT_NE(reconstruction.AddView(view_names[1]), kInvalidViewId);
   const TrackId track_id = reconstruction.AddTrack(track);
@@ -340,6 +336,98 @@ TEST(Reconstruction, GetTrackInvalid) {
 
   Track* mutable_track = reconstruction.MutableTrack(track_id);
   EXPECT_EQ(mutable_track, nullptr);
+}
+
+TEST(Reconstruction, GetSubReconstruction) {
+  static const int kNumViews = 100;
+  static const int kNumTracks = 1000;
+  static const int kNumObservationsPerTrack = 10;
+
+  Reconstruction reconstruction;
+  for (int i = 0; i < kNumViews; i++) {
+    const ViewId view_id = reconstruction.AddView(StringPrintf("%d", i));
+    CHECK_NE(view_id, kInvalidViewId);
+  }
+
+  for (int i = 0; i < kNumTracks; i++) {
+    std::vector<std::pair<ViewId, Feature> > track;
+    for (int j = 0; j < kNumObservationsPerTrack; j++) {
+      track.emplace_back((i + j) % kNumViews, Feature());
+    }
+    const TrackId track_id = reconstruction.AddTrack(track);
+    CHECK_NE(track_id, kInvalidTrackId);
+  }
+
+  // Test subset extraction with a fixed subset size. We trivially take
+  // consecutive view ids to choose the subset.
+  static const int kNumViewsInSubset = 25;
+  for (int i = 0; i < kNumViews - kNumViewsInSubset; i++) {
+    std::unordered_set<ViewId> views_in_subset;
+    for (int j = 0; j < kNumViewsInSubset; j++) {
+      views_in_subset.emplace(i + j);
+    }
+
+    Reconstruction subset;
+    reconstruction.GetSubReconstruction(views_in_subset, &subset);
+
+    // Verify the subset by verifying that it contains only the specified views.
+    EXPECT_EQ(subset.NumViews(), kNumViewsInSubset);
+    const auto& view_ids = subset.ViewIds();
+    // Verify that all views in the subset are in the reconstruction and in the
+    // input views for the subset.
+    for (const ViewId view_id : view_ids) {
+      EXPECT_TRUE(ContainsKey(views_in_subset, view_id));
+
+      // Ensure equality of the view objects.
+      const View* view_in_reconstruction = reconstruction.View(view_id);
+      const View* view_in_subset = subset.View(view_id);
+      EXPECT_NE(view_in_reconstruction, nullptr);
+      EXPECT_NE(view_in_subset, nullptr);
+      EXPECT_EQ(view_in_reconstruction->IsEstimated(),
+                view_in_subset->IsEstimated());
+      // We only check the focal length in order to verify that the Camera
+      // object was copied correctly.
+      EXPECT_EQ(view_in_reconstruction->Camera().FocalLength(),
+                view_in_subset->Camera().FocalLength());
+
+      // Verify that the tracks exist in the subreconstruction and
+      // reconstruction.
+      const auto& tracks_in_view = view_in_subset->TrackIds();
+      for (const TrackId track_id : tracks_in_view) {
+        const Feature* feature_in_subset = view_in_subset->GetFeature(track_id);
+        const Feature* feature_in_reconstruction =
+            view_in_reconstruction->GetFeature(track_id);
+        EXPECT_NE(feature_in_subset, nullptr);
+        EXPECT_NE(feature_in_reconstruction, nullptr);
+        EXPECT_EQ(feature_in_subset->x(), feature_in_reconstruction->x());
+        EXPECT_EQ(feature_in_subset->y(), feature_in_reconstruction->y());
+      }
+    }
+
+    // Verify that all tracks are valid.
+    const auto& track_ids = subset.TrackIds();
+    for (const TrackId track_id : track_ids) {
+      const Track* track_in_reconstruction = reconstruction.Track(track_id);
+      const Track* track_in_subset = subset.Track(track_id);
+      EXPECT_NE(track_in_reconstruction, nullptr);
+      EXPECT_NE(track_in_subset, nullptr);
+      EXPECT_EQ(
+          (track_in_subset->Point() - track_in_reconstruction->Point()).norm(),
+          0.0);
+
+      // Ensure that all views observing the subset's track are actually in the
+      // subset.
+      const auto& views_observing_track = track_in_subset->ViewIds();
+      for (const ViewId view_id : views_observing_track) {
+        EXPECT_TRUE(ContainsKey(views_in_subset, view_id));
+      }
+    }
+
+    // Ensure that RemoveView works properly.
+    for (const ViewId view_id : views_in_subset) {
+      ASSERT_TRUE(subset.RemoveView(view_id));
+    }
+  }
 }
 
 }  // namespace theia

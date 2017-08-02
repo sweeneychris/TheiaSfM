@@ -87,7 +87,7 @@ struct ReconstructionEstimatorOptions {
       GlobalRotationEstimatorType::ROBUST_L1L2;
 
   GlobalPositionEstimatorType global_position_estimator_type =
-      GlobalPositionEstimatorType::NONLINEAR;
+      GlobalPositionEstimatorType::LEAST_UNSQUARED_DEVIATION;
 
   // The random number generator used to generate random numbers through the
   // reconstruction estimation process. If this is a nullptr then the random

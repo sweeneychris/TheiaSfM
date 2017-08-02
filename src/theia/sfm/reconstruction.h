@@ -145,6 +145,12 @@ class Reconstruction {
   // Ceres Solver.
   void Normalize();
 
+  // Obtain a sub-reconstruction which only contains the specified views and
+  // corresponding tracks observed by those views. All views and tracks maintain
+  // the same IDs as the original reconstruction.
+  void GetSubReconstruction(const std::unordered_set<ViewId>& views_in_subset,
+                            Reconstruction* subreconstruction) const;
+
  private:
   // Templated method for disk I/O with cereal. This method tells cereal which
   // data members should be used when reading/writing to/from disk.

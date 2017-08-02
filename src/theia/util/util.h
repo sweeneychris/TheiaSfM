@@ -35,6 +35,8 @@
 #ifndef THEIA_UTIL_UTIL_H_
 #define THEIA_UTIL_UTIL_H_
 
+#include "theia/util/map_util.h"
+
 namespace theia {
 typedef unsigned char uchar;
 
@@ -45,14 +47,13 @@ typedef unsigned char uchar;
   void operator=(const TypeName&)
 
 // Determines the array size an array a.
-#define THEIA_ARRAYSIZE(a) \
+#define THEIA_ARRAYSIZE(a)      \
   ((sizeof(a) / sizeof(*(a))) / \
-  static_cast<size_t>(!(sizeof(a) % sizeof(*(a)))))
+   static_cast<size_t>(!(sizeof(a) % sizeof(*(a)))))
 
 // Deletes all pointers in a container.
 template <class ForwardIterator>
-void STLDeleteContainerPointers(ForwardIterator begin,
-                                ForwardIterator end) {
+void STLDeleteContainerPointers(ForwardIterator begin, ForwardIterator end) {
   while (begin != end) {
     ForwardIterator temp = begin;
     ++begin;
@@ -63,10 +64,32 @@ void STLDeleteContainerPointers(ForwardIterator begin,
 // Deletes all pointers in an STL container (anything that has a begin() and
 // end() function)
 template <class T>
-void STLDeleteElements(T *container) {
+void STLDeleteElements(T* container) {
   if (!container) return;
   STLDeleteContainerPointers(container->begin(), container->end());
   container->clear();
+}
+
+// Find the intersection of two (unordered) containers. This replicates the
+// functionality of std::set_intersection for unordered containers that cannot
+// be sorted.
+template <typename InputContainer1,
+          typename InputContainer2,
+          typename OutputContainer = InputContainer1>
+void ContainerIntersection(const InputContainer1& in1,
+                           const InputContainer2& in2,
+                           OutputContainer* out) {
+  // Always iterate over the smaller container.
+  if (in2.size() < in1.size()) {
+    return ContainerIntersection(in2, in1, out);
+  }
+
+  // Loop over all elements and add common elements to the output container.
+  for (const auto& entry : in1) {
+    if (ContainsKey(in2, entry)) {
+      out->insert(entry);
+    }
+  }
 }
 
 }  // namespace theia

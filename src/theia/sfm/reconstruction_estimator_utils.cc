@@ -199,7 +199,7 @@ void CreateEstimatedSubreconstruction(
     }
 
     if (!view->IsEstimated()) {
-      estimated_reconstruction->RemoveView(view_id);
+      CHECK(estimated_reconstruction->RemoveView(view_id));
     }
   }
 
@@ -211,7 +211,7 @@ void CreateEstimatedSubreconstruction(
     }
 
     if (!track->IsEstimated() || track->NumViews() < 2) {
-      estimated_reconstruction->RemoveTrack(track_id);
+      CHECK(estimated_reconstruction->RemoveTrack(track_id));
     }
   }
 }
