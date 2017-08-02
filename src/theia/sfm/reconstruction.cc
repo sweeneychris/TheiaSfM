@@ -44,13 +44,14 @@
 #include <utility>
 #include <vector>
 
-#include "theia/util/map_util.h"
 #include "theia/sfm/feature.h"
 #include "theia/sfm/pose/util.h"
 #include "theia/sfm/track.h"
 #include "theia/sfm/transformation/transform_reconstruction.h"
 #include "theia/sfm/types.h"
 #include "theia/sfm/view.h"
+#include "theia/util/map_util.h"
+#include "theia/util/util.h"
 
 namespace theia {
 
@@ -99,7 +100,7 @@ ViewId Reconstruction::AddView(const std::string& view_name,
                                const CameraIntrinsicsGroupId group_id) {
   if (ContainsKey(view_name_to_id_, view_name)) {
     LOG(WARNING) << "Could not add view with the name " << view_name
-               << " because that name already exists in the reconstruction.";
+                 << " because that name already exists in the reconstruction.";
     return kInvalidViewId;
   }
 
@@ -151,12 +152,12 @@ bool Reconstruction::RemoveView(const ViewId view_id) {
     class Track* track = MutableTrack(track_id);
     if (track == nullptr) {
       LOG(WARNING) << "Could not remove the view from the track because the "
-                    "track does not exist";
+                      "track does not exist";
       return false;
     }
 
     if (!track->RemoveView(view_id)) {
-      LOG(WARNING) << "Could not remove to view from the track";
+      LOG(WARNING) << "Could not remove the view from the track";
       return false;
     }
 
@@ -186,9 +187,7 @@ bool Reconstruction::RemoveView(const ViewId view_id) {
   return true;
 }
 
-int Reconstruction::NumViews() const {
-  return views_.size();
-}
+int Reconstruction::NumViews() const { return views_.size(); }
 
 const class View* Reconstruction::View(const ViewId view_id) const {
   return FindOrNull(views_, view_id);
@@ -207,7 +206,7 @@ std::vector<ViewId> Reconstruction::ViewIds() const {
   return view_ids;
 }
 
-  // Get the camera intrinsics group id for the view id.
+// Get the camera intrinsics group id for the view id.
 CameraIntrinsicsGroupId Reconstruction::CameraIntrinsicsGroupIdFromViewId(
     const ViewId view_id) const {
   return FindWithDefault(view_id_to_camera_intrinsics_group_id_,
@@ -219,9 +218,8 @@ CameraIntrinsicsGroupId Reconstruction::CameraIntrinsicsGroupIdFromViewId(
 // invalid or non-existant group is chosen then an empty set will be returned.
 std::unordered_set<ViewId> Reconstruction::GetViewsInCameraIntrinsicGroup(
     const CameraIntrinsicsGroupId group_id) const {
-  return FindWithDefault(camera_intrinsics_groups_,
-                         group_id,
-                         std::unordered_set<ViewId>());
+  return FindWithDefault(
+      camera_intrinsics_groups_, group_id, std::unordered_set<ViewId>());
 }
 
 std::unordered_set<CameraIntrinsicsGroupId>
@@ -271,9 +269,9 @@ bool Reconstruction::AddObservation(const ViewId view_id,
 
   const std::unordered_set<ViewId>& views_observing_track = track->ViewIds();
   if (ContainsKey(views_observing_track, view_id)) {
-    LOG(WARNING)
-        << "Cannot add a new observation of track " << track_id
-        << " because the track is already observed by view " << view_id;
+    LOG(WARNING) << "Cannot add a new observation of track " << track_id
+                 << " because the track is already observed by view "
+                 << view_id;
     return false;
   }
 
@@ -333,13 +331,13 @@ bool Reconstruction::RemoveTrack(const TrackId track_id) {
     class View* view = FindOrNull(views_, view_id);
     if (view == nullptr) {
       LOG(WARNING) << "Could not remove a track from the view because the view "
-                    "does not exist";
+                      "does not exist";
       return false;
     }
 
     if (!view->RemoveFeature(track_id)) {
       LOG(WARNING) << "Could not remove the track from the view because the "
-                    "track is not observed by the view.";
+                      "track is not observed by the view.";
       return false;
     }
   }
@@ -349,9 +347,7 @@ bool Reconstruction::RemoveTrack(const TrackId track_id) {
   return true;
 }
 
-int Reconstruction::NumTracks() const {
-  return tracks_.size();
-}
+int Reconstruction::NumTracks() const { return tracks_.size(); }
 
 const class Track* Reconstruction::Track(const TrackId track_id) const {
   return FindOrNull(tracks_, track_id);
@@ -390,8 +386,8 @@ void Reconstruction::Normalize() {
   median_camera_position(0) = Median(&camera_positions[0]);
   median_camera_position(1) = Median(&camera_positions[1]);
   median_camera_position(2) = Median(&camera_positions[2]);
-  TransformReconstruction(Eigen::Matrix3d::Identity(), -median_camera_position,
-                          1.0, this);
+  TransformReconstruction(
+      Eigen::Matrix3d::Identity(), -median_camera_position, 1.0, this);
 
   // Get the estimated track ids.
   const auto& temp_track_ids = TrackIds();
@@ -434,10 +430,8 @@ void Reconstruction::Normalize() {
   // This will scale the reconstruction so that the median absolute deviation of
   // the points is 100.
   const double scale = 100.0 / Median(&distance_to_median);
-  TransformReconstruction(Eigen::Matrix3d::Identity(),
-                          Eigen::Vector3d::Zero(),
-                          scale,
-                          this);
+  TransformReconstruction(
+      Eigen::Matrix3d::Identity(), Eigen::Vector3d::Zero(), scale, this);
 
   // Most images are taken relatively upright with the x-direction of the image
   // parallel to the ground plane. We can solve for the transformation that
@@ -464,9 +458,82 @@ void Reconstruction::Normalize() {
   // We want the coordinate system to be such that the cameras lie on the x-z
   // plane with the y vector pointing up. Thus, the plane normal should be equal
   // to the positive y-direction.
-  Eigen::Matrix3d rotation = Eigen::Quaterniond::FromTwoVectors(
-      plane_normal, Eigen::Vector3d(0, 1, 0)).toRotationMatrix();
+  Eigen::Matrix3d rotation =
+      Eigen::Quaterniond::FromTwoVectors(plane_normal, Eigen::Vector3d(0, 1, 0))
+          .toRotationMatrix();
   TransformReconstruction(rotation, Eigen::Vector3d::Zero(), 1.0, this);
+}
+
+void Reconstruction::GetSubReconstruction(
+    const std::unordered_set<ViewId>& views_in_subset,
+    Reconstruction* subreconstruction) const {
+  CHECK_NOTNULL(subreconstruction);
+
+  // Copy the "next" ids.
+  subreconstruction->next_track_id_ = next_track_id_;
+  subreconstruction->next_view_id_ = next_view_id_;
+  subreconstruction->next_camera_intrinsics_group_id_ =
+      next_camera_intrinsics_group_id_;
+
+  // Copy the view information. Also store the tracks in each view so that we
+  // may easily retreive them below.
+  subreconstruction->views_.reserve(views_in_subset.size());
+  subreconstruction->view_name_to_id_.reserve(views_in_subset.size());
+  std::unordered_set<TrackId> tracks_in_views;
+  for (const ViewId view_id : views_in_subset) {
+    const class View* view = FindOrNull(views_, view_id);
+    // Skip this view id if it does not exist in the reconstruction.
+    if (view == nullptr) {
+      continue;
+    }
+
+    // Set the view information.
+    subreconstruction->views_[view_id] = *view;
+    subreconstruction->view_name_to_id_[view->Name()] = view_id;
+
+    // Set the intrinsics group id information.
+    const CameraIntrinsicsGroupId& intrinsics_group_id =
+        FindOrDie(view_id_to_camera_intrinsics_group_id_, view_id);
+    subreconstruction->view_id_to_camera_intrinsics_group_id_[view_id] =
+        intrinsics_group_id;
+    subreconstruction->camera_intrinsics_groups_[intrinsics_group_id].emplace(
+        view_id);
+
+    // Add the tracks from this view to our track container.
+    const auto& tracks_in_view = view->TrackIds();
+    tracks_in_views.insert(tracks_in_view.begin(), tracks_in_view.end());
+  }
+
+  // Copy the tracks.
+  subreconstruction->tracks_.reserve(tracks_in_views.size());
+  for (const TrackId track_id : tracks_in_views) {
+    const class Track* track = FindOrNull(tracks_, track_id);
+    // Skip this track if it somehow is not present in the reconstruction.
+    if (track == nullptr) {
+      continue;
+    }
+
+    // Create the new track by copying the values of the old track.
+    class Track new_track;
+    new_track.SetEstimated(track->IsEstimated());
+    *new_track.MutablePoint() = track->Point();
+    *new_track.MutableColor() = track->Color();
+
+    // The new track should only contain observations from views in the
+    // subreconstruction. We perform a set intersection to find these views.
+    const auto& views_observing_track = track->ViewIds();
+    std::unordered_set<ViewId> common_views;
+    ContainerIntersection(
+        views_in_subset, views_observing_track, &common_views);
+
+    // Add the common views to the new track.
+    for (const ViewId view_id : common_views) {
+      new_track.AddView(view_id);
+    }
+
+    // Set the track in the subreconstruction.
+    subreconstruction->tracks_.emplace(track_id, new_track);
+  }
 }
 
 }  // namespace theia
