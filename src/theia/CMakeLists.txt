@@ -32,6 +32,24 @@
 # Please contact the author of this library if you have any questions.
 # Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
+function(create_resource_file file output)
+    # Create empty output file
+    file(WRITE ${output} "")
+    # Get short filename
+    get_filename_component(filename "${file}" NAME)
+    # Replace filename spaces & extension separator for C compatibility
+    string(MAKE_C_IDENTIFIER ${filename} filename)
+    # Read hex data from file
+    file(READ ${file} filedata HEX)
+    # Convert hex data for C compatibility
+    string(REGEX REPLACE "([0-9a-f][0-9a-f])" "0x\\1," filedata ${filedata})
+    # Append data to output file
+    file(WRITE ${output} "const char ${filename}[] = {${filedata}};\nconst size_t ${filename}_size = sizeof(${filename});\n")
+endfunction()
+
+create_resource_file("${PROJECT_SOURCE_DIR}/data/camera_sensor_database.txt" "${CMAKE_CURRENT_BINARY_DIR}/camera_sensor_database.h")
+include_directories(${CMAKE_CURRENT_BINARY_DIR})
+
 # Add headers
 file(GLOB_RECURSE THEIA_HDRS *.h)
 
