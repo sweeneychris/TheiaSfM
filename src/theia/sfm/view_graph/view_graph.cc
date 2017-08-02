@@ -34,21 +34,51 @@
 
 #include "theia/sfm/view_graph/view_graph.h"
 
+#include <cereal/archives/portable_binary.hpp>
+#include <cstdio>
+#include <cstdlib>
+#include <fstream>   // NOLINT
+#include <iostream>  // NOLINT
 #include <unordered_map>
 #include <unordered_set>
 
-#include "theia/util/hash.h"
-#include "theia/util/map_util.h"
 #include "theia/sfm/twoview_info.h"
 #include "theia/sfm/types.h"
+#include "theia/util/hash.h"
+#include "theia/util/map_util.h"
 
 namespace theia {
 
 // Number of views in the graph.
 int ViewGraph::NumViews() const { return vertices_.size(); }
 
-int ViewGraph::NumEdges() const {
-  return edges_.size();
+int ViewGraph::NumEdges() const { return edges_.size(); }
+
+// Utilities to read and write a view graph to/from disk.
+bool ViewGraph::ReadFromDisk(const std::string& input_file) {
+  std::ifstream input_reader(input_file, std::ios::in | std::ios::binary);
+  if (!input_reader.is_open()) {
+    LOG(ERROR) << "Could not open the file: " << input_file << " for reading.";
+    return false;
+  }
+
+  cereal::PortableBinaryInputArchive input_archive(input_reader);
+  input_archive(*this);
+
+  return true;
+}
+
+bool ViewGraph::WriteToDisk(const std::string& output_file) {
+  std::ofstream output_writer(output_file, std::ios::out | std::ios::binary);
+  if (!output_writer.is_open()) {
+    LOG(ERROR) << "Could not open the file: " << output_file << " for writing.";
+    return false;
+  }
+
+  cereal::PortableBinaryOutputArchive output_archive(output_writer);
+  output_archive(*this);
+
+  return true;
 }
 
 // Returns a set of the ViewIds contained in the view graph.
@@ -67,8 +97,8 @@ bool ViewGraph::HasView(const ViewId view_id) const {
 
 bool ViewGraph::HasEdge(const ViewId view_id_1, const ViewId view_id_2) const {
   const ViewIdPair view_id_pair = (view_id_1 < view_id_2)
-                                  ? ViewIdPair(view_id_1, view_id_2)
-                                  : ViewIdPair(view_id_2, view_id_1);
+                                      ? ViewIdPair(view_id_1, view_id_2)
+                                      : ViewIdPair(view_id_2, view_id_1);
   return ContainsKey(edges_, view_id_pair);
 }
 
@@ -99,7 +129,8 @@ bool ViewGraph::RemoveView(const ViewId view_id) {
 // two_view_info. New vertices are added to the graph if they did not already
 // exist. If an edge already existed between the two views then the edge value
 // is updated.
-void ViewGraph::AddEdge(const ViewId view_id_1, const ViewId view_id_2,
+void ViewGraph::AddEdge(const ViewId view_id_1,
+                        const ViewId view_id_2,
                         const TwoViewInfo& two_view_info) {
   if (view_id_1 == view_id_2) {
     DLOG(WARNING) << "Cannot add an edge from view id " << view_id_1
@@ -162,7 +193,6 @@ TwoViewInfo* ViewGraph::GetMutableEdge(const ViewId view_id_1,
                                       : ViewIdPair(view_id_2, view_id_1);
   return FindOrNull(edges_, view_id_pair);
 }
-
 
 // Returns a map of all edges. Each edge is found exactly once in the map and
 // is indexed by the ViewIdPair (view id 1, view id 2) such that view id 1 <
