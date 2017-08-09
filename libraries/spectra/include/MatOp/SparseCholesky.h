@@ -12,6 +12,8 @@
 #include <Eigen/SparseCholesky>
 #include <stdexcept>
 
+#include "spectra/include/Util/CompInfo.h"
+
 namespace Spectra {
 
 

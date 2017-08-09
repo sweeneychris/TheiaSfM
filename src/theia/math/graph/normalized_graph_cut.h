@@ -47,8 +47,6 @@
 #include <utility>
 #include <vector>
 
-#include "cppoptlib/solver/neldermeadsolver.h"
-#include "spectra/include/Util/CompInfo.h"
 #include "spectra/include/MatOp/SparseCholesky.h"
 #include "spectra/include/SymGEigsSolver.h"
 
@@ -142,88 +140,45 @@ class NormalizedGraphCut {
   }
 
  private:
-  // The optimal partition point is determined by using a Simplex algorithm to
-  // search for the partition that gives the optimal NCut value. This helper
-  // class simply computes the NCut cost for the optimization algorithm.
-  class ComputeNCutCost : public cppoptlib::Problem<double, 1> {
-   public:
-    using cppoptlib::Problem<double, 1>::TVector;
+  // We perform a simple cut where the data is segmented by its sign.
+  void FindOptimalCut(const Eigen::VectorXd& y,
+                      std::unordered_set<T>* subgraph1,
+                      std::unordered_set<T>* subgraph2,
+                      double* cost_or_null) {
+    static const double cut_value = 0;
 
-    ComputeNCutCost(const Eigen::SparseMatrix<double>& node_weight,
-                    const Eigen::SparseMatrix<double>& edge_weight,
-                    const Eigen::VectorXd& y)
-        : node_weight_(node_weight),
-          edge_weight_(edge_weight),
-          y_(y),
-          node_weight_diag_(node_weight_.diagonal()),
-          node_weight_sum_(node_weight_diag_.sum()) {}
-
-    double value(const TVector& cut_value) {
+    // Based on the chosen threshold for the y-values, form the two subgraphs.
+    for (const auto& node_id : node_to_index_map_) {
+      if (y(node_id.second) > cut_value) {
+        subgraph1->emplace(node_id.first);
+      } else {
+        subgraph2->emplace(node_id.first);
+      }
+    }
+    // Output the cost if desired.
+    if (cost_or_null != nullptr) {
       // Cut the group based on the cut value such that 1 is in group A and 0 is
       // group B.
       const Eigen::VectorXd cut_grouping =
-          (y_.array() > cut_value(0))
-              .select(Eigen::VectorXd::Ones(y_.size()), 0);
+          (y.array() > cut_value).select(Eigen::VectorXd::Ones(y.size()), 0);
 
       // Based on our current threshold used for the cut, discretize y so that
       // all values are {1, -b} where
       //   b = \sum_{x_i > 0) d_i / (\sum_{x_i < 0} d_i).
-      const double k = node_weight_diag_.dot(cut_grouping) / node_weight_sum_;
+      const Eigen::VectorXd node_weight_diag = node_weight_.diagonal();
+      const double node_weight_sum = node_weight_diag.sum();
+      const double k = node_weight_diag.dot(cut_grouping) / node_weight_sum;
       const double b = k / (1.0 - k);
       const Eigen::VectorXd y_discrete =
-          (y_.array() > cut_value(0))
-              .select(Eigen::VectorXd::Ones(y_.size()), -b);
+          (y.array() > cut_value).select(Eigen::VectorXd::Ones(y.size()), -b);
 
       // The cost may be computed from y:
       //   ncut cost = y^t * (D - W) * y / (y^t * D * y)
       double cut_cost =
           y_discrete.transpose() * (node_weight_ - edge_weight_) * y_discrete;
       cut_cost /= y_discrete.transpose() * node_weight_ * y_discrete;
-      return cut_cost;
-    }
-   private:
-    const Eigen::SparseMatrix<double>& node_weight_;
-    const Eigen::SparseMatrix<double>& edge_weight_;
-    const Eigen::VectorXd& y_;
-    const Eigen::VectorXd node_weight_diag_;
-    const double node_weight_sum_;
-  };
 
-  // Find the optimal cut by searching at evenly spaced points and seeing which
-  // point has the lowest cut value. Ideally, the eigenvector y is perfectly
-  // split such that the value 0 perfectly divides the graph into the two
-  // subgraphs. However, since y was relaxed to be continuous instead of
-  // discrete, we need to search for the threshold that splits the eigenvector
-  // into the two appropriate groups. We do this by a testing a series of
-  // thresholds on the y-vector to determine the grouping and choosing the
-  // threshold that produces the lowest cost.
-  void FindOptimalCut(const Eigen::VectorXd& y,
-                      std::unordered_set<T>* subgraph1,
-                      std::unordered_set<T>* subgraph2,
-                      double* cost_or_null) {
-    // We solve for the optimal partition value by performing a minimization
-    // using the Nelder-Mead simplex algorithm. The optimal partition will
-    // minimize the NCut value (only a local minima is guaranteed).
-    ComputeNCutCost ncut_cost(node_weight_, edge_weight_, y);
-    // Set the initial value to be the mean of the eigenvector entries.
-    typename ComputeNCutCost::TVector best_cut_value(1);
-    best_cut_value(0) = y.mean();
-    // Try to find partition value where the NCut value is minimized.
-    cppoptlib::NelderMeadSolver<ComputeNCutCost> solver;
-    solver.minimize(ncut_cost, best_cut_value);
-
-    // Based on the chosen threshold for the y-values, form the two subgraphs.
-    for (const auto& node_id : node_to_index_map_) {
-      if (y(node_id.second) <= best_cut_value(0)) {
-        subgraph1->emplace(node_id.first);
-      } else {
-        subgraph2->emplace(node_id.first);
-      }
-    }
-
-    // Output the cost if desired.
-    if (cost_or_null != nullptr) {
-      *cost_or_null = ncut_cost(best_cut_value);
+      *cost_or_null = cut_cost;
     }
   }
 
@@ -231,12 +186,10 @@ class NormalizedGraphCut {
   // i.e., which row a particular node id corresponds to.
   void IndexNodeIds(const std::unordered_map<std::pair<T, T>, double>& edges) {
     for (const auto& edge : edges) {
-      InsertIfNotPresent(&node_to_index_map_,
-                         edge.first.first,
-                         node_to_index_map_.size());
-      InsertIfNotPresent(&node_to_index_map_,
-                         edge.first.second,
-                         node_to_index_map_.size());
+      InsertIfNotPresent(
+          &node_to_index_map_, edge.first.first, node_to_index_map_.size());
+      InsertIfNotPresent(
+          &node_to_index_map_, edge.first.second, node_to_index_map_.size());
     }
   }
 
