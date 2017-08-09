@@ -157,14 +157,11 @@ bool TwoViewMatchGeometricVerification::VerifyMatches(
   if (options_.guided_matching) {
     GuidedEpipolarMatcher::Options guided_matching_options;
     guided_matching_options.guided_matching_max_distance_pixels =
-      options_.guided_matching_max_distance_pixels;
+        options_.guided_matching_max_distance_pixels;
     guided_matching_options.lowes_ratio = options_.guided_matching_lowes_ratio;
 
-    GuidedEpipolarMatcher guided_matcher(guided_matching_options,
-                                         camera1_,
-                                         camera2_,
-                                         features1_,
-                                         features2_);
+    GuidedEpipolarMatcher guided_matcher(
+        guided_matching_options, camera1_, camera2_, features1_, features2_);
     if (!guided_matcher.GetMatches(&matches_)) {
       return false;
     }
@@ -198,6 +195,9 @@ void TwoViewMatchGeometricVerification::TriangulatePoints(
                                                 camera2_.GetPosition()};
   std::vector<IndexedFeatureMatch> triangulated_matches;
   triangulated_matches.reserve(matches_.size());
+  int num_bad_triangulation_angles = 0;
+  int num_failed_triangulations = 0;
+  int num_bad_reprojection_errors = 0;
   for (int i = 0; i < matches_.size(); i++) {
     const Keypoint& keypoint1 = features1_.keypoints[matches_[i].feature1_ind];
     const Keypoint& keypoint2 = features2_.keypoints[matches_[i].feature2_ind];
@@ -211,26 +211,43 @@ void TwoViewMatchGeometricVerification::TriangulatePoints(
     ray_directions[1] = camera2_.PixelToUnitDepthRay(feature2).normalized();
     if (!SufficientTriangulationAngle(
             ray_directions, options_.min_triangulation_angle_degrees)) {
+      ++num_bad_triangulation_angles;
       continue;
     }
 
     Eigen::Vector4d point3d;
     if (!TriangulateMidpoint(origins, ray_directions, &point3d)) {
+      ++num_failed_triangulations;
       continue;
     }
 
     // Only consider triangulation a success if the initial triangulation has a
     // small enough reprojection error.
-    if (AcceptableReprojectionError(camera1_, feature1, point3d,
-            triangulation_sq_max_reprojection_error_pixels) &&
-        AcceptableReprojectionError(camera2_, feature2, point3d,
+    if (!AcceptableReprojectionError(
+            camera1_,
+            feature1,
+            point3d,
+            triangulation_sq_max_reprojection_error_pixels) ||
+        !AcceptableReprojectionError(
+            camera2_,
+            feature2,
+            point3d,
             triangulation_sq_max_reprojection_error_pixels)) {
-      triangulated_points->emplace_back(point3d);
-      triangulated_matches.emplace_back(matches_[i]);
+      ++num_bad_reprojection_errors;
+      continue;
     }
+
+    triangulated_points->emplace_back(point3d);
+    triangulated_matches.emplace_back(matches_[i]);
   }
   VLOG(2) << "Num acceptable triangulations = " << triangulated_matches.size()
-          << " out of " << matches_.size() << " total matches.";
+          << " out of " << matches_.size() << " total matches. "
+          << num_bad_triangulation_angles
+          << " matches failed due to bad triangulation angles, "
+          << num_bad_reprojection_errors
+          << " matches failed due to inaccurate triangulation, and "
+          << num_failed_triangulations
+          << " failed to reliably triangulate and initial 3d point.";
 
   // Set the matches to be only the triangulated matches.
   matches_.swap(triangulated_matches);
@@ -265,8 +282,11 @@ bool TwoViewMatchGeometricVerification::BundleAdjustRelativePose(
   std::vector<FeatureCorrespondence> triangulated_correspondences;
   CreateCorrespondencesFromIndexedMatches(&triangulated_correspondences);
   BundleAdjustmentSummary summary =
-      BundleAdjustTwoViews(two_view_ba_options, triangulated_correspondences,
-                           &camera1_, &camera2_, &triangulated_points);
+      BundleAdjustTwoViews(two_view_ba_options,
+                           triangulated_correspondences,
+                           &camera1_,
+                           &camera2_,
+                           &triangulated_points);
 
   if (!summary.success) {
     return false;
@@ -278,9 +298,13 @@ bool TwoViewMatchGeometricVerification::BundleAdjustRelativePose(
   for (int i = 0; i < triangulated_correspondences.size(); i++) {
     const auto& correspondence = triangulated_correspondences[i];
     const Eigen::Vector4d& point3d = triangulated_points[i];
-    if (AcceptableReprojectionError(camera1_, correspondence.feature1, point3d,
+    if (AcceptableReprojectionError(camera1_,
+                                    correspondence.feature1,
+                                    point3d,
                                     final_sq_max_reprojection_error_pixels) &&
-        AcceptableReprojectionError(camera2_, correspondence.feature2, point3d,
+        AcceptableReprojectionError(camera2_,
+                                    correspondence.feature2,
+                                    point3d,
                                     final_sq_max_reprojection_error_pixels)) {
       inliers_after_ba.emplace_back(matches_[i]);
     }
@@ -309,14 +333,14 @@ int TwoViewMatchGeometricVerification::CountHomographyInliers() {
 
   // Compute the reprojection error threshold to account for the resolution of
   // the images.
-  const double max_sampson_error_pixels1 = ComputeResolutionScaledThreshold(
-      etvi_options.max_sampson_error_pixels,
-      camera1_.ImageWidth(),
-      camera1_.ImageHeight());
-  const double max_sampson_error_pixels2 = ComputeResolutionScaledThreshold(
-      etvi_options.max_sampson_error_pixels,
-      camera2_.ImageWidth(),
-      camera2_.ImageHeight());
+  const double max_sampson_error_pixels1 =
+      ComputeResolutionScaledThreshold(etvi_options.max_sampson_error_pixels,
+                                       camera1_.ImageWidth(),
+                                       camera1_.ImageHeight());
+  const double max_sampson_error_pixels2 =
+      ComputeResolutionScaledThreshold(etvi_options.max_sampson_error_pixels,
+                                       camera2_.ImageWidth(),
+                                       camera2_.ImageHeight());
 
   homography_params.error_thresh =
       max_sampson_error_pixels1 * max_sampson_error_pixels2;
@@ -329,8 +353,11 @@ int TwoViewMatchGeometricVerification::CountHomographyInliers() {
   Eigen::Matrix3d unused_homography;
   std::vector<FeatureCorrespondence> correspondences;
   CreateCorrespondencesFromIndexedMatches(&correspondences);
-  EstimateHomography(homography_params, etvi_options.ransac_type,
-                     correspondences, &unused_homography, &homography_summary);
+  EstimateHomography(homography_params,
+                     etvi_options.ransac_type,
+                     correspondences,
+                     &unused_homography,
+                     &homography_summary);
 
   return homography_summary.inliers.size();
 }
