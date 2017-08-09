@@ -39,7 +39,7 @@
 
 #include <cstdio>
 #include <cstdlib>
-#include <fstream>  // NOLINT
+#include <fstream>   // NOLINT
 #include <iostream>  // NOLINT
 #include <string>
 #include <utility>
@@ -97,8 +97,8 @@ bool ReadListsFile(const std::string& list_filename,
     }
     CHECK(theia::GetFilenameFromFilepath(filename, true, &truncated_filename));
     const ViewId view_id = reconstruction->AddView(truncated_filename);
-    CHECK_NE(view_id, kInvalidViewId) << "View " << truncated_filename
-                                      << " could not be added.";
+    CHECK_NE(view_id, kInvalidViewId)
+        << "View " << truncated_filename << " could not be added.";
 
     // Check to see if the exif focal length is given.
     double focal_length = 0;
@@ -271,6 +271,7 @@ bool ReadBundlerFiles(const std::string& lists_file,
   std::cout << std::endl;
 
   // Read in each 3D point and correspondences.
+  int num_invalid_tracks = 0;
   for (int i = 0; i < num_points; i++) {
     // Read position.
     std::string position_str;
@@ -329,8 +330,11 @@ bool ReadBundlerFiles(const std::string& lists_file,
     }
 
     const TrackId track_id = reconstruction->AddTrack(track);
-    CHECK_NE(track_id, kInvalidTrackId)
-        << "Could not add a track to the reconstruction!";
+    if (track_id == kInvalidTrackId) {
+      ++num_invalid_tracks;
+      continue;
+    }
+
     Track* mutable_track = reconstruction->MutableTrack(track_id);
     mutable_track->SetEstimated(true);
     *mutable_track->MutablePoint() = position.homogeneous();
@@ -345,6 +349,18 @@ bool ReadBundlerFiles(const std::string& lists_file,
   // Remove any invalid views.
   for (const ViewId view_to_remove : views_to_remove) {
     reconstruction->RemoveView(view_to_remove);
+  }
+
+  if (views_to_remove.size() > 0) {
+    LOG(INFO) << "Could not add " << views_to_remove.size() << " out of "
+              << num_cameras << " views due to invalid camera parameters.";
+  }
+
+  if (num_invalid_tracks > 0) {
+    LOG(INFO) << "Could not load " << num_invalid_tracks
+              << " invalid tracks out of " << num_points
+              << " total tracks from Bundler file. This typically occurs when "
+                 "tracks contain multiple observations from the same image.";
   }
 
   std::cout << std::endl;
