@@ -42,6 +42,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include "theia/math/graph/connected_components.h"
 #include "theia/sfm/twoview_info.h"
 #include "theia/sfm/types.h"
 #include "theia/util/hash.h"
@@ -234,6 +235,33 @@ void ViewGraph::ExtractSubgraph(
       subgraph->AddEdge(vertex.first, second_vertex, edge);
     }
   }
+}
+
+void ViewGraph::GetLargestConnectedComponentIds(
+    std::unordered_set<ViewId>* largest_cc) const {
+  ConnectedComponents<ViewId> cc_extractor;
+  // Add all edges to the connected components extractor.
+  for (const auto& edge : edges_) {
+    cc_extractor.AddEdge(edge.first.first, edge.first.second);
+  }
+
+  // Extract all connected components.
+  std::unordered_map<ViewId, std::unordered_set<ViewId> > connected_components;
+  cc_extractor.Extract(&connected_components);
+
+  // Search for the largest CC in the viewing graph.
+  ViewId largest_cc_id = kInvalidViewId;
+  int largest_cc_size = 0;
+  for (const auto& connected_component : connected_components) {
+    if (connected_component.second.size() > largest_cc_size) {
+      largest_cc_size = connected_component.second.size();
+      largest_cc_id = connected_component.first;
+    }
+  }
+  CHECK_NE(largest_cc_id, kInvalidViewId);
+
+  // Swap the largest connected component to the output.
+  std::swap(*largest_cc, connected_components[largest_cc_id]);
 }
 
 }  // namespace theia

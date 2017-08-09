@@ -116,6 +116,11 @@ class ViewGraph {
   void ExtractSubgraph(const std::unordered_set<ViewId>& views_in_subgraph,
                        ViewGraph* subgraph) const;
 
+  // Returns the views ids participating in the largest connected component in
+  // the view graph.
+  void GetLargestConnectedComponentIds(
+      std::unordered_set<ViewId>* largest_cc) const;
+
  private:
   // Templated method for disk I/O with cereal. This method tells cereal which
   // data members should be used when reading/writing to/from disk.
