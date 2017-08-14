@@ -128,7 +128,7 @@ BundleAdjustmentOptions SetBundleAdjustmentOptions(
   } else {
     ba_options.linear_solver_type = ceres::DENSE_SCHUR;
   }
-  ba_options.verbose = true;
+  ba_options.verbose = VLOG_IS_ON(1);
   return ba_options;
 }
 
