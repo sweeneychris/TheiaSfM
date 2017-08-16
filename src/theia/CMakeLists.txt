@@ -86,6 +86,7 @@ set(THEIA_SRC
   matching/feature_matcher_utils.cc
   matching/guided_epipolar_matcher.cc
   math/closed_form_polynomial_solver.cc
+  math/constrained_l1_solver.cc
   math/find_polynomial_roots_companion_matrix.cc
   math/find_polynomial_roots_jenkins_traub.cc
   math/matrix/sparse_cholesky_llt.cc

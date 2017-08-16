@@ -217,7 +217,7 @@ class EstimatePositionsLeastUnsquaredDeviationTest : public ::testing::Test {
 };
 
 TEST_F(EstimatePositionsLeastUnsquaredDeviationTest, SmallTestNoNoise) {
-  static const double kTolerance = 1e-4;
+  static const double kTolerance = 1e-2;
   static const int kNumViews = 4;
   static const int kNumViewPairs = 6;
   TestLeastUnsquaredDeviationPositionEstimator(kNumViews,
