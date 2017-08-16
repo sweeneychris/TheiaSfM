@@ -88,18 +88,13 @@ class LeastUnsquaredDeviationPositionEstimator : public PositionEstimator {
       const std::unordered_map<ViewIdPair, TwoViewInfo>& view_pairs,
       const std::unordered_map<ViewId, Eigen::Vector3d>& orientations);
 
-  // Computes the weight of the error terms for the IRLS system.
-  void UpdateConstraintWeights();
-
   const LeastUnsquaredDeviationPositionEstimator::Options options_;
 
   std::unordered_map<ViewIdPair, int> view_id_pair_to_index_;
   std::unordered_map<ViewId, int> view_id_to_index_;
   static const int kConstantViewIndex = -3;
 
-  Eigen::ArrayXd weights_;
   Eigen::SparseMatrix<double> constraint_matrix_;
-  Eigen::VectorXd solution_;
 
   friend class EstimatePositionsLeastUnsquaredDeviationTest;
 

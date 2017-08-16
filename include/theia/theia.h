@@ -77,6 +77,7 @@
 #include "theia/matching/indexed_feature_match.h"
 #include "theia/matching/keypoints_and_descriptors.h"
 #include "theia/math/closed_form_polynomial_solver.h"
+#include "theia/math/constrained_l1_solver.h"
 #include "theia/math/distribution.h"
 #include "theia/math/find_polynomial_roots_companion_matrix.h"
 #include "theia/math/find_polynomial_roots_jenkins_traub.h"
