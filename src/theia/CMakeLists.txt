@@ -183,6 +183,7 @@ set(THEIA_SRC
   sfm/view_graph/remove_disconnected_view_pairs.cc
   sfm/view_graph/triplet_extractor.cc
   sfm/view_graph/view_graph.cc
+  sfm/visibility_pyramid.cc
   util/filesystem.cc
   util/random.cc
   util/stringprintf.cc

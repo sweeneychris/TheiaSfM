@@ -36,8 +36,8 @@
 
 #include <glog/logging.h>
 
-#include "theia/sfm/camera_intrinsics_prior.h"
 #include "theia/sfm/camera/camera.h"
+#include "theia/sfm/camera_intrinsics_prior.h"
 #include "theia/sfm/reconstruction.h"
 #include "theia/sfm/types.h"
 #include "theia/sfm/view.h"
@@ -98,7 +98,7 @@ void SetCameraIntrinsicsFromPriors(Reconstruction* reconstruction) {
         views_in_intrinsics_group, reconstruction);
     // Set the representative camera intrinsics.
     View* representative_view =
-      reconstruction->MutableView(representative_view_id);
+        reconstruction->MutableView(representative_view_id);
     Camera* representative_camera = representative_view->MutableCamera();
     representative_camera->SetFromCameraIntrinsicsPriors(
         representative_view->CameraIntrinsicsPrior());
@@ -118,7 +118,9 @@ void SetCameraIntrinsicsFromPriors(Reconstruction* reconstruction) {
       // includes estimated views who may have estimated intrinsics parameters
       // that are different than the shared intrinsics.
       view->MutableCamera()->MutableCameraIntrinsics() =
-        representative_camera->CameraIntrinsics();
+          representative_camera->CameraIntrinsics();
+      view->MutableCamera()->SetImageSize(representative_camera->ImageWidth(),
+                                          representative_camera->ImageHeight());
     }
   }
 }

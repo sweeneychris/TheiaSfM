@@ -61,6 +61,7 @@
 #include "theia/sfm/twoview_info.h"
 #include "theia/sfm/types.h"
 #include "theia/sfm/view_graph/view_graph.h"
+#include "theia/sfm/visibility_pyramid.h"
 #include "theia/solvers/sample_consensus_estimator.h"
 #include "theia/util/map_util.h"
 #include "theia/util/stringprintf.h"
@@ -121,7 +122,7 @@ IncrementalReconstructionEstimator::IncrementalReconstructionEstimator(
   localization_options_.reprojection_error_threshold_pixels =
       options_.absolute_pose_reprojection_error_threshold;
   localization_options_.ransac_params = ransac_params_;
-  localization_options_.bundle_adjust_view = false;
+  localization_options_.bundle_adjust_view = true;
   localization_options_.ba_options = SetBundleAdjustmentOptions(options_, 0);
   localization_options_.ba_options.verbose = false;
   localization_options_.min_num_inliers =
@@ -189,7 +190,7 @@ ReconstructionEstimatorSummary IncrementalReconstructionEstimator::Estimate(
     timer.Reset();
     if (!ChooseInitialViewPair()) {
       LOG(ERROR) << "Could not find a suitable initial pair for starting "
-        "incremental SfM!";
+                    "incremental SfM!";
       summary_.success = false;
       return summary_;
     }
@@ -414,41 +415,49 @@ void IncrementalReconstructionEstimator::
 
 void IncrementalReconstructionEstimator::FindViewsToLocalize(
     std::vector<ViewId>* views_to_localize) {
-  // We localize all views that observe 75% or more than the number of 3D points
-  // observed by the view with the largest number of observed 3D points.
-  static const double kObserved3dPointsRatio = 0.75;
+  // We localize all views that observe 75% or more of the best visibility
+  // score.
+  static const double kMinScoreRatio = 0.75;
+  static const int kMinNumObserved3dPoints = 30;
+  static const int kNumPyramidLevels = 6;
 
   // Determine the number of estimated tracks that each view observes.
-  std::vector<std::pair<int, ViewId> > track_count_for_view;
-  track_count_for_view.reserve(unlocalized_views_.size());
+  std::vector<std::pair<int, ViewId> > next_best_view_scores;
+  next_best_view_scores.reserve(unlocalized_views_.size());
   for (const ViewId view_id : unlocalized_views_) {
     // Do not consider estimated views since they have already been localized.
     const View* view = reconstruction_->View(view_id);
+    const Camera& camera = view->Camera();
 
     // Count the number of estimated tracks for this view.
     const auto& track_ids = view->TrackIds();
+    VisibilityPyramid pyramid(
+        camera.ImageWidth(), camera.ImageHeight(), kNumPyramidLevels);
     int num_estimated_tracks = 0;
     for (const TrackId track_id : track_ids) {
       if (reconstruction_->Track(track_id)->IsEstimated()) {
         ++num_estimated_tracks;
+        pyramid.AddPoint(*view->GetFeature(track_id));
       }
     }
 
-    track_count_for_view.emplace_back(num_estimated_tracks, view_id);
+    // If enough 3d points are observed then add the visibility score to the
+    // candidate views to localize.
+    if (num_estimated_tracks >= kMinNumObserved3dPoints) {
+      next_best_view_scores.emplace_back(pyramid.ComputeScore(), view_id);
+    }
   }
 
-  // Sort the track count so that the view with the most tracks is at the front.
-  std::sort(track_count_for_view.begin(),
-            track_count_for_view.end(),
-            std::greater<std::pair<int, ViewId> >());
-  const int min_3d_points_observed = static_cast<int>(
-      track_count_for_view.begin()->first * kObserved3dPointsRatio);
-  for (const auto& track_count : track_count_for_view) {
-    if (track_count.first < min_3d_points_observed ||
-        track_count.first < options_.min_num_absolute_pose_inliers) {
-      break;
-    }
-    views_to_localize->emplace_back(track_count.second);
+  // We seek to add the top 25% of all views to the views to localize queue so
+  // we only need to sort the top 25% of views.
+  const int first_quantile_index =
+      std::max<int>(next_best_view_scores.size() / 4, 1);
+  std::partial_sort(next_best_view_scores.begin(),
+                    next_best_view_scores.begin() + first_quantile_index,
+                    next_best_view_scores.end(),
+                    std::greater<std::pair<int, ViewId> >());
+  for (int i = 0; i < first_quantile_index; i++) {
+    views_to_localize->emplace_back(next_best_view_scores[i].second);
   }
 }
 
@@ -494,9 +503,8 @@ bool IncrementalReconstructionEstimator::FullBundleAdjustment() {
           options_.track_selection_image_grid_cell_size_pixels,
           options_.min_num_optimized_tracks_per_view,
           &tracks_to_optimize)) {
-    SetTracksInViewsToUnestimated(reconstructed_views_,
-                                  tracks_to_optimize,
-                                  reconstruction_);
+    SetTracksInViewsToUnestimated(
+        reconstructed_views_, tracks_to_optimize, reconstruction_);
   } else {
     GetEstimatedTracksFromReconstruction(*reconstruction_, &tracks_to_optimize);
   }
@@ -504,8 +512,7 @@ bool IncrementalReconstructionEstimator::FullBundleAdjustment() {
             << " tracks to optimize.";
 
   std::unordered_set<ViewId> views_to_optimize;
-  GetEstimatedViewsFromReconstruction(*reconstruction_,
-                                      &views_to_optimize);
+  GetEstimatedViewsFromReconstruction(*reconstruction_, &views_to_optimize);
   const auto& ba_summary =
       BundleAdjustPartialReconstruction(bundle_adjustment_options_,
                                         views_to_optimize,
@@ -522,11 +529,11 @@ bool IncrementalReconstructionEstimator::FullBundleAdjustment() {
 }
 
 bool IncrementalReconstructionEstimator::PartialBundleAdjustment() {
-// Partial bundle adjustment only only the k most recently added views that
+  // Partial bundle adjustment only only the k most recently added views that
   // have not been optimized by full BA.
   const int partial_ba_size =
-    std::min(static_cast<int>(reconstructed_views_.size()),
-             options_.partial_bundle_adjustment_num_views);
+      std::min(static_cast<int>(reconstructed_views_.size()),
+               options_.partial_bundle_adjustment_num_views);
   LOG(INFO) << "Running partial bundle adjustment on " << partial_ba_size
             << " views.";
 
@@ -546,8 +553,7 @@ bool IncrementalReconstructionEstimator::PartialBundleAdjustment() {
 
   // Get the views to optimize for partial BA.
   std::unordered_set<ViewId> views_to_optimize(
-      reconstructed_views_.end() - partial_ba_size,
-      reconstructed_views_.end());
+      reconstructed_views_.end() - partial_ba_size, reconstructed_views_.end());
 
   // If desired, select good tracks to optimize for BA. This dramatically
   // reduces the number of parameters in bundle adjustment, and does a decent
@@ -562,9 +568,8 @@ bool IncrementalReconstructionEstimator::PartialBundleAdjustment() {
           options_.track_selection_image_grid_cell_size_pixels,
           options_.min_num_optimized_tracks_per_view,
           &tracks_to_optimize)) {
-    SetTracksInViewsToUnestimated(views_to_optimize,
-                                  tracks_to_optimize,
-                                  reconstruction_);
+    SetTracksInViewsToUnestimated(
+        views_to_optimize, tracks_to_optimize, reconstruction_);
   } else {
     // If the track selection fails or is not desired, then add all tracks from
     // the views we wish to optimize.
@@ -595,11 +600,11 @@ void IncrementalReconstructionEstimator::RemoveOutlierTracks(
     const double max_reprojection_error_in_pixels) {
   // Remove the outlier points based on the reprojection error and how
   // well-constrained the 3D points are.
-  int num_points_removed = SetOutlierTracksToUnestimated(
-      tracks_to_check,
-      max_reprojection_error_in_pixels,
-      options_.min_triangulation_angle_degrees,
-      reconstruction_);
+  int num_points_removed =
+      SetOutlierTracksToUnestimated(tracks_to_check,
+                                    max_reprojection_error_in_pixels,
+                                    options_.min_triangulation_angle_degrees,
+                                    reconstruction_);
   LOG(INFO) << num_points_removed << " outlier points were removed.";
 }
 
@@ -624,8 +629,8 @@ void IncrementalReconstructionEstimator::SetUnderconstrainedAsUnestimated() {
         unlocalized_views_.insert(view_id);
 
         // Remove the view from the list of localized views.
-        auto view_to_remove = std::find(reconstructed_views_.begin(),
-                                        reconstructed_views_.end(), view_id);
+        auto view_to_remove = std::find(
+            reconstructed_views_.begin(), reconstructed_views_.end(), view_id);
         reconstructed_views_.erase(view_to_remove);
         --num_optimized_views_;
       }
