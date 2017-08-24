@@ -34,9 +34,9 @@
 
 #include "theia/sfm/track_builder.h"
 
-#include <stdint.h>
 #include <cstddef>
 #include <memory>
+#include <stdint.h>
 #include <string>
 #include <unordered_map>
 #include <utility>
@@ -78,7 +78,6 @@ void TrackBuilder::AddFeatureCorrespondence(const ViewId view_id1,
 
 void TrackBuilder::BuildTracks(Reconstruction* reconstruction) {
   CHECK_NOTNULL(reconstruction);
-  CHECK_EQ(reconstruction->NumTracks(), 0);
 
   // Build a reverse map mapping feature ids to ImageNameFeaturePairs.
   std::unordered_map<uint64_t, const std::pair<ViewId, Feature>*> id_to_feature;
@@ -123,7 +122,7 @@ void TrackBuilder::BuildTracks(Reconstruction* reconstruction) {
         << "Could not build tracks.";
   }
 
-  VLOG(1)
+  LOG(INFO)
       << reconstruction->NumTracks() << " tracks were created. "
       << num_inconsistent_features
       << " features were dropped because they formed inconsistent tracks, and "
@@ -147,7 +146,8 @@ uint64_t TrackBuilder::FindOrInsert(
   // Increment the number of features.
   ++num_features_;
 
-  return new_feature_id;;
+  return new_feature_id;
+  ;
 }
 
 }  // namespace theia

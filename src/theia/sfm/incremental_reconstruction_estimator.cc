@@ -277,6 +277,10 @@ ReconstructionEstimatorSummary IncrementalReconstructionEstimator::Estimate(
         summary_.success = false;
         return summary_;
       }
+
+      // Force exiting the loop so that the next best view scores are
+      // recomputed.
+      break;
     }
   }
 
@@ -417,7 +421,6 @@ void IncrementalReconstructionEstimator::FindViewsToLocalize(
     std::vector<ViewId>* views_to_localize) {
   // We localize all views that observe 75% or more of the best visibility
   // score.
-  static const double kMinScoreRatio = 0.75;
   static const int kMinNumObserved3dPoints = 30;
   static const int kNumPyramidLevels = 6;
 
@@ -448,15 +451,11 @@ void IncrementalReconstructionEstimator::FindViewsToLocalize(
     }
   }
 
-  // We seek to add the top 25% of all views to the views to localize queue so
-  // we only need to sort the top 25% of views.
-  const int first_quantile_index =
-      std::max<int>(next_best_view_scores.size() / 4, 1);
-  std::partial_sort(next_best_view_scores.begin(),
-                    next_best_view_scores.begin() + first_quantile_index,
-                    next_best_view_scores.end(),
-                    std::greater<std::pair<int, ViewId> >());
-  for (int i = 0; i < first_quantile_index; i++) {
+  // Sort such that the best score is at the front.
+  std::sort(next_best_view_scores.begin(),
+            next_best_view_scores.end(),
+            std::greater<std::pair<int, ViewId> >());
+  for (int i = 0; i < next_best_view_scores.size(); i++) {
     views_to_localize->emplace_back(next_best_view_scores[i].second);
   }
 }
