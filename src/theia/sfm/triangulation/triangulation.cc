@@ -44,6 +44,7 @@
 
 #include "theia/matching/feature_correspondence.h"
 #include "theia/math/util.h"
+#include "theia/sfm/pose/essential_matrix_utils.h"
 #include "theia/sfm/pose/fundamental_matrix_util.h"
 #include "theia/sfm/pose/util.h"
 
@@ -72,9 +73,7 @@ void FindOptimalImagePoints(const Matrix3d& ematrix,
 
   // A helper matrix to isolate certain coordinates.
   Matrix<double, 2, 3> s_matrix;
-  s_matrix <<
-      1, 0, 0,
-      0, 1, 0;
+  s_matrix << 1, 0, 0, 0, 1, 0;
 
   const Eigen::Matrix2d e_submatrix = ematrix.topLeftCorner<2, 2>();
 
@@ -96,10 +95,12 @@ void FindOptimalImagePoints(const Matrix3d& ematrix,
   lambda *=
       (2.0 * d) / (epipolar_line1.squaredNorm() + epipolar_line2.squaredNorm());
 
-  *corrected_point1 = (point1_homog - s_matrix.transpose() * lambda *
-                                          epipolar_line1).hnormalized();
-  *corrected_point2 = (point2_homog - s_matrix.transpose() * lambda *
-                                          epipolar_line2).hnormalized();
+  *corrected_point1 =
+      (point1_homog - s_matrix.transpose() * lambda * epipolar_line1)
+          .hnormalized();
+  *corrected_point2 =
+      (point2_homog - s_matrix.transpose() * lambda * epipolar_line2)
+          .hnormalized();
 }
 
 }  // namespace
@@ -110,22 +111,17 @@ bool Triangulate(const Matrix3x4d& pose1,
                  const Vector2d& point1,
                  const Vector2d& point2,
                  Vector4d* triangulated_point) {
-  Matrix3d fmatrix;
-  FundamentalMatrixFromProjectionMatrices(pose1.data(),
-                                          pose2.data(),
-                                          fmatrix.data());
+  Eigen::Matrix3d ematrix;
+  EssentialMatrixFromTwoProjectionMatrices(pose1, pose2, &ematrix);
 
   Vector2d corrected_point1, corrected_point2;
-  FindOptimalImagePoints(fmatrix, point1, point2,
-                         &corrected_point1, &corrected_point2);
+  FindOptimalImagePoints(
+      ematrix, point1, point2, &corrected_point1, &corrected_point2);
 
   // Now the two points are guaranteed to intersect. We can use the DLT method
   // since it is easy to construct.
-  return TriangulateDLT(pose1 ,
-                        pose2,
-                        corrected_point1,
-                        corrected_point2,
-                        triangulated_point);
+  return TriangulateDLT(
+      pose1, pose2, corrected_point1, corrected_point2, triangulated_point);
 }
 
 // Triangulates a 3D point by determining the closest point between the two
@@ -143,10 +139,8 @@ bool TriangulateMidpoint(const std::vector<Vector3d>& ray_origin,
   Eigen::Vector4d b;
   b.setZero();
   for (int i = 0; i < ray_origin.size(); i++) {
-    const Eigen::Vector4d ray_direction_homog(ray_direction[i].x(),
-                                              ray_direction[i].y(),
-                                              ray_direction[i].z(),
-                                              0);
+    const Eigen::Vector4d ray_direction_homog(
+        ray_direction[i].x(), ray_direction[i].y(), ray_direction[i].z(), 0);
     const Eigen::Matrix4d A_term =
         Eigen::Matrix4d::Identity() -
         ray_direction_homog * ray_direction_homog.transpose();
@@ -236,7 +230,6 @@ bool IsTriangulatedPointInFrontOfCameras(
   return (dir2_sq * dir1_pos - dir1_dir2 * dir2_pos > 0 &&
           dir1_dir2 * dir1_pos - dir1_sq * dir2_pos > 0);
 }
-
 
 // Returns true if the triangulation angle between any two observations is
 // sufficient.
