@@ -41,7 +41,9 @@
 #include <algorithm>
 
 #include "theia/matching/feature_correspondence.h"
+#include "theia/sfm/pose/util.h"
 #include "theia/sfm/triangulation/triangulation.h"
+#include "theia/sfm/types.h"
 
 namespace theia {
 
@@ -57,9 +59,7 @@ void DecomposeEssentialMatrix(const Matrix3d& essential_matrix,
                               Matrix3d* rotation2,
                               Vector3d* translation) {
   Matrix3d d;
-  d << 0, 1, 0,
-      -1, 0, 0,
-      0, 0, 1;
+  d << 0, 1, 0, -1, 0, 0, 0, 0, 1;
 
   const Eigen::JacobiSVD<Matrix3d> svd(
       essential_matrix, Eigen::ComputeFullU | Eigen::ComputeFullV);
@@ -79,6 +79,32 @@ void DecomposeEssentialMatrix(const Matrix3d& essential_matrix,
   *translation = U.col(2).normalized();
 }
 
+// x = (R2 * X + t2)
+// x = (R2 * R1^t * X + t2)
+// x = (R2 * (R1^t * X - t1) + t2)
+// x = R2 * R1^t * X - R2 * t1 + t2
+void EssentialMatrixFromTwoProjectionMatrices(
+    const Matrix3x4d& pose1,
+    const Matrix3x4d& pose2,
+    Eigen::Matrix3d* essential_matrix) {
+  // Create the Ematrix from the poses.
+  const Eigen::Matrix3d R1 = pose1.leftCols<3>();
+  const Eigen::Matrix3d R2 = pose2.leftCols<3>();
+  const Eigen::Vector3d t1 = pose1.rightCols<1>();
+  const Eigen::Vector3d t2 = pose2.rightCols<1>();
+
+  // Pos1 = -R1^t * t1.
+  // Pos2 = -R2^t * t2.
+  // t = R1 * (pos2 - pos1).
+  // t = R1 * (-R2^t * t2 + R1^t * t1)
+  // t = t1 - R1 * R2^t * t2;
+
+  // Relative transformation between to cameras.
+  const Eigen::Matrix3d relative_rotation = R1 * R2.transpose();
+  const Eigen::Vector3d translation = (t1 - relative_rotation * t2).normalized();
+  *essential_matrix = CrossProductMatrix(translation) * relative_rotation;
+}
+
 int GetBestPoseFromEssentialMatrix(
     const Matrix3d& essential_matrix,
     const std::vector<FeatureCorrespondence>& normalized_correspondences,
@@ -87,26 +113,23 @@ int GetBestPoseFromEssentialMatrix(
   // Decompose ematrix.
   Matrix3d rotation1, rotation2;
   Vector3d translation;
-  DecomposeEssentialMatrix(essential_matrix,
-                           &rotation1,
-                           &rotation2,
-                           &translation);
-  const std::vector<Matrix3d> rotations = { rotation1, rotation1,
-                                            rotation2, rotation2 };
+  DecomposeEssentialMatrix(
+      essential_matrix, &rotation1, &rotation2, &translation);
+  const std::vector<Matrix3d> rotations = {
+      rotation1, rotation1, rotation2, rotation2};
   const std::vector<Vector3d> positions = {
-    -rotations[0].transpose() * translation,
-    -rotations[1].transpose() * -translation,
-    -rotations[2].transpose() * translation,
-    -rotations[3].transpose() * -translation };
+      -rotations[0].transpose() * translation,
+      -rotations[1].transpose() * -translation,
+      -rotations[2].transpose() * translation,
+      -rotations[3].transpose() * -translation};
 
   // From the 4 candidate poses, find the one with the most triangulated points
   // in front of the camera.
   std::vector<int> points_in_front_of_cameras(4, 0);
   for (int i = 0; i < 4; i++) {
     for (const auto& correspondence : normalized_correspondences) {
-      if (IsTriangulatedPointInFrontOfCameras(correspondence,
-                                              rotations[i],
-                                              positions[i])) {
+      if (IsTriangulatedPointInFrontOfCameras(
+              correspondence, rotations[i], positions[i])) {
         ++points_in_front_of_cameras[i];
       }
     }
@@ -115,8 +138,8 @@ int GetBestPoseFromEssentialMatrix(
   // Find the pose with the most points in front of the camera.
   const auto& max_element = std::max_element(points_in_front_of_cameras.begin(),
                                              points_in_front_of_cameras.end());
-  const int max_index =  std::distance(points_in_front_of_cameras.begin(),
-                                       max_element);
+  const int max_index =
+      std::distance(points_in_front_of_cameras.begin(), max_element);
 
   // Set the pose.
   *rotation = rotations[max_index];
