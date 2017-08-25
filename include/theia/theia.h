@@ -203,6 +203,7 @@
 #include "theia/solvers/estimator.h"
 #include "theia/solvers/evsac.h"
 #include "theia/solvers/evsac_sampler.h"
+#include "theia/solvers/exhaustive_ransac.h"
 #include "theia/solvers/exhaustive_sampler.h"
 #include "theia/solvers/inlier_support.h"
 #include "theia/solvers/lmed.h"
