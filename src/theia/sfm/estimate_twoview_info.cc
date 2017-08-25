@@ -51,6 +51,7 @@
 #include "theia/sfm/triangulation/triangulation.h"
 #include "theia/sfm/twoview_info.h"
 #include "theia/sfm/types.h"
+#include "theia/sfm/visibility_pyramid.h"
 #include "theia/solvers/sample_consensus_estimator.h"
 
 namespace theia {
@@ -78,7 +79,7 @@ void NormalizeFeatures(
   // no focal length priors we DO NOT want the feature normalization below to
   // divide by the focal length, so we must reset the focal lengths to 1.0 so
   // that the feature normalization is unaffected.
-  if (!prior1.focal_length.is_set || !prior2.focal_length.is_set){
+  if (!prior1.focal_length.is_set || !prior2.focal_length.is_set) {
     camera1.SetFocalLength(1.0);
     camera2.SetFocalLength(1.0);
   }
@@ -98,6 +99,35 @@ void NormalizeFeatures(
   }
 }
 
+// Compute the visibility score of the inliers in the images.
+int ComputeVisibilityScoreOfInliers(
+    const CameraIntrinsicsPrior& intrinsics1,
+    const CameraIntrinsicsPrior& intrinsics2,
+    const std::vector<FeatureCorrespondence>& correspondences,
+    const std::vector<int>& inlier_indices) {
+  static const int kNumPyramidLevels = 6;
+  // If the image dimensions are not available, do not make any assumptions
+  // about what they might be. Instead, we return the number of inliers as a
+  // default.
+  if (intrinsics1.image_width == 0 || intrinsics1.image_height == 0 ||
+      intrinsics2.image_width == 0 || intrinsics2.image_height == 0) {
+    return inlier_indices.size();
+  }
+
+  // Compute the visibility score for all inliers.
+  VisibilityPyramid pyramid1(
+      intrinsics1.image_width, intrinsics1.image_height, kNumPyramidLevels);
+  VisibilityPyramid pyramid2(
+      intrinsics2.image_width, intrinsics2.image_height, kNumPyramidLevels);
+  for (const int i : inlier_indices) {
+    const FeatureCorrespondence& match = correspondences[i];
+    pyramid1.AddPoint(match.feature1);
+    pyramid2.AddPoint(match.feature2);
+  }
+  // Return the summed score.
+  return pyramid1.ComputeScore() + pyramid2.ComputeScore();
+}
+
 bool EstimateTwoViewInfoCalibrated(
     const EstimateTwoViewInfoOptions& options,
     const CameraIntrinsicsPrior& intrinsics1,
@@ -107,10 +137,8 @@ bool EstimateTwoViewInfoCalibrated(
     std::vector<int>* inlier_indices) {
   // Normalize features w.r.t focal length.
   std::vector<FeatureCorrespondence> normalized_correspondences;
-  NormalizeFeatures(intrinsics1,
-                    intrinsics2,
-                    correspondences,
-                    &normalized_correspondences);
+  NormalizeFeatures(
+      intrinsics1, intrinsics2, correspondences, &normalized_correspondences);
 
   // Set the ransac parameters.
   RansacParameters ransac_options;
@@ -121,14 +149,14 @@ bool EstimateTwoViewInfoCalibrated(
 
   // Compute the sampson error threshold to account for the resolution of the
   // images.
-  const double max_sampson_error_pixels1 = ComputeResolutionScaledThreshold(
-      options.max_sampson_error_pixels,
-      intrinsics1.image_width,
-      intrinsics1.image_height);
-  const double max_sampson_error_pixels2 = ComputeResolutionScaledThreshold(
-      options.max_sampson_error_pixels,
-      intrinsics2.image_width,
-      intrinsics2.image_height);
+  const double max_sampson_error_pixels1 =
+      ComputeResolutionScaledThreshold(options.max_sampson_error_pixels,
+                                       intrinsics1.image_width,
+                                       intrinsics1.image_height);
+  const double max_sampson_error_pixels2 =
+      ComputeResolutionScaledThreshold(options.max_sampson_error_pixels,
+                                       intrinsics2.image_width,
+                                       intrinsics2.image_height);
   ransac_options.error_thresh =
       max_sampson_error_pixels1 * max_sampson_error_pixels2 /
       (intrinsics1.focal_length.value[0] * intrinsics2.focal_length.value[0]);
@@ -152,6 +180,8 @@ bool EstimateTwoViewInfoCalibrated(
   twoview_info->focal_length_1 = intrinsics1.focal_length.value[0];
   twoview_info->focal_length_2 = intrinsics2.focal_length.value[0];
   twoview_info->num_verified_matches = summary.inliers.size();
+  twoview_info->visibility_score = ComputeVisibilityScoreOfInliers(
+      intrinsics1, intrinsics2, correspondences, *inlier_indices);
 
   *inlier_indices = summary.inliers;
 
@@ -167,10 +197,8 @@ bool EstimateTwoViewInfoUncalibrated(
     std::vector<int>* inlier_indices) {
   // Normalize features w.r.t principal point.
   std::vector<FeatureCorrespondence> centered_correspondences;
-  NormalizeFeatures(intrinsics1,
-                    intrinsics2,
-                    correspondences,
-                    &centered_correspondences);
+  NormalizeFeatures(
+      intrinsics1, intrinsics2, correspondences, &centered_correspondences);
 
   // Set the ransac parameters.
   RansacParameters ransac_options;
@@ -181,16 +209,16 @@ bool EstimateTwoViewInfoUncalibrated(
 
   // Compute the sampson error threshold to account for the resolution of the
   // images.
-  const double max_sampson_error_pixels1 = ComputeResolutionScaledThreshold(
-      options.max_sampson_error_pixels,
-      intrinsics1.image_width,
-      intrinsics1.image_height);
-  const double max_sampson_error_pixels2 = ComputeResolutionScaledThreshold(
-      options.max_sampson_error_pixels,
-      intrinsics2.image_width,
-      intrinsics2.image_height);
+  const double max_sampson_error_pixels1 =
+      ComputeResolutionScaledThreshold(options.max_sampson_error_pixels,
+                                       intrinsics1.image_width,
+                                       intrinsics1.image_height);
+  const double max_sampson_error_pixels2 =
+      ComputeResolutionScaledThreshold(options.max_sampson_error_pixels,
+                                       intrinsics2.image_width,
+                                       intrinsics2.image_height);
   ransac_options.error_thresh =
-    max_sampson_error_pixels1 * max_sampson_error_pixels2;
+      max_sampson_error_pixels1 * max_sampson_error_pixels2;
 
   UncalibratedRelativePose relative_pose;
   RansacSummary summary;
@@ -212,6 +240,8 @@ bool EstimateTwoViewInfoUncalibrated(
 
   // Get the number of verified features.
   twoview_info->num_verified_matches = summary.inliers.size();
+  twoview_info->visibility_score = ComputeVisibilityScoreOfInliers(
+      intrinsics1, intrinsics2, correspondences, *inlier_indices);
   *inlier_indices = summary.inliers;
 
   return true;

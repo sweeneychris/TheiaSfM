@@ -38,6 +38,8 @@
 #include <glog/logging.h>
 #include <vector>
 
+#include "theia/math/util.h"
+
 namespace theia {
 
 // The inputs are the view/image width and height, as well as the number of
@@ -64,17 +66,16 @@ VisibilityPyramid::VisibilityPyramid(const int width,
 
 // Add a point to the visibility pyramid.
 void VisibilityPyramid::AddPoint(const Eigen::Vector2d& point) {
-  DCHECK_GE(point.x(), 0);
-  DCHECK_GE(point.y(), 0);
-  DCHECK_LT(point.x(), width_);
-  DCHECK_LT(point.y(), height_);
-
   // Determine the grid cell of the point in the highest-resolution level of the
   // pyramid.
-  int grid_cell_x =
-      static_cast<int>(max_cells_in_dimension_ * point.x() / width_);
-  int grid_cell_y =
-      static_cast<int>(max_cells_in_dimension_ * point.y() / height_);
+  int grid_cell_x = theia::Clamp(
+      static_cast<int>(max_cells_in_dimension_ * point.x() / width_),
+      0,
+      max_cells_in_dimension_ - 1);
+  int grid_cell_y = theia::Clamp(
+      static_cast<int>(max_cells_in_dimension_ * point.y() / height_),
+      0,
+      max_cells_in_dimension_ - 1);
 
   // Go through the pyramid from fine to coarse and add the observation to the
   // occupancy grid.

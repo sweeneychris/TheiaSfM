@@ -34,25 +34,25 @@
 
 #include "theia/io/read_1dsfm.h"
 
-#include <ceres/rotation.h>
 #include <Eigen/Core>
-#include <glog/logging.h>
+#include <ceres/rotation.h>
 #include <gflags/gflags.h>
+#include <glog/logging.h>
 
 #include <algorithm>
 #include <fstream>  // NOLINT
 #include <string>
-#include <utility>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 #include "theia/sfm/find_common_tracks_in_views.h"
 #include "theia/sfm/reconstruction.h"
-#include "theia/sfm/view_graph/view_graph.h"
-#include "theia/sfm/view.h"
 #include "theia/sfm/track.h"
 #include "theia/sfm/types.h"
+#include "theia/sfm/view.h"
+#include "theia/sfm/view_graph/view_graph.h"
 #include "theia/util/filesystem.h"
 #include "theia/util/map_util.h"
 
@@ -233,8 +233,13 @@ bool Input1DSFM::ReadCoords() {
     Eigen::Vector3i color;
     for (int i = 0; i < num_keys; i++) {
       std::getline(ifs, line);
-      sscanf(line.c_str(), "%*d %lf %lf 0 0 %d %d %d", &keypoint[0],
-             &keypoint[1], &color[0], &color[1], &color[2]);
+      sscanf(line.c_str(),
+             "%*d %lf %lf 0 0 %d %d %d",
+             &keypoint[0],
+             &keypoint[1],
+             &color[0],
+             &color[1],
+             &color[2]);
       features.emplace_back(keypoint);
       colors.emplace_back(color.cast<uint8_t>());
     }
@@ -353,6 +358,10 @@ bool Input1DSFM::ReadEGs() {
     const std::vector<TrackId> common_tracks =
         FindCommonTracksInViews(*reconstruction_, views);
     info.num_verified_matches = common_tracks.size();
+    // We set the visibility score to be the number of common tracks since we do
+    // not have knowledge about the image sizes and therefore cannot compute the
+    // visibility score using the VisibilityPyramid.
+    info.visibility_score = common_tracks.size();
 
     // Add the match to the output.
     if (reconstruction_->View(view_id1) != nullptr &&
