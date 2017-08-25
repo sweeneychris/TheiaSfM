@@ -32,20 +32,20 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
+#include "gtest/gtest.h"
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-#include <glog/logging.h>
 #include <algorithm>
+#include <glog/logging.h>
 #include <vector>
-#include "gtest/gtest.h"
 
-#include "theia/math/util.h"
-#include "theia/util/random.h"
-#include "theia/sfm/estimators/estimate_essential_matrix.h"
 #include "theia/matching/feature_correspondence.h"
+#include "theia/math/util.h"
+#include "theia/sfm/estimators/estimate_essential_matrix.h"
 #include "theia/sfm/pose/test_util.h"
 #include "theia/sfm/pose/util.h"
 #include "theia/test/test_utils.h"
+#include "theia/util/random.h"
 
 namespace theia {
 namespace {
@@ -94,20 +94,20 @@ void ExecuteRandomTest(const RansacParameters& options,
       correspondence.feature2 =
           (rotation * points3d[i] + translation).hnormalized();
     } else {
-      correspondence.feature1 = Vector2d(rng.RandDouble(-1.0, 1.0),
-                                         rng.RandDouble(-1.0, 1.0));
-      correspondence.feature2 = Vector2d(rng.RandDouble(-1.0, 1.0),
-                                         rng.RandDouble(-1.0, 1.0));
+      correspondence.feature1 =
+          Vector2d(rng.RandDouble(-1.0, 1.0), rng.RandDouble(-1.0, 1.0));
+      correspondence.feature2 =
+          Vector2d(rng.RandDouble(-1.0, 1.0), rng.RandDouble(-1.0, 1.0));
     }
     correspondences.emplace_back(correspondence);
   }
 
   if (noise) {
     for (int i = 0; i < points3d.size(); i++) {
-      AddNoiseToProjection(noise / kFocalLength, &rng,
-                           &correspondences[i].feature1);
-      AddNoiseToProjection(noise / kFocalLength, &rng,
-                           &correspondences[i].feature2);
+      AddNoiseToProjection(
+          noise / kFocalLength, &rng, &correspondences[i].feature1);
+      AddNoiseToProjection(
+          noise / kFocalLength, &rng, &correspondences[i].feature2);
     }
   }
 
@@ -127,10 +127,8 @@ void ExecuteRandomTest(const RansacParameters& options,
   EXPECT_GT(static_cast<double>(ransac_summary.inliers.size()), 5);
 
   // Expect poses are near.
-  EXPECT_TRUE(test::ArraysEqualUpToScale(9,
-                                         essential_matrix.data(),
-                                         gt_ematrix.data(),
-                                         tolerance));
+  EXPECT_TRUE(test::ArraysEqualUpToScale(
+      9, essential_matrix.data(), gt_ematrix.data(), tolerance));
 }
 
 TEST(EstimateEssentialMatrix, AllInliersNoNoise) {
@@ -144,13 +142,12 @@ TEST(EstimateEssentialMatrix, AllInliersNoNoise) {
   const double kPoseTolerance = 1e-4;
 
   const std::vector<Matrix3d> rotations = {
-    Matrix3d::Identity(),
-    AngleAxisd(DegToRad(12.0), Vector3d::UnitY()).toRotationMatrix(),
-    AngleAxisd(DegToRad(-9.0), Vector3d(1.0, 0.2, -0.8).normalized())
-        .toRotationMatrix()
-  };
-  const std::vector<Vector3d> positions = { Vector3d(-1.3, 0, 0),
-                                            Vector3d(0, 0, 0.5) };
+      Matrix3d::Identity(),
+      AngleAxisd(DegToRad(12.0), Vector3d::UnitY()).toRotationMatrix(),
+      AngleAxisd(DegToRad(-9.0), Vector3d(1.0, 0.2, -0.8).normalized())
+          .toRotationMatrix()};
+  const std::vector<Vector3d> positions = {Vector3d(-1.3, 0, 0),
+                                           Vector3d(0, 0, 0.5)};
   for (int i = 0; i < rotations.size(); i++) {
     for (int j = 0; j < positions.size(); j++) {
       ExecuteRandomTest(options,
@@ -174,13 +171,12 @@ TEST(EstimateEssentialMatrix, AllInliersWithNoise) {
   const double kPoseTolerance = 1e-2;
 
   const std::vector<Matrix3d> rotations = {
-    Matrix3d::Identity(),
-    AngleAxisd(DegToRad(12.0), Vector3d::UnitY()).toRotationMatrix(),
-    AngleAxisd(DegToRad(-9.0), Vector3d(1.0, 0.2, -0.8).normalized())
-        .toRotationMatrix()
-  };
-  const std::vector<Vector3d> positions = { Vector3d(-1.3, 0, 0),
-                                            Vector3d(0, 0, 0.5) };
+      Matrix3d::Identity(),
+      AngleAxisd(DegToRad(12.0), Vector3d::UnitY()).toRotationMatrix(),
+      AngleAxisd(DegToRad(-9.0), Vector3d(1.0, 0.2, -0.8).normalized())
+          .toRotationMatrix()};
+  const std::vector<Vector3d> positions = {Vector3d(-1.3, 0, 0),
+                                           Vector3d(0, 0, 0.5)};
 
   for (int i = 0; i < rotations.size(); i++) {
     for (int j = 0; j < positions.size(); j++) {
@@ -204,10 +200,9 @@ TEST(EstimateEssentialMatrix, OutliersNoNoise) {
   const double kNoise = 0.0;
   const double kPoseTolerance = 1e-2;
 
-  const std::vector<Matrix3d> rotations = {Matrix3d::Identity(),
-                                           RandomRotation(10.0, &rng)};
-  const std::vector<Vector3d> positions = { Vector3d(1, 0, 0),
-                                            Vector3d(0, 1, 0) };
+  const std::vector<Matrix3d> rotations = {RandomRotation(10.0, &rng)};
+  const std::vector<Vector3d> positions = {Vector3d(1, 0, 0),
+                                           Vector3d(0, 1, 0)};
 
   for (int i = 0; i < rotations.size(); i++) {
     for (int j = 0; j < positions.size(); j++) {
@@ -233,8 +228,8 @@ TEST(EstimateEssentialMatrix, OutliersWithNoise) {
 
   const std::vector<Matrix3d> rotations = {Matrix3d::Identity(),
                                            RandomRotation(10.0, &rng)};
-  const std::vector<Vector3d> positions = { Vector3d(1, 0, 0),
-                                            Vector3d(0, 1, 0) };
+  const std::vector<Vector3d> positions = {Vector3d(1, 0, 0),
+                                           Vector3d(0, 1, 0)};
 
   for (int i = 0; i < rotations.size(); i++) {
     for (int j = 0; j < positions.size(); j++) {

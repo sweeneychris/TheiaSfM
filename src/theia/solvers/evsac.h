@@ -60,16 +60,16 @@ class Evsac : public SampleConsensusEstimator<ModelEstimator> {
         const ModelEstimator& estimator,
         const Eigen::MatrixXd& sorted_distances,
         const double predictor_threshold,
-        const FittingMethod fitting_method) :
-      SampleConsensusEstimator<ModelEstimator>(ransac_params, estimator),
-      sorted_distances_(sorted_distances),
-      predictor_threshold_(predictor_threshold),
-      fitting_method_(fitting_method) {}
+        const FittingMethod fitting_method)
+      : SampleConsensusEstimator<ModelEstimator>(ransac_params, estimator),
+        sorted_distances_(sorted_distances),
+        predictor_threshold_(predictor_threshold),
+        fitting_method_(fitting_method) {}
 
   ~Evsac() {}
 
   bool Initialize() {
-    Sampler<Datum>* prosac_sampler =
+    Sampler* prosac_sampler =
         new EvsacSampler<Datum>(this->estimator_.SampleSize(),
                                 this->sorted_distances_,
                                 this->predictor_threshold_,
