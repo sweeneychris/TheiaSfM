@@ -1,4 +1,4 @@
-// Copyright (C) 2014 The Regents of the University of California (Regents).
+// Copyright (C) 2017 The Regents of the University of California (Regents).
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -30,44 +30,53 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //
 // Please contact the author of this library if you have any questions.
-// Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
+// Author: Chris Sweeney (sweeney.chris.m@gmail.com)
 
-#include <glog/logging.h>
+#ifndef THEIA_SOLVERS_EXHAUSTIVE_SAMPLER_H_
+#define THEIA_SOLVERS_EXHAUSTIVE_SAMPLER_H_
+
 #include <algorithm>
 #include <memory>
+#include <numeric>
+#include <stdlib.h>
 #include <vector>
 
-#include "gtest/gtest.h"
-#include "theia/solvers/random_sampler.h"
-#include "theia/util/random.h"
+#include "theia/solvers/sampler.h"
 
 namespace theia {
 
-namespace {
+// This class exhaustively generates all
+class ExhaustiveSampler : public Sampler {
+ public:
+  ExhaustiveSampler(const std::shared_ptr<RandomNumberGenerator>& rng,
+                    const int min_num_samples)
+      : Sampler(rng, min_num_samples) {}
 
-bool IsUnique(const std::vector<int>& vec) {
-  std::vector<int> sorted_vec = vec;
-  std::sort(sorted_vec.begin(), sorted_vec.end());
-  return std::unique(sorted_vec.begin(), sorted_vec.end()) == sorted_vec.end();
-}
+  ~ExhaustiveSampler() {}
 
-}  // namespace
+  bool Initialize(const int num_datapoints) override { return true; }
 
-TEST(RandomSampler, UniqueMinimalSample) {
-  std::shared_ptr<RandomNumberGenerator> rng =
-      std::make_shared<RandomNumberGenerator>(55);
-  static const int kMinNumSamples = 3;
-  const std::vector<int> data_points = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
-  RandomSampler sampler(rng, kMinNumSamples);
-  CHECK(sampler.Initialize(data_points.size()));
-  for (int i = 0; i < 100; i++) {
-    std::vector<int> subset;
-    EXPECT_TRUE(sampler.Sample(&subset));
+  // Samples the input variable data and fills the vector subset with the
+  // random samples.
+  bool Sample(const std::vector<Datum>& data,
+              std::vector<Datum>* subset) override {
+    subset->resize(this->min_num_samples_);
+    std::vector<int> random_numbers(data.size());
+    std::iota(random_numbers.begin(), random_numbers.end(), 0);
 
-    // Make sure that the sampling is unique.
-    EXPECT_EQ(subset.size(), kMinNumSamples);
-    EXPECT_TRUE(IsUnique(subset));
+    for (int i = 0; i < this->min_num_samples_; i++) {
+      std::swap(random_numbers[i],
+                random_numbers[this->rng_->RandInt(i, data.size() - 1)]);
+      (*subset)[i] = data[random_numbers[i]];
+    }
+
+    return true;
   }
-}
+
+ private:
+  std::vector<int> sample_indices_;
+};
 
 }  // namespace theia
+
+#endif  // THEIA_SOLVERS_EXHAUSTIVE_SAMPLER_H_

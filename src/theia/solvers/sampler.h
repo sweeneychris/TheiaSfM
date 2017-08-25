@@ -43,7 +43,7 @@
 namespace theia {
 // Purely virtual class used for the sampling consensus methods (e.g. Ransac,
 // Prosac, MLESac, etc.)
-template <class Datum> class Sampler {
+class Sampler {
  public:
   Sampler(const std::shared_ptr<RandomNumberGenerator>& rng,
           const int min_num_samples)
@@ -59,12 +59,11 @@ template <class Datum> class Sampler {
 
   // Initializes any non-trivial variables and sets up sampler if
   // necessary. Must be called before Sample is called.
-  virtual bool Initialize() = 0;
+  virtual bool Initialize(const int num_datapoints) = 0;
 
   // Samples the input variable data and fills the vector subset with the
   // samples.
-  virtual bool Sample(const std::vector<Datum>& data,
-                      std::vector<Datum>* subset) = 0;
+  virtual bool Sample(std::vector<int>* subset_indices) = 0;
 
  protected:
   std::shared_ptr<RandomNumberGenerator> rng_;

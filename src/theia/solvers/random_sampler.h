@@ -35,10 +35,10 @@
 #ifndef THEIA_SOLVERS_RANDOM_SAMPLER_H_
 #define THEIA_SOLVERS_RANDOM_SAMPLER_H_
 
-#include <stdlib.h>
 #include <algorithm>
 #include <memory>
 #include <numeric>
+#include <stdlib.h>
 #include <vector>
 
 #include "theia/solvers/sampler.h"
@@ -48,32 +48,20 @@ namespace theia {
 
 // Random sampler used for RANSAC. This is guaranteed to generate a unique
 // sample by performing a Fisher-Yates sampling.
-template <class Datum> class RandomSampler : public Sampler<Datum> {
+class RandomSampler : public Sampler {
  public:
   RandomSampler(const std::shared_ptr<RandomNumberGenerator>& rng,
-                const int min_num_samples)
-      : Sampler<Datum>(rng, min_num_samples) {}
-
+                const int min_num_samples);
   ~RandomSampler() {}
 
-  bool Initialize() override { return true; }
+  bool Initialize(const int num_datapoints);
 
   // Samples the input variable data and fills the vector subset with the
   // random samples.
-  bool Sample(const std::vector<Datum>& data,
-              std::vector<Datum>* subset) override {
-    subset->resize(this->min_num_samples_);
-    std::vector<int> random_numbers(data.size());
-    std::iota(random_numbers.begin(), random_numbers.end(), 0);
+  bool Sample(std::vector<int>* subset_indices) override;
 
-    for (int i = 0; i < this->min_num_samples_; i++) {
-      std::swap(random_numbers[i],
-                random_numbers[this->rng_->RandInt(i, data.size() - 1)]);
-      (*subset)[i] = data[random_numbers[i]];
-    }
-
-    return true;
-  }
+ private:
+  std::vector<int> sample_indices_;
 };
 
 }  // namespace theia
