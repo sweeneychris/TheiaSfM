@@ -34,15 +34,15 @@
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
-#include <glog/logging.h>
 #include <algorithm>
+#include <glog/logging.h>
 
-#include "gtest/gtest.h"
 #include "theia/matching/feature_correspondence.h"
 #include "theia/sfm/pose/essential_matrix_utils.h"
 #include "theia/sfm/pose/test_util.h"
 #include "theia/sfm/pose/util.h"
 #include "theia/util/random.h"
+#include "gtest/gtest.h"
 
 namespace theia {
 
@@ -63,10 +63,8 @@ TEST(DecomposeEssentialMatrix, BasicTest) {
 
     Matrix3d rotation1, rotation2;
     Vector3d translation;
-    DecomposeEssentialMatrix(essential_matrix,
-                             &rotation1,
-                             &rotation2,
-                             &translation);
+    DecomposeEssentialMatrix(
+        essential_matrix, &rotation1, &rotation2, &translation);
 
     const double translation_dist =
         std::min((translation - gt_translation).norm(),
@@ -80,6 +78,51 @@ TEST(DecomposeEssentialMatrix, BasicTest) {
     EXPECT_TRUE(translation_dist < kTranslationTolerance &&
                 (rotation1_dist < kRotationTolerance ||
                  rotation2_dist < kRotationTolerance));
+  }
+}
+
+TEST(EssentialMatrixFromTwoProjectionMatrices, BasicTest) {
+  const double kTranslationTolerance = 1e-6;
+  const double kRotationTolerance = 1e-4;
+
+  for (int i = 0; i < 100; i++) {
+    const Eigen::Matrix3d in_rotation1 = RandomRotation(10.0, &rng);
+    const Eigen::Vector3d in_position1 = Eigen::Vector3d::Zero(); //rng.RandVector3d().normalized();
+    const Eigen::Vector3d in_translation1 = -in_rotation1 * in_position1;
+    const Eigen::Matrix3d in_rotation2 = RandomRotation(10.0, &rng);
+    const Eigen::Vector3d in_position2 = rng.RandVector3d().normalized();
+    const Eigen::Vector3d in_translation2 = -in_rotation2 * in_position2;
+
+    Matrix3x4d proj1, proj2;
+    proj1.leftCols<3>() = in_rotation1;
+    proj1.rightCols<1>() = in_translation1;
+    proj2.leftCols<3>() = in_rotation2;
+    proj2.rightCols<1>() = in_translation2;
+
+    // Get the essential matrix.
+    Eigen::Matrix3d essential_matrix;
+    EssentialMatrixFromTwoProjectionMatrices(proj1, proj2, &essential_matrix);
+
+    Matrix3d rotation1, rotation2;
+    Vector3d translation;
+    DecomposeEssentialMatrix(
+        essential_matrix, &rotation1, &rotation2, &translation);
+
+    const Eigen::Vector3d gt_translation =
+        -in_rotation1 * (in_position2 - in_position1);
+    const double translation_dist =
+        std::min((translation - gt_translation).norm(),
+                 (translation + gt_translation).norm());
+
+    const Eigen::Matrix3d gt_rotation = in_rotation1 * in_rotation2.transpose();
+    const Eigen::AngleAxisd rotation1_aa(gt_rotation.transpose() * rotation1);
+    const Eigen::AngleAxisd rotation2_aa(gt_rotation.transpose() * rotation2);
+    const double rotation1_dist = rotation1_aa.angle();
+    const double rotation2_dist = rotation2_aa.angle();
+
+    ASSERT_TRUE(translation_dist < kTranslationTolerance);
+    ASSERT_TRUE(rotation1_dist < kRotationTolerance ||
+                rotation2_dist < kRotationTolerance);
   }
 }
 
@@ -122,11 +165,11 @@ void TestGetBestPoseFromEssentialMatrix(const int num_inliers,
 
     Matrix3d estimated_rotation;
     Vector3d estimated_position;
-    const int num_points_in_front = GetBestPoseFromEssentialMatrix(
-        essential_matrix,
-        correspondences,
-        &estimated_rotation,
-        &estimated_position);
+    const int num_points_in_front =
+        GetBestPoseFromEssentialMatrix(essential_matrix,
+                                       correspondences,
+                                       &estimated_rotation,
+                                       &estimated_position);
 
     // Ensure that the results are correct. Sincer there is no noise we can
     // expect te number of point in front to be exact.

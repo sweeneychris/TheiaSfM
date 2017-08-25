@@ -38,6 +38,8 @@
 #include <Eigen/Core>
 #include <vector>
 
+#include "theia/sfm/types.h"
+
 namespace theia {
 
 struct FeatureCorrespondence;
@@ -51,6 +53,12 @@ void DecomposeEssentialMatrix(const Eigen::Matrix3d& essential_matrix,
                               Eigen::Matrix3d* rotation1,
                               Eigen::Matrix3d* rotation2,
                               Eigen::Vector3d* translation);
+
+// Create an essential matrix from two projection matrices of the form [R|t].
+void EssentialMatrixFromTwoProjectionMatrices(
+    const Matrix3x4d& pose1,
+    const Matrix3x4d& pose2,
+    Eigen::Matrix3d* essential_matrix);
 
 // Chooses the best pose of the 4 possible poses that can be computed from the
 // essential matrix. The best pose is chosen as the pose that triangulates the
