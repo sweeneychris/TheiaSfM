@@ -35,12 +35,12 @@
 #ifndef THEIA_SFM_TWOVIEW_INFO_H_
 #define THEIA_SFM_TWOVIEW_INFO_H_
 
+#include <Eigen/Core>
 #include <cereal/access.hpp>
 #include <cereal/cereal.hpp>
 #include <ceres/rotation.h>
 #include <glog/logging.h>
 #include <stdint.h>
-#include <Eigen/Core>
 
 #include "theia/io/eigen_serializable.h"
 #include "theia/math/rotation.h"
@@ -75,6 +75,13 @@ class TwoViewInfo {
   // incremental SfM for choosing an initial view pair for the reconstruction.
   int num_homography_inliers;
 
+  // The visibility score is computed based on the inlier features from 2-view
+  // geometry estimation. This score is similar to the number of verified
+  // matches, but has a spatial weighting to encourage good coverage of the
+  // image by the inliers. The visibility score here is the sum of the
+  // visibility scores for each image.
+  int visibility_score;
+
  private:
   // Templated method for disk I/O with cereal. This method tells cereal which
   // data members should be used when reading/writing to/from disk.
@@ -87,6 +94,9 @@ class TwoViewInfo {
        rotation_2,
        num_verified_matches,
        num_homography_inliers);
+    if (version > 0) {
+      ar(visibility_score);
+    }
   }
 };
 
@@ -122,9 +132,8 @@ void TwoViewInfoFromTwoCameras(const Camera& camera1,
   //    c2' = R1 * (c2 - c1).
   const Eigen::Vector3d shifted_position =
       camera2.GetPosition() - camera1.GetPosition();
-  ceres::AngleAxisRotatePoint(rotation1.data(),
-                              shifted_position.data(),
-                              info->position_2.data());
+  ceres::AngleAxisRotatePoint(
+      rotation1.data(), shifted_position.data(), info->position_2.data());
   // Scale the relative position to be a unit-length vector.
   if (normalize_position) {
     info->position_2.normalize();
@@ -133,6 +142,6 @@ void TwoViewInfoFromTwoCameras(const Camera& camera1,
 
 }  // namespace theia
 
-CEREAL_CLASS_VERSION(theia::TwoViewInfo, 0);
+CEREAL_CLASS_VERSION(theia::TwoViewInfo, 1);
 
 #endif  // THEIA_SFM_TWOVIEW_INFO_H_
