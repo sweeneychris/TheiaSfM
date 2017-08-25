@@ -61,9 +61,8 @@ class LMed : public SampleConsensusEstimator<ModelEstimator> {
 
   bool Initialize() override {
     const bool init_status =
-        SampleConsensusEstimator<ModelEstimator>::Initialize(
-            new RandomSampler<Datum>(this->ransac_params_.rng,
-                                     this->estimator_.SampleSize()));
+        SampleConsensusEstimator<ModelEstimator>::Initialize(new RandomSampler(
+            this->ransac_params_.rng, this->estimator_.SampleSize()));
     this->quality_measurement_.reset(
         new LmedQualityMeasurement(this->estimator_.SampleSize()));
     return init_status;
