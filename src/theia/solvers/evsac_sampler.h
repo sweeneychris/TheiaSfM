@@ -56,7 +56,7 @@ namespace theia {
 // Fitting method used for fitting distributions.
 //   MLE: Maximum likelihood estimation.
 //   QUANTILE_NLS: Quantile non-linear least squares estimation.
-enum FittingMethod {MLE = 0, QUANTILE_NLS = 1};
+enum FittingMethod { MLE = 0, QUANTILE_NLS = 1 };
 
 // EVSAC sampler implemented according to "EVSAC: Accelerating Hypotheses
 // Generation by Modeling Matching Scores using Extreme Value Theory" by
@@ -71,7 +71,8 @@ enum FittingMethod {MLE = 0, QUANTILE_NLS = 1};
 // distribution. EVSAC tries to find the parameters for these two distributions
 // as well as to estimate the mixing parameter, which happens to be an estimate
 // of the inlier ratio.
-template <class Datum> class EvsacSampler : public Sampler<Datum> {
+template <class Datum>
+class EvsacSampler : public Sampler {
  public:
   // Params:
   // min_num_samples:  The minimum number of samples to produce.
@@ -84,8 +85,7 @@ template <class Datum> class EvsacSampler : public Sampler<Datum> {
                const Eigen::MatrixXd& sorted_distances,
                const double predictor_threshold,
                FittingMethod fitting_method)
-      : Sampler<Datum>(std::make_shared<RandomNumberGenerator>(),
-                       min_num_samples),
+      : Sampler(std::make_shared<RandomNumberGenerator>(), min_num_samples),
         sorted_distances_(sorted_distances),
         predictor_threshold_(predictor_threshold),
         fitting_method_(fitting_method) {
@@ -103,9 +103,8 @@ template <class Datum> class EvsacSampler : public Sampler<Datum> {
   // num_reference_features:  The number of reference features.
   // percentile:  The percentile used to compute the size of the distribution
   //   tail from num_reference_features.
-  static inline
-  int CalculateKSmallestDistances(const int num_reference_features,
-                                  const double percentile) {
+  static inline int CalculateKSmallestDistances(
+      const int num_reference_features, const double percentile) {
     CHECK_GE(percentile, 0.0);
     CHECK_LE(percentile, 1.0);
     return static_cast<int>(num_reference_features * percentile);
@@ -139,13 +138,13 @@ template <class Datum> class EvsacSampler : public Sampler<Datum> {
   // Parameters of the mixture of distributions (Gamma + GEV).
   struct MixtureModelParams {
     // Gamma Parameters (for correspondences modeled to be correct).
-    double k;  // shape.
+    double k;      // shape.
     double theta;  // scale.
 
     // GEV Parameters (for correspondences estimated to be incorrect).
-    double xi;  // tail.
+    double xi;     // tail.
     double sigma;  // scale.
-    double mu;  // location.
+    double mu;     // location.
 
     // Inlier ratio (Mixture parameter).
     double inlier_ratio;  // Estimated inlier ratio.
@@ -166,20 +165,18 @@ template <class Datum> class EvsacSampler : public Sampler<Datum> {
   // sampling_weights:  The computed weights for non-uniform sampling. Samples
   //   with low probabilities of being correct are suppressed for sampling in a
   //   RANSAC scheme.
-  static bool CalculateMixtureModel(
-      const Eigen::MatrixXd& sorted_distances,
-      const double predictor_threshold,
-      const FittingMethod fitting_method,
-      MixtureModelParams* mixture_parameters,
-      std::vector<float>* probabilities,
-      std::vector<float>* sampling_weights);
+  static bool CalculateMixtureModel(const Eigen::MatrixXd& sorted_distances,
+                                    const double predictor_threshold,
+                                    const FittingMethod fitting_method,
+                                    MixtureModelParams* mixture_parameters,
+                                    std::vector<float>* probabilities,
+                                    std::vector<float>* sampling_weights);
 
   // Implementing the Sample method.
-  bool Sample(
-      const std::vector<Datum>& data, std::vector<Datum>* subset) override;
+  bool Sample(std::vector<int>* subset) override;
 
   // Implementing the Initialize method.
-  bool Initialize() override;
+  bool Initialize(const int num_datapoints) override;
 
  protected:
   // L2 descriptor sorted sorted_distances.
@@ -241,10 +238,9 @@ template <class Datum> class EvsacSampler : public Sampler<Datum> {
   //     maximum likelihood estimation, or non-linear least squares quantile
   //     based estimation.
   //   distances:  The random variables used for the estimation.
-  static inline bool FitGEV(
-      const FittingMethod fitting_method,
-      const std::vector<double>& distances,
-      MixtureModelParams* mixture_model_parameters);
+  static inline bool FitGEV(const FittingMethod fitting_method,
+                            const std::vector<double>& distances,
+                            MixtureModelParams* mixture_model_parameters);
 
   // This function calculates the inlier ratio by solving the following
   // least-squares (LS) problem:
@@ -302,11 +298,11 @@ template <class Datum> class EvsacSampler : public Sampler<Datum> {
       std::vector<float>* probabilities,
       std::vector<float>* sampling_weights);
 
-  typedef optimo::solvers::PrimalDualQP<
-    double,
-    2 /* Num. Unknowns */,
-    4 /* Num. Inequalities */,
-    1 /* Num. Equalities */ > PrimalDualQP;
+  typedef optimo::solvers::PrimalDualQP<double,
+                                        2 /* Num. Unknowns */,
+                                        4 /* Num. Inequalities */,
+                                        1 /* Num. Equalities */>
+      PrimalDualQP;
 
   // Sets the inequality constraints.
   // The matrix Ain considers the case that inlier_ratio and (1 - inlier_ratio)
@@ -325,7 +321,7 @@ template <class Datum> class EvsacSampler : public Sampler<Datum> {
   //     ratio by solving the proposed QP problem.
   //   qp_params:  The QP params where the inequality constraints will be set.
   static inline void SetInequalityConstraints(
-      const double inlier_ratio_upper_bound,  PrimalDualQP::Params* qp_params);
+      const double inlier_ratio_upper_bound, PrimalDualQP::Params* qp_params);
 
   // Sets the equality constraints.
   // The matrix Aeq considers the case that the vector of unknowns, x, must sum
@@ -336,8 +332,7 @@ template <class Datum> class EvsacSampler : public Sampler<Datum> {
   //
   // Params:
   //   qp_params:  The QP params where the equality constraints will be set.
-  static inline
-  void SetEqualityConstraints(PrimalDualQP::Params* qp_params);
+  static inline void SetEqualityConstraints(PrimalDualQP::Params* qp_params);
 
   // Building the quadratic cost function for the QP:
   //
@@ -370,11 +365,9 @@ template <class Datum> class EvsacSampler : public Sampler<Datum> {
   //     predictions.
   //   qp_params:  The QP parameters that define the problem to solve.
   //   mixture_model_params:  Structure that holds the estimated inlier ratio.
-  static inline
-  bool SolveQPProblem(
-      const double inlier_ratio_upper_bound,
-      const PrimalDualQP::Params& qp_params,
-      MixtureModelParams* mixture_model_params);
+  static inline bool SolveQPProblem(const double inlier_ratio_upper_bound,
+                                    const PrimalDualQP::Params& qp_params,
+                                    MixtureModelParams* mixture_model_params);
 
   DISALLOW_COPY_AND_ASSIGN(EvsacSampler);
 };
@@ -409,19 +402,21 @@ void EvsacSampler<Datum>::SetQPCostFunctionParams(
   std::vector<double> empirical_cdf_support;
   statx::utils::ecdf(
       smallest_distances, &empirical_cdf_vector, &empirical_cdf_support);
-  Eigen::Map<Eigen::VectorXd> empirical_cdf(
-      &empirical_cdf_vector[0], empirical_cdf_vector.size());
+  Eigen::Map<Eigen::VectorXd> empirical_cdf(&empirical_cdf_vector[0],
+                                            empirical_cdf_vector.size());
 
   // Calculate matrix A.
   Eigen::MatrixXd A(empirical_cdf_support.size(), 2);
 
   for (int i = 0; i < empirical_cdf_support.size(); i++) {
-    A(i, 0) = statx::distributions::gammacdf(
-        empirical_cdf_support[i], mixture_model_params.k,
-        mixture_model_params.theta);
-    A(i, 1) = 1.0 - statx::distributions::evd::gevcdf(
-        -empirical_cdf_support[i], mixture_model_params.mu,
-        mixture_model_params.sigma, mixture_model_params.xi);
+    A(i, 0) = statx::distributions::gammacdf(empirical_cdf_support[i],
+                                             mixture_model_params.k,
+                                             mixture_model_params.theta);
+    A(i, 1) =
+        1.0 - statx::distributions::evd::gevcdf(-empirical_cdf_support[i],
+                                                mixture_model_params.mu,
+                                                mixture_model_params.sigma,
+                                                mixture_model_params.xi);
   }
   CHECK_NOTNULL(qp_params)->Q = A.transpose() * A;
   qp_params->d = -1.0 * A.transpose() * empirical_cdf;
@@ -483,14 +478,16 @@ void EvsacSampler<Datum>::ComputePosteriorAndWeights(
   for (int i = 0; i < num_correspondences; i++) {
     // Calculate posterior.
     const double gam_val =
-        mixture_model_params.inlier_ratio * statx::distributions::gammapdf(
-            smallest_distances[i], mixture_model_params.k,
-            mixture_model_params.theta);
+        mixture_model_params.inlier_ratio *
+        statx::distributions::gammapdf(smallest_distances[i],
+                                       mixture_model_params.k,
+                                       mixture_model_params.theta);
     const double gev_val =
         (1.0 - mixture_model_params.inlier_ratio) *
-        statx::distributions::evd::gevpdf(
-            smallest_distances[i], mixture_model_params.mu,
-            mixture_model_params.sigma, mixture_model_params.xi);
+        statx::distributions::evd::gevpdf(smallest_distances[i],
+                                          mixture_model_params.mu,
+                                          mixture_model_params.sigma,
+                                          mixture_model_params.xi);
     const double posterior = gam_val / (gam_val + gev_val);
     // Removing those matches that are likely to be incorrect.
     (*probabilities)[i] = static_cast<float>(posterior);
@@ -519,13 +516,13 @@ bool EvsacSampler<Datum>::FitGEV(
     const std::vector<double>& negated_second_smallest_distances,
     MixtureModelParams* mixture_model_parameters) {
   const statx::distributions::evd::FitType fitting_type =
-      (fitting_method == MLE) ?
-      statx::distributions::evd::MLE : statx::distributions::evd::QUANTILE_NLS;
-  const bool gev_success = gevfit(
-      negated_second_smallest_distances,
-      &CHECK_NOTNULL(mixture_model_parameters)->mu,
-      &mixture_model_parameters->sigma, &mixture_model_parameters->xi,
-      fitting_type);
+      (fitting_method == MLE) ? statx::distributions::evd::MLE
+                              : statx::distributions::evd::QUANTILE_NLS;
+  const bool gev_success = gevfit(negated_second_smallest_distances,
+                                  &CHECK_NOTNULL(mixture_model_parameters)->mu,
+                                  &mixture_model_parameters->sigma,
+                                  &mixture_model_parameters->xi,
+                                  fitting_type);
   VLOG(2) << "GEV distribution: mu=" << mixture_model_parameters->mu
           << " sigma=" << mixture_model_parameters->sigma
           << " xi=" << mixture_model_parameters->xi << " flag: " << gev_success;
@@ -540,13 +537,13 @@ double EvsacSampler<Datum>::ExtractDataForFittingDistributions(
     std::vector<double>* smallest_distances,
     std::vector<double>* negated_second_smallest_distances,
     std::vector<double>* predicted_correct_correspondences_distances) {
-  CHECK_NOTNULL(predicted_correct_correspondences_distances)->reserve(
-      sorted_distances.rows());
-  CHECK_NOTNULL(predicted_correct_correspondences)->resize(
-      sorted_distances.rows());
+  CHECK_NOTNULL(predicted_correct_correspondences_distances)
+      ->reserve(sorted_distances.rows());
+  CHECK_NOTNULL(predicted_correct_correspondences)
+      ->resize(sorted_distances.rows());
   CHECK_NOTNULL(smallest_distances)->resize(sorted_distances.rows());
-  CHECK_NOTNULL(negated_second_smallest_distances)->resize(
-      sorted_distances.rows());
+  CHECK_NOTNULL(negated_second_smallest_distances)
+      ->resize(sorted_distances.rows());
   double estimated_inlier_ratio = 0.0;
   for (int i = 0; i < sorted_distances.rows(); ++i) {
     // Copying the first column from sorted distances to estimate the parameters
@@ -588,10 +585,13 @@ bool EvsacSampler<Datum>::CalculateMixtureModel(
   vector<double> negated_second_smallest_distances;
   // Distances of correspondences that were predicted as correct, i.e., inliers.
   vector<double> predicted_inlier_distances;
-  const double inlier_ratio_upper_bound = ExtractDataForFittingDistributions(
-      sorted_distances, predictor_threshold, &predicted_correct_correspondences,
-      &smallest_distances, &negated_second_smallest_distances,
-      &predicted_inlier_distances);
+  const double inlier_ratio_upper_bound =
+      ExtractDataForFittingDistributions(sorted_distances,
+                                         predictor_threshold,
+                                         &predicted_correct_correspondences,
+                                         &smallest_distances,
+                                         &negated_second_smallest_distances,
+                                         &predicted_inlier_distances);
 
   // Fit gamma distribution.
   if (!FitGamma(predicted_inlier_distances, mixture_model_params)) {
@@ -600,30 +600,33 @@ bool EvsacSampler<Datum>::CalculateMixtureModel(
   }
 
   // Fit GEV distribution.
-  if (!FitGEV(fitting_method, negated_second_smallest_distances,
+  if (!FitGEV(fitting_method,
+              negated_second_smallest_distances,
               mixture_model_params)) {
     VLOG(2) << "FitGEV failed.";
     return false;
   }
 
   // Estimate inlier ratio.
-  if (!EstimateInlierRatio(inlier_ratio_upper_bound, smallest_distances,
-                           mixture_model_params)) {
+  if (!EstimateInlierRatio(
+          inlier_ratio_upper_bound, smallest_distances, mixture_model_params)) {
     VLOG(2) << "EstimateInlierRatio failed.";
     return false;
   }
 
   // Calculate posterior and final weights.
-  ComputePosteriorAndWeights(
-      sorted_distances.rows(), *mixture_model_params,
-      smallest_distances, predicted_correct_correspondences, probabilities,
-      sampling_weights);
+  ComputePosteriorAndWeights(sorted_distances.rows(),
+                             *mixture_model_params,
+                             smallest_distances,
+                             predicted_correct_correspondences,
+                             probabilities,
+                             sampling_weights);
 
   return true;
 }
 
 template <class Datum>
-bool EvsacSampler<Datum>::Initialize() {
+bool EvsacSampler<Datum>::Initialize(const int num_datapoints) {
   CHECK_GT(this->sorted_distances_.rows(), 0);
   CHECK_GT(this->sorted_distances_.cols(), 0);
 
@@ -634,14 +637,16 @@ bool EvsacSampler<Datum>::Initialize() {
   // Calculate Mixture model.
   std::vector<float> probabilities;
   std::vector<float> sampling_weights;
-  if (!CalculateMixtureModel(
-          this->sorted_distances_, this->predictor_threshold_,
-          this->fitting_method_, &this->mixture_model_params_,
-          &probabilities, &sampling_weights)) {
+  if (!CalculateMixtureModel(this->sorted_distances_,
+                             this->predictor_threshold_,
+                             this->fitting_method_,
+                             &this->mixture_model_params_,
+                             &probabilities,
+                             &sampling_weights)) {
     return false;
   }
 
-  // Initialize sampler.
+// Initialize sampler.
 #if defined(_MSC_VER) & _MSC_VER < 1900
   // MSVC has one of the constructors missing. See
   // http://stackoverflow.com/questions/21959404/initialising-stddiscrete-distribution-in-vs2013
@@ -664,20 +669,20 @@ bool EvsacSampler<Datum>::Initialize() {
 }
 
 template <class Datum>
-bool EvsacSampler<Datum>::Sample(const std::vector<Datum>& data,
-                                 std::vector<Datum>* subset) {
-  CHECK_EQ(data.size(), sorted_distances_.rows());
+bool EvsacSampler<Datum>::Sample(std::vector<int>* subset) {
   CHECK_NOTNULL(subset)->resize(this->min_num_samples_);
   std::vector<int> random_numbers;
   for (int i = 0; i < this->min_num_samples_; i++) {
     int rand_number;
     // Generate a random number that has not already been used.
-    while (std::find(random_numbers.begin(), random_numbers.end(),
-                     (rand_number = (*correspondence_sampler_)(rng_)))
-           != random_numbers.end()) {}
+    while (std::find(random_numbers.begin(),
+                     random_numbers.end(),
+                     (rand_number = (*correspondence_sampler_)(rng_))) !=
+           random_numbers.end()) {
+    }
 
     random_numbers.push_back(rand_number);
-    subset->at(i) = data[rand_number];
+    subset->at(i) = rand_number;
   }
   return true;
 }
