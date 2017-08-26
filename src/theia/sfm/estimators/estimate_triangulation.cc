@@ -38,12 +38,14 @@
 #include <Eigen/Geometry>
 #include <limits>
 
+#include "theia/sfm/camera/camera.h"
+#include "theia/sfm/create_and_initialize_ransac_variant.h"
+#include "theia/sfm/triangulation/triangulation.h"
+#include "theia/sfm/types.h"
 #include "theia/solvers/estimator.h"
 #include "theia/solvers/ransac.h"
 #include "theia/solvers/sample_consensus_estimator.h"
 #include "theia/util/util.h"
-#include "theia/sfm/triangulation/triangulation.h"
-#include "theia/sfm/types.h"
 
 namespace theia {
 
@@ -52,7 +54,9 @@ namespace {
 // 3D point.
 struct PointObservation {
   Matrix3x4d projection_matrix;
-  Eigen::Vector2d feature;
+  Camera camera;
+  Eigen::Vector2d normalized_feature;
+  Eigen::Vector2d observed_pixel;
 };
 
 // Returns true if the point is in front of the camera and false if the point is
@@ -72,72 +76,89 @@ class TriangulationEstimator
   // Triangulates the 3D point from 2 observations.
   bool EstimateModel(const std::vector<PointObservation>& observations,
                      std::vector<Eigen::Vector4d>* triangulated_points) const {
-    // TODO(cmsweeney): We do not check the angle between the two views at the
-    // moment. This requires the ray direction of each feature meaning we would
-    // have to either decompose the projection matrix or pass in the ray
-    // direction as part of the Point Observation. RANSAC should be good enough
-    // at filtering out these bad solutions so we ignore this for now.
     triangulated_points->resize(1);
     if (!Triangulate(observations[0].projection_matrix,
                      observations[1].projection_matrix,
-                     observations[0].feature,
-                     observations[1].feature,
+                     observations[0].normalized_feature,
+                     observations[1].normalized_feature,
                      &triangulated_points->at(0))) {
       return false;
     }
+
     // Only return true if the point is in front of both cameras and the
     // triangulation was a success.
     return IsPointInFrontOfCamera(observations[0].projection_matrix,
                                   triangulated_points->at(0)) &&
-        IsPointInFrontOfCamera(observations[1].projection_matrix,
-                               triangulated_points->at(0));
+           IsPointInFrontOfCamera(observations[1].projection_matrix,
+                                  triangulated_points->at(0));
   }
 
   double Error(const PointObservation& observation,
                const Eigen::Vector4d& triangulated_point) const {
-    if (!IsPointInFrontOfCamera(observation.projection_matrix,
-                                triangulated_point)) {
+    Eigen::Vector2d reprojection;
+    const double depth =
+        observation.camera.ProjectPoint(triangulated_point, &reprojection);
+    if (depth <= 0) {
       return std::numeric_limits<double>::max();
     }
-
-    const Eigen::Vector2d reprojection =
-        (observation.projection_matrix * triangulated_point).hnormalized();
-    return (observation.feature - reprojection).squaredNorm();
+    return (observation.observed_pixel - reprojection).squaredNorm();
   }
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(TriangulationEstimator);
 };
 
 }  // namespace
 
 bool EstimateTriangulation(const RansacParameters& ransac_params,
-                           const std::vector<Matrix3x4d>& projection_matrices,
+                           const std::vector<Camera>& cameras,
                            const std::vector<Eigen::Vector2d>& features,
                            Eigen::Vector4d* triangulated_point,
                            RansacSummary* summary) {
-  if (projection_matrices.size() < 2) {
+  CHECK_EQ(cameras.size(), features.size());
+  CHECK_NOTNULL(triangulated_point);
+
+  // If we only have a few data points, then we should exhaustively search the
+  // solution space for the best combination.
+  static const int kMaxNumDataPointsForExhaustiveSearch = 15;
+  if (cameras.size() < 2) {
     return false;
   }
 
   // Create point correspondences.
-  std::vector<PointObservation> point_observations(
-      projection_matrices.size());
+  std::vector<PointObservation> point_observations(cameras.size());
   for (int i = 0; i < point_observations.size(); i++) {
-    point_observations[i].projection_matrix = projection_matrices[i];
-    point_observations[i].feature = features[i];
+    // Create the projection atirx.
+    Matrix3x4d projection_matrix;
+    projection_matrix.leftCols<3>() =
+        cameras[i].GetOrientationAsRotationMatrix();
+    projection_matrix.rightCols<1>() =
+        -projection_matrix.leftCols<3>() * cameras[i].GetPosition();
+
+    point_observations[i].projection_matrix = projection_matrix;
+    point_observations[i].camera = cameras[i];
+    point_observations[i].normalized_feature =
+        cameras[i].PixelToNormalizedCoordinates(features[i]).hnormalized();
+    point_observations[i].observed_pixel = features[i];
   }
 
   // RANSAC triangulation.
   TriangulationEstimator triangulation_estimator;
-  Ransac<TriangulationEstimator> ransac(ransac_params,
-                                        triangulation_estimator);
-  CHECK(ransac.Initialize());
-  if (!ransac.Estimate(point_observations, triangulated_point, summary)) {
-    return false;
+  std::unique_ptr<SampleConsensusEstimator<TriangulationEstimator> > ransac;
+  if (cameras.size() <= kMaxNumDataPointsForExhaustiveSearch) {
+    // Set the minimum number of iterations to be the exact number of possible
+    // combinations. This forces all combinations to be tested.
+    const int num_combinations = cameras.size() * (cameras.size() - 1) / 2;
+    RansacParameters exhaustive_params = ransac_params;
+    exhaustive_params.min_iterations = num_combinations;
+    exhaustive_params.max_iterations = num_combinations;
+    ransac = CreateAndInitializeRansacVariant<TriangulationEstimator>(
+        RansacType::EXHAUSTIVE, exhaustive_params, triangulation_estimator);
+  } else {
+    ransac = CreateAndInitializeRansacVariant<TriangulationEstimator>(
+        RansacType::RANSAC, ransac_params, triangulation_estimator);
   }
 
-  return true;
+  // Run the RANSAC scheme.
+  CHECK(ransac->Initialize());
+  return ransac->Estimate(point_observations, triangulated_point, summary);
 }
 
 }  // namespace theia
