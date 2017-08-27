@@ -181,7 +181,6 @@ set(THEIA_SRC
   sfm/view.cc
   sfm/view_graph/orientations_from_maximum_spanning_tree.cc
   sfm/view_graph/remove_disconnected_view_pairs.cc
-  sfm/view_graph/triplet_extractor.cc
   sfm/view_graph/view_graph.cc
   sfm/visibility_pyramid.cc
   solvers/exhaustive_sampler.cc
@@ -254,6 +253,7 @@ if (BUILD_TESTING)
   gtest(math/graph/connected_components)
   gtest(math/graph/minimum_spanning_tree)
   gtest(math/graph/normalized_graph_cut)
+  gtest(math/graph/triplet_extractor)
   gtest(math/l1_solver)
   gtest(math/matrix/gauss_jordan)
   gtest(math/matrix/rq_decomposition)
@@ -322,7 +322,6 @@ if (BUILD_TESTING)
   gtest(sfm/view)
   gtest(sfm/view_graph/orientations_from_maximum_spanning_tree)
   gtest(sfm/view_graph/remove_disconnected_view_pairs)
-  gtest(sfm/view_graph/triplet_extractor)
   gtest(sfm/view_graph/view_graph)
   gtest(solvers/exhaustive_ransac)
   gtest(solvers/exhaustive_sampler)

@@ -34,35 +34,36 @@
 
 #include "theia/sfm/filter_view_graph_cycles_by_rotation.h"
 
-#include <ceres/rotation.h>
 #include <Eigen/Core>
+#include <ceres/rotation.h>
 #include <glog/logging.h>
 #include <unordered_map>
 #include <vector>
 
+#include "theia/math/graph/triplet_extractor.h"
 #include "theia/math/util.h"
-#include "theia/util/hash.h"
 #include "theia/sfm/twoview_info.h"
 #include "theia/sfm/types.h"
-#include "theia/sfm/view_graph/triplet_extractor.h"
 #include "theia/sfm/view_graph/view_graph.h"
 #include "theia/sfm/view_triplet.h"
+#include "theia/util/hash.h"
 
 namespace theia {
-
 namespace {
 
-double ComputeLoopRotationError(const ViewTriplet& triplet) {
+double ComputeLoopRotationError(const TwoViewInfo& info_one_two,
+                                const TwoViewInfo& info_one_three,
+                                const TwoViewInfo& info_two_three) {
   // Get relative rotation matrices.
   Eigen::Matrix3d rotation1_2, rotation1_3, rotation2_3;
   ceres::AngleAxisToRotationMatrix(
-      triplet.info_one_two.rotation_2.data(),
+      info_one_two.rotation_2.data(),
       ceres::ColumnMajorAdapter3x3(rotation1_2.data()));
   ceres::AngleAxisToRotationMatrix(
-      triplet.info_one_three.rotation_2.data(),
+      info_one_three.rotation_2.data(),
       ceres::ColumnMajorAdapter3x3(rotation1_3.data()));
   ceres::AngleAxisToRotationMatrix(
-      triplet.info_two_three.rotation_2.data(),
+      info_two_three.rotation_2.data(),
       ceres::ColumnMajorAdapter3x3(rotation2_3.data()));
 
   // Compute loop rotation.
@@ -79,14 +80,14 @@ double ComputeLoopRotationError(const ViewTriplet& triplet) {
 }
 
 void RemoveTripletEdgesFromInvalidViewPairs(
-    const ViewTriplet& triplet,
+    const ViewIdTriplet& triplet,
     std::unordered_set<ViewIdPair>* invalid_view_pairs) {
-  invalid_view_pairs->erase(
-      ViewIdPair(triplet.view_ids[0], triplet.view_ids[1]));
-  invalid_view_pairs->erase(
-      ViewIdPair(triplet.view_ids[0], triplet.view_ids[2]));
-  invalid_view_pairs->erase(
-      ViewIdPair(triplet.view_ids[1], triplet.view_ids[2]));
+  const ViewIdPair pair_01(std::get<0>(triplet), std::get<1>(triplet));
+  const ViewIdPair pair_02(std::get<0>(triplet), std::get<2>(triplet));
+  const ViewIdPair pair_12(std::get<1>(triplet), std::get<2>(triplet));
+  invalid_view_pairs->erase(pair_01);
+  invalid_view_pairs->erase(pair_02);
+  invalid_view_pairs->erase(pair_12);
 }
 
 }  // namespace
@@ -96,28 +97,35 @@ void FilterViewGraphCyclesByRotation(const double max_loop_error_degrees,
   const std::unordered_map<ViewIdPair, TwoViewInfo>& view_pairs =
       view_graph->GetAllEdges();
 
-  // Find all triplets.
-  TripletExtractor triplet_extractor;
-  std::vector<std::vector<ViewTriplet> > connected_triplets;
-  CHECK(triplet_extractor.ExtractTripletsFromViewPairs(view_pairs,
-                                                       &connected_triplets))
-      << "Could not extract triplets from view pairs.";
-
-  // Create a list of invalid view pairs. View pairs deemed valid will be
-  // removed from this list.
+  // Initialize a list of invalid view pairs to all view pairs. View pairs
+  // deemed valid will be removed from this list.
   std::unordered_set<ViewIdPair> invalid_view_pairs;
   invalid_view_pairs.reserve(view_pairs.size());
   for (const auto& view_pair : view_pairs) {
     invalid_view_pairs.insert(view_pair.first);
   }
 
+  // Find all triplets.
+  TripletExtractor<ViewId> triplet_extractor;
+  std::vector<std::vector<ViewIdTriplet> > connected_triplets;
+  CHECK(triplet_extractor.ExtractTriplets(invalid_view_pairs,
+                                          &connected_triplets))
+      << "Could not extract triplets from view pairs.";
+
   // Examine the cycles of size 3 to determine invalid view pairs from the
   // rotations.
   for (const auto& triplets : connected_triplets) {
-    for (const ViewTriplet& triplet : triplets) {
+    for (const ViewIdTriplet& triplet : triplets) {
+      const TwoViewInfo& info_one_two =
+          *view_graph->GetEdge(std::get<0>(triplet), std::get<1>(triplet));
+      const TwoViewInfo& info_one_three =
+          *view_graph->GetEdge(std::get<0>(triplet), std::get<2>(triplet));
+      const TwoViewInfo& info_two_three =
+          *view_graph->GetEdge(std::get<1>(triplet), std::get<2>(triplet));
+
       // Compute loop rotation error.
-      const double loop_rotation_error_degrees =
-          ComputeLoopRotationError(triplet);
+      const double loop_rotation_error_degrees = ComputeLoopRotationError(
+          info_one_two, info_one_three, info_two_three);
 
       // Add the view pairs to the list of valid view pairs if the loop error is
       // within the designated tolerance.

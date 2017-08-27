@@ -33,71 +33,60 @@
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
 #include <memory>
+#include <tuple>
+#include <utility>
 #include <vector>
+
 #include "gtest/gtest.h"
 
-#include "theia/sfm/view_graph/triplet_extractor.h"
-#include "theia/sfm/view_graph/view_graph.h"
-#include "theia/sfm/view_triplet.h"
+#include "theia/math/graph/triplet_extractor.h"
 
 namespace theia {
-namespace {
-
-// Add a triplet (composed of 3 view pairs) to the view graph. The two view info
-// is not used so we set it to the default.
-void AddTripletToViewGraph(const ViewId view_id1,
-                           const ViewId view_id2,
-                           const ViewId view_id3,
-                           ViewGraph* view_graph) {
-  TwoViewInfo info;
-  view_graph->AddEdge(view_id1, view_id2, info);
-  view_graph->AddEdge(view_id1, view_id3, info);
-  view_graph->AddEdge(view_id2, view_id3, info);
-}
-
-}  // namespace
+typedef std::pair<int, int> IntPair;
+typedef std::tuple<int, int, int> IntTriplet;
 
 TEST(ViewTriplet, NoTriplets) {
-  ViewGraph view_graph;
-  TwoViewInfo info;
-  view_graph.AddEdge(0, 1, info);
-  view_graph.AddEdge(1, 2, info);
-  view_graph.AddEdge(2, 3, info);
+  std::unordered_set<IntPair> edges;
+  edges.emplace(0, 1);
+  edges.emplace(1, 2);
+  edges.emplace(2, 3);
 
-  const auto& view_pairs = view_graph.GetAllEdges();
-  TripletExtractor triplet_extractor;
-  std::vector<std::vector<ViewTriplet> > triplets;
-  triplet_extractor.ExtractTripletsFromViewPairs(view_pairs, &triplets);
+  TripletExtractor<int> triplet_extractor;
+  std::vector<std::vector<IntTriplet> > triplets;
+  triplet_extractor.ExtractTriplets(edges, &triplets);
   EXPECT_EQ(triplets.size(), 0);
 }
 
 TEST(ViewTriplet, TwoTripletsOneSet) {
-  ViewGraph view_graph;
-  AddTripletToViewGraph(0, 1, 2, &view_graph);
-  AddTripletToViewGraph(0, 1, 3, &view_graph);
-
+  std::unordered_set<IntPair> edges;
+  edges.emplace(0, 1);
+  edges.emplace(1, 2);
+  edges.emplace(2, 3);
+  edges.emplace(0, 3);
+  edges.emplace(1, 3);
   // Add an edge to the view graph that will not be part of any triplets.
-  TwoViewInfo info;
-  view_graph.AddEdge(3, 4, info);
+  edges.emplace(3, 4);
 
-  const auto& view_pairs = view_graph.GetAllEdges();
-  TripletExtractor triplet_extractor;
-  std::vector<std::vector<ViewTriplet> > triplets;
-  triplet_extractor.ExtractTripletsFromViewPairs(view_pairs, &triplets);
+  TripletExtractor<int> triplet_extractor;
+  std::vector<std::vector<IntTriplet> > triplets;
+  triplet_extractor.ExtractTriplets(edges, &triplets);
 
   EXPECT_EQ(triplets.size(), 1);
   EXPECT_EQ(triplets.at(0).size(), 2);
 }
 
 TEST(ViewTriplet, DisconnectedSets) {
-  ViewGraph view_graph;
-  AddTripletToViewGraph(0, 1, 2, &view_graph);
-  AddTripletToViewGraph(0, 3, 4, &view_graph);
+  std::unordered_set<IntPair> edges;
+  edges.emplace(0, 1);
+  edges.emplace(1, 2);
+  edges.emplace(0, 2);
+  edges.emplace(0, 3);
+  edges.emplace(0, 4);
+  edges.emplace(3, 4);
 
-  const auto& view_pairs = view_graph.GetAllEdges();
-  TripletExtractor triplet_extractor;
-  std::vector<std::vector<ViewTriplet> > triplets;
-  triplet_extractor.ExtractTripletsFromViewPairs(view_pairs, &triplets);
+  TripletExtractor<int> triplet_extractor;
+  std::vector<std::vector<IntTriplet> > triplets;
+  triplet_extractor.ExtractTriplets(edges, &triplets);
 
   EXPECT_EQ(triplets.size(), 2);
   EXPECT_EQ(triplets.at(0).size(), 1);
