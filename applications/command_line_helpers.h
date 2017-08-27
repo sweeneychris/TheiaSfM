@@ -123,7 +123,7 @@ inline GlobalPositionEstimatorType StringToPositionEstimatorType(
     const std::string& position_estimator) {
   if (position_estimator == "NONLINEAR") {
     return GlobalPositionEstimatorType::NONLINEAR;
-  } else if (position_estimator == "LINEAR") {
+  } else if (position_estimator == "LINEAR_TRIPLET") {
     return GlobalPositionEstimatorType::LINEAR_TRIPLET;
   } else if (position_estimator == "LEAST_UNSQUARED_DEVIATION") {
     return GlobalPositionEstimatorType::LEAST_UNSQUARED_DEVIATION;
