@@ -34,10 +34,10 @@
 
 #include "theia/sfm/triangulation/triangulation.h"
 
+#include <Eigen/Cholesky>
 #include <Eigen/Core>
 #include <Eigen/Eigenvalues>
 #include <Eigen/Geometry>
-#include <Eigen/QR>
 #include <Eigen/SVD>
 #include <glog/logging.h>
 #include <vector>
@@ -148,12 +148,12 @@ bool TriangulateMidpoint(const std::vector<Vector3d>& ray_origin,
     b += A_term * ray_origin[i].homogeneous();
   }
 
-  Eigen::ColPivHouseholderQR<Eigen::Matrix4d> qr(A);
-  if (qr.info() != Eigen::Success) {
+  Eigen::LLT<Eigen::Matrix4d> linear_solver(A);
+  if (linear_solver.info() != Eigen::Success) {
     return false;
   }
-  *triangulated_point = qr.solve(b);
-  return qr.info() == Eigen::Success;
+  *triangulated_point = linear_solver.solve(b);
+  return linear_solver.info() == Eigen::Success;
 }
 
 // Triangulates 2 posed views
