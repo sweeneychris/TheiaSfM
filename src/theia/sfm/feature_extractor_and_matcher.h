@@ -97,14 +97,19 @@ class FeatureExtractorAndMatcher {
   bool AddMaskForFeaturesExtraction(const std::string& image_filepath,
                                     const std::string& mask_filepath);
 
+  // Set the pairs of images that should be matched. The string pairs passed in
+  // should be identical to the image_filepath passed in the for image.
+  // NOTE: The AddImage function still must be called for each image.
+  void SetPairsToMatch(
+      const std::vector<std::pair<std::string, std::string> >& pairs_to_match);
+
   // Performs feature matching between all images provided by the image
   // filepaths. Features are extracted and matched between the images according
   // to the options passed in. Only matches that have passed geometric
   // verification are kept. EXIF data is parsed to determine the camera
   // intrinsics if available.
-  void ExtractAndMatchFeatures(
-      std::vector<CameraIntrinsicsPrior>* intrinsics,
-      std::vector<ImagePairMatch>* matches);
+  void ExtractAndMatchFeatures(std::vector<CameraIntrinsicsPrior>* intrinsics,
+                               std::vector<ImagePairMatch>* matches);
 
  private:
   // Processes a single image by extracting EXIF information, extracting

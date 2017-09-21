@@ -35,16 +35,16 @@
 #include "theia/sfm/feature_extractor_and_matcher.h"
 
 #include <Eigen/Core>
-#include <glog/logging.h>
 #include <algorithm>
+#include <glog/logging.h>
 #include <memory>
 #include <string>
 #include <thread>  // NOLINT
 #include <vector>
 
-#include "theia/image/image.h"
 #include "theia/image/descriptor/create_descriptor_extractor.h"
 #include "theia/image/descriptor/descriptor_extractor.h"
+#include "theia/image/image.h"
 #include "theia/image/keypoint_detector/keypoint.h"
 #include "theia/matching/create_feature_matcher.h"
 #include "theia/matching/feature_correspondence.h"
@@ -61,12 +61,11 @@
 namespace theia {
 namespace {
 
-void ExtractFeatures(
-    const FeatureExtractorAndMatcher::Options& options,
-    const std::string& image_filepath,
-    const std::string& imagemask_filepath,
-    std::vector<Keypoint>* keypoints,
-    std::vector<Eigen::VectorXf>* descriptors) {
+void ExtractFeatures(const FeatureExtractorAndMatcher::Options& options,
+                     const std::string& image_filepath,
+                     const std::string& imagemask_filepath,
+                     std::vector<Keypoint>* keypoints,
+                     std::vector<Eigen::VectorXf>* descriptors) {
   static const float kMaskThreshold = 0.5;
   std::unique_ptr<FloatImage> image(new FloatImage(image_filepath));
   // We create these variable here instead of upon the construction of the
@@ -81,9 +80,8 @@ void ExtractFeatures(
                                 options.feature_density);
 
   // Exit if the descriptor extraction fails.
-  if (!descriptor_extractor->DetectAndExtractDescriptors(*image,
-                                                         keypoints,
-                                                         descriptors)) {
+  if (!descriptor_extractor->DetectAndExtractDescriptors(
+          *image, keypoints, descriptors)) {
     LOG(ERROR) << "Could not extract descriptors in image " << image_filepath;
     return;
   }
@@ -93,20 +91,19 @@ void ExtractFeatures(
     // Check the size of the image and its associated mask.
     CHECK(image_mask->Width() == image->Width() &&
           image_mask->Height() == image->Height())
-      << "The image and the mask don't have the same size. \n"
-      << "- Image: " << image_filepath
-      << "\t(" << image->Width() << " x " << image->Height() << ")\n"
-      << "- Mask: " << imagemask_filepath
-      << "\t(" << image_mask->Width() << " x " << image_mask->Height() << ")";
+        << "The image and the mask don't have the same size. \n"
+        << "- Image: " << image_filepath << "\t(" << image->Width() << " x "
+        << image->Height() << ")\n"
+        << "- Mask: " << imagemask_filepath << "\t(" << image_mask->Width()
+        << " x " << image_mask->Height() << ")";
 
     // Convert the mask to grayscale.
     image_mask->ConvertToGrayscaleImage();
     // Remove keypoints according to the associated mask (remove kp. in black
     // part).
-    for (int i=keypoints->size()-1; i>-1; i--) {
-      if (image_mask->BilinearInterpolate(keypoints->at(i).x(),
-                                          keypoints->at(i).y(),
-                                          0) < kMaskThreshold) {
+    for (int i = keypoints->size() - 1; i > -1; i--) {
+      if (image_mask->BilinearInterpolate(
+              keypoints->at(i).x(), keypoints->at(i).y(), 0) < kMaskThreshold) {
         keypoints->erase(keypoints->begin() + i);
         descriptors->erase(descriptors->begin() + i);
       }
@@ -160,12 +157,27 @@ bool FeatureExtractorAndMatcher::AddImage(
 }
 
 bool FeatureExtractorAndMatcher::AddMaskForFeaturesExtraction(
-    const std::string& image_filepath,
-    const std::string& mask_filepath) {
+    const std::string& image_filepath, const std::string& mask_filepath) {
   image_masks_[image_filepath] = mask_filepath;
   VLOG(1) << "Image: " << image_filepath << " || "
           << "Associated mask: " << mask_filepath;
   return true;
+}
+void FeatureExtractorAndMatcher::SetPairsToMatch(
+    const std::vector<std::pair<std::string, std::string> >& pairs_to_match) {
+  // Convert the image filepaths to image filenames.
+  std::vector<std::pair<std::string, std::string> > image_pairs;
+  image_pairs.reserve(pairs_to_match.size());
+  for (const auto& pair_to_match : pairs_to_match) {
+    std::string image1_filename;
+    CHECK(GetFilenameFromFilepath(pair_to_match.first, true, &image1_filename));
+    std::string image2_filename;
+    CHECK(
+        GetFilenameFromFilepath(pair_to_match.second, true, &image2_filename));
+    image_pairs.emplace_back(image1_filename, image2_filename);
+  }
+
+  matcher_->SetImagePairsToMatch(image_pairs);
 }
 
 // Performs feature matching between all images provided by the image
@@ -207,8 +219,7 @@ void FeatureExtractorAndMatcher::ExtractAndMatchFeatures(
   }
 }
 
-void FeatureExtractorAndMatcher::ProcessImage(
-    const int i) {
+void FeatureExtractorAndMatcher::ProcessImage(const int i) {
   const std::string& image_filepath = image_filepaths_[i];
 
   // Get the camera intrinsics prior if it was provided.
@@ -235,7 +246,7 @@ void FeatureExtractorAndMatcher::ProcessImage(
 
     std::lock_guard<std::mutex> lock(intrinsics_mutex_);
     // Insert or update the value of the intrinsics.
-    intrinsics_[image_filepath] =  intrinsics;
+    intrinsics_[image_filepath] = intrinsics;
   }
 
   // Early exit if no EXIF calibration exists and we are only processing
@@ -272,11 +283,8 @@ void FeatureExtractorAndMatcher::ProcessImage(
   // Extract Features.
   std::vector<Keypoint> keypoints;
   std::vector<Eigen::VectorXf> descriptors;
-  ExtractFeatures(options_,
-                  image_filepath,
-                  mask_filepath,
-                  &keypoints,
-                  &descriptors);
+  ExtractFeatures(
+      options_, image_filepath, mask_filepath, &keypoints, &descriptors);
 
   // Add the relevant image and feature data to the feature matcher. This allows
   // the feature matcher to control fine-grained things like multi-threading and
