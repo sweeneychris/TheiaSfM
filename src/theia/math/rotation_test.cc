@@ -107,4 +107,10 @@ TEST(MultiplyRotations, OppositeRotations) {
   TestTwoRotations(rotation1, rotation2, kToleranceDegrees);
 }
 
+TEST(MultiplyRotations, DifficultRotatations) {
+  static const double kToleranceDegrees = 1e-8;
+  const Eigen::Vector3d rotation1(0.00648212, -1.05947, 0.204346);
+  const Eigen::Vector3d rotation2(0.0158538, -2.07541, 0.356276);
+  TestTwoRotations(rotation1, rotation2, kToleranceDegrees);
+}
 }  // namespace theia

@@ -34,13 +34,13 @@
 
 #include "theia/sfm/filter_view_pairs_from_orientation.h"
 
-#include <ceres/rotation.h>
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <glog/logging.h>
 #include <unordered_map>
 #include <unordered_set>
 
+#include "theia/math/rotation.h"
 #include "theia/math/util.h"
 #include "theia/util/hash.h"
 #include "theia/util/map_util.h"
@@ -56,34 +56,15 @@ bool AngularDifferenceIsAcceptable(
     const Eigen::Vector3d& orientation1,
     const Eigen::Vector3d& orientation2,
     const Eigen::Vector3d& relative_orientation,
-    const double max_relative_rotation_difference_degrees) {
-  Eigen::Matrix3d rotation_matrix1, rotation_matrix2, relative_rotation_matrix;
-  ceres::AngleAxisToRotationMatrix(
-      orientation1.data(),
-      ceres::ColumnMajorAdapter3x3(rotation_matrix1.data()));
-  ceres::AngleAxisToRotationMatrix(
-      orientation2.data(),
-      ceres::ColumnMajorAdapter3x3(rotation_matrix2.data()));
-  ceres::AngleAxisToRotationMatrix(
-      relative_orientation.data(),
-      ceres::ColumnMajorAdapter3x3(relative_rotation_matrix.data()));
-
-  // Compose the relative rotation from the two known orientation.
-  const Eigen::Matrix3d composed_relative_rotation_matrix =
-      rotation_matrix2 * rotation_matrix1.transpose();
-
-  // Compute angular distance between the relative rotations.
-  const Eigen::Matrix3d loop_rotation =
-      relative_rotation_matrix.transpose() * composed_relative_rotation_matrix;
-  Eigen::Vector3d loop_rotation_aa;
-  ceres::RotationMatrixToAngleAxis(
-      ceres::ColumnMajorAdapter3x3(loop_rotation.data()),
-      loop_rotation_aa.data());
-
-  const double rotation_angular_difference_degrees =
-      RadToDeg(loop_rotation_aa.norm());
-  return rotation_angular_difference_degrees <=
-         max_relative_rotation_difference_degrees;
+    const double sq_max_relative_rotation_difference_radians) {
+  const Eigen::Vector3d composed_relative_rotation =
+      MultiplyRotations(orientation2, -orientation1);
+  const Eigen::Vector3d loop_rotation =
+      MultiplyRotations(-relative_orientation, composed_relative_rotation);
+  const double sq_rotation_angular_difference_radians =
+      loop_rotation.squaredNorm();
+  return sq_rotation_angular_difference_radians <=
+         sq_max_relative_rotation_difference_radians;
 }
 
 }  // namespace
@@ -94,6 +75,13 @@ void FilterViewPairsFromOrientation(
     ViewGraph* view_graph) {
   CHECK_NOTNULL(view_graph);
   CHECK_GE(max_relative_rotation_difference_degrees, 0.0);
+
+  // Precompute the squared threshold in radians.
+  const double max_relative_rotation_difference_radians =
+      DegToRad(max_relative_rotation_difference_degrees);
+  const double sq_max_relative_rotation_difference_radians =
+      max_relative_rotation_difference_radians *
+      max_relative_rotation_difference_radians;
 
   std::unordered_set<ViewIdPair> view_pairs_to_remove;
   const auto& view_pairs = view_graph->GetAllEdges();
@@ -120,7 +108,7 @@ void FilterViewPairsFromOrientation(
             *orientation1,
             *orientation2,
             view_pair.second.rotation_2,
-            max_relative_rotation_difference_degrees)) {
+            sq_max_relative_rotation_difference_radians)) {
       view_pairs_to_remove.insert(view_pair.first);
     }
   }
