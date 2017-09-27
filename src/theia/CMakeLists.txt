@@ -109,12 +109,14 @@ set(THEIA_SRC
   sfm/colorize_reconstruction.cc
   sfm/estimate_track.cc
   sfm/estimate_twoview_info.cc
+  sfm/estimators/estimate_absolute_pose_with_known_orientation.cc
   sfm/estimators/estimate_calibrated_absolute_pose.cc
   sfm/estimators/estimate_dominant_plane_from_points.cc
   sfm/estimators/estimate_essential_matrix.cc
   sfm/estimators/estimate_fundamental_matrix.cc
   sfm/estimators/estimate_homography.cc
   sfm/estimators/estimate_relative_pose.cc
+  sfm/estimators/estimate_relative_pose_with_known_orientation.cc
   sfm/estimators/estimate_similarity_transformation_2d_3d.cc
   sfm/estimators/estimate_triangulation.cc
   sfm/estimators/estimate_uncalibrated_absolute_pose.cc
@@ -270,12 +272,14 @@ if (BUILD_TESTING)
   gtest(sfm/camera/pinhole_camera_model)
   gtest(sfm/camera/pinhole_radial_tangential_camera_model)
   gtest(sfm/camera/projection_matrix_utils)
+  gtest(sfm/estimators/estimate_absolute_pose_with_known_orientation)
   gtest(sfm/estimators/estimate_calibrated_absolute_pose)
   gtest(sfm/estimators/estimate_dominant_plane_from_points)
   gtest(sfm/estimators/estimate_essential_matrix)
   gtest(sfm/estimators/estimate_fundamental_matrix)
   gtest(sfm/estimators/estimate_homography)
   gtest(sfm/estimators/estimate_relative_pose)
+  gtest(sfm/estimators/estimate_relative_pose_with_known_orientation)
   gtest(sfm/estimators/estimate_similarity_transformation_2d_3d)
   gtest(sfm/estimators/estimate_triangulation)
   gtest(sfm/estimators/estimate_uncalibrated_absolute_pose)
