@@ -118,6 +118,9 @@ struct RansacSummary {
   // Contains the indices of all inliers.
   std::vector<int> inliers;
 
+  // Number of input data
+  int num_input_data_points;
+
   // The number of iterations performed before stopping RANSAC.
   int num_iterations;
 
@@ -254,6 +257,8 @@ bool SampleConsensusEstimator<ModelEstimator>::Estimate(
   if (!sampler_->Initialize(data.size())) {
     return false;
   }
+
+  summary->num_input_data_points = data.size();
 
   const double log_failure_prob = log(ransac_params_.failure_probability);
   double best_cost = std::numeric_limits<double>::max();
