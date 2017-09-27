@@ -66,6 +66,7 @@
 #include "theia/sfm/types.h"
 #include "theia/sfm/view_graph/orientations_from_maximum_spanning_tree.h"
 #include "theia/sfm/view_graph/view_graph.h"
+#include "theia/sfm/visibility_pyramid.h"
 #include "theia/solvers/sample_consensus_estimator.h"
 #include "theia/util/map_util.h"
 #include "theia/util/stringprintf.h"
@@ -641,41 +642,44 @@ void HybridReconstructionEstimator::
 
 void HybridReconstructionEstimator::FindViewsToLocalize(
     std::vector<ViewId>* views_to_localize) {
-  // We localize all views that observe 75% or more than the number of 3D points
-  // observed by the view with the largest number of observed 3D points.
-  static const double kObserved3dPointsRatio = 0.75;
+  // We localize all views that observe 75% or more of the best visibility
+  // score.
+  static const int kMinNumObserved3dPoints = 30;
+  static const int kNumPyramidLevels = 6;
 
   // Determine the number of estimated tracks that each view observes.
-  std::vector<std::pair<int, ViewId> > track_count_for_view;
-  track_count_for_view.reserve(unlocalized_views_.size());
+  std::vector<std::pair<int, ViewId> > next_best_view_scores;
+  next_best_view_scores.reserve(unlocalized_views_.size());
   for (const ViewId view_id : unlocalized_views_) {
     // Do not consider estimated views since they have already been localized.
     const View* view = reconstruction_->View(view_id);
+    const Camera& camera = view->Camera();
 
     // Count the number of estimated tracks for this view.
     const auto& track_ids = view->TrackIds();
+    VisibilityPyramid pyramid(
+        camera.ImageWidth(), camera.ImageHeight(), kNumPyramidLevels);
     int num_estimated_tracks = 0;
     for (const TrackId track_id : track_ids) {
       if (reconstruction_->Track(track_id)->IsEstimated()) {
         ++num_estimated_tracks;
+        pyramid.AddPoint(*view->GetFeature(track_id));
       }
     }
 
-    track_count_for_view.emplace_back(num_estimated_tracks, view_id);
+    // If enough 3d points are observed then add the visibility score to the
+    // candidate views to localize.
+    if (num_estimated_tracks >= kMinNumObserved3dPoints) {
+      next_best_view_scores.emplace_back(pyramid.ComputeScore(), view_id);
+    }
   }
 
-  // Sort the track count so that the view with the most tracks is at the front.
-  std::sort(track_count_for_view.begin(),
-            track_count_for_view.end(),
+  // Sort such that the best score is at the front.
+  std::sort(next_best_view_scores.begin(),
+            next_best_view_scores.end(),
             std::greater<std::pair<int, ViewId> >());
-  const int min_3d_points_observed = static_cast<int>(
-      track_count_for_view.begin()->first * kObserved3dPointsRatio);
-  for (const auto& track_count : track_count_for_view) {
-    if (track_count.first < min_3d_points_observed ||
-        track_count.first < options_.min_num_absolute_pose_inliers) {
-      break;
-    }
-    views_to_localize->emplace_back(track_count.second);
+  for (int i = 0; i < next_best_view_scores.size(); i++) {
+    views_to_localize->emplace_back(next_best_view_scores[i].second);
   }
 }
 
