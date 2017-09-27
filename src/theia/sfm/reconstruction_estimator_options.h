@@ -49,7 +49,8 @@ namespace theia {
 // is less scalable but often more robust.
 enum class ReconstructionEstimatorType {
   GLOBAL = 0,
-  INCREMENTAL = 1
+  INCREMENTAL = 1,
+  HYBRID = 2
 };
 
 // The recommended type of rotations solver is the Robust L1-L2 method. This
@@ -197,6 +198,15 @@ struct ReconstructionEstimatorOptions {
   // recent views that have been added to the 3D reconstruction. This parameter
   // controls how many views should be part of the partial BA.
   int partial_bundle_adjustment_num_views = 20;
+
+  // --------------------- Hybrid SfM Options --------------------- //
+
+  // The relative position of the initial pair used for the incremental portion
+  // of hybrid sfm is re-estimated using a simplified relative translations
+  // solver (assuming known rotation). The relative position is re-estimated
+  // using a RANSAC procedure with the inlier threshold defined by this
+  // parameter.
+  double relative_position_estimation_max_sampson_error_pixels = 4.0;
 
   // --------------- Triangulation Options --------------- //
 

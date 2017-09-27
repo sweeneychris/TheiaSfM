@@ -142,6 +142,7 @@ set(THEIA_SRC
   sfm/global_pose_estimation/robust_rotation_estimator.cc
   sfm/global_reconstruction_estimator.cc
   sfm/gps_converter.cc
+  sfm/hybrid_reconstruction_estimator.cc
   sfm/incremental_reconstruction_estimator.cc
   sfm/localize_view_to_reconstruction.cc
   sfm/pose/dls_impl.cc
@@ -301,6 +302,7 @@ if (BUILD_TESTING)
   gtest(sfm/global_pose_estimation/pairwise_translation_error)
   gtest(sfm/global_pose_estimation/robust_rotation_estimator)
   gtest(sfm/gps_converter)
+  gtest(sfm/hybrid_reconstruction_estimator)
   gtest(sfm/incremental_reconstruction_estimator)
   gtest(sfm/pose/dls_pnp)
   gtest(sfm/pose/eight_point_fundamental_matrix)
