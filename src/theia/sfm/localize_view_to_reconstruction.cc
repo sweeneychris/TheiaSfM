@@ -39,6 +39,7 @@
 
 #include "theia/sfm/bundle_adjustment/bundle_adjustment.h"
 #include "theia/sfm/camera/camera.h"
+#include "theia/sfm/estimators/estimate_absolute_pose_with_known_orientation.h"
 #include "theia/sfm/estimators/estimate_calibrated_absolute_pose.h"
 #include "theia/sfm/estimators/estimate_uncalibrated_absolute_pose.h"
 #include "theia/sfm/estimators/feature_correspondence_2d_3d.h"
@@ -75,7 +76,6 @@ bool DoesViewHaveKnownIntrinsics(const Reconstruction& reconstruction,
 
 void GetNormalized2D3DMatches(const Reconstruction& reconstruction,
                               const View& view,
-                              const bool known_intrinsics,
                               std::vector<FeatureCorrespondence2D3D>* matches) {
   const Camera& camera = view.Camera();
   const auto& tracks_in_view = view.TrackIds();
@@ -89,22 +89,131 @@ void GetNormalized2D3DMatches(const Reconstruction& reconstruction,
 
     FeatureCorrespondence2D3D correspondence;
     const Feature& feature = *view.GetFeature(track_id);
-    if (known_intrinsics) {
-      // Get the image feature and undistort it according to the camera
-      // parameters.
-      const Eigen::Vector3d normalized_feature =
-          camera.PixelToNormalizedCoordinates(feature);
-      correspondence.feature = normalized_feature.hnormalized();
-    } else {
-      // Otherwise, simply shift the pixel to remove the effect of the principal
-      // point.
-      correspondence.feature =
-          feature -
-          Eigen::Vector2d(camera.PrincipalPointX(), camera.PrincipalPointY());
-    }
+    // Simply shift the pixel to remove the effect of the principal point.
+    correspondence.feature =
+        feature -
+        Eigen::Vector2d(camera.PrincipalPointX(), camera.PrincipalPointY());
     correspondence.world_point = track->Point().hnormalized();
     matches->emplace_back(correspondence);
   }
+}
+
+void GetIntrinsicsNormalized2D3DMatches(
+    const Reconstruction& reconstruction,
+    const View& view,
+    std::vector<FeatureCorrespondence2D3D>* matches) {
+  const Camera& camera = view.Camera();
+  const auto& tracks_in_view = view.TrackIds();
+  matches->reserve(tracks_in_view.size());
+  for (const TrackId track_id : tracks_in_view) {
+    const Track* track = reconstruction.Track(track_id);
+    // We only use 3D points that have been estimated.
+    if (!track->IsEstimated()) {
+      continue;
+    }
+
+    FeatureCorrespondence2D3D correspondence;
+    const Feature& feature = *view.GetFeature(track_id);
+    // Remove the camera intrinsics from the feature.
+    correspondence.feature =
+        camera.PixelToNormalizedCoordinates(feature).hnormalized();
+    correspondence.world_point = track->Point().hnormalized();
+    matches->emplace_back(correspondence);
+  }
+}
+
+bool EstimateCameraPose(const bool known_intrinsics,
+                        const LocalizeViewToReconstructionOptions& options,
+                        const Reconstruction& reconstruction,
+                        View* view,
+                        RansacSummary* summary) {
+  Camera* camera = view->MutableCamera();
+
+  // Gather all 2D-3D correspondences.
+  std::vector<FeatureCorrespondence2D3D> matches;
+  if (known_intrinsics) {
+    GetIntrinsicsNormalized2D3DMatches(reconstruction, *view, &matches);
+  } else {
+    GetNormalized2D3DMatches(reconstruction, *view, &matches);
+  }
+
+  // Exit early if there are not enough putative matches.
+  if (matches.size() < options.min_num_inliers) {
+    VLOG(2) << "Not enough 2D-3D correspondences to localize view "
+            << view->Name();
+    return false;
+  }
+
+  // Set up the ransac parameters for absolute pose estimation.
+  RansacParameters ransac_parameters = options.ransac_params;
+
+  // Compute the reprojection error threshold scaled to account for the image
+  // resolution.
+  const double resolution_scaled_reprojection_error_threshold_pixels =
+      ComputeResolutionScaledThreshold(
+          options.reprojection_error_threshold_pixels,
+          camera->ImageWidth(),
+          camera->ImageHeight());
+
+  // If we are assuming that the orientation is known then first try to use
+  // the simplified camera positions solver.
+  if (options.assume_known_orientation) {
+    ransac_parameters.error_thresh =
+        resolution_scaled_reprojection_error_threshold_pixels *
+        resolution_scaled_reprojection_error_threshold_pixels /
+        (camera->FocalLength() * camera->FocalLength());
+
+    // Return true if position estimation is successful. Otherwise the method
+    // will proceed to estimate the full pose.
+    const Eigen::Vector3d camera_orientation =
+        camera->GetOrientationAsAngleAxis();
+    Eigen::Vector3d camera_position;
+    if (EstimateAbsolutePoseWithKnownOrientation(ransac_parameters,
+                                                 RansacType::RANSAC,
+                                                 camera_orientation,
+                                                 matches,
+                                                 &camera_position,
+                                                 summary) &&
+        summary->inliers.size() > options.min_num_inliers) {
+      camera->SetPosition(camera_position);
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  // If calibrated, estimate the pose with P3P.
+  bool success = false;
+  if (known_intrinsics) {
+    ransac_parameters.error_thresh =
+        resolution_scaled_reprojection_error_threshold_pixels *
+        resolution_scaled_reprojection_error_threshold_pixels /
+        (camera->FocalLength() * camera->FocalLength());
+    CalibratedAbsolutePose pose;
+    if (EstimateCalibratedAbsolutePose(
+            ransac_parameters, RansacType::RANSAC, matches, &pose, summary)) {
+      camera->SetOrientationFromRotationMatrix(pose.rotation);
+      camera->SetPosition(pose.position);
+      return true;
+    }
+  } else {
+    // If the focal length is not known, estimate the focal length and pose
+    // together.
+    ransac_parameters.error_thresh =
+        resolution_scaled_reprojection_error_threshold_pixels *
+        resolution_scaled_reprojection_error_threshold_pixels;
+
+    UncalibratedAbsolutePose pose;
+    if (EstimateUncalibratedAbsolutePose(
+            ransac_parameters, RansacType::RANSAC, matches, &pose, summary)) {
+      camera->SetOrientationFromRotationMatrix(pose.rotation);
+      camera->SetPosition(pose.position);
+      camera->SetFocalLength(pose.focal_length);
+      return true;
+    }
+  }
+
+  return false;
 }
 
 }  // namespace
@@ -118,67 +227,19 @@ bool LocalizeViewToReconstruction(
   CHECK_NOTNULL(summary);
 
   View* view = reconstruction->MutableView(view_to_localize);
+  // We assume that the intrinsics are known if the orientation is known.
   const bool known_intrinsics =
+      options.assume_known_orientation ||
       DoesViewHaveKnownIntrinsics(*reconstruction, view_to_localize);
-
-  Camera* camera = view->MutableCamera();
-
-  // Gather all 2D-3D correspondences.
-  std::vector<FeatureCorrespondence2D3D> matches;
-  GetNormalized2D3DMatches(*reconstruction, *view, known_intrinsics, &matches);
-
-  // Exit early if there are not enough putative matches.
-  if (matches.size() < options.min_num_inliers) {
-    VLOG(2) << "Not enough 2D-3D correspondences to localize view "
-            << view_to_localize;
-    return false;
-  }
-
-  // Set up the ransac parameters for absolute pose estimation.
-  bool success = false;
-  RansacParameters ransac_parameters = options.ransac_params;
-
-  // Compute the reprojection error threshold scaled to account for the image
-  // resolution.
-  const double resolution_scaled_reprojection_error_threshold_pixels =
-      ComputeResolutionScaledThreshold(
-          options.reprojection_error_threshold_pixels,
-          camera->ImageWidth(),
-          camera->ImageHeight());
-
-  // If calibrated, estimate the pose with P3P.
-  if (known_intrinsics) {
-    ransac_parameters.error_thresh =
-        resolution_scaled_reprojection_error_threshold_pixels *
-        resolution_scaled_reprojection_error_threshold_pixels /
-        (camera->FocalLength() * camera->FocalLength());
-
-    CalibratedAbsolutePose pose;
-    success = EstimateCalibratedAbsolutePose(
-        ransac_parameters, RansacType::RANSAC, matches, &pose, summary);
-    camera->SetOrientationFromRotationMatrix(pose.rotation);
-    camera->SetPosition(pose.position);
-  } else {
-    // If the focal length is not known, estimate the focal length and pose
-    // together.
-    ransac_parameters.error_thresh =
-        resolution_scaled_reprojection_error_threshold_pixels *
-        resolution_scaled_reprojection_error_threshold_pixels;
-
-    UncalibratedAbsolutePose pose;
-    success = EstimateUncalibratedAbsolutePose(
-        ransac_parameters, RansacType::RANSAC, matches, &pose, summary);
-    camera->SetOrientationFromRotationMatrix(pose.rotation);
-    camera->SetPosition(pose.position);
-    camera->SetFocalLength(pose.focal_length);
-  }
 
   // If localization failed or did not produce a sufficient number of inliers
   // then return false.
+  bool success = EstimateCameraPose(
+      known_intrinsics, options, *reconstruction, view, summary);
   if (!success || summary->inliers.size() < options.min_num_inliers) {
     VLOG(2) << "Failed to localize view id " << view_to_localize
             << " with only " << summary->inliers.size() << " out of "
-            << matches.size() << " features as inliers.";
+            << summary->num_input_data_points << " features as inliers.";
     return false;
   }
 
@@ -192,7 +253,7 @@ bool LocalizeViewToReconstruction(
 
   VLOG(2) << "Estimated the camera pose for view " << view_to_localize
           << " with " << summary->inliers.size() << " inliers out of "
-          << matches.size() << " 2D-3D matches.";
+          << summary->num_input_data_points << " 2D-3D matches.";
   return success;
 }
 

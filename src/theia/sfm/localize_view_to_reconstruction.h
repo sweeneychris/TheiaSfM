@@ -55,6 +55,13 @@ struct LocalizeViewToReconstructionOptions {
   // the threshold will be appropriately scaled.
   double reprojection_error_threshold_pixels = 4.0;
 
+  // If true, a simplified pose solver will be used to estimate the camera
+  // position given the known orientation. If that solver is not successful,
+  // then standard P3P is used.
+  bool assume_known_orientation = false;
+
+  // The RANSAC parameters used for robust estimation in the localization
+  // algorithms.
   RansacParameters ransac_params;
 
   // The view will be bundle adjusted (while all tracks are held constant) if
