@@ -155,6 +155,7 @@ set(THEIA_SRC
   sfm/pose/fundamental_matrix_util.cc
   sfm/pose/perspective_three_point.cc
   sfm/pose/position_from_two_rays.cc
+  sfm/pose/relative_pose_from_two_points_with_known_rotation.cc
   sfm/pose/seven_point_fundamental_matrix.cc
   sfm/pose/sim_transform_partial_rotation.cc
   sfm/pose/test_util.cc
@@ -308,6 +309,7 @@ if (BUILD_TESTING)
   gtest(sfm/pose/fundamental_matrix_util)
   gtest(sfm/pose/perspective_three_point)
   gtest(sfm/pose/position_from_two_rays)
+  gtest(sfm/pose/relative_pose_from_two_points_with_known_rotation)
   gtest(sfm/pose/seven_point_fundamental_matrix)
   gtest(sfm/pose/sim_transform_partial_rotation)
   gtest(sfm/pose/three_point_relative_pose_partial_rotation)
