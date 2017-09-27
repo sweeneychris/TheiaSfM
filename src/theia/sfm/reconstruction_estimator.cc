@@ -38,6 +38,7 @@
 
 #include "theia/sfm/incremental_reconstruction_estimator.h"
 #include "theia/sfm/global_reconstruction_estimator.h"
+#include "theia/sfm/hybrid_reconstruction_estimator.h"
 #include "theia/sfm/reconstruction_estimator_options.h"
 
 namespace theia {
@@ -50,6 +51,9 @@ ReconstructionEstimator* ReconstructionEstimator::Create(
       break;
     case ReconstructionEstimatorType::INCREMENTAL:
       return new IncrementalReconstructionEstimator(options);
+      break;
+    case ReconstructionEstimatorType::HYBRID:
+      return new HybridReconstructionEstimator(options);
       break;
     default:
       LOG(FATAL) << "Invalid reconstruction estimator specified.";

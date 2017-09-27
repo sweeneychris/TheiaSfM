@@ -97,6 +97,8 @@ inline ReconstructionEstimatorType StringToReconstructionEstimatorType(
     return ReconstructionEstimatorType::GLOBAL;
   } else if (reconstruction_estimator == "INCREMENTAL") {
     return ReconstructionEstimatorType::INCREMENTAL;
+  } else if (reconstruction_estimator == "HYBRID") {
+    return ReconstructionEstimatorType::HYBRID;
   } else {
     LOG(FATAL)
         << "Invalid reconstruction estimator type. Using GLOBAL instead.";
