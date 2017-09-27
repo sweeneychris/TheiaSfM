@@ -141,6 +141,7 @@
 #include "theia/sfm/filter_view_pairs_from_relative_translation.h"
 #include "theia/sfm/find_common_tracks_in_views.h"
 #include "theia/sfm/find_common_views_by_name.h"
+#include "theia/sfm/hybrid_reconstruction_estimator.h"
 #include "theia/sfm/global_pose_estimation/compute_triplet_baseline_ratios.h"
 #include "theia/sfm/global_pose_estimation/least_unsquared_deviation_position_estimator.h"
 #include "theia/sfm/global_pose_estimation/linear_position_estimator.h"

@@ -1,4 +1,4 @@
-// Copyright (C) 2015 The Regents of the University of California (Regents).
+// Copyright (C) 2017 The Regents of the University of California (Regents).
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -30,7 +30,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //
 // Please contact the author of this library if you have any questions.
-// Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
+// Author: Chris Sweeney (sweeney.chris.m@gmail.com)
 
 #ifndef THEIA_SFM_HYBRID_RECONSTRUCTION_ESTIMATOR_H_
 #define THEIA_SFM_HYBRID_RECONSTRUCTION_ESTIMATOR_H_
@@ -79,7 +79,10 @@ class ViewGraph;
 //
 // Hybrid SfM is generally considered to be more robust than global SfM methods
 // and much faster than incremental SfM. The cost of repeated bundle adjustment
-// is mitigated by the fact that camera orientations are held constant.
+// is mitigated by the fact that camera orientations are held constant. Please
+// cite the following paper when using this pipeline:
+//
+//   "HSfM: Hybrid Structure-from-Motion" by Cui et al (CVPR 2017).
 class HybridReconstructionEstimator : public ReconstructionEstimator {
  public:
   HybridReconstructionEstimator(
