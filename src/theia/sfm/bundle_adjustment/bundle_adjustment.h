@@ -149,9 +149,10 @@ BundleAdjustmentSummary BundleAdjustView(const BundleAdjustmentOptions& options,
                                          Reconstruction* reconstruction);
 
 // Bundle adjust a single track.
-BundleAdjustmentSummary BundleAdjustTrack(const BundleAdjustmentOptions& options,
-                                          const TrackId track_id,
-                                          Reconstruction* reconstruction);
+BundleAdjustmentSummary BundleAdjustTrack(
+    const BundleAdjustmentOptions& options,
+    const TrackId track_id,
+    Reconstruction* reconstruction);
 
 }  // namespace theia
 
