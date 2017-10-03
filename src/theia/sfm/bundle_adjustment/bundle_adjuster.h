@@ -40,12 +40,14 @@
 #include <unordered_set>
 
 #include "theia/sfm/bundle_adjustment/bundle_adjustment.h"
+#include "theia/sfm/feature.h"
 #include "theia/sfm/types.h"
 #include "theia/util/timer.h"
 
 namespace theia {
-
+class Camera;
 class Reconstruction;
+class Track;
 
 // This class sets up nonlinear optimization problems for bundle adjustment.
 // Bundle adjustment problems are set up by adding views and tracks to be
@@ -77,10 +79,15 @@ class BundleAdjuster {
   static const int kTrackParameterGroup = 0;
   static const int kIntrinsicsParameterGroup = 1;
   static const int kExtrinsicsParameterGroup = 2;
-  static const int kTrackSize = 4;
 
+  // Add all camera extrinsics and intrinsics to the optimization problem.
   void SetCameraExtrinsicsParameterization();
   void SetCameraIntrinsicsParameterization();
+
+  // Add the reprojection error residual to the problem.
+  virtual void AddReprojectionErrorResidual(const Feature& feature,
+                                            Camera* camera,
+                                            Track* track);
 
   const BundleAdjustmentOptions options_;
   Reconstruction* reconstruction_;

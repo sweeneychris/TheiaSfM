@@ -142,13 +142,8 @@ void BundleAdjuster::AddView(const ViewId view_id) {
       continue;
     }
 
-    problem_->AddResidualBlock(
-        CreateReprojectionErrorCostFunction(
-            camera->GetCameraIntrinsicsModelType(), *feature),
-        loss_function_.get(),
-        camera->mutable_extrinsics(),
-        camera->mutable_intrinsics(),
-        track->MutablePoint()->data());
+    // Add the reprojection error to the optimization.
+    AddReprojectionErrorResidual(*feature, camera, track);
 
     // Add the point to group 0.
     parameter_ordering_->AddElementToGroup(track->MutablePoint()->data(),
@@ -167,13 +162,6 @@ void BundleAdjuster::AddTrack(const TrackId track_id) {
   // Mark the track as optimized.
   optimized_tracks_.emplace(track_id);
 
-  // Add the track to the problem and set the parameter ordering for Schur
-  // elimination.
-  problem_->AddParameterBlock(track->MutablePoint()->data(), kTrackSize);
-  parameter_ordering_->AddElementToGroup(track->MutablePoint()->data(),
-                                         kTrackParameterGroup);
-  problem_->SetParameterBlockVariable(track->MutablePoint()->data());
-
   // Add all observations of the track to the problem.
   const auto& observed_view_ids = track->ViewIds();
   for (const ViewId view_id : observed_view_ids) {
@@ -186,16 +174,8 @@ void BundleAdjuster::AddTrack(const TrackId track_id) {
     const Feature* feature = CHECK_NOTNULL(view->GetFeature(track_id));
     Camera* camera = view->MutableCamera();
 
-    // Add the residual for the track to the problem. The shared intrinsics
-    // parameter block will be set to constant after the loop if no optimized
-    // cameras share the same camera intrinsics.
-    problem_->AddResidualBlock(
-        CreateReprojectionErrorCostFunction(
-            camera->GetCameraIntrinsicsModelType(), *feature),
-        loss_function_.get(),
-        camera->mutable_extrinsics(),
-        camera->mutable_intrinsics(),
-        track->MutablePoint()->data());
+    // Add the reprojection error to the optimization.
+    AddReprojectionErrorResidual(*feature, camera, track);
 
     // Add camera parameters to groups for Schur elimination.
     parameter_ordering_->AddElementToGroup(camera->mutable_extrinsics(),
@@ -214,6 +194,12 @@ void BundleAdjuster::AddTrack(const TrackId track_id) {
         reconstruction_->CameraIntrinsicsGroupIdFromViewId(view_id);
     potentially_constant_camera_intrinsics_groups_.emplace(intrinsics_group_id);
   }
+
+  // Set the parameter ordering for Schur elimination. We do this after the loop
+  // above so that the track is already added to the problem.
+  parameter_ordering_->AddElementToGroup(track->MutablePoint()->data(),
+                                         kTrackParameterGroup);
+  problem_->SetParameterBlockVariable(track->MutablePoint()->data());
 }
 
 BundleAdjustmentSummary BundleAdjuster::Optimize() {
@@ -270,8 +256,6 @@ void BundleAdjuster::SetCameraExtrinsicsParameterization() {
     for (const ViewId view_id : optimized_views_) {
       View* view = reconstruction_->MutableView(view_id);
       Camera* camera = view->MutableCamera();
-      problem_->AddParameterBlock(camera->mutable_extrinsics(),
-                                  Camera::kExtrinsicsSize);
       problem_->SetParameterBlockConstant(camera->mutable_extrinsics());
     }
   } else {
@@ -292,9 +276,8 @@ void BundleAdjuster::SetCameraExtrinsicsParameterization() {
     for (const ViewId view_id : optimized_views_) {
       View* view = reconstruction_->MutableView(view_id);
       Camera* camera = view->MutableCamera();
-      problem_->AddParameterBlock(camera->mutable_extrinsics(),
-                                  Camera::kExtrinsicsSize,
-                                  subset_parameterization);
+      problem_->SetParameterization(camera->mutable_extrinsics(),
+                                    subset_parameterization);
     }
   }
 }
@@ -324,20 +307,14 @@ void BundleAdjuster::SetCameraIntrinsicsParameterization() {
 
     // Set the constant parameters if any are requested.
     if (constant_intrinsics.size() == camera_intrinsics->NumParameters()) {
-      problem_->AddParameterBlock(camera_intrinsics->mutable_parameters(),
-                                  camera_intrinsics->NumParameters());
       problem_->SetParameterBlockConstant(
           camera_intrinsics->mutable_parameters());
     } else if (constant_intrinsics.size() > 0) {
       ceres::SubsetParameterization* subset_parameterization =
           new ceres::SubsetParameterization(camera_intrinsics->NumParameters(),
                                             constant_intrinsics);
-      problem_->AddParameterBlock(camera_intrinsics->mutable_parameters(),
-                                  camera_intrinsics->NumParameters(),
-                                  subset_parameterization);
-    } else {
-      problem_->AddParameterBlock(camera_intrinsics->mutable_parameters(),
-                                  camera_intrinsics->NumParameters());
+      problem_->SetParameterization(camera_intrinsics->mutable_parameters(),
+                                    subset_parameterization);
     }
   }
 
@@ -368,6 +345,21 @@ void BundleAdjuster::SetCameraIntrinsicsParameterization() {
     problem_->SetParameterBlockConstant(
         camera_intrinsics->mutable_parameters());
   }
+}
+
+void BundleAdjuster::AddReprojectionErrorResidual(const Feature& feature,
+                                                  Camera* camera,
+                                                  Track* track) {
+  // Add the residual for the track to the problem. The shared intrinsics
+  // parameter block will be set to constant after the loop if no optimized
+  // cameras share the same camera intrinsics.
+  problem_->AddResidualBlock(
+      CreateReprojectionErrorCostFunction(
+          camera->GetCameraIntrinsicsModelType(), feature),
+      loss_function_.get(),
+      camera->mutable_extrinsics(),
+      camera->mutable_intrinsics(),
+      track->MutablePoint()->data());
 }
 
 }  // namespace theia
