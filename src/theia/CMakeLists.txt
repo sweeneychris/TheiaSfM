@@ -96,6 +96,7 @@ set(THEIA_SRC
   math/rotation.cc
   math/qp_solver.cc
   sfm/bundle_adjustment/bundle_adjust_two_views.cc
+  sfm/bundle_adjustment/bundle_adjuster.cc
   sfm/bundle_adjustment/bundle_adjustment.cc
   sfm/bundle_adjustment/create_loss_function.cc
   sfm/bundle_adjustment/optimize_relative_position_with_known_rotation.cc

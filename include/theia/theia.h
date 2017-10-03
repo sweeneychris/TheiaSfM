@@ -100,6 +100,7 @@
 #include "theia/math/util.h"
 #include "theia/sfm/bundle_adjustment/angular_epipolar_error.h"
 #include "theia/sfm/bundle_adjustment/bundle_adjust_two_views.h"
+#include "theia/sfm/bundle_adjustment/bundle_adjuster.h"
 #include "theia/sfm/bundle_adjustment/bundle_adjustment.h"
 #include "theia/sfm/bundle_adjustment/create_loss_function.h"
 #include "theia/sfm/bundle_adjustment/optimize_relative_position_with_known_rotation.h"
