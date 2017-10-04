@@ -46,6 +46,7 @@
 
 namespace theia {
 class Camera;
+class CameraIntrinsicsModel;
 class Reconstruction;
 class Track;
 
@@ -65,24 +66,35 @@ class BundleAdjuster {
 
   // Add a view to be optimized with bundle adjustment. A residual is created
   // for each estimated track that the view observes.
-  virtual void AddView(const ViewId view_id);
+  void AddView(const ViewId view_id);
 
   // Add a track to be optimized with bundle adjustment. A residual is created
   // for each estimated view that observes the track.
-  virtual void AddTrack(const TrackId track_id);
+  void AddTrack(const TrackId track_id);
 
   // After AddView and AddTrack have been called, optimize the provided views
   // and tracks with bundle adjustment.
-  virtual BundleAdjustmentSummary Optimize();
+  BundleAdjustmentSummary Optimize();
 
- private:
-  static const int kTrackParameterGroup = 0;
-  static const int kIntrinsicsParameterGroup = 1;
-  static const int kExtrinsicsParameterGroup = 2;
-
+ protected:
   // Add all camera extrinsics and intrinsics to the optimization problem.
   void SetCameraExtrinsicsParameterization();
   void SetCameraIntrinsicsParameterization();
+
+  // Get the camera intrinsics model for the intrinsics group.
+  std::shared_ptr<CameraIntrinsicsModel> GetIntrinsicsForCameraIntrinsicsGroup(
+      const CameraIntrinsicsGroupId camera_intrinsics_group);
+
+  // Methods for setting camera extrinsics to be (partially) constant.
+  virtual void SetCameraExtrinsicsConstant(const ViewId view_id);
+  virtual void SetCameraPositionConstant(const ViewId view_id);
+  virtual void SetCameraOrientationConstant(const ViewId view_id);
+  virtual void SetTrackConstant(const TrackId track_id);
+  virtual void SetTrackVariable(const TrackId track_id);
+
+  // Set the schur ordering for the parameters.
+  virtual void SetCameraSchurGroups(const ViewId view_id);
+  virtual void SetTrackSchurGroup(const TrackId track_id);
 
   // Add the reprojection error residual to the problem.
   virtual void AddReprojectionErrorResidual(const Feature& feature,
