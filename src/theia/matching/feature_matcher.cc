@@ -45,9 +45,9 @@
 #include <utility>
 #include <vector>
 
+#include "theia/image/keypoint_detector/keypoint.h"
 #include "theia/io/read_keypoints_and_descriptors.h"
 #include "theia/io/write_keypoints_and_descriptors.h"
-#include "theia/image/keypoint_detector/keypoint.h"
 #include "theia/matching/feature_correspondence.h"
 #include "theia/matching/feature_matcher_options.h"
 #include "theia/matching/image_pair_match.h"
@@ -70,10 +70,8 @@ FeatureMatcher::FeatureMatcher(const FeatureMatcherOptions& options)
            "of core matching.";
     // Determine if the directory for writing out feature exists. If not, try to
     // create it.
-    if (!DirectoryExists(
-            options_.keypoints_and_descriptors_output_dir)) {
-      CHECK(CreateNewDirectory(
-          options_.keypoints_and_descriptors_output_dir))
+    if (!DirectoryExists(options_.keypoints_and_descriptors_output_dir)) {
+      CHECK(CreateNewDirectory(options_.keypoints_and_descriptors_output_dir))
           << "Could not create the directory for storing features during "
              "matching: "
           << options_.keypoints_and_descriptors_output_dir;
@@ -89,7 +87,8 @@ FeatureMatcher::FeatureMatcher(const FeatureMatcherOptions& options)
   // and specify that it will take in 1 argument.
   std::function<std::shared_ptr<KeypointsAndDescriptors>(const std::string&)>
       fetch_features_from_cache =
-          std::bind(&FeatureMatcher::FetchKeypointsAndDescriptorsFromDisk, this,
+          std::bind(&FeatureMatcher::FetchKeypointsAndDescriptorsFromDisk,
+                    this,
                     std::placeholders::_1);
 
   // Initialize the LRU cache. NOTE: even though the Fetch method will be set up
@@ -97,23 +96,19 @@ FeatureMatcher::FeatureMatcher(const FeatureMatcherOptions& options)
   // options_.match_out_of_core is set to true.
   keypoints_and_descriptors_cache_.reset(new KeypointAndDescriptorCache(
       fetch_features_from_cache, options_.cache_capacity));
-
 }
 
-void FeatureMatcher::AddImage(
-    const std::string& image_name,
-    const std::vector<Keypoint>& keypoints,
-    const std::vector<Eigen::VectorXf>& descriptors) {
+void FeatureMatcher::AddImage(const std::string& image_name,
+                              const std::vector<Keypoint>& keypoints,
+                              const std::vector<Eigen::VectorXf>& descriptors) {
   image_names_.push_back(image_name);
 
   // Write the features file to disk.
   const std::string features_file = FeatureFilenameFromImage(image_name);
   if (options_.match_out_of_core) {
-    CHECK(WriteKeypointsAndDescriptors(features_file,
-                                       keypoints,
-                                       descriptors))
-      << "Could not read features for image " << image_name << " from file "
-      << features_file;
+    CHECK(WriteKeypointsAndDescriptors(features_file, keypoints, descriptors))
+        << "Could not read features for image " << image_name << " from file "
+        << features_file;
   }
 
   // Insert the features into the cache.
@@ -126,11 +121,10 @@ void FeatureMatcher::AddImage(
                                            keypoints_and_descriptors);
 }
 
-void FeatureMatcher::AddImage(
-    const std::string& image_name,
-    const std::vector<Keypoint>& keypoints,
-    const std::vector<Eigen::VectorXf>& descriptors,
-    const CameraIntrinsicsPrior& intrinsics) {
+void FeatureMatcher::AddImage(const std::string& image_name,
+                              const std::vector<Keypoint>& keypoints,
+                              const std::vector<Eigen::VectorXf>& descriptors,
+                              const CameraIntrinsicsPrior& intrinsics) {
   AddImage(image_name, keypoints, descriptors);
   intrinsics_[image_name] = intrinsics;
 }
@@ -139,8 +133,8 @@ void FeatureMatcher::AddImage(const std::string& image_name) {
   image_names_.push_back(image_name);
 }
 
-void FeatureMatcher::AddImage(
-    const std::string& image_name, const CameraIntrinsicsPrior& intrinsics) {
+void FeatureMatcher::AddImage(const std::string& image_name,
+                              const CameraIntrinsicsPrior& intrinsics) {
   image_names_.push_back(image_name);
   intrinsics_[image_name] = intrinsics;
 }
@@ -150,16 +144,14 @@ void FeatureMatcher::AddImages(
     const std::vector<CameraIntrinsicsPrior>& intrinsics) {
   CHECK_EQ(image_names.size(), intrinsics.size());
   image_names_.reserve(image_names.size() + image_names_.size());
-  image_names_.insert(image_names_.end(),
-                      image_names.begin(),
-                      image_names.end());
+  image_names_.insert(
+      image_names_.end(), image_names.begin(), image_names.end());
   for (int i = 0; i < image_names.size(); ++i) {
     intrinsics_[image_names[i]] = intrinsics[i];
   }
 }
 
-std::string FeatureMatcher::FeatureFilenameFromImage(
-    const std::string& image) {
+std::string FeatureMatcher::FeatureFilenameFromImage(const std::string& image) {
   std::string output_dir = options_.keypoints_and_descriptors_output_dir;
   // Add a trailing slash if one does not exist.
   if (output_dir.back() != '/') {
@@ -193,7 +185,7 @@ void FeatureMatcher::MatchImages(std::vector<ImagePairMatch>* matches) {
   if (pairs_to_match_.size() == 0) {
     // Compute the total number of potential matches.
     const int num_pairs_to_match =
-      image_names_.size() * (image_names_.size() - 1) / 2;
+        image_names_.size() * (image_names_.size() - 1) / 2;
     matches->reserve(num_pairs_to_match);
 
     pairs_to_match_.reserve(num_pairs_to_match);
@@ -268,19 +260,9 @@ void FeatureMatcher::MatchAndVerifyImagePairs(
 
     // Perform geometric verification if applicable.
     if (options_.perform_geometric_verification) {
-      const CameraIntrinsicsPrior intrinsics1 =
-        FindWithDefault(intrinsics_, image1_name, CameraIntrinsicsPrior());
-      const CameraIntrinsicsPrior intrinsics2 =
-        FindWithDefault(intrinsics_, image2_name, CameraIntrinsicsPrior());
-
-      TwoViewMatchGeometricVerification geometric_verification(
-          options_.geometric_verification_options, intrinsics1, intrinsics2,
-          *features1, *features2, putative_matches);
-
       // If geometric verification fails, do not add the match to the output.
-      if (!geometric_verification.VerifyMatches(
-              &image_pair_match.correspondences,
-              &image_pair_match.twoview_info)) {
+      if (!GeometricVerification(
+              *features1, *features2, putative_matches, &image_pair_match)) {
         VLOG(2) << "Geometric verification between images " << image1_name
                 << " and " << image2_name << " failed.";
         continue;
@@ -312,6 +294,29 @@ void FeatureMatcher::MatchAndVerifyImagePairs(
       matches->push_back(image_pair_match);
     }
   }
+}
+
+bool FeatureMatcher::GeometricVerification(
+    const KeypointsAndDescriptors& features1,
+    const KeypointsAndDescriptors& features2,
+    const std::vector<IndexedFeatureMatch>& putative_matches,
+    ImagePairMatch* image_pair_match) {
+  const CameraIntrinsicsPrior intrinsics1 = FindWithDefault(
+      intrinsics_, features1.image_name, CameraIntrinsicsPrior());
+  const CameraIntrinsicsPrior intrinsics2 = FindWithDefault(
+      intrinsics_, features2.image_name, CameraIntrinsicsPrior());
+
+  TwoViewMatchGeometricVerification geometric_verification(
+      options_.geometric_verification_options,
+      intrinsics1,
+      intrinsics2,
+      features1,
+      features2,
+      putative_matches);
+
+  // Return whether geometric verification succeeds.
+  return geometric_verification.VerifyMatches(
+      &image_pair_match->correspondences, &image_pair_match->twoview_info);
 }
 
 }  // namespace theia

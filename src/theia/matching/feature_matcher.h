@@ -141,6 +141,16 @@ class FeatureMatcher {
                                         const int end_index,
                                         std::vector<ImagePairMatch>* matches);
 
+  // Performs geometric verification. By making this a virtual method, derived
+  // classes may implement custom verification methods (e.g., if rotations are
+  // known then custom solvers can be used to solve for only the relative
+  // translations).
+  virtual bool GeometricVerification(
+      const KeypointsAndDescriptors& features1,
+      const KeypointsAndDescriptors& features2,
+      const std::vector<IndexedFeatureMatch>& putative_matches,
+      ImagePairMatch* image_pair_match);
+
   // Fetches keypoints and descriptors from disk. This function is utilized by
   // the internal cache to preserve memory.
   std::shared_ptr<KeypointsAndDescriptors> FetchKeypointsAndDescriptorsFromDisk(
