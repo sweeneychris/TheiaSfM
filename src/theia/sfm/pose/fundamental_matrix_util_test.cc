@@ -77,6 +77,33 @@ TEST(FundamentalMatrixUtil, FocalLengths) {
   }
 }
 
+TEST(FundamentalMatrixUtil, SharedFocalLengthsZeroIntrinsics) {
+  static const double kTolerance = 1e-4;
+
+  for (int i = 0; i < 100; i++) {
+    const double gt_focal_length = rng.RandDouble(800, 1600);
+    const Vector3d rotation_angle_axis = rng.RandVector3d();
+    const Matrix3d rotation =
+        Eigen::AngleAxisd(rotation_angle_axis.norm(),
+                          rotation_angle_axis.normalized())
+            .toRotationMatrix();
+    const Vector3d translation = rng.RandVector3d().normalized();
+
+    // Create calibration matrices.
+    Matrix3d fundamental_matrix;
+    ComposeFundamentalMatrix(gt_focal_length,
+                             gt_focal_length,
+                             rotation.data(),
+                             translation.data(),
+                             fundamental_matrix.data());
+
+    double focal_length;
+    EXPECT_TRUE(SharedFocalLengthsFromFundamentalMatrix(
+        fundamental_matrix.data(), &focal_length));
+    EXPECT_NEAR(focal_length, gt_focal_length, kTolerance);
+  }
+}
+
 TEST(FundamentalMatrixUtil, FundamentalMatrixFromProjectionMatrices) {
   static const double kTolerance = 1e-12;
   static const int kNumPoints = 10;

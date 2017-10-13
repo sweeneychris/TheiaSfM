@@ -45,6 +45,13 @@ bool FocalLengthsFromFundamentalMatrix(const double fmatrix[3 * 3],
                                        double* focal_length1,
                                        double* focal_length2);
 
+// Given a fundamental matrix that relates two cameras with the same intrinsics,
+// extract the shared focal length. This assumes that the fundamental matrix was
+// computed with the effect of all non-focal length intrinsics (e.g., principal
+// point, aspect ratio, etc.) removed.
+bool SharedFocalLengthsFromFundamentalMatrix(const double fmatrix[3 * 3],
+                                             double* focal_length);
+
 // Computes the projection matrices corresponding to the fundamental matrix such
 // that if y^t * F * x = 0, pmatrix1 corresponds to the camera observing y and
 // pmatrix2 corresponds to the camera observing x.
