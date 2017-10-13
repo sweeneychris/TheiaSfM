@@ -39,6 +39,7 @@
 #include <Eigen/SVD>
 #include <glog/logging.h>
 
+#include "theia/math/polynomial.h"
 #include "theia/sfm/pose/util.h"
 
 namespace theia {
@@ -131,6 +132,75 @@ bool FocalLengthsFromFundamentalMatrix(const double fmatrix[3 * 3],
   return true;
 }
 
+// Given a fundamental matrix that relates two cameras with the same intrinsics,
+// extract the shared focal length. The method is provided in the article:
+//   "On Focal Length Calibration from Two Views" by Peter Sturm (CVPR 2001).
+bool SharedFocalLengthsFromFundamentalMatrix(const double fmatrix[3 * 3],
+                                             double* focal_length) {
+  // Construct a "semi-calibrated" matrix G with all intrinsics but focal length
+  // accounted for. In our case, the fundamental matrix is equivalent to G
+  // because we assume the fundmental matrix was computed with all the known
+  // intrinsics effects removed.
+  Map<const Matrix3d> G(fmatrix);
+
+  // Compute the SVD of the semi-calibrated fundamental matrix.
+  Eigen::JacobiSVD<Eigen::Matrix3d> svd(
+      G, Eigen::ComputeFullU | Eigen::ComputeFullV);
+  const Eigen::Matrix3d& U = svd.matrixU();
+  const Eigen::Matrix3d& V = svd.matrixV();
+  const double a = svd.singularValues()(0);
+  const double b = svd.singularValues()(1);
+
+  // Construct the quadratic equation that reveals the focal length.
+  const double U20 = U(2, 0);
+  const double U21 = U(2, 1);
+  const double V20 = V(2, 0);
+  const double V21 = V(2, 1);
+  const double U20_sq = U20 * U20;
+  const double U21_sq = U21 * U21;
+  const double V20_sq = V20 * V20;
+  const double V21_sq = V21 * V21;
+  Eigen::VectorXd coeffs(3);
+  coeffs(0) = a * a * (1.0 - U20_sq) * (1.0 - V20_sq) -
+              b * b * (1.0 - U21_sq) * (1.0 - V21_sq);
+  coeffs(1) = a * a * (U20_sq + V20_sq - 2.0 * U20_sq * V20_sq) -
+              b * b * (U21_sq + V21_sq - 2.0 * U21_sq * V21_sq);
+  coeffs(2) = a * a * U20_sq * V20_sq - b * b * U21_sq * V21_sq;
+
+  // Solve the quadratic equation. The roots provide the square of the focal
+  // length.
+  Eigen::VectorXd real_roots, imaginary_roots;
+  if (!FindPolynomialRoots(coeffs, &real_roots, &imaginary_roots)) {
+    return false;
+  }
+
+  // If niether root is positive then no valid solution exists. If one of the
+  // roots is negative then it leads to an imaginary value for the focal length
+  // so we can immediately return the other value as the solution.
+  if (real_roots(0) < 0 && real_roots(1) < 0) {
+    return false;
+  } else if (real_roots(0) < 0) {
+    *focal_length = std::sqrt(real_roots(1));
+  } else if (real_roots(1) < 0) {
+    *focal_length = std::sqrt(real_roots(0));
+  } else {
+    // If we reach this point then the roots are both positive and so we
+    // disambiguate the roots by selecting the root that best satisfies the
+    // linear constraint.
+    const double c1 =
+        a * U20 * U21 * (1.0 - V20_sq) + b * V20 * V21 * (1.0 - U21_sq);
+    const double c2 = U21 * V20 * (a * U20 * V20 + b * U21 * V21);
+    const double root1_val = c1 * real_roots(0) + c2;
+    const double root2_val = c1 * real_roots(1) + c2;
+    if (std::abs(root1_val) < std::abs(root2_val)) {
+      *focal_length = std::sqrt(real_roots(0));
+    } else {
+      *focal_length = std::sqrt(real_roots(1));
+    }
+  }
+
+  return true;
+}
 
 void ProjectionMatricesFromFundamentalMatrix(const double fmatrix[3 * 3],
                                              double pmatrix1[3 * 4],
