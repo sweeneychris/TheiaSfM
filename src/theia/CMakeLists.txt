@@ -102,6 +102,7 @@ set(THEIA_SRC
   sfm/bundle_adjustment/optimize_relative_position_with_known_rotation.cc
   sfm/camera/camera.cc
   sfm/camera/camera_intrinsics_model.cc
+  sfm/camera/division_undistortion_camera_model.cc
   sfm/camera/fisheye_camera_model.cc
   sfm/camera/fov_camera_model.cc
   sfm/camera/pinhole_camera_model.cc
@@ -269,6 +270,7 @@ if (BUILD_TESTING)
   gtest(math/rotation)
   gtest(sfm/bundle_adjustment/optimize_relative_position_with_known_rotation)
   gtest(sfm/camera/camera)
+  gtest(sfm/camera/division_undistortion_camera_model)
   gtest(sfm/camera/fisheye_camera_model)
   gtest(sfm/camera/fov_camera_model)
   gtest(sfm/camera/pinhole_camera_model)
