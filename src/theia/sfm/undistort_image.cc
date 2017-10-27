@@ -41,7 +41,9 @@
 #include "theia/image/image.h"
 #include "theia/sfm/camera/camera.h"
 #include "theia/sfm/camera/camera_intrinsics_model.h"
+#include "theia/sfm/camera/division_undistortion_camera_model.h"
 #include "theia/sfm/camera/fisheye_camera_model.h"
+#include "theia/sfm/camera/fov_camera_model.h"
 #include "theia/sfm/camera/pinhole_camera_model.h"
 #include "theia/sfm/camera/pinhole_radial_tangential_camera_model.h"
 #include "theia/sfm/reconstruction.h"
@@ -77,7 +79,10 @@ void SetLensDistortionToZero(Camera* camera) {
       intrinsics[FisheyeCameraModel::RADIAL_DISTORTION_4] = 0.0;
       break;
     case CameraIntrinsicsModelType::FOV:
-      intrinsics[FisheyeCameraModel::RADIAL_DISTORTION_1] = 0.0;
+      intrinsics[FOVCameraModel::RADIAL_DISTORTION_1] = 0.0;
+      break;
+    case CameraIntrinsicsModelType::DIVISION_UNDISTORTION:
+      intrinsics[DivisionUndistortionCameraModel::RADIAL_DISTORTION_1] = 0.0;
       break;
     default:
       LOG(FATAL) << "Invalid camera intrinsics type.";
@@ -201,10 +206,8 @@ bool UndistortImage(const Camera& distorted_camera,
                             undistorted_camera.ImageHeight());
 
   // Remap the distorted pixels into the undistorted image.
-  RemoveImageLensDistortion(distorted_camera,
-                            distorted_image,
-                            undistorted_camera,
-                            undistorted_image);
+  RemoveImageLensDistortion(
+      distorted_camera, distorted_image, undistorted_camera, undistorted_image);
 
   return true;
 }
@@ -216,9 +219,8 @@ bool UndistortCamera(const Camera& distorted_camera,
   SetLensDistortionToZero(undistorted_camera);
 
   Eigen::Vector4d undistorted_image_boundaries;
-  FindUndistortedImageBoundary(distorted_camera,
-                               *undistorted_camera,
-                               &undistorted_image_boundaries);
+  FindUndistortedImageBoundary(
+      distorted_camera, *undistorted_camera, &undistorted_image_boundaries);
 
   // Given the locations of the min/max undistorted pixels, compute the scale
   // factor to resize the undistorted image.
