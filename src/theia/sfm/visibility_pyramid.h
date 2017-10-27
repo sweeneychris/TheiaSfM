@@ -32,7 +32,7 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (sweeney.chris.m@gmail.com)
 
-#ifndef THEIA_SFM_VISIBILITY_PYRMAID_H_
+#ifndef THEIA_SFM_VISIBILITY_PYRAMID_H_
 #define THEIA_SFM_VISIBILITY_PYRAMID_H_
 
 #include <Eigen/Core>
