@@ -74,6 +74,7 @@ bool ExhaustiveSampler::Sample(std::vector<int>* subset) {
     }
     j_ = i_ + 1;
   }
+  return true;
 }
 
 }  // namespace theia
