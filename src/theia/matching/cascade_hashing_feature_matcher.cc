@@ -159,15 +159,22 @@ void CascadeHashingFeatureMatcher::AddImage(const std::string& image_name) {
 
 void CascadeHashingFeatureMatcher::AddImage(
     const std::string& image_name, const CameraIntrinsicsPrior& intrinsics) {
-  image_names_.push_back(image_name);
-  intrinsics_[image_name] = intrinsics;
   // Get the features from the cache and create hashed descriptors.
   std::shared_ptr<KeypointsAndDescriptors> features =
       this->keypoints_and_descriptors_cache_->Fetch(
           FeatureFilenameFromImage(image_name));
+  CHECK_NOTNULL(features.get());
+
+  image_names_.push_back(image_name);
+  intrinsics_[image_name] = intrinsics;
+
 
   // Initialize the cascade hasher if needed.
-  InitializeCascadeHasher(features->descriptors[0].size());
+  if (features->descriptors.size() == 0) {
+    InitializeCascadeHasher(128);
+  } else {
+    InitializeCascadeHasher(features->descriptors[0].size());
+  }
 
   // Create the hashing information.
   hashed_images_[image_name] =
