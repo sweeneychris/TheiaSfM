@@ -39,6 +39,8 @@
 #include <math.h>
 
 #include "theia/alignment/alignment.h"
+#include "theia/math/util.h"
+#include "theia/sfm/camera/camera.h"
 #include "theia/sfm/camera/division_undistortion_camera_model.h"
 #include "theia/test/test_utils.h"
 #include "theia/util/random.h"
@@ -76,6 +78,27 @@ TEST(DivisionUndistortionCameraModel, InternalParameterGettersAndSetters) {
   EXPECT_EQ(camera.PrincipalPointX(), 300.0);
   EXPECT_EQ(camera.PrincipalPointY(), 400.0);
   EXPECT_EQ(camera.RadialDistortion1(), -0.01);
+}
+
+TEST(DivisionUndistortionCameraModel, CameraParameterGettersAndSetters) {
+  Camera camera(CameraIntrinsicsModelType::DIVISION_UNDISTORTION);
+
+  EXPECT_EQ(camera.CameraIntrinsics()->Type(),
+            CameraIntrinsicsModelType::DIVISION_UNDISTORTION);
+
+  // Check that default values are set
+  EXPECT_EQ(camera.FocalLength(), 1.0);
+  EXPECT_EQ(camera.PrincipalPointX(), 0.0);
+  EXPECT_EQ(camera.PrincipalPointY(), 0.0);
+
+  // Set parameters to different values.
+  camera.SetFocalLength(600.0);
+  camera.SetPrincipalPoint(300.0, 400.0);
+
+  // Check that the values were updated.
+  EXPECT_EQ(camera.FocalLength(), 600.0);
+  EXPECT_EQ(camera.PrincipalPointX(), 300.0);
+  EXPECT_EQ(camera.PrincipalPointY(), 400.0);
 }
 
 // Test to ensure that the camera intrinsics are being set appropriately.
@@ -296,7 +319,7 @@ TEST(DivisionUndistortionCameraModel, DistortionTestLarge) {
 }
 
 void ReprojectionTest(const DivisionUndistortionCameraModel& camera) {
-  static const double kTolerance = 1e-8;
+  static const double kTolerance = 1e-6;
   const double kNormalizedTolerance = kTolerance / camera.FocalLength();
   static const int kImageWidth = 1200;
   static const int kImageHeight = 800;
@@ -389,6 +412,74 @@ TEST(DivisionUndistortionCameraModel, ReprojectionLarge) {
 
   camera.SetRadialDistortion(-1e-6);
   ReprojectionTest(camera);
+}
+
+TEST(DivisionUndistortionCameraModel, Triangulation) {
+  const Eigen::Vector4d point(-2.3, 1.7, 6, 1.0);
+  const double kFocalLength = 3587.6;
+  const double kUndistortion = -1.07574e-08;
+  const Eigen::Vector2d kPrincipalPoint(1980.0, 1200.0);
+  Camera camera1(CameraIntrinsicsModelType::DIVISION_UNDISTORTION);
+  camera1.SetFocalLength(kFocalLength);
+  camera1.SetPrincipalPoint(kPrincipalPoint.x(), kPrincipalPoint.y());
+  camera1.mutable_intrinsics()
+      [DivisionUndistortionCameraModel::RADIAL_DISTORTION_1] = kUndistortion;
+  Camera camera2 = camera1;
+  camera2.SetOrientationFromAngleAxis(Eigen::Vector3d(-0.1,-0.4, 0.3));
+  camera2.SetPosition(Eigen::Vector3d(0.8, 0.2, 0.1));
+
+  Eigen::Vector2d feature1, feature2;
+  const double depth1 = camera1.ProjectPoint(point, &feature1);
+  const double depth2 = camera2.ProjectPoint(point, &feature2);
+  CHECK_GT(depth1, 0.0);
+  CHECK_GT(depth2, 0.0);
+  LOG(INFO) << "Feature1: " << feature1.transpose();
+  LOG(INFO) << "Feature2: " << feature2.transpose();
+
+  const Eigen::Vector3d gt_ray1 =
+      (point.hnormalized() - camera1.GetPosition()).normalized();
+  const Eigen::Vector3d gt_ray2 =
+      (point.hnormalized() - camera2.GetPosition()).normalized();
+  const Eigen::Vector3d ray1 =
+      camera1.PixelToUnitDepthRay(feature1).normalized();
+  const Eigen::Vector3d ray2 =
+      camera2.PixelToUnitDepthRay(feature2).normalized();
+
+  const double angle1 = RadToDeg(std::acos(gt_ray1.dot(ray1)));
+  const double angle2 = RadToDeg(std::acos(gt_ray2.dot(ray2)));
+  CHECK_LT(std::abs(angle1), 1e-6);
+  CHECK_LT(std::abs(angle1), 1e-6);
+}
+
+TEST(DivisionUndistortionCameraModel, NoDistortion) {
+  const Eigen::Vector4d point(-2.3, 1.7, 6, 1.0);
+  const double kFocalLength = 3587.6;
+  const Eigen::Vector2d kPrincipalPoint(1980.0, 1200.0);
+  Camera camera1(CameraIntrinsicsModelType::DIVISION_UNDISTORTION);
+  camera1.SetFocalLength(kFocalLength);
+  camera1.SetPrincipalPoint(kPrincipalPoint.x(), kPrincipalPoint.y());
+  camera1.SetOrientationFromAngleAxis(Eigen::Vector3d(-0.1,-0.4, 0.3));
+  camera1.SetPosition(Eigen::Vector3d(0.8, 0.2, 0.1));
+
+  Camera camera2(CameraIntrinsicsModelType::PINHOLE);
+  camera2.SetOrientationFromAngleAxis(Eigen::Vector3d(-0.1,-0.4, 0.3));
+  camera2.SetPosition(Eigen::Vector3d(0.8, 0.2, 0.1));
+  camera2.SetFocalLength(kFocalLength);
+  camera2.SetPrincipalPoint(kPrincipalPoint.x(), kPrincipalPoint.y());
+
+  Eigen::Vector2d feature1, feature2;
+  const double depth1 = camera1.ProjectPoint(point, &feature1);
+  const double depth2 = camera2.ProjectPoint(point, &feature2);
+  EXPECT_DOUBLE_EQ(depth1, depth2);
+  EXPECT_DOUBLE_EQ(feature1.x(), feature2.x());
+  EXPECT_DOUBLE_EQ(feature1.y(), feature2.y());
+
+  Eigen::Vector2d undistorted_pixel;
+  DivisionUndistortionCameraModel::DistortedPixelToUndistortedPixel(
+      camera1.intrinsics(), feature1.data(), undistorted_pixel.data());
+  EXPECT_DOUBLE_EQ(feature1.x(), undistorted_pixel.x());
+  EXPECT_DOUBLE_EQ(feature1.y(), undistorted_pixel.y());
+
 }
 
 }  // namespace theia
