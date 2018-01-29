@@ -113,6 +113,12 @@ class DivisionUndistortionCameraModel : public CameraIntrinsicsModel {
                                        const T* point,
                                        T* pixel);
 
+  // Project the point onto the image plane without distorting the image.
+  template <typename T>
+  static void CameraToUndistortedPixelCoordinates(const T* intrinsic_parameters,
+                                                  const T* point,
+                                                  T* undistorted_pixel);
+
   // Given a pixel in the image coordinates, remove the effects of camera
   // intrinsics parameters and lens distortion to produce a point in the camera
   // coordinate system. The point output by this method is effectively a ray in
@@ -137,6 +143,12 @@ class DivisionUndistortionCameraModel : public CameraIntrinsicsModel {
   static void UndistortPoint(const T* intrinsic_parameters,
                              const T* distorted_point,
                              T* undistorted_point);
+
+  // Transform the distorted pixel to the undistorted pixel.
+  template <typename T>
+  static void DistortedPixelToUndistortedPixel(const T* intrinsic_parameters,
+                                               const T* distorted_pixel,
+                                               T* undistorted_pixel);
 
   // ----------------------- Getter and Setter methods ---------------------- //
   void SetAspectRatio(const double aspect_ratio);
@@ -190,6 +202,30 @@ void DivisionUndistortionCameraModel::CameraToPixelCoordinates(
 }
 
 template <typename T>
+void DivisionUndistortionCameraModel::CameraToUndistortedPixelCoordinates(
+    const T* intrinsic_parameters, const T* point, T* undistorted_pixel) {
+  // Get normalized pixel projection at image plane depth = 1.
+  const T& depth = point[2];
+  const T normalized_pixel[2] = {point[0] / depth, point[1] / depth};
+
+  // Apply calibration parameters to transform normalized units into pixels.
+  const T& focal_length =
+      intrinsic_parameters[DivisionUndistortionCameraModel::FOCAL_LENGTH];
+  const T& aspect_ratio =
+      intrinsic_parameters[DivisionUndistortionCameraModel::ASPECT_RATIO];
+  const T focal_length_y = focal_length * aspect_ratio;
+  const T& principal_point_x =
+      intrinsic_parameters[DivisionUndistortionCameraModel::PRINCIPAL_POINT_X];
+  const T& principal_point_y =
+      intrinsic_parameters[DivisionUndistortionCameraModel::PRINCIPAL_POINT_Y];
+
+  // Apply the focal length and aspect ratio.
+  undistorted_pixel[0] = focal_length * normalized_pixel[0] + principal_point_x;
+  undistorted_pixel[1] =
+      focal_length_y * normalized_pixel[1] + principal_point_y;
+}
+
+template <typename T>
 void DivisionUndistortionCameraModel::PixelToCameraCoordinates(
     const T* intrinsic_parameters, const T* pixel, T* point) {
   const T& focal_length =
@@ -222,54 +258,34 @@ void DivisionUndistortionCameraModel::DistortPoint(
     const T* intrinsic_parameters,
     const T* undistorted_point,
     T* distorted_point) {
-  static const T kVerySmallNumber = std::numeric_limits<T>::epsilon();
+  static const double kVerySmallNumber = std::numeric_limits<double>::epsilon();
 
   // The undistorted point may be simply computed from the distorted point as:
   //
-  //   x_u = x_d / (1 + k * r_d^2)               (1)
+  //   x_u = x_d / (1 + k * r_d^2)
+  //   y_u = y_d / (1 + k * r_d^2)
   //
   // Thus, the distorted point is given as:
   //
-  //   x_d = x_u * (1 + k * r_d^2)               (2)
-  //
-  // If we can determine the distorted radius r_d, then we can easily determine
-  // the distorted point. From Eq (1), it can be easily shown that the
-  // relationship between the undistorted radius and the distorted radius is
-  // similarly given by:
-  //
-  //   r_u = r_d / (1 + k * r_d^2)
-  //
-  // This may be transformed into a quadratic equation in terms of the unknown
-  // distorted radius r_d:
-  //
-  //   r_d^2 * (k * r_u) - r_d + r_u = 0
-  //
-  // Solving for r_d we get a single root in the valid range of r_d > 0:
-  //
-  //  r_d = (1 - sqrt(1 - 4 * k * r_u^2)) / (2 * k * r_u)
-  //
-  // We can then plug this into Eq (2) to obtain the distorted point.
+  //   x_d = x_u * (1 - sqrt(1 - 4 * k * r_u^2)) / (2 * k * r_u^2)
+  //   y_d = y_u * (1 - sqrt(1 - 4 * k * r_u^2)) / (2 * k * r_u^2)
   const T r_u_sq = undistorted_point[0] * undistorted_point[0] +
                    undistorted_point[1] * undistorted_point[1];
-  const T r_u = ceres::sqrt(r_u_sq);
   const T& k = intrinsic_parameters
       [DivisionUndistortionCameraModel::RADIAL_DISTORTION_1];
-  const T denom = 2.0 * k * r_u;
+  const T denom = 2.0 * k * r_u_sq;
+  const T inner_sqrt = 1.0 - 4.0 * k * r_u_sq;
 
-  // If the denominator is nearly zero, use L'Hopital's rule to compute r_d by
-  // taking the derivatives of the numerator and denominator.
-  T r_d_sq;
-  if (denom < kVerySmallNumber && denom > -kVerySmallNumber) {
-    // We can directly compute r_d_sq to avoid a sqrt call.
-    r_d_sq = 1.0 / (1.0 - 4.0 * k * r_u_sq);
+  // If the denominator is nearly zero then we can evaluate the distorted
+  // coordinates as k or r_u^2 goes to zero. Both evaluate to the identity.
+  if (ceres::abs(denom) < kVerySmallNumber || inner_sqrt < T(0.0)) {
+    distorted_point[0] = undistorted_point[0];
+    distorted_point[1] = undistorted_point[1];
   } else {
-    const T r_d = (1.0 - ceres::sqrt(1.0 - 4.0 * k * r_u_sq)) / denom;
-    r_d_sq = r_d * r_d;
+    const T scale = (1.0 - ceres::sqrt(inner_sqrt)) / (2.0 * k * r_u_sq);
+    distorted_point[0] = undistorted_point[0] * scale;
+    distorted_point[1] = undistorted_point[1] * scale;
   }
-
-  // Plug in r_d into Eq (2) to obtain the distorted point.
-  distorted_point[0] = undistorted_point[0] * (1.0 + k * r_d_sq);
-  distorted_point[1] = undistorted_point[1] * (1.0 + k * r_d_sq);
 }
 
 template <typename T>
@@ -292,6 +308,30 @@ void DivisionUndistortionCameraModel::UndistortPoint(
   const T undistortion = 1.0 / (1.0 + k * r_d_sq);
   undistorted_point[0] = distorted_point[0] * undistortion;
   undistorted_point[1] = distorted_point[1] * undistortion;
+}
+
+// Transform the distorted pixel to the undistorted pixel.
+template <typename T>
+void DivisionUndistortionCameraModel::DistortedPixelToUndistortedPixel(
+    const T* intrinsic_parameters,
+    const T* distorted_pixel,
+    T* undistorted_pixel) {
+  const T& principal_point_x =
+      intrinsic_parameters[DivisionUndistortionCameraModel::PRINCIPAL_POINT_X];
+  const T& principal_point_y =
+      intrinsic_parameters[DivisionUndistortionCameraModel::PRINCIPAL_POINT_Y];
+
+  // Normalize the y coordinate first.
+  T centered_distorted_pixel[2];
+  centered_distorted_pixel[0] = distorted_pixel[0] - principal_point_x;
+  centered_distorted_pixel[1] = distorted_pixel[1] - principal_point_y;
+
+  // Undo the radial distortion.
+  DivisionUndistortionCameraModel::UndistortPoint(
+      intrinsic_parameters, centered_distorted_pixel, undistorted_pixel);
+
+  undistorted_pixel[0] += principal_point_x;
+  undistorted_pixel[1] += principal_point_y;
 }
 
 }  // namespace theia
