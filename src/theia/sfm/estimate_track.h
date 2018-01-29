@@ -35,6 +35,7 @@
 #ifndef THEIA_SFM_ESTIMATE_TRACK_H_
 #define THEIA_SFM_ESTIMATE_TRACK_H_
 
+#include <atomic>
 #include <mutex>
 #include <unordered_set>
 #include <vector>
@@ -108,6 +109,9 @@ class TrackEstimator {
   // A mutex lock for setting the summary
   TrackEstimator::Summary summary_;
   std::mutex summary_mutex_;
+
+  std::atomic_int num_bad_angles_, num_failed_triangulations_,
+      num_bad_reprojections_;
 };
 
 }  // namespace theia

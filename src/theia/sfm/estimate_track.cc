@@ -137,6 +137,9 @@ TrackEstimator::Summary TrackEstimator::EstimateTracks(
     const std::unordered_set<TrackId>& track_ids) {
   tracks_to_estimate_.clear();
   summary_ = TrackEstimator::Summary();
+  num_bad_angles_ = 0;
+  num_failed_triangulations_ = 0;
+  num_bad_reprojections_ = 0;
 
   // Get all unestimated track ids.
   tracks_to_estimate_.reserve(track_ids.size());
@@ -177,7 +180,11 @@ TrackEstimator::Summary TrackEstimator::EstimateTracks(
   pool.reset(nullptr);
 
   LOG(INFO) << summary_.estimated_tracks.size() << " tracks were estimated of "
-            << summary_.num_triangulation_attempts << " possible tracks.";
+            << summary_.num_triangulation_attempts << " possible tracks. "
+            << num_bad_angles_
+            << " triangulations failed due to bad triangulation angles and "
+            << num_bad_reprojections_
+            << " triangulations failed with too high reprojection errors.";
   return summary_;
 }
 
@@ -217,11 +224,13 @@ bool TrackEstimator::EstimateTrack(const TrackId track_id) {
   if (view_ids.size() < kMinNumObservationsForTriangulation ||
       !SufficientTriangulationAngle(ray_directions,
                                     options_.min_triangulation_angle_degrees)) {
+    ++num_bad_angles_;
     return false;
   }
 
   // Triangulate the track.
   if (!TriangulateMidpoint(origins, ray_directions, track->MutablePoint())) {
+    ++num_failed_triangulations_;
     return false;
   }
 
@@ -246,6 +255,7 @@ bool TrackEstimator::EstimateTrack(const TrackId track_id) {
                                    view_ids,
                                    features,
                                    sq_max_reprojection_error_pixels)) {
+    ++num_bad_reprojections_;
     return false;
   }
 
