@@ -72,6 +72,7 @@
 #include "theia/matching/feature_matcher.h"
 #include "theia/matching/feature_matcher_options.h"
 #include "theia/matching/feature_matcher_utils.h"
+#include "theia/matching/global_descriptor_extractor.h"
 #include "theia/matching/guided_epipolar_matcher.h"
 #include "theia/matching/image_pair_match.h"
 #include "theia/matching/indexed_feature_match.h"
