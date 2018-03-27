@@ -64,7 +64,7 @@ class FloatImage {
 
   // Copy function. This is a deep copy of the image.
   FloatImage(const FloatImage& image_to_copy);
-  explicit FloatImage(const OpenImageIO::ImageBuf& image);
+  explicit FloatImage(const OIIO_NAMESPACE::ImageBuf& image);
   FloatImage& operator=(const FloatImage& image2);
   ~FloatImage() {}
 
@@ -74,8 +74,8 @@ class FloatImage {
   // wrapper for all algorithms. Getting a reference to the ImageBuf provides
   // efficient access to the image data so that the image processing algorithms
   // or other manipulations may be executed on the pixels.
-  OpenImageIO::ImageBuf& GetOpenImageIOImageBuf();
-  const OpenImageIO::ImageBuf& GetOpenImageIOImageBuf() const;
+  OIIO_NAMESPACE::ImageBuf& GetOpenImageIOImageBuf();
+  const OIIO_NAMESPACE::ImageBuf& GetOpenImageIOImageBuf() const;
 
   // Image information
   int Rows() const;
@@ -172,7 +172,7 @@ class FloatImage {
   void Resize(double scale);
 
  protected:
-  OpenImageIO::ImageBuf image_;
+  OIIO_NAMESPACE::ImageBuf image_;
 };
 }  // namespace theia
 

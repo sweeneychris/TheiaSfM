@@ -123,8 +123,8 @@ bool ExifReader::ExtractEXIFMetadata(
     CameraIntrinsicsPrior* camera_intrinsics_prior) const {
   CHECK_NOTNULL(camera_intrinsics_prior);
 
-  OpenImageIO::ImageBuf image(image_file);
-  OpenImageIO::ImageSpec image_spec = image.spec();
+  OIIO_NAMESPACE::ImageBuf image(image_file);
+  OIIO_NAMESPACE::ImageSpec image_spec = image.spec();
 
   // Set the image dimensions.
   camera_intrinsics_prior->image_width = image_spec.width;
@@ -150,7 +150,7 @@ bool ExifReader::ExtractEXIFMetadata(
   camera_intrinsics_prior->focal_length.is_set = true;
 
   // Set GPS latitude.
-  const OpenImageIO::ImageIOParameter* latitude =
+  const OIIO_NAMESPACE::ImageIOParameter* latitude =
       image_spec.find_attribute("GPS:Latitude");
   if (latitude != nullptr) {
     camera_intrinsics_prior->latitude.is_set = true;
@@ -169,7 +169,7 @@ bool ExifReader::ExtractEXIFMetadata(
   }
 
   // Set GPS longitude.
-  const OpenImageIO::ImageIOParameter* longitude =
+  const OIIO_NAMESPACE::ImageIOParameter* longitude =
       image_spec.find_attribute("GPS:Longitude");
   if (longitude != nullptr) {
     camera_intrinsics_prior->longitude.is_set = true;
@@ -189,7 +189,7 @@ bool ExifReader::ExtractEXIFMetadata(
 
 
   // Set GSP altitude.
-  const OpenImageIO::ImageIOParameter* altitude =
+  const OIIO_NAMESPACE::ImageIOParameter* altitude =
       image_spec.find_attribute("GPS:Altitude");
   if (altitude != nullptr) {
     camera_intrinsics_prior->altitude.is_set = true;
@@ -201,7 +201,7 @@ bool ExifReader::ExtractEXIFMetadata(
 }
 
 bool ExifReader::SetFocalLengthFromExif(
-    const OpenImageIO::ImageSpec& image_spec,
+    const OIIO_NAMESPACE::ImageSpec& image_spec,
     CameraIntrinsicsPrior* camera_intrinsics_prior) const {
   static const float kMinFocalLength = 1e-2;
 
@@ -264,7 +264,7 @@ bool ExifReader::SetFocalLengthFromExif(
 }
 
 bool ExifReader::SetFocalLengthFromSensorDatabase(
-    const OpenImageIO::ImageSpec& image_spec,
+    const OIIO_NAMESPACE::ImageSpec& image_spec,
     CameraIntrinsicsPrior* camera_intrinsics_prior) const {
   const int max_image_dimension = std::max(image_spec.width, image_spec.height);
   const float exif_focal_length =
