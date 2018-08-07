@@ -165,9 +165,9 @@ void RemoveImageLensDistortion(const Camera& distorted_camera,
   // For each pixel in the undistorted image, find the coordinate in the
   // distorted image and set the pixel color accordingly.
   const int num_channels = distorted_image.Channels();
-  OpenImageIO::ImageBuf& undistorted_img =
+  oiio::ImageBuf& undistorted_img =
       undistorted_image->GetOpenImageIOImageBuf();
-  OpenImageIO::ImageBuf::Iterator<float> undistorted_it(undistorted_img);
+  oiio::ImageBuf::Iterator<float> undistorted_it(undistorted_img);
   for (; !undistorted_it.done(); ++undistorted_it) {
     Eigen::Vector2d image_point(undistorted_it.x() + 0.5,
                                 undistorted_it.y() + 0.5);

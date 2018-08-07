@@ -53,11 +53,11 @@ RandomNumberGenerator rng(51);
 std::string img_filename = THEIA_DATA_DIR + std::string("/") + FLAGS_test_img;
 
 #define ASSERT_IMG_EQ(oiio_img, theia_img, rows, cols)      \
-  oiio_img.read(0, 0, true, OpenImageIO::TypeDesc::FLOAT);  \
+  oiio_img.read(0, 0, true, oiio::TypeDesc::FLOAT);         \
   ASSERT_EQ(oiio_img.oriented_width(), theia_img.Cols());   \
   ASSERT_EQ(oiio_img.oriented_height(), theia_img.Rows());  \
   ASSERT_EQ(oiio_img.nchannels(), theia_img.Channels());    \
-  OpenImageIO::ImageBuf::ConstIterator<float> it(oiio_img); \
+  oiio::ImageBuf::ConstIterator<float> it(oiio_img); \
   for (; !it.done(); ++it) {                                \
     for (int c = 0; c < oiio_img.nchannels(); c++) {        \
       ASSERT_EQ(it[c], theia_img.GetXY(it.x(), it.y(), c)); \
@@ -89,7 +89,7 @@ float Interpolate(const FloatImage& image,
 
 // Test that inputting the old fashioned way is the same as through our class.
 TEST(Image, RGBInput) {
-  OpenImageIO::ImageBuf oiio_img(img_filename.c_str());
+  oiio::ImageBuf oiio_img(img_filename.c_str());
   oiio_img.read();
   FloatImage theia_img(img_filename);
 
@@ -102,7 +102,7 @@ TEST(Image, RGBInput) {
 
 // Test that width and height methods work.
 TEST(Image, RGBColsRows) {
-  OpenImageIO::ImageBuf oiio_img(img_filename.c_str());
+  oiio::ImageBuf oiio_img(img_filename.c_str());
   FloatImage theia_img(img_filename);
 
   int true_height = oiio_img.oriented_height();
@@ -114,10 +114,10 @@ TEST(Image, RGBColsRows) {
 
 // Test that inputting the old fashioned way is the same as through our class.
 TEST(Image, ConvertToGrayscaleImage) {
-  OpenImageIO::ImageBuf oiio_img(img_filename.c_str());
-  OpenImageIO::ImageBuf gray_img;
+  oiio::ImageBuf oiio_img(img_filename.c_str());
+  oiio::ImageBuf gray_img;
   const float luma_weights[3] = {.2126, .7152, .0722};
-  OpenImageIO::ImageBufAlgo::channel_sum(gray_img, oiio_img, luma_weights);
+  oiio::ImageBufAlgo::channel_sum(gray_img, oiio_img, luma_weights);
 
   FloatImage theia_img(img_filename);
   theia_img.ConvertToGrayscaleImage();
@@ -131,10 +131,10 @@ TEST(Image, ConvertToGrayscaleImage) {
 }
 
 TEST(Image, ConvertToRGBImage) {
-  OpenImageIO::ImageBuf oiio_img(img_filename.c_str());
-  OpenImageIO::ImageBuf gray_img;
+  oiio::ImageBuf oiio_img(img_filename.c_str());
+  oiio::ImageBuf gray_img;
   const float luma_weights[3] = {.2126, .7152, .0722};
-  OpenImageIO::ImageBufAlgo::channel_sum(gray_img, oiio_img, luma_weights);
+  oiio::ImageBufAlgo::channel_sum(gray_img, oiio_img, luma_weights);
 
   // This should result in an image with the grayscale image copied in each
   // channel.
@@ -148,7 +148,7 @@ TEST(Image, ConvertToRGBImage) {
 
   // Check that all channels have equal value and that the value is equal to the
   // grayscale image.
-  for (OpenImageIO::ImageBuf::ConstIterator<float> it(gray_img);
+  for (oiio::ImageBuf::ConstIterator<float> it(gray_img);
        !it.done();
        ++it) {
     ASSERT_EQ(it[0], rgb_img.GetXY(it.x(), it.y(), 0));

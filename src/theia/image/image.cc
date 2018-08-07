@@ -60,18 +60,16 @@ FloatImage::FloatImage(const FloatImage& image_to_copy) {
 }
 
 FloatImage::FloatImage(const int width, const int height, const int channels) {
-  OpenImageIO::ImageSpec image_spec(width, height, channels,
-                                    OpenImageIO::TypeDesc::FLOAT);
+  oiio::ImageSpec image_spec(width, height, channels, oiio::TypeDesc::FLOAT);
   image_.reset(image_spec);
 }
 
 FloatImage::FloatImage(const int width, const int height, const int channels,
                        float* buffer)
-    : image_(OpenImageIO::ImageSpec(width, height, channels,
-                                    OpenImageIO::TypeDesc::FLOAT),
+    : image_(oiio::ImageSpec(width, height, channels, oiio::TypeDesc::FLOAT),
              reinterpret_cast<void*>(buffer)) {}
 
-FloatImage::FloatImage(const OpenImageIO::ImageBuf& image) {
+FloatImage::FloatImage(const oiio::ImageBuf& image) {
   image_.copy(image);
 }
 
@@ -80,9 +78,9 @@ FloatImage& FloatImage::operator=(const FloatImage& image2) {
   return *this;
 }
 
-OpenImageIO::ImageBuf& FloatImage::GetOpenImageIOImageBuf() { return image_; }
+oiio::ImageBuf& FloatImage::GetOpenImageIOImageBuf() { return image_; }
 
-const OpenImageIO::ImageBuf& FloatImage::GetOpenImageIOImageBuf() const {
+const oiio::ImageBuf& FloatImage::GetOpenImageIOImageBuf() const {
   return image_;
 }
 
@@ -106,7 +104,7 @@ void FloatImage::SetXY(const int x, const int y, const int c,
   DCHECK_LT(c, Channels());
 
   // Set the ROI to be the precise pixel location in the correct channel.
-  OpenImageIO::ImageBuf::Iterator<float> it(image_, x, y, 0);
+  oiio::ImageBuf::Iterator<float> it(image_, x, y, 0);
   it[c] = value;
 }
 
@@ -185,9 +183,9 @@ void FloatImage::ConvertToGrayscaleImage() {
   // Compute luminance via a weighted sum of R,G,B (assuming Rec709 primaries
   // and a linear scale)
   const float luma_weights[3] = {.2126, .7152, .0722};
-  OpenImageIO::ImageBuf source = image_;
+  oiio::ImageBuf source = image_;
   image_.clear();
-  OpenImageIO::ImageBufAlgo::channel_sum(image_, source, luma_weights);
+  oiio::ImageBufAlgo::channel_sum(image_, source, luma_weights);
 }
 
 void FloatImage::ConvertToRGBImage() {
@@ -198,20 +196,20 @@ void FloatImage::ConvertToRGBImage() {
 
   if (Channels() == 1) {
     // Copy the single grayscale channel into r, g, and b.
-    const OpenImageIO::ImageBuf source(image_);
-    const OpenImageIO::ImageSpec image_spec(Width(), Height(), 3,
-                                            OpenImageIO::TypeDesc::FLOAT);
+    const oiio::ImageBuf source(image_);
+    const oiio::ImageSpec image_spec(Width(), Height(), 3,
+                                     oiio::TypeDesc::FLOAT);
     image_.reset(image_spec);
-    OpenImageIO::ImageBufAlgo::paste(image_, 0, 0, 0, 0, source);
-    OpenImageIO::ImageBufAlgo::paste(image_, 0, 0, 0, 1, source);
-    OpenImageIO::ImageBufAlgo::paste(image_, 0, 0, 0, 2, source);
+    oiio::ImageBufAlgo::paste(image_, 0, 0, 0, 0, source);
+    oiio::ImageBufAlgo::paste(image_, 0, 0, 0, 1, source);
+    oiio::ImageBufAlgo::paste(image_, 0, 0, 0, 2, source);
   } else if (Channels() > 3) {
     // Copy only the r,g,b channels and drop the rest.
-    const OpenImageIO::ImageBuf source(image_);
-    const OpenImageIO::ImageSpec image_spec(Width(), Height(), 3,
-                                            OpenImageIO::TypeDesc::FLOAT);
+    const oiio::ImageBuf source(image_);
+    const oiio::ImageSpec image_spec(Width(), Height(), 3,
+                                     oiio::TypeDesc::FLOAT);
     image_.reset(image_spec);
-    OpenImageIO::ImageBufAlgo::channels(image_, source, 3, NULL);
+    oiio::ImageBufAlgo::channels(image_, source, 3, NULL);
   } else {
     LOG(FATAL) << "Converting from " << Channels()
                << " channels to RGB is unsupported.";
@@ -240,12 +238,12 @@ FloatImage FloatImage::AsRGBImage() const {
 }
 
 void FloatImage::ScalePixels(float scale) {
-  OpenImageIO::ImageBufAlgo::mul(image_, image_, scale);
+  oiio::ImageBufAlgo::mul(image_, image_, scale);
 }
 
 void FloatImage::Read(const std::string& filename) {
   image_.reset(filename);
-  image_.read(0, 0, true, OpenImageIO::TypeDesc::FLOAT);
+  image_.read(0, 0, true, oiio::TypeDesc::FLOAT);
 }
 
 void FloatImage::Write(const std::string& filename) const {
@@ -261,19 +259,19 @@ const float* FloatImage::Data() const {
 
 FloatImage FloatImage::ComputeGradientX() const {
   float sobel_filter_x[9] = {-.125, 0, .125, -.25, 0, .25, -.125, 0, .125};
-  OpenImageIO::ImageSpec spec(3, 3, 1, OpenImageIO::TypeDesc::FLOAT);
-  OpenImageIO::ImageBuf kernel_x(spec, sobel_filter_x);
-  OpenImageIO::ImageBuf gradient_x;
-  OpenImageIO::ImageBufAlgo::convolve(gradient_x, image_, kernel_x, false);
+  oiio::ImageSpec spec(3, 3, 1, oiio::TypeDesc::FLOAT);
+  oiio::ImageBuf kernel_x(spec, sobel_filter_x);
+  oiio::ImageBuf gradient_x;
+  oiio::ImageBufAlgo::convolve(gradient_x, image_, kernel_x, false);
   return FloatImage(gradient_x);
 }
 
 FloatImage FloatImage::ComputeGradientY() const {
   float sobel_filter_y[9] = {-.125, -.25, -.125, 0, 0, 0, .125, .25, .125};
-  OpenImageIO::ImageSpec spec(3, 3, 1, OpenImageIO::TypeDesc::FLOAT);
-  OpenImageIO::ImageBuf kernel_y(spec, sobel_filter_y);
-  OpenImageIO::ImageBuf gradient_y;
-  OpenImageIO::ImageBufAlgo::convolve(gradient_y, image_, kernel_y, false);
+  oiio::ImageSpec spec(3, 3, 1, oiio::TypeDesc::FLOAT);
+  oiio::ImageBuf kernel_y(spec, sobel_filter_y);
+  oiio::ImageBuf gradient_y;
+  oiio::ImageBufAlgo::convolve(gradient_y, image_, kernel_y, false);
   return FloatImage(gradient_y);
 }
 
@@ -282,30 +280,30 @@ FloatImage FloatImage::ComputeGradient() const {
   float sobel_filter_x[9] = {-.125, 0, .125, -.25, 0, .25, -.125, 0, .125};
   float sobel_filter_y[9] = {-.125, -.25, -.125, 0, 0, 0, .125, .25, .125};
 
-  OpenImageIO::ImageSpec spec(3, 3, 1, OpenImageIO::TypeDesc::FLOAT);
-  OpenImageIO::ImageBuf kernel_x(spec, sobel_filter_x);
-  OpenImageIO::ImageBuf kernel_y(spec, sobel_filter_y);
+  oiio::ImageSpec spec(3, 3, 1, oiio::TypeDesc::FLOAT);
+  oiio::ImageBuf kernel_x(spec, sobel_filter_x);
+  oiio::ImageBuf kernel_y(spec, sobel_filter_y);
 
-  OpenImageIO::ImageBuf gradient, gradient_x, gradient_y;
-  OpenImageIO::ImageBufAlgo::convolve(gradient_x, image_, kernel_x, false);
-  OpenImageIO::ImageBufAlgo::abs(gradient_x, gradient_x);
-  OpenImageIO::ImageBufAlgo::convolve(gradient_y, image_, kernel_y, false);
-  OpenImageIO::ImageBufAlgo::abs(gradient_y, gradient_y);
-  OpenImageIO::ImageBufAlgo::add(gradient, gradient_x, gradient_y);
+  oiio::ImageBuf gradient, gradient_x, gradient_y;
+  oiio::ImageBufAlgo::convolve(gradient_x, image_, kernel_x, false);
+  oiio::ImageBufAlgo::abs(gradient_x, gradient_x);
+  oiio::ImageBufAlgo::convolve(gradient_y, image_, kernel_y, false);
+  oiio::ImageBufAlgo::abs(gradient_y, gradient_y);
+  oiio::ImageBufAlgo::add(gradient, gradient_x, gradient_y);
 
   return FloatImage(gradient);
 }
 
 void FloatImage::ApproximateGaussianBlur(const int kernel_size) {
-  OpenImageIO::ImageBuf kernel;
-  OpenImageIO::ImageBufAlgo::make_kernel(kernel, "gaussian",
-                                         static_cast<float>(kernel_size),
-                                         static_cast<float>(kernel_size));
-  OpenImageIO::ImageBufAlgo::convolve(image_, image_, kernel);
+  oiio::ImageBuf kernel;
+  oiio::ImageBufAlgo::make_kernel(kernel, "gaussian",
+                                  static_cast<float>(kernel_size),
+                                  static_cast<float>(kernel_size));
+  oiio::ImageBufAlgo::convolve(image_, image_, kernel);
 }
 
 void FloatImage::MedianFilter(const int patch_width) {
-  CHECK(OpenImageIO::ImageBufAlgo::median_filter(image_, image_, patch_width));
+  CHECK(oiio::ImageBufAlgo::median_filter(image_, image_, patch_width));
 }
 
 void FloatImage::Integrate(FloatImage* integral) const {
@@ -331,17 +329,17 @@ void FloatImage::Resize(int new_width, int new_height, int num_channels) {
   // If the image has not been initialized then initialize it with the image
   // spec. Otherwise resize the image and interpolate pixels accordingly.
   if (!image_.initialized()) {
-    OpenImageIO::ImageSpec image_spec(new_width, new_height, num_channels,
-                                      OpenImageIO::TypeDesc::FLOAT);
+    oiio::ImageSpec image_spec(new_width, new_height, num_channels,
+                               oiio::TypeDesc::FLOAT);
     image_.reset(image_spec);
   } else {
     CHECK_LE(Channels(), num_channels) << "Decreasing channels is not "
                                           "supported. Try ConvertToRGBImage() "
                                           "or ConvertToGrayscaleImage().";
-    OpenImageIO::ROI roi(0, new_width, 0, new_height, 0, 1, 0, num_channels);
-    OpenImageIO::ImageBuf dst;
-    CHECK(OpenImageIO::ImageBufAlgo::resize(dst, image_, nullptr, roi))
-        << OpenImageIO::geterror();
+    oiio::ROI roi(0, new_width, 0, new_height, 0, 1, 0, num_channels);
+    oiio::ImageBuf dst;
+    CHECK(oiio::ImageBufAlgo::resize(dst, image_, nullptr, roi))
+        << oiio::geterror();
     image_.copy(dst);
   }
 }

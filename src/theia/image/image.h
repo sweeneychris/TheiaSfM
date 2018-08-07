@@ -40,6 +40,9 @@
 #include <string>
 
 namespace theia {
+// Aliasing oiio to whatever the correct Open Image IO namesace is.
+// The macro OIIO_NAMESPACE is defined in OpenImageIO/oiioversion.h.
+namespace oiio = OIIO_NAMESPACE;
 
 // A basic wrapper class for handling images. The images are always converted to
 // floating point type with pixel values ranging from 0 to 1.0. The number of
@@ -64,7 +67,7 @@ class FloatImage {
 
   // Copy function. This is a deep copy of the image.
   FloatImage(const FloatImage& image_to_copy);
-  explicit FloatImage(const OpenImageIO::ImageBuf& image);
+  explicit FloatImage(const oiio::ImageBuf& image);
   FloatImage& operator=(const FloatImage& image2);
   ~FloatImage() {}
 
@@ -74,8 +77,8 @@ class FloatImage {
   // wrapper for all algorithms. Getting a reference to the ImageBuf provides
   // efficient access to the image data so that the image processing algorithms
   // or other manipulations may be executed on the pixels.
-  OpenImageIO::ImageBuf& GetOpenImageIOImageBuf();
-  const OpenImageIO::ImageBuf& GetOpenImageIOImageBuf() const;
+  oiio::ImageBuf& GetOpenImageIOImageBuf();
+  const oiio::ImageBuf& GetOpenImageIOImageBuf() const;
 
   // Image information
   int Rows() const;
@@ -172,7 +175,7 @@ class FloatImage {
   void Resize(double scale);
 
  protected:
-  OpenImageIO::ImageBuf image_;
+  oiio::ImageBuf image_;
 };
 }  // namespace theia
 
