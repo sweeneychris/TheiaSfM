@@ -134,7 +134,6 @@ bool NonlinearPositionEstimator::EstimatePositions(
   // Set the solver options.
   ceres::Solver::Summary summary;
   solver_options_.num_threads = options_.num_threads;
-  solver_options_.num_linear_solver_threads = options_.num_threads;
   solver_options_.max_num_iterations = options_.max_num_iterations;
 
   // Choose the type of linear solver. For sufficiently large problems, we want
