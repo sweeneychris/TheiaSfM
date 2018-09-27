@@ -1,18 +1,23 @@
 project(vlfeat)
 
-include(OptimizeTheiaCompilerFlags)
+include("${CMAKE_MODULE_PATH}/OptimizeTheiaCompilerFlags.cmake")
 optimizetheiacompilerflags()
 
 include_directories(./vl)
 set(vl_sources
+  vl/fisher.c
   vl/generic.c
+  vl/gmm.c
   vl/host.c
   vl/imopv.c
   vl/imopv_sse2.c
+  vl/kmeans.c
+  vl/kdtree.c
   vl/mathop.c
   vl/mathop_sse2.c
   vl/random.c
-  vl/sift.c)
+  vl/sift.c
+  vl/vlad.c)
 set_source_files_properties(${vl_sources} PROPERTIES LANGUAGE C)
 
 if (MSVC)
