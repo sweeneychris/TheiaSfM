@@ -32,10 +32,10 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#include <ceres/rotation.h>
 #include <Eigen/Core>
-#include <glog/logging.h>
 #include <algorithm>
+#include <ceres/rotation.h>
+#include <glog/logging.h>
 
 #include "theia/sfm/camera/camera.h"
 #include "theia/sfm/twoview_info.h"
@@ -50,11 +50,12 @@ void SwapCameras(TwoViewInfo* twoview_info) {
   std::swap(twoview_info->focal_length_1, twoview_info->focal_length_2);
 
   // Invert the translation.
-  Eigen::Matrix3d rotation_mat;
-  ceres::AngleAxisToRotationMatrix(
+  Eigen::Vector3d neg_of_new_position;
+  ceres::AngleAxisRotatePoint(
       twoview_info->rotation_2.data(),
-      ceres::ColumnMajorAdapter3x3(rotation_mat.data()));
-  twoview_info->position_2 = -rotation_mat * twoview_info->position_2;
+      twoview_info->position_2.data(),
+    neg_of_new_position.data());
+  twoview_info->position_2 = -neg_of_new_position;
 
   // Invert the rotation.
   twoview_info->rotation_2 *= -1.0;
