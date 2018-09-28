@@ -85,6 +85,7 @@ set(THEIA_SRC
   matching/create_feature_matcher.cc
   matching/feature_matcher.cc
   matching/feature_matcher_utils.cc
+  matching/fisher_vector_extractor.cc
   matching/guided_epipolar_matcher.cc
   math/closed_form_polynomial_solver.cc
   math/constrained_l1_solver.cc
@@ -268,6 +269,7 @@ if (BUILD_TESTING)
   gtest(math/polynomial)
   gtest(math/probability/sprt)
   gtest(math/qp_solver)
+  gtest(math/reservoir_sampler)
   gtest(math/rotation)
   gtest(sfm/bundle_adjustment/optimize_relative_position_with_known_rotation)
   gtest(sfm/camera/camera)

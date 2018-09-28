@@ -85,6 +85,17 @@ struct FeatureMatcherOptions {
   // Only images that contain more feature matches than this number will be
   // returned.
   int min_num_feature_matches = 30;
+
+  // If true, a global image descriptor for each image is used to determine the
+  // k-nearest neighbor images, and feature matchign is only performed on these
+  // k-nearest neighbors. The desired value of "k" is given by setting
+  //   num_nearest_neighbors_for_global_descriptor_matching.
+  bool select_image_pairs_with_global_image_descriptor_matching = true;
+  int num_nearest_neighbors_for_global_descriptor_matching = 100;
+
+  // Specific options for Fisher Vector global feature extraction.
+  int num_gmm_clusters_for_fisher_vector = 16;
+  int max_num_features_for_fisher_vector_training = 100000;
 };
 
 }  // namespace theia

@@ -32,38 +32,37 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (sweeney.chris.m@gmail.com)
 
-#ifndef THEIA_MATCHING_GLOBAL_DESCRIPTOR_EXTRACTOR_H_
-#define THEIA_MATCHING_GLOBAL_DESCRIPTOR_EXTRACTOR_H_
+#include <glog/logging.h>
+#include <gtest/gtest.h>
+#include <set>
 
-#include <Eigen/Core>
-#include <vector>
+#include "theia/math/reservoir_sampler.h"
+#include "theia/util/random.h"
 
 namespace theia {
 
-// Global descriptors provide a summary of an entire image into a single feature
-// descriptor. These descriptors may be formed using training data (e.g., SIFT
-// features) or may be directly computed from the image itself. Global
-// descriptors provide an efficient mechanism for determining the image
-// similarity between two images.
-class GlobalDescriptorExtractor {
- public:
-  virtual ~GlobalDescriptorExtractor() {}
+TEST(ReservoirSampler, Sanity) {
+  constexpr int kNumFeatures = 1000000;
+  constexpr int kNumSampledFeatures = 1000;
+  ReservoirSampler<int> reservoir_sampler(kNumSampledFeatures);
 
-  // Add features to the descriptor extractor for training. This method may be
-  // called multiple times to add multiple sets of features (e.g., once per
-  // image) to the global descriptor extractor for training.
-  virtual void AddFeaturesForTraining(
-      const std::vector<Eigen::VectorXf>& features) = 0;
+  // Add features ranging from 0 to 100. This should yield a random sample which
+  // roughly corresponds to 0,1,....,99.
+  for (int i = 0; i < kNumFeatures; i++) {
+    reservoir_sampler.AddElementToSampler(i % kNumSampledFeatures);
+  }
 
-  // Train the global descriptor extracto with the given set of feature
-  // descriptors added with AddFeaturesForTraining. It is assumed that all
-  // descriptors have the same length.
-  virtual bool Train() = 0;
+  RandomNumberGenerator rng;
+  std::set<int> rand_samples;
+  for (int i = 0; i < kNumSampledFeatures; i++) {
+    rand_samples.insert(rng.RandInt(0, kNumSampledFeatures));
+  }
 
-  // Compute a global image descriptor for the set of input features.
-  virtual Eigen::VectorXf ExtractGlobalDescriptor(
-      const std::vector<Eigen::VectorXf>& features) = 0;
-};
+  auto samples = reservoir_sampler.GetAllSamples();
+  std::set<int> sorted_samples(samples.begin(), samples.end());
+  LOG(INFO) << "Num unique reservoir samples: " << sorted_samples.size();
+  LOG(INFO) << "Num unique random samples: " << rand_samples.size();
+
+}
 
 }  // namespace theia
-#endif  // THEIA_MATCHING_GLOBAL_DESCRIPTOR_EXTRACTOR_H_

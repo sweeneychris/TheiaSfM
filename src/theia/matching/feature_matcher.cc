@@ -50,6 +50,8 @@
 #include "theia/io/write_keypoints_and_descriptors.h"
 #include "theia/matching/feature_correspondence.h"
 #include "theia/matching/feature_matcher_options.h"
+#include "theia/matching/fisher_vector_extractor.h"
+#include "theia/matching/global_descriptor_extractor.h"
 #include "theia/matching/image_pair_match.h"
 #include "theia/matching/keypoints_and_descriptors.h"
 #include "theia/sfm/camera_intrinsics_prior.h"
@@ -61,6 +63,25 @@
 #include "theia/util/util.h"
 
 namespace theia {
+namespace {
+void SelectAllPairs(
+    const std::vector<std::string>& image_names,
+    std::vector<std::pair<std::string, std::string>>* pairs_to_match) {
+  // Compute the total number of potential matches.
+  const int num_pairs_to_match =
+      image_names.size() * (image_names.size() - 1) / 2;
+
+  pairs_to_match->reserve(num_pairs_to_match);
+  // Create a list of all possible image pairs.
+  for (int i = 0; i < image_names.size(); i++) {
+    for (int j = i + 1; j < image_names.size(); j++) {
+      pairs_to_match->emplace_back(image_names[i], image_names[j]);
+    }
+  }
+}
+}  // namespace
+
+FeatureMatcher::~FeatureMatcher() {}
 
 FeatureMatcher::FeatureMatcher(const FeatureMatcherOptions& options)
     : options_(options) {
@@ -96,6 +117,16 @@ FeatureMatcher::FeatureMatcher(const FeatureMatcherOptions& options)
   // options_.match_out_of_core is set to true.
   keypoints_and_descriptors_cache_.reset(new KeypointAndDescriptorCache(
       fetch_features_from_cache, options_.cache_capacity));
+
+  // Initialize the global image descriptor extractor if desired.
+  if (options_.select_image_pairs_with_global_image_descriptor_matching) {
+    FisherVectorExtractor::Options fv_options;
+    fv_options.num_gmm_clusters = options_.num_gmm_clusters_for_fisher_vector;
+    fv_options.max_num_features_for_training =
+        options_.max_num_features_for_fisher_vector_training;
+    global_image_descriptor_extractor_.reset(
+        new FisherVectorExtractor(fv_options));
+  }
 }
 
 void FeatureMatcher::AddImage(const std::string& image_name,
@@ -119,6 +150,13 @@ void FeatureMatcher::AddImage(const std::string& image_name,
   keypoints_and_descriptors->descriptors = descriptors;
   keypoints_and_descriptors_cache_->Insert(features_file,
                                            keypoints_and_descriptors);
+
+  // Add the descriptors to the global image descriptor extractor for training
+  // if using a global image descriptor extractor.
+  if (options_.select_image_pairs_with_global_image_descriptor_matching) {
+    CHECK_GT(descriptors.size(), 0);
+    global_image_descriptor_extractor_->AddFeaturesForTraining(descriptors);
+  }
 }
 
 void FeatureMatcher::AddImage(const std::string& image_name,
@@ -131,11 +169,22 @@ void FeatureMatcher::AddImage(const std::string& image_name,
 
 void FeatureMatcher::AddImage(const std::string& image_name) {
   image_names_.push_back(image_name);
+
+  // Add the descriptors to the global image descriptor extractor for training
+  // if using a global image descriptor extractor.
+  if (options_.select_image_pairs_with_global_image_descriptor_matching) {
+    std::shared_ptr<KeypointsAndDescriptors> features =
+        keypoints_and_descriptors_cache_->Fetch(
+            FeatureFilenameFromImage(image_name));
+    CHECK_GT(features->descriptors.size(), 0);
+    global_image_descriptor_extractor_->AddFeaturesForTraining(
+        features->descriptors);
+  }
 }
 
 void FeatureMatcher::AddImage(const std::string& image_name,
                               const CameraIntrinsicsPrior& intrinsics) {
-  image_names_.push_back(image_name);
+  AddImage(image_name);
   intrinsics_[image_name] = intrinsics;
 }
 
@@ -144,10 +193,9 @@ void FeatureMatcher::AddImages(
     const std::vector<CameraIntrinsicsPrior>& intrinsics) {
   CHECK_EQ(image_names.size(), intrinsics.size());
   image_names_.reserve(image_names.size() + image_names_.size());
-  image_names_.insert(
-      image_names_.end(), image_names.begin(), image_names.end());
+
   for (int i = 0; i < image_names.size(); ++i) {
-    intrinsics_[image_names[i]] = intrinsics[i];
+    AddImage(image_names[i], intrinsics[i]);
   }
 }
 
@@ -175,25 +223,97 @@ FeatureMatcher::FetchKeypointsAndDescriptorsFromDisk(
 }
 
 void FeatureMatcher::SetImagePairsToMatch(
-    const std::vector<std::pair<std::string, std::string> >& pairs_to_match) {
+    const std::vector<std::pair<std::string, std::string>>& pairs_to_match) {
   pairs_to_match_ = pairs_to_match;
+}
+
+void FeatureMatcher::SelectImagePairsWithGlobalDescriptorMatching() {
+  // Train the global descriptor extractor based on the input features.
+  VLOG(2) << "Training global image descriptor...";
+  CHECK(global_image_descriptor_extractor_->Train());
+
+  // Extract the global descriptors.
+  std::unique_ptr<ThreadPool> pool(new ThreadPool(options_.num_threads));
+  std::vector<Eigen::VectorXf> global_descriptors(image_names_.size());
+  for (int i = 0; i < image_names_.size(); i++) {
+    pool->Add(
+        [&](const int i) {
+          std::shared_ptr<KeypointsAndDescriptors> features =
+              keypoints_and_descriptors_cache_->Fetch(
+                  FeatureFilenameFromImage(image_names_[i]));
+          // Extract the global descriptors
+          global_descriptors[i] =
+              global_image_descriptor_extractor_->ExtractGlobalDescriptor(
+                  features->descriptors);
+        },
+        i);
+  }
+  // Wait for threads to finish.
+  pool.reset();
+
+  VLOG(2) << "Computing image-to-image similarity scores with global "
+             "descriptors...";
+  // Match all pairs of global descriptors. The map contains the matching scores
+  // for each image_names index.
+  std::unordered_map<int, std::vector<std::pair<float, int>>>
+      global_matching_scores;
+  global_matching_scores.reserve(image_names_.size());
+  for (int i = 0; i < image_names_.size(); i++) {
+    for (int j = i + 1; j < image_names_.size(); j++) {
+      const float global_feature_match_score =
+          (global_descriptors[i] - global_descriptors[j]).squaredNorm();
+      // Add the global feature matching score to both images.
+      global_matching_scores[i].emplace_back(global_feature_match_score, j);
+      global_matching_scores[j].emplace_back(global_feature_match_score, i);
+    }
+  }
+
+  VLOG(2) << "Selecting the k-Nearest Neighbors images to perform feature "
+             "matching on...";
+  // For each image, find the kNN and add those to our selection for matching.
+  // We use an unordered_set with indices instead of the string image names to
+  // help with performance and avoid duplicate pairs.
+  const int num_nearest_neighbors =
+      std::min(static_cast<int>(image_names_.size() - 1),
+               options_.num_nearest_neighbors_for_global_descriptor_matching);
+  std::unordered_set<std::pair<int, int>> pairs_to_match_indices(
+      num_nearest_neighbors * image_names_.size());
+  for (auto& global_matching_results : global_matching_scores) {
+    const int first_id = global_matching_results.first;
+    auto& matching_results = global_matching_results.second;
+
+    // Sort the results to get the top K neighbors for this image.
+    std::partial_sort(matching_results.begin(),
+                      matching_results.begin() + num_nearest_neighbors,
+                      matching_results.end());
+
+    // Add each of the kNN to the output indices.
+    for (int i = 0; i < num_nearest_neighbors; i++) {
+      const int second_id = matching_results[i].second;
+      // Sort the pairwise index such that the pair of indices is sorted.
+      const auto id_pair = (first_id < second_id)
+                               ? std::make_pair(first_id, second_id)
+                               : std::make_pair(second_id, first_id);
+      pairs_to_match_indices.emplace(id_pair);
+    }
+  }
+
+  // Convert to the output type.
+  pairs_to_match_.reserve(pairs_to_match_indices.size());
+  for (const auto& pair_to_match_indices : pairs_to_match_indices) {
+    pairs_to_match_.emplace_back(image_names_[pair_to_match_indices.first],
+                                 image_names_[pair_to_match_indices.second]);
+  }
 }
 
 void FeatureMatcher::MatchImages(std::vector<ImagePairMatch>* matches) {
   // If SetImagePairsToMatch has not been called, match all image-to-image
   // pairs.
   if (pairs_to_match_.size() == 0) {
-    // Compute the total number of potential matches.
-    const int num_pairs_to_match =
-        image_names_.size() * (image_names_.size() - 1) / 2;
-    matches->reserve(num_pairs_to_match);
-
-    pairs_to_match_.reserve(num_pairs_to_match);
-    // Create a list of all possible image pairs.
-    for (int i = 0; i < image_names_.size(); i++) {
-      for (int j = i + 1; j < image_names_.size(); j++) {
-        pairs_to_match_.emplace_back(image_names_[i], image_names_[j]);
-      }
+    if (options_.select_image_pairs_with_global_image_descriptor_matching) {
+      SelectImagePairsWithGlobalDescriptorMatching();
+    } else {
+      SelectAllPairs(image_names_, &pairs_to_match_);
     }
   }
 
@@ -202,6 +322,7 @@ void FeatureMatcher::MatchImages(std::vector<ImagePairMatch>* matches) {
   // sort of like OpenMP's dynamic schedule in that it is able to balance
   // threads fairly efficiently.
   const int num_matches = pairs_to_match_.size();
+  matches->reserve(num_matches);
   const int num_threads =
       std::min(options_.num_threads, static_cast<int>(num_matches));
   std::unique_ptr<ThreadPool> pool(new ThreadPool(num_threads));

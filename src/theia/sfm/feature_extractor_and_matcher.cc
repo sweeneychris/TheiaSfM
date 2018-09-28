@@ -164,9 +164,9 @@ bool FeatureExtractorAndMatcher::AddMaskForFeaturesExtraction(
   return true;
 }
 void FeatureExtractorAndMatcher::SetPairsToMatch(
-    const std::vector<std::pair<std::string, std::string> >& pairs_to_match) {
+    const std::vector<std::pair<std::string, std::string>>& pairs_to_match) {
   // Convert the image filepaths to image filenames.
-  std::vector<std::pair<std::string, std::string> > image_pairs;
+  std::vector<std::pair<std::string, std::string>> image_pairs;
   image_pairs.reserve(pairs_to_match.size());
   for (const auto& pair_to_match : pairs_to_match) {
     std::string image1_filename;

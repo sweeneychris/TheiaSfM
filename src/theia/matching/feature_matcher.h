@@ -49,6 +49,7 @@
 #include "theia/util/util.h"
 
 namespace theia {
+class GlobalDescriptorExtractor;
 class Keypoint;
 struct CameraIntrinsicsPrior;
 struct ImagePairMatch;
@@ -79,7 +80,7 @@ struct KeypointsAndDescriptors;
 class FeatureMatcher {
  public:
   explicit FeatureMatcher(const FeatureMatcherOptions& matcher_options);
-  virtual ~FeatureMatcher() {}
+  virtual ~FeatureMatcher();
 
   // Adds an image to the matcher with no known intrinsics for this image. The
   // caller still owns the keypoints and descriptors so they must remain valid
@@ -159,6 +160,11 @@ class FeatureMatcher {
   // Returns the filepath of the feature file given the image name.
   std::string FeatureFilenameFromImage(const std::string& image);
 
+  // If global descriptor matching is used, select the best set of image pairs
+  // to perform feature matching on. This dramatically speeds up the matching
+  // pipeline over N^2 matching.
+  void SelectImagePairsWithGlobalDescriptorMatching();
+
   // Each Threadpool worker will perform matching on this many image pairs.  It
   // is more efficient to let each thread compute multiple matches at a time
   // than add each matching task to the pool. This is sort of like OpenMP's
@@ -174,6 +180,11 @@ class FeatureMatcher {
   typedef LRUCache<std::string, std::shared_ptr<KeypointsAndDescriptors> >
       KeypointAndDescriptorCache;
   std::unique_ptr<KeypointAndDescriptorCache> keypoints_and_descriptors_cache_;
+
+  // The global image feature descriptor extractor. This is used to extract a
+  // compact representation for each image and select a subset of kNN images to
+  // perform explicit (and expensive) feature matching.
+  std::unique_ptr<GlobalDescriptorExtractor> global_image_descriptor_extractor_;
 
   std::unordered_map<std::string, CameraIntrinsicsPrior> intrinsics_;
   std::vector<std::pair<std::string, std::string> > pairs_to_match_;

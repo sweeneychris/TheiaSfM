@@ -32,38 +32,67 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (sweeney.chris.m@gmail.com)
 
-#ifndef THEIA_MATCHING_GLOBAL_DESCRIPTOR_EXTRACTOR_H_
-#define THEIA_MATCHING_GLOBAL_DESCRIPTOR_EXTRACTOR_H_
+#ifndef THEIA_MATCHING_FISHER_VECTOR_EXTRACTOR_H_
+#define THEIA_MATCHING_FISHER_VECTOR_EXTRACTOR_H_
 
 #include <Eigen/Core>
+#include <memory>
 #include <vector>
+
+#include "theia/matching/global_descriptor_extractor.h"
+#include "theia/math/reservoir_sampler.h"
 
 namespace theia {
 
-// Global descriptors provide a summary of an entire image into a single feature
-// descriptor. These descriptors may be formed using training data (e.g., SIFT
-// features) or may be directly computed from the image itself. Global
-// descriptors provide an efficient mechanism for determining the image
-// similarity between two images.
-class GlobalDescriptorExtractor {
+// A Fisher Vector is an image representation obtained by pooling local image
+// features. It is frequently used as a global image descriptor in visual
+// classification. A Gaussian Mixture Model is fitted to the training data, and
+// the Fisher Vector is computed as as the mean and covariance deviation vectors
+// from the modes of the distribution of the GMM.
+class FisherVectorExtractor : public GlobalDescriptorExtractor {
  public:
-  virtual ~GlobalDescriptorExtractor() {}
+  struct Options {
+    // The number of cluster to use for the Gaussian Mixture Model that power
+    // the Fisher Kernel.
+    int num_gmm_clusters = 16;
+
+    // If more than this number of features are added to the
+    // FisherVectorExtractor then we randomly sample
+    // max_num_features_for_training using a memory efficient Reservoir sampler
+    // to avoid holding all features in memory.
+    int max_num_features_for_training = 100000;
+  };
+
+  // The number of clusters to use for the GMM.
+  FisherVectorExtractor(const Options& options);
+
+  ~FisherVectorExtractor();
 
   // Add features to the descriptor extractor for training. This method may be
   // called multiple times to add multiple sets of features (e.g., once per
   // image) to the global descriptor extractor for training.
-  virtual void AddFeaturesForTraining(
-      const std::vector<Eigen::VectorXf>& features) = 0;
+  void AddFeaturesForTraining(
+      const std::vector<Eigen::VectorXf>& features) override;
 
   // Train the global descriptor extracto with the given set of feature
   // descriptors added with AddFeaturesForTraining. It is assumed that all
   // descriptors have the same length.
-  virtual bool Train() = 0;
+  bool Train() override;
 
   // Compute a global image descriptor for the set of input features.
-  virtual Eigen::VectorXf ExtractGlobalDescriptor(
-      const std::vector<Eigen::VectorXf>& features) = 0;
+  Eigen::VectorXf ExtractGlobalDescriptor(
+      const std::vector<Eigen::VectorXf>& features) override;
+
+ private:
+  // A Gaussian Mixture Model is used to compute the Fisher Kernel.
+  class GaussianMixtureModel;
+  std::unique_ptr<GaussianMixtureModel> gmm_;
+
+  // The GMM is trained from a set of feature descriptors. A reservoir sampler
+  // is used to randomly sample features from an unknown number of input
+  // features for training.
+  ReservoirSampler<Eigen::VectorXf> training_feature_sampler_;
 };
 
 }  // namespace theia
-#endif  // THEIA_MATCHING_GLOBAL_DESCRIPTOR_EXTRACTOR_H_
+#endif  // THEIA_MATCHING_FISHER_VECTOR_EXTRACTOR_H_
