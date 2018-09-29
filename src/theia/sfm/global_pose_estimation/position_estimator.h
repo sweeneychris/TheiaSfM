@@ -53,6 +53,7 @@ namespace theia {
 class PositionEstimator {
  public:
   PositionEstimator() {}
+  virtual ~PositionEstimator() {}
 
   // Input the view pairs containing relative poses between matched
   // geometrically verified views, as well as the global (absolute) orientations

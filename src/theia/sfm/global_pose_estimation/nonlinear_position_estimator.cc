@@ -34,10 +34,10 @@
 
 #include "theia/sfm/global_pose_estimation/nonlinear_position_estimator.h"
 
-#include <ceres/ceres.h>
-#include <ceres/rotation.h>
 #include <Eigen/Core>
 #include <algorithm>
+#include <ceres/ceres.h>
+#include <ceres/rotation.h>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
@@ -134,7 +134,6 @@ bool NonlinearPositionEstimator::EstimatePositions(
   // Set the solver options.
   ceres::Solver::Summary summary;
   solver_options_.num_threads = options_.num_threads;
-  solver_options_.num_linear_solver_threads = options_.num_threads;
   solver_options_.max_num_iterations = options_.max_num_iterations;
 
   // Choose the type of linear solver. For sufficiently large problems, we want
@@ -208,9 +207,10 @@ void NonlinearPositionEstimator::AddCameraToCameraConstraints(
                                position2->data());
   }
 
-  VLOG(2) << problem_->NumResidualBlocks() << " camera to camera constraints "
-                                              "were added to the position "
-                                              "estimation problem.";
+  VLOG(2) << problem_->NumResidualBlocks()
+          << " camera to camera constraints "
+             "were added to the position "
+             "estimation problem.";
 }
 
 void NonlinearPositionEstimator::AddPointToCameraConstraints(
@@ -233,15 +233,14 @@ void NonlinearPositionEstimator::AddPointToCameraConstraints(
   for (const TrackId track_id : tracks_to_add) {
     triangulated_points_[track_id] = 100.0 * rng_->RandVector3d();
 
-    AddTrackToProblem(track_id,
-                      orientations,
-                      point_to_camera_weight,
-                      positions);
+    AddTrackToProblem(
+        track_id, orientations, point_to_camera_weight, positions);
   }
 
-  VLOG(2) << num_point_to_camera_constraints << " point to camera constriants "
-                                                "were added to the position "
-                                                "estimation problem.";
+  VLOG(2) << num_point_to_camera_constraints
+          << " point to camera constriants "
+             "were added to the position "
+             "estimation problem.";
 }
 
 int NonlinearPositionEstimator::FindTracksForProblem(
@@ -269,8 +268,8 @@ int NonlinearPositionEstimator::FindTracksForProblem(
         GetTracksSortedByNumViews(reconstruction_, *view, *tracks_to_add);
 
     for (int i = 0;
-         i < sorted_tracks.size() && tracks_per_camera[position.first] <
-                                         options_.min_num_points_per_view;
+         i < sorted_tracks.size() &&
+         tracks_per_camera[position.first] < options_.min_num_points_per_view;
          i++) {
       // Update the number of point to camera constraints for each camera.
       tracks_to_add->insert(sorted_tracks[i]);
@@ -320,7 +319,8 @@ std::vector<TrackId> NonlinearPositionEstimator::GetTracksSortedByNumViews(
                options_.min_num_points_per_view);
   std::partial_sort(views_per_track.begin(),
                     views_per_track.begin() + num_tracks_to_sort,
-                    views_per_track.end(), CompareViewsPerTrack);
+                    views_per_track.end(),
+                    CompareViewsPerTrack);
 
   for (int i = 0; i < num_tracks_to_sort; i++) {
     sorted_tracks[i] = views_per_track[i].first;

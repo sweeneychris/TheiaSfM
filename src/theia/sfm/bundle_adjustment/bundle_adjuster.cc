@@ -63,7 +63,6 @@ void SetSolverOptions(const BundleAdjustmentOptions& options,
   solver_options->logging_type =
       options.verbose ? ceres::PER_MINIMIZER_ITERATION : ceres::SILENT;
   solver_options->num_threads = options.num_threads;
-  solver_options->num_linear_solver_threads = options.num_threads;
   solver_options->max_num_iterations = options.max_num_iterations;
   solver_options->max_solver_time_in_seconds =
       options.max_solver_time_in_seconds;

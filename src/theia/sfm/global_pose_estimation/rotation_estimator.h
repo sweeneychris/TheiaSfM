@@ -50,7 +50,7 @@ namespace theia {
 class RotationEstimator {
  public:
   RotationEstimator() {}
-
+  virtual ~RotationEstimator() {}
   // Input the view pairs containing relative rotations between matched
   // geometrically verified views and outputs a rotation estimate for each view.
   //

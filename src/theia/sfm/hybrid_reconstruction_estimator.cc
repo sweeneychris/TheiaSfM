@@ -444,6 +444,7 @@ bool HybridReconstructionEstimator::InitializeCamerasFromTwoViewInfo(
 
   view1->SetEstimated(true);
   view2->SetEstimated(true);
+  return true;
 }
 
 bool HybridReconstructionEstimator::InitializeCamerasWithKnownOrientation(

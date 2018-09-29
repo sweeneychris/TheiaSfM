@@ -54,7 +54,7 @@ class RandomSampler : public Sampler {
                 const int min_num_samples);
   ~RandomSampler() {}
 
-  bool Initialize(const int num_datapoints);
+  bool Initialize(const int num_datapoints) override;
 
   // Samples the input variable data and fills the vector subset with the
   // random samples.

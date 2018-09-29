@@ -156,6 +156,7 @@ bool FeatureExtractor::ExtractFeatures(
     keypoints->clear();
     descriptors->clear();
   }
+  return true;
 }
 
 bool FeatureExtractor::ExtractFeaturesFromImage(
