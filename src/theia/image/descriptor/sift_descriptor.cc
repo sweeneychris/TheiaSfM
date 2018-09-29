@@ -51,7 +51,8 @@ namespace {
 
 // Maximum scaled dimension to extract descriptors. If the dimension is larger
 // than this then we begin to have memory and speed issues.
-static const int kMaxScaledDim = 3600;
+static constexpr int kMaxScaledDim = 3600;
+static constexpr int kNumSiftDimensions = 128;
 
 double GetValidFirstOctave(const int first_octave,
                            const int width,
@@ -247,13 +248,12 @@ bool SiftDescriptorExtractor::DetectAndExtractDescriptors(
         num_angles = 1;
       }
 
+      Eigen::VectorXf descriptor(kNumSiftDimensions);
       for (int j = 0; j < num_angles; ++j) {
-        static constexpr int kNumSiftDimensions = 128;
-        Eigen::VectorXf descriptor(kNumSiftDimensions);
         descriptor.setZero();
         vl_sift_calc_keypoint_descriptor(
             sift_filter_, descriptor.data(), &vl_keypoints[i], angles[j]);
-        descriptors->emplace_back(descriptor);
+        descriptors->push_back(descriptor);
 
         Keypoint keypoint(vl_keypoints[i].x, vl_keypoints[i].y, Keypoint::SIFT);
         keypoint.set_scale(vl_keypoints[i].sigma);
@@ -267,9 +267,8 @@ bool SiftDescriptorExtractor::DetectAndExtractDescriptors(
 
   if (sift_params_.root_sift) {
     for (auto& descriptor : *descriptors) {
-      const auto copy = descriptor;
       ConvertToRootSift(&descriptor);
-      CHECK(!descriptor.hasNaN()) << "Original desc: \n" << copy;
+      CHECK(!descriptor.hasNaN());
     }
   }
 

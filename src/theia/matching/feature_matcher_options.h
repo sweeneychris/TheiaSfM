@@ -95,7 +95,7 @@ struct FeatureMatcherOptions {
 
   // Specific options for Fisher Vector global feature extraction.
   int num_gmm_clusters_for_fisher_vector = 16;
-  int max_num_features_for_fisher_vector_training = 100000;
+  int max_num_features_for_fisher_vector_training = 1000000;
 };
 
 }  // namespace theia

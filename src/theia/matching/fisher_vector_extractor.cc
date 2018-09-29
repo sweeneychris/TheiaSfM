@@ -103,8 +103,8 @@ FisherVectorExtractor::~FisherVectorExtractor() {}
 
 void FisherVectorExtractor::AddFeaturesForTraining(
     const std::vector<Eigen::VectorXf>& features) {
-  for (const auto& feature : features) {
-    CHECK(!feature.hasNaN()) << "Num features: " << features.size();
+  for (const Eigen::VectorXf& feature : features) {
+    CHECK(!feature.hasNaN()) << "Feature: " << feature.transpose();
     training_feature_sampler_.AddElementToSampler(feature);
   }
 }
