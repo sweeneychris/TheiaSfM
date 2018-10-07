@@ -112,10 +112,13 @@ DEFINE_bool(bundle_adjust_two_view_geometry,
 DEFINE_bool(keep_only_symmetric_matches,
             true,
             "Performs two-way matching and keeps symmetric matches.");
-DEFINE_int32(
-    num_nearest_neighbors_for_global_descriptor_matching,
-    100,
-    "Number of nearest neighbor images to use for full descriptor matching.");
+DEFINE_bool(select_image_pairs_with_global_image_descriptor_matching,
+            true,
+            "Use global descriptors to speed up image matching.");
+DEFINE_int32(num_nearest_neighbors_for_global_descriptor_matching,
+             100,
+             "Number of nearest neighbor images to use for full descriptor "
+             "matching.");
 DEFINE_int32(num_gmm_clusters_for_fisher_vector,
              16,
              "Number of clusters to use for the GMM with Fisher Vectors for "
@@ -284,11 +287,10 @@ ReconstructionBuilderOptions SetReconstructionBuilderOptions() {
 
   options.descriptor_type = StringToDescriptorExtractorType(FLAGS_descriptor);
   options.feature_density = StringToFeatureDensity(FLAGS_feature_density);
-  options.matching_options.match_out_of_core = FLAGS_match_out_of_core;
-  options.matching_options.keypoints_and_descriptors_output_dir =
+  options.match_out_of_core = FLAGS_match_out_of_core;
+  options.features_and_matches_database_directory =
       FLAGS_matching_working_directory;
-  options.matching_options.cache_capacity =
-      FLAGS_matching_max_num_images_in_cache;
+  options.cache_capacity = FLAGS_matching_max_num_images_in_cache;
   options.matching_strategy =
       StringToMatchingStrategyType(FLAGS_matching_strategy);
   options.matching_options.lowes_ratio = FLAGS_lowes_ratio;
@@ -308,12 +310,13 @@ ReconstructionBuilderOptions SetReconstructionBuilderOptions() {
       .min_triangulation_angle_degrees = FLAGS_min_triangulation_angle_degrees;
   options.matching_options.geometric_verification_options
       .final_max_reprojection_error = FLAGS_max_reprojection_error_pixels;
-  options.matching_options
-      .num_nearest_neighbors_for_global_descriptor_matching =
+  options.select_image_pairs_with_global_image_descriptor_matching =
+      FLAGS_select_image_pairs_with_global_image_descriptor_matching;
+  options.num_nearest_neighbors_for_global_descriptor_matching =
       FLAGS_num_nearest_neighbors_for_global_descriptor_matching;
-  options.matching_options.num_gmm_clusters_for_fisher_vector =
+  options.num_gmm_clusters_for_fisher_vector =
       FLAGS_num_gmm_clusters_for_fisher_vector;
-  options.matching_options.max_num_features_for_fisher_vector_training =
+  options.max_num_features_for_fisher_vector_training =
       FLAGS_max_num_features_for_fisher_vector_training;
 
   options.min_track_length = FLAGS_min_track_length;
@@ -403,13 +406,12 @@ void AddMatchesToReconstructionBuilder(
   // Load matches from file.
   std::vector<std::string> image_files;
   std::vector<theia::CameraIntrinsicsPrior> camera_intrinsics_prior;
-  std::vector<theia::ImagePairMatch> image_matches;
+  theia::LocalFeaturesAndMatchesDatabase matches_db(
+      FLAGS_matching_working_directory, FLAGS_matching_max_num_images_in_cache);
 
   // Read in match file.
-  theia::ReadMatchesAndGeometry(FLAGS_matches_file,
-                                &image_files,
-                                &camera_intrinsics_prior,
-                                &image_matches);
+  matches_db.ReadMatchesAndGeometry(
+      FLAGS_matches_file, &image_files, &camera_intrinsics_prior);
 
   // Add all the views. When the intrinsics group id is invalid, the
   // reconstruction builder will assume that the view does not share its
@@ -426,9 +428,12 @@ void AddMatchesToReconstructionBuilder(
   }
 
   // Add the matches.
-  for (const auto& match : image_matches) {
+  const auto match_keys = matches_db.ImageNamesOfMatches();
+  for (const auto& match_key : match_keys) {
+    const theia::ImagePairMatch& match =
+        matches_db.GetImagePairMatch(match_key.first, match_key.second);
     CHECK(reconstruction_builder->AddTwoViewMatch(
-        match.image1, match.image2, match));
+        match_key.first, match_key.second, match));
   }
 }
 

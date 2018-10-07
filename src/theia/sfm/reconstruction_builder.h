@@ -48,6 +48,7 @@
 
 namespace theia {
 class FeatureExtractorAndMatcher;
+class FeaturesAndMatchesDatabase;
 class RandomNumberGenerator;
 class Reconstruction;
 class TrackBuilder;
@@ -96,6 +97,23 @@ struct ReconstructionBuilderOptions {
   // extracted.
   FeatureDensity feature_density = FeatureDensity::NORMAL;
 
+  // We store the descriptors of up to cache_capacity images in the cache at a
+  // given time. The higher the cache capacity, the more memory is required to
+  // perform image-to-image matching.
+  int cache_capacity = 128;
+
+  // Matching may be performed in core (i.e. all in memory) or out-of-core. For
+  // the latter, features are written and read to/from disk as needed (utilizing
+  // an LRU cache). The out-of-core strategy is more scalable since the memory
+  // footprint is limited. Set this value to false to perform all-in-memory
+  // matching.
+  bool match_out_of_core = false;
+
+  // Keypoints and descriptors are stored to disk as they are added to the
+  // FeatureMatcher. Features will be stored in this directory, which must be a
+  // valid writeable directory.
+  std::string features_and_matches_database_directory = "";
+
   // Matching strategy type.
   // See //theia/matching/create_feature_matcher.h
   MatchingStrategy matching_strategy = MatchingStrategy::BRUTE_FORCE;
@@ -104,6 +122,17 @@ struct ReconstructionBuilderOptions {
   // verification options are also part of these options.
   // See //theia/matching/feature_matcher_options.h
   FeatureMatcherOptions matching_options;
+
+  // If true, a global image descriptor for each image is used to determine
+  // the k-nearest neighbor images, and feature matchign is only performed on
+  // these k-nearest neighbors. The desired value of "k" is given by setting
+  //   num_nearest_neighbors_for_global_descriptor_matching.
+  bool select_image_pairs_with_global_image_descriptor_matching = true;
+  int num_nearest_neighbors_for_global_descriptor_matching = 100;
+
+  // Specific options for Fisher Vector global feature extraction.
+  int num_gmm_clusters_for_fisher_vector = 16;
+  int max_num_features_for_fisher_vector_training = 1000000;
 
   // Options for estimating the reconstruction.
   // See //theia/sfm/reconstruction_estimator_options.h
@@ -196,6 +225,8 @@ class ReconstructionBuilder {
   // Container of image information.
   std::vector<std::string> image_filepaths_;
 
+  // A DB for storing features and matches.
+  std::unique_ptr<FeaturesAndMatchesDatabase> features_and_matches_database_;
   // Module for performing feature extraction and matching.
   std::unique_ptr<FeatureExtractorAndMatcher> feature_extractor_and_matcher_;
 

@@ -39,8 +39,10 @@
 #include <string>
 #include <vector>
 
-#include "theia/io/write_matches.h"
+#include "theia/matching/features_and_matches_database.h"
 #include "theia/matching/image_pair_match.h"
+#include "theia/matching/in_memory_features_and_matches_database.h"
+#include "theia/matching/local_features_and_matches_database.h"
 #include "theia/sfm/camera_intrinsics_prior.h"
 #include "theia/sfm/feature_extractor_and_matcher.h"
 #include "theia/sfm/reconstruction.h"
@@ -174,8 +176,28 @@ ReconstructionBuilder::ReconstructionBuilder(
   feam_options.feature_matcher_options.geometric_verification_options
       .estimate_twoview_info_options.rng = options_.rng;
 
-  feature_extractor_and_matcher_.reset(
-      new FeatureExtractorAndMatcher(feam_options));
+  // Global descriptor matching settings.
+  feam_options.select_image_pairs_with_global_image_descriptor_matching =
+      options_.select_image_pairs_with_global_image_descriptor_matching;
+  feam_options.num_nearest_neighbors_for_global_descriptor_matching =
+      options_.num_nearest_neighbors_for_global_descriptor_matching;
+  feam_options.num_gmm_clusters_for_fisher_vector =
+      options_.num_gmm_clusters_for_fisher_vector;
+  feam_options.max_num_features_for_fisher_vector_training =
+      options_.max_num_features_for_fisher_vector_training;
+
+  // Setup the features and matches DB.
+  if (options_.match_out_of_core) {
+    features_and_matches_database_.reset(new LocalFeaturesAndMatchesDatabase(
+        options_.features_and_matches_database_directory,
+        options_.cache_capacity));
+  } else {
+    features_and_matches_database_.reset(
+        new InMemoryFeaturesAndMatchesDatabase());
+  }
+
+  feature_extractor_and_matcher_.reset(new FeatureExtractorAndMatcher(
+      feam_options, features_and_matches_database_.get()));
 }
 
 ReconstructionBuilder::~ReconstructionBuilder() {}
@@ -242,11 +264,13 @@ bool ReconstructionBuilder::ExtractAndMatchFeatures() {
                                           "after TwoViewMatches has been "
                                           "called.";
 
+  // TODO: Remove all references to matches variable and replace with db
+  // functions.
+
   // Extract features and obtain the feature matches.
-  std::vector<ImagePairMatch> matches;
   std::vector<CameraIntrinsicsPrior> camera_intrinsics_priors;
   feature_extractor_and_matcher_->ExtractAndMatchFeatures(
-      &camera_intrinsics_priors, &matches);
+      &camera_intrinsics_priors);
 
   // If we only want calibrated views remove them from the reconstruction so
   // that they no features are detected and matched between them.
@@ -264,7 +288,8 @@ bool ReconstructionBuilder::ExtractAndMatchFeatures() {
   // Log how many view pairs were geometrically verified.
   const int num_total_view_pairs =
       image_filepaths_.size() * (image_filepaths_.size() - 1) / 2;
-  LOG(INFO) << matches.size() << " of " << num_total_view_pairs
+  LOG(INFO) << features_and_matches_database_->NumMatches() << " of "
+            << num_total_view_pairs
             << " view pairs were matched and geometrically verified.";
 
   // Add the EXIF data to each view.
@@ -279,19 +304,24 @@ bool ReconstructionBuilder::ExtractAndMatchFeatures() {
     *view->MutableCameraIntrinsicsPrior() = camera_intrinsics_priors[i];
   }
 
-  // Write the matches to a file if it exists.
+  // Optionally write out the matches.
   if (options_.output_matches_file.length() > 0) {
     LOG(INFO) << "Writing matches to file: " << options_.output_matches_file;
-    CHECK(WriteMatchesAndGeometry(options_.output_matches_file,
-                                  image_filenames,
-                                  camera_intrinsics_priors,
-                                  matches))
+    CHECK(features_and_matches_database_->SaveMatchesAndGeometry(
+        options_.output_matches_file,
+        image_filenames,
+        camera_intrinsics_priors))
         << "Could not write the matches to " << options_.output_matches_file;
   }
 
   // Add the matches to the view graph and reconstruction.
-  for (const auto& match : matches) {
-    AddTwoViewMatch(match.image1, match.image2, match);
+  const auto& match_keys =
+      features_and_matches_database_->ImageNamesOfMatches();
+  for (const auto& match_key : match_keys) {
+    const ImagePairMatch& match =
+        features_and_matches_database_->GetImagePairMatch(match_key.first,
+                                                          match_key.second);
+    AddTwoViewMatch(match_key.first, match_key.second, match);
   }
 
   return true;

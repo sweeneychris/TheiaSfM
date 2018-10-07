@@ -39,15 +39,16 @@
 // output (negative and lower values mean the error decreased).xs
 
 #include <Eigen/Core>
-#include <glog/logging.h>
 #include <gflags/gflags.h>
+#include <glog/logging.h>
 #include <theia/theia.h>
 
 #include <memory>
 #include <string>
 
 DEFINE_string(
-    matches, "",
+    matches,
+    "",
     "Matches file that has been written with WriteMatchesAndGeometry");
 
 DEFINE_string(reconstruction, "", "Reconstruction to use as ground truth.");
@@ -102,28 +103,27 @@ double ComputeRelativeTranslationError(
 void EvaluateTranslationOptimization(
     const std::string& matches_file,
     const theia::Reconstruction& reconstruction) {
-  const std::vector<double> histogram_bins = {2,  5,   10,  15,  25,  50,
-                                              90, 135, 180, 225, 270, 316};
+  const std::vector<double> histogram_bins = {
+      2, 5, 10, 15, 25, 50, 90, 135, 180, 225, 270, 316};
   const std::vector<double> change_bins = {-50, -20, -10, -5, 0, 5, 10, 20, 50};
   theia::Histogram<double> before_hist(histogram_bins),
       after_hist(histogram_bins), change_hist(change_bins);
 
   std::vector<std::string> view_names;
   std::vector<theia::CameraIntrinsicsPrior> camera_intrinsics_prior;
-  std::vector<theia::ImagePairMatch> matches;
-  CHECK(theia::ReadMatchesAndGeometry(matches_file,
-                                      &view_names,
-                                      &camera_intrinsics_prior,
-                                      &matches))
+  theia::LocalFeaturesAndMatchesDatabase database(matches_file, 128);
+  CHECK(database.ReadMatchesAndGeometry(
+      matches_file, &view_names, &camera_intrinsics_prior))
       << "Could not read matches from " << FLAGS_matches;
 
   // Collect relative translations.
-  for (const auto& match : matches) {
+  const auto match_keys = database.ImageNamesOfMatches();
+  for (const auto& match_key : match_keys) {
+    const theia::ImagePairMatch& match =
+        database.GetImagePairMatch(match_key.first, match_key.second);
     // Get the ViewIds from the names.
-    const theia::ViewId view_id1 =
-        reconstruction.ViewIdFromName(match.image1);
-    const theia::ViewId view_id2 =
-        reconstruction.ViewIdFromName(match.image2);
+    const theia::ViewId view_id1 = reconstruction.ViewIdFromName(match.image1);
+    const theia::ViewId view_id2 = reconstruction.ViewIdFromName(match.image2);
     const theia::View* view1 = reconstruction.View(view_id1);
     const theia::View* view2 = reconstruction.View(view_id2);
     if (view1 == nullptr || view2 == nullptr) {
@@ -160,9 +160,10 @@ void EvaluateTranslationOptimization(
     change_hist.Add(optimized_translation_angular_error -
                     translation_angular_error);
   }
-  LOG(INFO) << "Before histogram:\n" << before_hist.PrintString()
-            << "\n\nAfter histogram:\n" << after_hist.PrintString()
-            << "\n\nChange histogram:\n" << change_hist.PrintString();
+  LOG(INFO) << "Before histogram:\n"
+            << before_hist.PrintString() << "\n\nAfter histogram:\n"
+            << after_hist.PrintString() << "\n\nChange histogram:\n"
+            << change_hist.PrintString();
 }
 
 int main(int argc, char* argv[]) {

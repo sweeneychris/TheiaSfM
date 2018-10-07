@@ -32,22 +32,24 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#include <glog/logging.h>
-#include <gflags/gflags.h>
-#include <time.h>
-#include <theia/theia.h>
 #include <chrono>  // NOLINT
+#include <gflags/gflags.h>
+#include <glog/logging.h>
 #include <string>
+#include <theia/theia.h>
+#include <time.h>
 #include <vector>
 
 #include "applications/command_line_helpers.h"
 #include "applications/print_reconstruction_statistics.h"
 
 // Number of iterations to run the calibration.
-DEFINE_int32(num_calibration_iterations, 2,
+DEFINE_int32(num_calibration_iterations,
+             2,
              "Number of iterations to run the calibration. Typically 2-3 "
              "iterations is enough to get a stable result.");
-DEFINE_string(camera_model, "PINHOLE",
+DEFINE_string(camera_model,
+              "PINHOLE",
               "The type of camera model to use for calibration. The most "
               "common camera model types are PINHOLE and FISHEYE but a full "
               "list may be found at "
@@ -57,44 +59,55 @@ DEFINE_string(camera_model, "PINHOLE",
 DEFINE_string(images, "", "Wildcard of images to reconstruct.");
 
 // Multithreading.
-DEFINE_int32(num_threads, 1,
+DEFINE_int32(num_threads,
+             1,
              "Number of threads to use for feature extraction and matching.");
 
 // Feature and matching options.
 DEFINE_string(
-    descriptor, "SIFT",
+    descriptor,
+    "SIFT",
     "Type of feature descriptor to use. Must be one of the following: "
     "SIFT");
-DEFINE_string(feature_density, "NORMAL",
+DEFINE_string(feature_density,
+              "NORMAL",
               "Set to SPARSE, NORMAL, or DENSE to extract fewer or more "
               "features from each image.");
-DEFINE_string(matching_strategy, "CASCADE_HASHING",
+DEFINE_string(matching_strategy,
+              "CASCADE_HASHING",
               "Strategy used to match features. Must be BRUTE_FORCE "
               " or CASCADE_HASHING");
-DEFINE_bool(match_out_of_core, true,
+DEFINE_bool(match_out_of_core,
+            true,
             "Perform matching out of core by saving features to disk and "
             "reading them as needed. Set to false to perform matching all in "
             "memory.");
-DEFINE_string(matching_working_directory, "",
+DEFINE_string(matching_working_directory,
+              "",
               "Directory used during matching to store features for "
               "out-of-core matching.");
-DEFINE_int32(matching_max_num_images_in_cache, 128,
+DEFINE_int32(matching_max_num_images_in_cache,
+             128,
              "Maximum number of images to store in the LRU cache during "
              "feature matching. The higher this number is the more memory is "
              "consumed during matching.");
 DEFINE_double(lowes_ratio, 0.8, "Lowes ratio used for feature matching.");
-DEFINE_double(max_sampson_error_for_verified_match, 6.0,
+DEFINE_double(max_sampson_error_for_verified_match,
+              6.0,
               "Maximum sampson error for a match to be considered "
               "geometrically valid. This threshold is relative to an image "
               "with a width of 1024 pixels and will be appropriately scaled "
               "for images with different resolutions.");
-DEFINE_int32(min_num_inliers_for_valid_match, 30,
+DEFINE_int32(min_num_inliers_for_valid_match,
+             30,
              "Minimum number of geometrically verified inliers that a pair on "
              "images must have in order to be considered a valid two-view "
              "match.");
-DEFINE_bool(bundle_adjust_two_view_geometry, true,
+DEFINE_bool(bundle_adjust_two_view_geometry,
+            true,
             "Set to false to turn off 2-view BA.");
-DEFINE_bool(keep_only_symmetric_matches, true,
+DEFINE_bool(keep_only_symmetric_matches,
+            true,
             "Performs two-way matching and keeps symmetric matches.");
 
 // Reconstruction building options.
@@ -102,43 +115,53 @@ DEFINE_string(intrinsics_to_optimize,
               "NONE",
               "Set to control which intrinsics parameters are optimized during "
               "bundle adjustment.");
-DEFINE_double(max_reprojection_error_pixels, 4.0,
+DEFINE_double(max_reprojection_error_pixels,
+              4.0,
               "Maximum reprojection error for a correspondence to be "
               "considered an inlier after bundle adjustment.");
 
 // Incremental SfM options.
-DEFINE_double(absolute_pose_reprojection_error_threshold, 4.0,
+DEFINE_double(absolute_pose_reprojection_error_threshold,
+              4.0,
               "The inlier threshold for absolute pose estimation. This "
               "threshold is relative to an image with a width of 1024 pixels "
               "and will be appropriately scaled based on the input image "
               "resolutions.");
-DEFINE_int32(min_num_absolute_pose_inliers, 30,
+DEFINE_int32(min_num_absolute_pose_inliers,
+             30,
              "Minimum number of inliers in order for absolute pose estimation "
              "to be considered successful.");
-DEFINE_double(full_bundle_adjustment_growth_percent, 5.0,
+DEFINE_double(full_bundle_adjustment_growth_percent,
+              5.0,
               "Full BA is only triggered for incremental SfM when the "
               "reconstruction has growth by this percent since the last time "
               "full BA was used.");
-DEFINE_int32(partial_bundle_adjustment_num_views, 20,
+DEFINE_int32(partial_bundle_adjustment_num_views,
+             20,
              "When full BA is not being run, partial BA is executed on a "
              "constant number of views specified by this parameter.");
 
 // Triangulation options.
-DEFINE_double(min_triangulation_angle_degrees, 4.0,
+DEFINE_double(min_triangulation_angle_degrees,
+              4.0,
               "Minimum angle between views for triangulation.");
 DEFINE_double(
-    triangulation_reprojection_error_pixels, 15.0,
+    triangulation_reprojection_error_pixels,
+    15.0,
     "Max allowable reprojection error on initial triangulation of points.");
-DEFINE_bool(bundle_adjust_tracks, true,
+DEFINE_bool(bundle_adjust_tracks,
+            true,
             "Set to true to optimize tracks immediately upon estimation.");
 
 // Bundle adjustment parameters.
-DEFINE_string(bundle_adjustment_robust_loss_function, "CAUCHY",
+DEFINE_string(bundle_adjustment_robust_loss_function,
+              "CAUCHY",
               "By setting this to an option other than NONE, a robust loss "
               "function will be used during bundle adjustment which can "
               "improve robustness to outliers. Options are NONE, HUBER, "
               "SOFTLONE, CAUCHY, ARCTAN, and TUKEY.");
-DEFINE_double(bundle_adjustment_robust_loss_width, 5.0,
+DEFINE_double(bundle_adjustment_robust_loss_width,
+              5.0,
               "If the BA loss function is not NONE, then this value controls "
               "where the robust loss begins with respect to reprojection error "
               "in pixels.");
@@ -156,11 +179,10 @@ ReconstructionBuilderOptions SetReconstructionBuilderOptions() {
 
   options.descriptor_type = StringToDescriptorExtractorType(FLAGS_descriptor);
   options.feature_density = StringToFeatureDensity(FLAGS_feature_density);
-  options.matching_options.match_out_of_core = FLAGS_match_out_of_core;
-  options.matching_options.keypoints_and_descriptors_output_dir =
+  options.match_out_of_core = FLAGS_match_out_of_core;
+  options.features_and_matches_database_directory =
       FLAGS_matching_working_directory;
-  options.matching_options.cache_capacity =
-      FLAGS_matching_max_num_images_in_cache;
+  options.cache_capacity = FLAGS_matching_max_num_images_in_cache;
   options.matching_strategy =
       StringToMatchingStrategyType(FLAGS_matching_strategy);
   options.matching_options.lowes_ratio = FLAGS_lowes_ratio;
@@ -188,7 +210,7 @@ ReconstructionBuilderOptions SetReconstructionBuilderOptions() {
       FLAGS_min_num_inliers_for_valid_match;
   reconstruction_estimator_options.num_threads = FLAGS_num_threads;
   reconstruction_estimator_options.intrinsics_to_optimize =
-    StringToOptimizeIntrinsicsType(FLAGS_intrinsics_to_optimize);
+      StringToOptimizeIntrinsicsType(FLAGS_intrinsics_to_optimize);
   options.reconstruct_largest_connected_component = true;
   options.only_calibrated_views = false;
   reconstruction_estimator_options.max_reprojection_error_in_pixels =
@@ -199,13 +221,11 @@ ReconstructionBuilderOptions SetReconstructionBuilderOptions() {
       theia::ReconstructionEstimatorType::INCREMENTAL;
 
   // Incremental SfM Options.
-  reconstruction_estimator_options
-      .absolute_pose_reprojection_error_threshold =
+  reconstruction_estimator_options.absolute_pose_reprojection_error_threshold =
       FLAGS_absolute_pose_reprojection_error_threshold;
   reconstruction_estimator_options.min_num_absolute_pose_inliers =
       FLAGS_min_num_absolute_pose_inliers;
-  reconstruction_estimator_options
-      .full_bundle_adjustment_growth_percent =
+  reconstruction_estimator_options.full_bundle_adjustment_growth_percent =
       FLAGS_full_bundle_adjustment_growth_percent;
   reconstruction_estimator_options.partial_bundle_adjustment_num_views =
       FLAGS_partial_bundle_adjustment_num_views;
@@ -253,7 +273,7 @@ void AddImagesToReconstructionBuilder(
   CHECK(reconstruction_builder->ExtractAndMatchFeatures());
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   THEIA_GFLAGS_NAMESPACE::ParseCommandLineFlags(&argc, &argv, true);
   google::InitGoogleLogging(argv[0]);
 
@@ -304,7 +324,6 @@ int main(int argc, char *argv[]) {
   // prior.tangential_distortion.value[0] = 0.840712;
   // prior.tangential_distortion.value[1] = 0.0;
 
-
   std::vector<Reconstruction*> reconstructions;
   for (int i = 0; i < FLAGS_num_calibration_iterations; i++) {
     reconstructions.clear();
@@ -313,7 +332,7 @@ int main(int argc, char *argv[]) {
     AddImagesToReconstructionBuilder(&reconstruction_builder, prior);
 
     CHECK(reconstruction_builder.BuildReconstruction(&reconstructions))
-      << "Could not create a reconstruction.";
+        << "Could not create a reconstruction.";
 
     // Print the final reconstruction statistics so the user may assess the
     // quality of the calibration.
@@ -331,7 +350,5 @@ int main(int argc, char *argv[]) {
     // Use the camera intrinsics from the optimized reconstruction as the
     // initialization for the next iteration.
     prior = view->Camera().CameraIntrinsicsPriorFromIntrinsics();
-
   }
-
 }

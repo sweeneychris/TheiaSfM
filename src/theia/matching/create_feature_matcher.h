@@ -39,6 +39,7 @@
 
 namespace theia {
 class FeatureMatcher;
+class FeaturesAndMatchesDatabase;
 struct FeatureMatcherOptions;
 
 // The type of matching to perform.
@@ -51,7 +52,8 @@ enum class MatchingStrategy {
 // descriptors).
 std::unique_ptr<FeatureMatcher> CreateFeatureMatcher(
     const MatchingStrategy& matching_strategy,
-    const FeatureMatcherOptions& options);
+    const FeatureMatcherOptions& options,
+    FeaturesAndMatchesDatabase* features_and_matches_database);
 
 }  // namespace theia
 

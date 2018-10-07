@@ -38,20 +38,22 @@
 #include <vector>
 
 #include "theia/matching/feature_matcher.h"
+#include "theia/matching/features_and_matches_database.h"
 #include "theia/util/util.h"
 
 namespace theia {
-
 struct FeatureMatcherOptions;
 struct IndexedFeatureMatch;
 struct KeypointsAndDescriptors;
 
 // Performs features matching between two sets of features using a brute force
 // matching method.
-class BruteForceFeatureMatcher : public FeatureMatcher{
+class BruteForceFeatureMatcher : public FeatureMatcher {
  public:
-  explicit BruteForceFeatureMatcher(const FeatureMatcherOptions& options)
-      : FeatureMatcher(options) {}
+  BruteForceFeatureMatcher(
+      const FeatureMatcherOptions& options,
+      FeaturesAndMatchesDatabase* features_and_matches_database)
+      : FeatureMatcher(options, features_and_matches_database) {}
   ~BruteForceFeatureMatcher() {}
 
  private:

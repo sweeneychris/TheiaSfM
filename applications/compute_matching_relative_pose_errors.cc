@@ -33,20 +33,19 @@
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
 #include <Eigen/Core>
-#include <glog/logging.h>
 #include <gflags/gflags.h>
+#include <glog/logging.h>
 #include <theia/theia.h>
 
 #include <memory>
 #include <string>
 
 DEFINE_string(
-    matches, "",
+    matches,
+    "",
     "Matches file that has been written with WriteMatchesAndGeometry");
 
-DEFINE_string(reconstruction,
-              "",
-              "Reconstruction to use as ground truth.");
+DEFINE_string(reconstruction, "", "Reconstruction to use as ground truth.");
 
 using theia::Reconstruction;
 using theia::TrackId;
@@ -82,24 +81,24 @@ double ComputeRelativeTranslationError(
       theia::Clamp(relative_translation.dot(world_translation), -1.0, 1.0)));
 }
 
-void EvaluateRelativeError(
-    const std::vector<std::string>& view_names,
-    const std::vector<theia::ImagePairMatch>& matches,
-    const Reconstruction& gt_reconstruction) {
+void EvaluateRelativeError(const std::vector<std::string>& view_names,
+                           const Reconstruction& gt_reconstruction,
+                           theia::LocalFeaturesAndMatchesDatabase* database) {
   // For each edge, get the rotate translation and check the error.
   int num_matches_evaluated = 0;
-  const std::vector<double> histogram_bins = {2,  5,   10,  15,  25,  50,
-                                              90, 135, 180, 225, 270, 316};
+  const std::vector<double> histogram_bins = {
+      2, 5, 10, 15, 25, 50, 90, 135, 180, 225, 270, 316};
 
   theia::PoseError relative_pose_error(histogram_bins, histogram_bins);
-  for (const auto& match : matches) {
-    const std::string view1_name = match.image1;
-    const std::string view2_name = match.image2;
+  const auto match_keys = database->ImageNamesOfMatches();
+  for (const auto& match_key : match_keys) {
+    const std::string view1_name = match_key.first;
+    const std::string view2_name = match_key.second;
+    const theia::ImagePairMatch& match =
+        database->GetImagePairMatch(view1_name, view2_name);
 
-    const ViewId view_id1 =
-        gt_reconstruction.ViewIdFromName(view1_name);
-    const ViewId view_id2 =
-        gt_reconstruction.ViewIdFromName(view2_name);
+    const ViewId view_id1 = gt_reconstruction.ViewIdFromName(view1_name);
+    const ViewId view_id2 = gt_reconstruction.ViewIdFromName(view2_name);
     const theia::View* view1 = gt_reconstruction.View(view_id1);
     const theia::View* view2 = gt_reconstruction.View(view_id2);
     if (view1 == nullptr || view2 == nullptr) {
@@ -135,11 +134,10 @@ int main(int argc, char* argv[]) {
 
   std::vector<std::string> view_names;
   std::vector<theia::CameraIntrinsicsPrior> camera_intrinsics_prior;
-  std::vector<theia::ImagePairMatch> matches;
-  CHECK(theia::ReadMatchesAndGeometry(FLAGS_matches,
-                                      &view_names,
-                                      &camera_intrinsics_prior,
-                                      &matches))
+  theia::LocalFeaturesAndMatchesDatabase features_and_matches_database(
+      FLAGS_matches, 128);
+  CHECK(features_and_matches_database.ReadMatchesAndGeometry(
+      FLAGS_matches, &view_names, &camera_intrinsics_prior))
       << "Could not read matches from " << FLAGS_matches;
 
   std::unique_ptr<theia::Reconstruction> reconstruction(
@@ -147,7 +145,8 @@ int main(int argc, char* argv[]) {
   CHECK(theia::ReadReconstruction(FLAGS_reconstruction, reconstruction.get()))
       << "Could not read reconstruction from " << FLAGS_reconstruction;
 
-  EvaluateRelativeError(view_names, matches, *reconstruction);
+  EvaluateRelativeError(
+      view_names, *reconstruction, &features_and_matches_database);
 
   return 0;
 }

@@ -37,9 +37,9 @@
 
 #include "gtest/gtest.h"
 
-#include "theia/io/read_matches.h"
 #include "theia/io/reconstruction_reader.h"
 #include "theia/matching/image_pair_match.h"
+#include "theia/matching/in_memory_features_and_matches_database.h"
 #include "theia/sfm/find_common_views_by_name.h"
 #include "theia/sfm/hybrid_reconstruction_estimator.h"
 #include "theia/sfm/reconstruction.h"
@@ -76,16 +76,19 @@ void ReadInput(Reconstruction* gt_reconstruction,
   // Read the matches file.
   std::vector<std::string> image_files;
   std::vector<CameraIntrinsicsPrior> camera_intrinsics_prior;
-  std::vector<ImagePairMatch> image_matches;
 
   // Read in match file.
-  CHECK(ReadMatchesAndGeometry(matches_filename,
-                               &image_files,
-                               &camera_intrinsics_prior,
-                               &image_matches));
+  InMemoryFeaturesAndMatchesDatabase matches_database;
+  CHECK(matches_database.ReadMatchesAndGeometry(
+      matches_filename, &image_files, &camera_intrinsics_prior));
 
   // Add the matches to the view graph.
-  for (const ImagePairMatch& match : image_matches) {
+  const auto match_keys = matches_database.ImageNamesOfMatches();
+  for (const auto& match_key : match_keys) {
+    LOG(INFO) << "Adding match(" << match_key.first << ", " << match_key.second
+              << ")";
+    const ImagePairMatch& match =
+        matches_database.GetImagePairMatch(match_key.first, match_key.second);
     TwoViewInfo info = match.twoview_info;
     const ViewId view_id1 = reconstruction->ViewIdFromName(match.image1);
     const ViewId view_id2 = reconstruction->ViewIdFromName(match.image2);
@@ -100,10 +103,9 @@ void ReadInput(Reconstruction* gt_reconstruction,
 }
 
 // Align the reconstructions then evaluate the pose errors.
-void EvaluateAlignedPoseError(
-    const double position_tolerance_meters,
-    const Reconstruction& reference_reconstruction,
-    Reconstruction* reconstruction_to_align) {
+void EvaluateAlignedPoseError(const double position_tolerance_meters,
+                              const Reconstruction& reference_reconstruction,
+                              Reconstruction* reconstruction_to_align) {
   // Find the common view names (it should be all views).
   const std::vector<std::string> common_view_names =
       theia::FindCommonViewsByName(reference_reconstruction,
@@ -150,17 +152,15 @@ void BuildAndVerifyReconstruction(
   EXPECT_EQ(summary.estimated_views.size(), reconstruction.NumViews());
 
   // Ensure that the reconstruction is somewhat sane.
-  EvaluateAlignedPoseError(position_tolerance_meters,
-                           gt_reconstruction,
-                           &reconstruction);
+  EvaluateAlignedPoseError(
+      position_tolerance_meters, gt_reconstruction, &reconstruction);
 }
 
 TEST(HybridReconstructionEstimator, BasicTest) {
   static const double kPositionToleranceMeters = 1e-2;
 
   ReconstructionEstimatorOptions options;
-  options.reconstruction_estimator_type =
-      ReconstructionEstimatorType::HYBRID;
+  options.reconstruction_estimator_type = ReconstructionEstimatorType::HYBRID;
   options.intrinsics_to_optimize = OptimizeIntrinsicsType::NONE;
   BuildAndVerifyReconstruction(kPositionToleranceMeters, options);
 }
@@ -169,8 +169,7 @@ TEST(HybridReconstructionEstimator, RobustCostFunction) {
   static const double kPositionToleranceMeters = 1e-2;
 
   ReconstructionEstimatorOptions options;
-  options.reconstruction_estimator_type =
-      ReconstructionEstimatorType::HYBRID;
+  options.reconstruction_estimator_type = ReconstructionEstimatorType::HYBRID;
   options.bundle_adjustment_loss_function_type = LossFunctionType::HUBER;
   options.intrinsics_to_optimize = OptimizeIntrinsicsType::NONE;
   BuildAndVerifyReconstruction(kPositionToleranceMeters, options);
@@ -180,8 +179,7 @@ TEST(HybridReconstructionEstimator, VariableIntrinsics) {
   static const double kPositionToleranceMeters = 1e-2;
 
   ReconstructionEstimatorOptions options;
-  options.reconstruction_estimator_type =
-      ReconstructionEstimatorType::HYBRID;
+  options.reconstruction_estimator_type = ReconstructionEstimatorType::HYBRID;
   options.intrinsics_to_optimize = OptimizeIntrinsicsType::FOCAL_LENGTH;
   BuildAndVerifyReconstruction(kPositionToleranceMeters, options);
 }

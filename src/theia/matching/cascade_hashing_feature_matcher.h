@@ -42,6 +42,7 @@
 
 #include "theia/matching/cascade_hasher.h"
 #include "theia/matching/feature_matcher.h"
+#include "theia/matching/features_and_matches_database.h"
 #include "theia/util/hash.h"
 
 namespace theia {
@@ -55,19 +56,14 @@ struct KeypointsAndDescriptors;
 // efficient but can only be used with float features like SIFT.
 class CascadeHashingFeatureMatcher : public FeatureMatcher {
  public:
-  explicit CascadeHashingFeatureMatcher(const FeatureMatcherOptions& options)
-      : FeatureMatcher(options) {}
+  explicit CascadeHashingFeatureMatcher(
+      const FeatureMatcherOptions& options,
+      FeaturesAndMatchesDatabase* features_and_matches_database)
+      : FeatureMatcher(options, features_and_matches_database) {}
   ~CascadeHashingFeatureMatcher() {}
 
   // These methods are the same as the base class except that the HashedImage is
   // created as the descriptors are added.
-  void AddImage(const std::string& image_name,
-                const std::vector<Keypoint>& keypoints,
-                const std::vector<Eigen::VectorXf>& descriptors) override;
-  void AddImage(const std::string& image_name,
-                const std::vector<Keypoint>& keypoints,
-                const std::vector<Eigen::VectorXf>& descriptors,
-                const CameraIntrinsicsPrior& intrinsics) override;
   void AddImage(const std::string& image_name) override;
   void AddImage(const std::string& image_name,
                 const CameraIntrinsicsPrior& intrinsics) override;
@@ -77,18 +73,12 @@ class CascadeHashingFeatureMatcher : public FeatureMatcher {
                  const std::vector<CameraIntrinsicsPrior>& intrinsics) override;
 
  private:
-  bool MatchImagePair(
-      const KeypointsAndDescriptors& features1,
-      const KeypointsAndDescriptors& features2,
-      std::vector<IndexedFeatureMatch>* matches) override;
+  bool MatchImagePair(const KeypointsAndDescriptors& features1,
+                      const KeypointsAndDescriptors& features2,
+                      std::vector<IndexedFeatureMatch>* matches) override;
 
   // Initializes the cascade hasher (only if needed).
   void InitializeCascadeHasher(int descriptor_dimension);
-
-  // Creates the hashed images in parallel.
-  void CreateHashedImagesInParallel(
-      const std::vector<std::string>& image_names,
-      const std::vector<std::string>& feature_filenames);
 
   std::unordered_map<std::string, HashedImage> hashed_images_;
   std::unique_ptr<CascadeHasher> cascade_hasher_;

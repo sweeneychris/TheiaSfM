@@ -46,23 +46,6 @@ struct FeatureMatcherOptions {
   // Number of threads to use in parallel for matching.
   int num_threads = 1;
 
-  // Matching may be performed in core (i.e. all in memory) or out-of-core. For
-  // the latter, features are written and read to/from disk as needed (utilizing
-  // an LRU cache). The out-of-core strategy is more scalable since the memory
-  // footprint is limited. Set this value to false to perform all-in-memory
-  // matching.
-  bool match_out_of_core = false;
-
-  // Keypoints and descriptors are stored to disk as they are added to the
-  // FeatureMatcher. Features will be stored in this directory, which must be a
-  // valid writeable directory.
-  std::string keypoints_and_descriptors_output_dir = "";
-
-  // We store the descriptors of up to cache_capacity images in the cache at a
-  // given time. The higher the cache capacity, the more memory is required to
-  // perform image-to-image matching.
-  int cache_capacity = 128;
-
   // Only symmetric matches are kept.
   bool keep_only_symmetric_matches = true;
 
@@ -85,17 +68,6 @@ struct FeatureMatcherOptions {
   // Only images that contain more feature matches than this number will be
   // returned.
   int min_num_feature_matches = 30;
-
-  // If true, a global image descriptor for each image is used to determine the
-  // k-nearest neighbor images, and feature matchign is only performed on these
-  // k-nearest neighbors. The desired value of "k" is given by setting
-  //   num_nearest_neighbors_for_global_descriptor_matching.
-  bool select_image_pairs_with_global_image_descriptor_matching = true;
-  int num_nearest_neighbors_for_global_descriptor_matching = 100;
-
-  // Specific options for Fisher Vector global feature extraction.
-  int num_gmm_clusters_for_fisher_vector = 16;
-  int max_num_features_for_fisher_vector_training = 1000000;
 };
 
 }  // namespace theia

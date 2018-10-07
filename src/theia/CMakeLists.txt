@@ -68,7 +68,6 @@ set(THEIA_SRC
   io/read_bundler_files.cc
   io/read_calibration.cc
   io/read_keypoints_and_descriptors.cc
-  io/read_matches.cc
   io/reconstruction_reader.cc
   io/reconstruction_writer.cc
   io/sift_binary_file.cc
@@ -76,7 +75,6 @@ set(THEIA_SRC
   io/write_bundler_files.cc
   io/write_colmap_files.cc
   io/write_keypoints_and_descriptors.cc
-  io/write_matches.cc
   io/write_nvm_file.cc
   io/write_ply_file.cc
   matching/brute_force_feature_matcher.cc
@@ -87,6 +85,8 @@ set(THEIA_SRC
   matching/feature_matcher_utils.cc
   matching/fisher_vector_extractor.cc
   matching/guided_epipolar_matcher.cc
+  matching/in_memory_features_and_matches_database.cc
+  matching/local_features_and_matches_database.cc
   math/closed_form_polynomial_solver.cc
   math/constrained_l1_solver.cc
   math/find_polynomial_roots_companion_matrix.cc
