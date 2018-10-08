@@ -36,6 +36,7 @@
 #define THEIA_SFM_FEATURE_EXTRACTOR_AND_MATCHER_H_
 
 #include <Eigen/Core>
+#include <mutex>  // NOLINT
 #include <string>
 #include <thread>  // NOLINT
 #include <vector>
