@@ -54,7 +54,6 @@ void PairwiseRotationErrorTest(const Matrix3d& relative_rot_mat,
                                const double weight,
                                const Matrix3d& global_rot_1_mat,
                                const Matrix3d& global_rot_2_mat) {
-  // Convert matrices to angle-axis.
   Vector3d relative_rot, rotation1, rotation2;
   ceres::RotationMatrixToAngleAxis(relative_rot_mat.data(),
                                    relative_rot.data());
@@ -64,9 +63,12 @@ void PairwiseRotationErrorTest(const Matrix3d& relative_rot_mat,
   // Compute ground truth angular error.
   const AngleAxisd loop_rotation(global_rot_2_mat *
                                  global_rot_1_mat.transpose());
+  const Matrix3d gt_rotation_error_mat = loop_rotation * relative_rot_mat.transpose();
 
-  const Vector3d gt_rotation_error =
-      weight * (loop_rotation.angle() * loop_rotation.axis() - relative_rot);
+  // Convert matrices to angle-axis.
+  Vector3d gt_rotation_error;
+  ceres::RotationMatrixToAngleAxis(gt_rotation_error_mat.data(), gt_rotation_error.data());
+  gt_rotation_error *= weight;
 
   // Initialize error function and compute rotation error.
   const PairwiseRotationError global_rotation_error(relative_rot, weight);
@@ -111,12 +113,14 @@ TEST(PairwiseRotationError, NontrivialRotation) {
 TEST(PairwiseRotationError, OneHundredEightyDegreeRotation) {
   const Matrix3d global_rot_1_mat = Matrix3d::Identity();
   const Matrix3d global_rot_2_mat =
-      AngleAxisd(DegToRad(180.0), Vector3d::UnitZ()).toRotationMatrix();
-  const Matrix3d relative_rot =
       AngleAxisd(DegToRad(179.0), Vector3d::UnitZ()).toRotationMatrix();
+  const Matrix3d relative_rot =
+      AngleAxisd(DegToRad(-179.0), Vector3d::UnitZ()).toRotationMatrix();
 
   PairwiseRotationErrorTest(relative_rot, kRelativeRotationWeight,
                             global_rot_1_mat, global_rot_2_mat);
+  PairwiseRotationErrorTest(relative_rot, kRelativeRotationWeight,
+                            global_rot_2_mat, global_rot_1_mat);
 }
 
 TEST(PairwiseRotationError, Weight) {
