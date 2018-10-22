@@ -35,6 +35,7 @@
 #ifndef THEIA_IMAGE_KEYPOINT_DETECTOR_SIFT_PARAMETERS_H_
 #define THEIA_IMAGE_KEYPOINT_DETECTOR_SIFT_PARAMETERS_H_
 
+namespace theia {
 // Sift blob feature detector parameters. Since the Sift implementation is based
 // on the VLFeat one, please visit (http://www.vlfeat.org/api/sift.html) for
 // getting more info about the parameters.
@@ -70,5 +71,7 @@ struct SiftParameters {
   // geometric verification.
   bool upright_sift = true;
 };
+
+}  // namespace theia
 
 #endif  // THEIA_IMAGE_KEYPOINT_DETECTOR_SIFT_PARAMETERS_H_
