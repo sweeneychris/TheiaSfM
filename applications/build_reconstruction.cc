@@ -43,18 +43,13 @@
 #include "applications/command_line_helpers.h"
 
 // Input/output files.
+DEFINE_int32(max_num_images, 10000, "Maximum number of images to process.");
 DEFINE_string(images, "", "Wildcard of images to reconstruct.");
 DEFINE_string(image_masks, "", "Wildcard of image masks to reconstruct.");
 DEFINE_string(matches_file, "", "Filename of the matches file.");
 DEFINE_string(calibration_file,
               "",
               "Calibration file containing image calibration data.");
-DEFINE_string(
-    output_matches_file,
-    "",
-    "File to write the two-view matches to. This file can be used in "
-    "future iterations as input to the reconstruction builder. Leave empty if "
-    "you do not want to output matches.");
 DEFINE_string(
     output_reconstruction,
     "",
@@ -80,20 +75,10 @@ DEFINE_string(matching_strategy,
               "CASCADE_HASHING",
               "Strategy used to match features. Must be BRUTE_FORCE "
               " or CASCADE_HASHING");
-DEFINE_bool(match_out_of_core,
-            true,
-            "Perform matching out of core by saving features to disk and "
-            "reading them as needed. Set to false to perform matching all in "
-            "memory.");
 DEFINE_string(matching_working_directory,
               "",
               "Directory used during matching to store features for "
               "out-of-core matching.");
-DEFINE_int32(matching_max_num_images_in_cache,
-             128,
-             "Maximum number of images to store in the LRU cache during "
-             "feature matching. The higher this number is the more memory is "
-             "consumed during matching.");
 DEFINE_double(lowes_ratio, 0.8, "Lowes ratio used for feature matching.");
 DEFINE_double(max_sampson_error_for_verified_match,
               4.0,
@@ -273,6 +258,7 @@ DEFINE_int32(min_num_optimized_tracks_per_view,
              "When track subsampling is enabled, tracks are selected such that "
              "each view observes a minimum number of optimized tracks.");
 
+using theia::FeaturesAndMatchesDatabase;
 using theia::Reconstruction;
 using theia::ReconstructionBuilder;
 using theia::ReconstructionBuilderOptions;
@@ -283,14 +269,11 @@ using theia::ReconstructionBuilderOptions;
 ReconstructionBuilderOptions SetReconstructionBuilderOptions() {
   ReconstructionBuilderOptions options;
   options.num_threads = FLAGS_num_threads;
-  options.output_matches_file = FLAGS_output_matches_file;
 
   options.descriptor_type = StringToDescriptorExtractorType(FLAGS_descriptor);
   options.feature_density = StringToFeatureDensity(FLAGS_feature_density);
-  options.match_out_of_core = FLAGS_match_out_of_core;
   options.features_and_matches_database_directory =
       FLAGS_matching_working_directory;
-  options.cache_capacity = FLAGS_matching_max_num_images_in_cache;
   options.matching_strategy =
       StringToMatchingStrategyType(FLAGS_matching_strategy);
   options.matching_options.lowes_ratio = FLAGS_lowes_ratio;
@@ -402,17 +385,8 @@ ReconstructionBuilderOptions SetReconstructionBuilderOptions() {
 }
 
 void AddMatchesToReconstructionBuilder(
+    FeaturesAndMatchesDatabase* features_and_matches_database,
     ReconstructionBuilder* reconstruction_builder) {
-  // Load matches from file.
-  std::vector<std::string> image_files;
-  std::vector<theia::CameraIntrinsicsPrior> camera_intrinsics_prior;
-  theia::LocalFeaturesAndMatchesDatabase matches_db(
-      FLAGS_matching_working_directory, FLAGS_matching_max_num_images_in_cache);
-
-  // Read in match file.
-  matches_db.ReadMatchesAndGeometry(
-      FLAGS_matches_file, &image_files, &camera_intrinsics_prior);
-
   // Add all the views. When the intrinsics group id is invalid, the
   // reconstruction builder will assume that the view does not share its
   // intrinsics with any other views.
@@ -422,16 +396,27 @@ void AddMatchesToReconstructionBuilder(
     intrinsics_group_id = 0;
   }
 
-  for (int i = 0; i < image_files.size(); i++) {
+  const auto camera_calibrations_names =
+      features_and_matches_database->ImageNamesOfCameraIntrinsicsPriors();
+  LOG(INFO) << "Loading " << camera_calibrations_names.size()
+            << " intrinsics priors from the DB.";
+  for (int i = 0; i < camera_calibrations_names.size(); i++) {
+    const auto camera_intrinsics_prior =
+        features_and_matches_database->GetCameraIntrinsicsPrior(
+            camera_calibrations_names[i]);
     reconstruction_builder->AddImageWithCameraIntrinsicsPrior(
-        image_files[i], camera_intrinsics_prior[i], intrinsics_group_id);
+        camera_calibrations_names[i],
+        camera_intrinsics_prior,
+        intrinsics_group_id);
   }
 
   // Add the matches.
-  const auto match_keys = matches_db.ImageNamesOfMatches();
+  const auto match_keys = features_and_matches_database->ImageNamesOfMatches();
+  LOG(INFO) << "Loading " << match_keys.size() << " matches from the DB.";
   for (const auto& match_key : match_keys) {
     const theia::ImagePairMatch& match =
-        matches_db.GetImagePairMatch(match_key.first, match_key.second);
+        features_and_matches_database->GetImagePairMatch(match_key.first,
+                                                         match_key.second);
     CHECK(reconstruction_builder->AddTwoViewMatch(
         match_key.first, match_key.second, match));
   }
@@ -446,6 +431,10 @@ void AddImagesToReconstructionBuilder(
 
   CHECK_GT(image_files.size(), 0) << "No images found in: " << FLAGS_images;
 
+  if (image_files.size() > FLAGS_max_num_images) {
+    image_files.resize(FLAGS_max_num_images);
+  }
+  
   // Load calibration file if it is provided.
   std::unordered_map<std::string, theia::CameraIntrinsicsPrior>
       camera_intrinsics_prior;
@@ -515,21 +504,28 @@ int main(int argc, char* argv[]) {
   THEIA_GFLAGS_NAMESPACE::ParseCommandLineFlags(&argc, &argv, true);
   google::InitGoogleLogging(argv[0]);
 
-  CHECK_GT(FLAGS_output_reconstruction.size(), 0)
-      << "Must specify a filepath to output the reconstruction.";
+  CHECK_GT(FLAGS_output_reconstruction.size(), 0);
 
+  // Initialize the features and matches database.
+  std::unique_ptr<FeaturesAndMatchesDatabase> features_and_matches_database(
+      new theia::RocksDbFeaturesAndMatchesDatabase(
+          FLAGS_matching_working_directory));
+
+  // Create the reconstruction builder.
   const ReconstructionBuilderOptions options =
       SetReconstructionBuilderOptions();
+  ReconstructionBuilder reconstruction_builder(
+      options, features_and_matches_database.get());
 
-  ReconstructionBuilder reconstruction_builder(options);
   // If matches are provided, load matches otherwise load images.
-  if (FLAGS_matches_file.size() != 0) {
-    AddMatchesToReconstructionBuilder(&reconstruction_builder);
+  if (features_and_matches_database->NumMatches() > 0) {
+    AddMatchesToReconstructionBuilder(features_and_matches_database.get(),
+                                      &reconstruction_builder);
   } else if (FLAGS_images.size() != 0) {
     AddImagesToReconstructionBuilder(&reconstruction_builder);
   } else {
-    LOG(FATAL)
-        << "You must specifiy either images to reconstruct or a match file.";
+    LOG(FATAL) << "You must specifiy either images to reconstruct or supply a "
+                  "database with matches stored in it.";
   }
 
   std::vector<Reconstruction*> reconstructions;

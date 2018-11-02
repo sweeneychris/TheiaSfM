@@ -32,30 +32,37 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (sweeneychris@gmail.com)
 
-#ifndef THEIA_MATCHING_IN_MEMORY_FEATURES_AND_MATCHES_DATABASE_H_
-#define THEIA_MATCHING_IN_MEMORY_FEATURES_AND_MATCHES_DATABASE_H_
+#ifndef THEIA_MATCHING_ROCKSDB_FEATURES_AND_MATCHES_DATABASE_H_
+#define THEIA_MATCHING_ROCKSDB_FEATURES_AND_MATCHES_DATABASE_H_
 
 #include <mutex>  // NOLINT
 #include <string>
 #include <unordered_map>
 #include <utility>
+#include <vector>
 
-#include "theia/io/read_keypoints_and_descriptors.h"
-#include "theia/io/write_keypoints_and_descriptors.h"
 #include "theia/matching/features_and_matches_database.h"
 #include "theia/matching/image_pair_match.h"
 #include "theia/matching/keypoints_and_descriptors.h"
-#include "theia/sfm/camera_intrinsics_prior.h"
-#include "theia/util/filesystem.h"
+#include "theia/util/hash.h"
+#include "theia/util/lru_cache.h"
 #include "theia/util/util.h"
+
+namespace rocksdb {
+class ColumnFamilyHandle;
+class DB;
+struct Options;
+}  // namespace rocksdb
 
 namespace theia {
 
-// A simple implementation for storing features and feature matches in memory.
-class InMemoryFeaturesAndMatchesDatabase : public FeaturesAndMatchesDatabase {
+// A simple implementation for storing features and feature matches. A local
+// filesystem and cache are used to retrieve the features efficiently. The
+// matches are kept in memory. This class is guaranteed to be thread safe.
+class RocksDbFeaturesAndMatchesDatabase : public FeaturesAndMatchesDatabase {
  public:
-  InMemoryFeaturesAndMatchesDatabase() = default;
-  ~InMemoryFeaturesAndMatchesDatabase() = default;
+  RocksDbFeaturesAndMatchesDatabase(const std::string& directory);
+  ~RocksDbFeaturesAndMatchesDatabase();
 
   bool ContainsCameraIntrinsicsPrior(const std::string& image_name) override;
 
@@ -74,7 +81,8 @@ class InMemoryFeaturesAndMatchesDatabase : public FeaturesAndMatchesDatabase {
 
   bool ContainsFeatures(const std::string& image_name) override;
 
-  // Get/set the features for the image.
+  // Get/set the features for the image. Returns true if the features exist in
+  // the database and false otherwise.
   KeypointsAndDescriptors GetFeatures(const std::string& image_name) override;
 
   // Set the features for the image.
@@ -99,19 +107,19 @@ class InMemoryFeaturesAndMatchesDatabase : public FeaturesAndMatchesDatabase {
       override;
   size_t NumMatches() override;
 
-  bool ReadFromFile(const std::string& filepath);
-  bool WriteToFile(const std::string& filepath);
-
   void RemoveAllMatches() override;
 
  private:
-  DISALLOW_COPY_AND_ASSIGN(InMemoryFeaturesAndMatchesDatabase);
+  DISALLOW_COPY_AND_ASSIGN(RocksDbFeaturesAndMatchesDatabase);
 
-  std::mutex mutex_;
-  std::unordered_map<std::string, CameraIntrinsicsPrior> intrinsics_priors_;
-  std::unordered_map<std::string, KeypointsAndDescriptors> features_;
-  std::unordered_map<std::pair<std::string, std::string>, ImagePairMatch>
-      matches_;
+  void InitializeRocksDB();
+
+  std::unique_ptr<rocksdb::Options> options_;
+  std::string directory_;
+  std::unique_ptr<rocksdb::DB> database_;
+  std::unique_ptr<rocksdb::ColumnFamilyHandle> intrinsics_prior_handle_;
+  std::unique_ptr<rocksdb::ColumnFamilyHandle> features_handle_;
+  std::unique_ptr<rocksdb::ColumnFamilyHandle> matches_handle_;
 };
 }  // namespace theia
-#endif  // THEIA_MATCHING_IN_MEMORY_FEATURES_AND_MATCHES_DATABASE_H_
+#endif  // THEIA_MATCHING_LOCAL_FEATURES_AND_MATCHES_DATABASE_H_

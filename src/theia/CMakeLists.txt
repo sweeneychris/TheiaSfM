@@ -59,8 +59,8 @@ set(THEIA_SRC
   image/descriptor/create_descriptor_extractor.cc
   image/descriptor/descriptor_extractor.cc
   image/descriptor/sift_descriptor.cc
-  image/image.cc
   image/image_cache.cc
+  image/image.cc
   image/keypoint_detector/sift_detector.cc
   io/import_nvm_file.cc
   io/populate_image_sizes.cc
@@ -68,6 +68,7 @@ set(THEIA_SRC
   io/read_bundler_files.cc
   io/read_calibration.cc
   io/read_keypoints_and_descriptors.cc
+  io/read_strecha_dataset.cc
   io/reconstruction_reader.cc
   io/reconstruction_writer.cc
   io/sift_binary_file.cc
@@ -81,12 +82,12 @@ set(THEIA_SRC
   matching/cascade_hasher.cc
   matching/cascade_hashing_feature_matcher.cc
   matching/create_feature_matcher.cc
-  matching/feature_matcher.cc
   matching/feature_matcher_utils.cc
+  matching/feature_matcher.cc
   matching/fisher_vector_extractor.cc
   matching/guided_epipolar_matcher.cc
   matching/in_memory_features_and_matches_database.cc
-  matching/local_features_and_matches_database.cc
+  matching/rocksdb_features_and_matches_database.cc
   math/closed_form_polynomial_solver.cc
   math/constrained_l1_solver.cc
   math/find_polynomial_roots_companion_matrix.cc
@@ -95,15 +96,15 @@ set(THEIA_SRC
   math/matrix/sparse_matrix.cc
   math/polynomial.cc
   math/probability/sequential_probability_ratio.cc
-  math/rotation.cc
   math/qp_solver.cc
+  math/rotation.cc
   sfm/bundle_adjustment/bundle_adjust_two_views.cc
   sfm/bundle_adjustment/bundle_adjuster.cc
   sfm/bundle_adjustment/bundle_adjustment.cc
   sfm/bundle_adjustment/create_loss_function.cc
   sfm/bundle_adjustment/optimize_relative_position_with_known_rotation.cc
-  sfm/camera/camera.cc
   sfm/camera/camera_intrinsics_model.cc
+  sfm/camera/camera.cc
   sfm/camera/division_undistortion_camera_model.cc
   sfm/camera/fisheye_camera_model.cc
   sfm/camera/fov_camera_model.cc
@@ -119,16 +120,16 @@ set(THEIA_SRC
   sfm/estimators/estimate_essential_matrix.cc
   sfm/estimators/estimate_fundamental_matrix.cc
   sfm/estimators/estimate_homography.cc
-  sfm/estimators/estimate_relative_pose.cc
   sfm/estimators/estimate_relative_pose_with_known_orientation.cc
+  sfm/estimators/estimate_relative_pose.cc
   sfm/estimators/estimate_similarity_transformation_2d_3d.cc
   sfm/estimators/estimate_triangulation.cc
   sfm/estimators/estimate_uncalibrated_absolute_pose.cc
   sfm/estimators/estimate_uncalibrated_relative_pose.cc
   sfm/exif_reader.cc
   sfm/extract_maximally_parallel_rigid_subgraph.cc
-  sfm/feature_extractor.cc
   sfm/feature_extractor_and_matcher.cc
+  sfm/feature_extractor.cc
   sfm/filter_view_graph_cycles_by_rotation.cc
   sfm/filter_view_pairs_from_orientation.cc
   sfm/filter_view_pairs_from_relative_translation.cc
@@ -155,8 +156,8 @@ set(THEIA_SRC
   sfm/pose/essential_matrix_utils.cc
   sfm/pose/five_point_focal_length_radial_distortion.cc
   sfm/pose/five_point_relative_pose.cc
-  sfm/pose/four_point_focal_length.cc
   sfm/pose/four_point_focal_length_helper.cc
+  sfm/pose/four_point_focal_length.cc
   sfm/pose/four_point_homography.cc
   sfm/pose/four_point_relative_pose_partial_rotation.cc
   sfm/pose/fundamental_matrix_util.cc
@@ -169,28 +170,28 @@ set(THEIA_SRC
   sfm/pose/three_point_relative_pose_partial_rotation.cc
   sfm/pose/two_point_pose_partial_rotation.cc
   sfm/pose/util.cc
-  sfm/reconstruction.cc
   sfm/reconstruction_builder.cc
-  sfm/reconstruction_estimator.cc
   sfm/reconstruction_estimator_utils.cc
+  sfm/reconstruction_estimator.cc
+  sfm/reconstruction.cc
   sfm/select_good_tracks_for_bundle_adjustment.cc
   sfm/set_camera_intrinsics_from_priors.cc
   sfm/set_outlier_tracks_to_unestimated.cc
-  sfm/track.cc
   sfm/track_builder.cc
+  sfm/track.cc
   sfm/transformation/align_point_clouds.cc
   sfm/transformation/align_reconstructions.cc
   sfm/transformation/align_rotations.cc
   sfm/transformation/gdls_similarity_transform.cc
   sfm/transformation/transform_reconstruction.cc
   sfm/triangulation/triangulation.cc
-  sfm/twoview_info.cc
   sfm/two_view_match_geometric_verification.cc
+  sfm/twoview_info.cc
   sfm/undistort_image.cc
-  sfm/view.cc
   sfm/view_graph/orientations_from_maximum_spanning_tree.cc
   sfm/view_graph/remove_disconnected_view_pairs.cc
   sfm/view_graph/view_graph.cc
+  sfm/view.cc
   sfm/visibility_pyramid.cc
   solvers/exhaustive_sampler.cc
   solvers/prosac_sampler.cc
@@ -206,14 +207,16 @@ set(THEIA_LIBRARY_DEPENDENCIES
   ${CERES_LIBRARIES}
   ${GFLAGS_LIBRARIES}
   ${GLOG_LIBRARIES}
-  ${SUITESPARSE_LIBRARIES}
   ${OPENIMAGEIO_LIBRARIES}
+  ${ROCKSDB_LIBRARIES}
+  ${SUITESPARSE_LIBRARIES}
   akaze
   flann_cpp
   statx
   stlplus3
   vlfeat
-  visual_sfm)
+  visual_sfm
+)
 
 set(THEIA_LIBRARY_SOURCE
   ${THEIA_SRC}
@@ -256,6 +259,7 @@ if (BUILD_TESTING)
   gtest(matching/feature_correspondence)
   gtest(matching/feature_matcher_utils)
   gtest(matching/guided_epipolar_matcher)
+  gtest(matching/rocksdb_features_and_matches_database)
   gtest(math/closed_form_polynomial_solver)
   gtest(math/find_polynomial_roots_companion_matrix)
   gtest(math/find_polynomial_roots_jenkins_traub)

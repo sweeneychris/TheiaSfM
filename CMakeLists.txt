@@ -189,10 +189,20 @@ if (SUITESPARSE_FOUND)
   add_definitions(-DTHEIA_SUITESPARSE_VERSION="${SUITESPARSE_VERSION}")
 else (SUITESPARSE_FOUND)
   # Disable use of SuiteSparse if it cannot be found and continue.
-  message(FATAL ERROR "Can't find SuiteSparse. This library is required "
+  message(FATAL_ERROR "Can't find SuiteSparse. This library is required "
     "for bundle adjustment and for solving convex optimization problems. "
     "Please set SUITESPARSE_INCLUDE_DIR & SUITESPARSE_LIBRARY")
 endif (SUITESPARSE_FOUND)
+
+
+# RocksDB
+message("-- Check for RocksDB")
+find_package(RocksDB REQUIRED)
+if (ROCKSDB_FOUND)
+  message("-- Found RocksDB: ${ROCKSDB_INCLUDE_DIR}")
+else (ROCKSDB_FOUND)
+  message(FATAL_ERROR "Can't find RocksDB. Please set ROCKSDB_INCLUDE_DIR & ROCKSDB_LIBRARY to use RocksDB.")
+endif (ROCKSDB_FOUND)
 
 include_directories(
   include
@@ -200,8 +210,9 @@ include_directories(
   ${CERES_INCLUDE_DIRS}
   ${GFLAGS_INCLUDE_DIRS}
   ${GLOG_INCLUDE_DIRS}
-  ${SUITESPARSE_INCLUDE_DIRS}
   ${OPENIMAGEIO_INCLUDE_DIRS}
+  ${ROCKSDB_INCLUDE_DIR}
+  ${SUITESPARSE_INCLUDE_DIRS}
 )
 
 # NOTE: This fix came from Ceres solver with the following comment:
@@ -322,6 +333,7 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/TheiaConfig.cmake"
               "${CMAKE_SOURCE_DIR}/cmake/FindEigen.cmake"
               "${CMAKE_SOURCE_DIR}/cmake/FindGlog.cmake"
               "${CMAKE_SOURCE_DIR}/cmake/FindGflags.cmake"
-	      "${CMAKE_SOURCE_DIR}/cmake/FindOpenImageIO.cmake"
+	            "${CMAKE_SOURCE_DIR}/cmake/FindOpenImageIO.cmake"
+              "${CMAKE_SOURCE_DIR}/cmake/FindRocksDB.cmake"
               "${CMAKE_SOURCE_DIR}/cmake/FindSuiteSparse.cmake"
               DESTINATION ${CMAKECONFIG_INSTALL_DIR})

@@ -32,43 +32,20 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-#ifndef THEIA_UTIL_FILESYSTEM_H_
-#define THEIA_UTIL_FILESYSTEM_H_
+#ifndef THEIA_IO_READ_STRECHA_DATASET_H_
+#define THEIA_IO_READ_STRECHA_DATASET_H_
 
 #include <string>
-#include <vector>
 
 namespace theia {
 
-// Gets the filepath of all files matching the input wildcard. Returns true if
-// the wildcard could be successfully evaluated and false otherwise (e.g. if the
-// folder does not exist).
-bool GetFilepathsFromWildcard(const std::string& filepath_with_wildcard,
-                              std::vector<std::string>* filepaths);
+class Reconstruction;
 
-// Extracts the filename from the filepath (i.e., removes all directory
-// information). If with_extension is set to true then the extension is kept and
-// output with the filename, otherwise the extension is removed.
-bool GetFilenameFromFilepath(const std::string& filepath,
-                             const bool with_extension,
-                             std::string* filename);
-
-// Returns the directory part of a given filepath.
-bool GetDirectoryFromFilepath(const std::string& filepath,
-                              std::string* directory);
-
-// Returns true if the file exists, false otherwise.
-bool FileExists(const std::string& filename);
-
-// Returns true if the directory exists, false otherwise.
-bool DirectoryExists(const std::string& directory);
-
-// Creates the given directory.
-bool CreateNewDirectory(const std::string& directory);
-
-bool CopyFile(const std::string& filepath_to_copy_from,
-              const std::string& filepath_to_copy_to);
+// Loads all camera intrinsics and extrinsics information from the Strecha MVS
+// dataset. A Reconstruction object is populated with the camera information.
+bool ReadStrechaDataset(const std::string& dataset_directory,
+                        Reconstruction* reconstruction);
 
 }  // namespace theia
 
-#endif  // THEIA_UTIL_FILESYSTEM_H_
+#endif  // THEIA_IO_READ_STRECHA_DATASET_H_

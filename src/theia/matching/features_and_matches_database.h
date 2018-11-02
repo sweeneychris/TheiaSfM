@@ -52,7 +52,22 @@ class FeaturesAndMatchesDatabase {
  public:
   virtual ~FeaturesAndMatchesDatabase() {}
 
-  virtual bool ContainsFeatures(const std::string& image_name) const = 0;
+  virtual bool ContainsCameraIntrinsicsPrior(const std::string& image_name) = 0;
+
+  // Get/set the features for the image.
+  virtual CameraIntrinsicsPrior GetCameraIntrinsicsPrior(
+      const std::string& image_name) = 0;
+
+  // Set the features for the image.
+  virtual void PutCameraIntrinsicsPrior(
+      const std::string& image_name,
+      const CameraIntrinsicsPrior& intrinsics) = 0;
+
+  // Supply an iterator to iterate over the priors.
+  virtual std::vector<std::string> ImageNamesOfCameraIntrinsicsPriors() = 0;
+  virtual size_t NumCameraIntrinsicsPrior() = 0;
+
+  virtual bool ContainsFeatures(const std::string& image_name) = 0;
 
   // Get/set the features for the image.
   virtual KeypointsAndDescriptors GetFeatures(
@@ -63,8 +78,8 @@ class FeaturesAndMatchesDatabase {
                            const KeypointsAndDescriptors& features) = 0;
 
   // Supply an iterator to iterate over the features.
-  virtual std::vector<std::string> ImageNamesOfFeatures() const = 0;
-  virtual size_t NumImages() const = 0;
+  virtual std::vector<std::string> ImageNamesOfFeatures() = 0;
+  virtual size_t NumImages() = 0;
 
   // Get the image pair match for the images.
   virtual ImagePairMatch GetImagePairMatch(const std::string& image_name1,
@@ -76,22 +91,12 @@ class FeaturesAndMatchesDatabase {
                                  const ImagePairMatch& matches) = 0;
 
   // Supply an iterator to iterate over the matches.
-  virtual std::vector<std::pair<std::string, std::string>> ImageNamesOfMatches()
-      const = 0;
-  virtual size_t NumMatches() const = 0;
+  virtual std::vector<std::pair<std::string, std::string>>
+  ImageNamesOfMatches() = 0;
+  virtual size_t NumMatches() = 0;
 
-  // Populate this database from the input matches_file, and output the view
-  // names and camera intrinsics.
-  virtual bool ReadMatchesAndGeometry(
-      const std::string& matches_file,
-      std::vector<std::string>* view_names,
-      std::vector<CameraIntrinsicsPrior>* camera_intrinsics_prior) = 0;
-
-  // Save the matches and geometry to disk.
-  virtual bool SaveMatchesAndGeometry(
-      const std::string& matches_file,
-      const std::vector<std::string>& view_names,
-      const std::vector<CameraIntrinsicsPrior>& camera_intrinsics_prior) = 0;
+  // Clear all matches from the DB.
+  virtual void RemoveAllMatches() = 0;
 };
 }  // namespace theia
 #endif  // THEIA_MATCHING_FEATURES_AND_MATCHES_DATABASE_H_

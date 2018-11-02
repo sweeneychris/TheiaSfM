@@ -76,14 +76,9 @@ void ReadInput(Reconstruction* gt_reconstruction,
     reconstruction->MutableTrack(track_id)->SetEstimated(false);
   }
 
-  // Read the matches file.
-  std::vector<std::string> image_files;
-  std::vector<CameraIntrinsicsPrior> camera_intrinsics_prior;
-
   // Read in match file.
   InMemoryFeaturesAndMatchesDatabase matches_database;
-  CHECK(matches_database.ReadMatchesAndGeometry(
-      matches_filename, &image_files, &camera_intrinsics_prior));
+  CHECK(matches_database.ReadFromFile(matches_filename));
 
   // Add the matches to the view graph.
   const auto match_keys = matches_database.ImageNamesOfMatches();

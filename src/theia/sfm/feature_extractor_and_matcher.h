@@ -123,9 +123,8 @@ class FeatureExtractorAndMatcher {
   // Performs feature matching between all images provided by the image
   // filepaths. Features are extracted and matched between the images according
   // to the options passed in. Only matches that have passed geometric
-  // verification are kept. EXIF data is parsed to determine the camera
-  // intrinsics if available.
-  void ExtractAndMatchFeatures(std::vector<CameraIntrinsicsPrior>* intrinsics);
+  // verification are kept.
+  void ExtractAndMatchFeatures();
 
  protected:
   // Processes a single image by extracting EXIF information, extracting
@@ -146,7 +145,6 @@ class FeatureExtractorAndMatcher {
   // Local copies of the images to be matches, masks for use and any priors on
   // the camera intrinsics.
   std::vector<std::string> image_filepaths_;
-  std::unordered_map<std::string, CameraIntrinsicsPrior> intrinsics_;
   std::unordered_map<std::string, std::string> image_masks_;
 
   // Exif reader for loading exif information. This object is created once so
@@ -161,7 +159,7 @@ class FeatureExtractorAndMatcher {
 
   // Feature matcher and mutex for thread-safe access.
   std::unique_ptr<FeatureMatcher> matcher_;
-  std::mutex intrinsics_mutex_, matcher_mutex_;
+  std::mutex matcher_mutex_;
 };
 
 }  // namespace theia

@@ -41,7 +41,7 @@
 #include <string>
 
 DEFINE_string(
-    matches,
+    matches_db,
     "",
     "Matches file that has been written with WriteMatchesAndGeometry");
 
@@ -83,7 +83,7 @@ double ComputeRelativeTranslationError(
 
 void EvaluateRelativeError(const std::vector<std::string>& view_names,
                            const Reconstruction& gt_reconstruction,
-                           theia::LocalFeaturesAndMatchesDatabase* database) {
+                           theia::FeaturesAndMatchesDatabase* database) {
   // For each edge, get the rotate translation and check the error.
   int num_matches_evaluated = 0;
   const std::vector<double> histogram_bins = {
@@ -134,11 +134,8 @@ int main(int argc, char* argv[]) {
 
   std::vector<std::string> view_names;
   std::vector<theia::CameraIntrinsicsPrior> camera_intrinsics_prior;
-  theia::LocalFeaturesAndMatchesDatabase features_and_matches_database(
-      FLAGS_matches, 128);
-  CHECK(features_and_matches_database.ReadMatchesAndGeometry(
-      FLAGS_matches, &view_names, &camera_intrinsics_prior))
-      << "Could not read matches from " << FLAGS_matches;
+  theia::RocksDbFeaturesAndMatchesDatabase features_and_matches_database(
+      FLAGS_matches_db);
 
   std::unique_ptr<theia::Reconstruction> reconstruction(
       new theia::Reconstruction());

@@ -202,6 +202,7 @@ inline LossFunctionType StringToLossFunction(
     return LossFunctionType::TUKEY;
   } else {
     LOG(FATAL) << "Invalid option for bundle_adjustment_robust_loss_function";
+    return LossFunctionType::TRIVIAL;
   }
 }
 

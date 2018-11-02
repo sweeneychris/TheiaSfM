@@ -64,6 +64,11 @@
 namespace theia {
 namespace {
 
+struct MatchedImages {
+  std::unordered_set<int> ranked_matches;
+  std::unordered_set<int> expanded_matches;
+};
+
 void ExtractFeatures(const FeatureExtractorAndMatcher::Options& options,
                      const std::string& image_filepath,
                      const std::string& imagemask_filepath,
@@ -171,7 +176,12 @@ bool FeatureExtractorAndMatcher::AddImage(
   if (!AddImage(image_filepath)) {
     return false;
   }
-  intrinsics_[image_filepath] = intrinsics;
+
+  // Add the intrinsics prior to the database.
+  std::string image_filename;
+  CHECK(GetFilenameFromFilepath(image_filepath, true, &image_filename));
+  features_and_matches_database_->PutCameraIntrinsicsPrior(image_filename,
+                                                           intrinsics);
   return true;
 }
 
@@ -203,11 +213,8 @@ void FeatureExtractorAndMatcher::SetPairsToMatch(
 // Performs feature matching between all images provided by the image
 // filepaths. Features are extracted and matched between the images according to
 // the options passed in. Only matches that have passed geometric verification
-// are kept. EXIF data is parsed to determine the camera intrinsics if
-// available.
-void FeatureExtractorAndMatcher::ExtractAndMatchFeatures(
-    std::vector<CameraIntrinsicsPrior>* intrinsics) {
-  CHECK_NOTNULL(intrinsics)->resize(image_filepaths_.size());
+// are kept.
+void FeatureExtractorAndMatcher::ExtractAndMatchFeatures() {
   CHECK_NOTNULL(matcher_.get());
 
   // For each image, process the features and add it to the matcher.
@@ -227,21 +234,27 @@ void FeatureExtractorAndMatcher::ExtractAndMatchFeatures(
 
   // After all threads complete feature extraction, perform matching.
   SelectImagePairsWithGlobalDescriptorMatching();
+  // Free up memory.
+  global_image_descriptor_extractor_.release();
+  
   LOG(INFO) << "Matching images...";
   matcher_->MatchImages();
-
-  // Add the intrinsics to the output.
-  for (int i = 0; i < image_filepaths_.size(); i++) {
-    (*intrinsics)[i] = FindOrDie(intrinsics_, image_filepaths_[i]);
-  }
 }
 
 void FeatureExtractorAndMatcher::ProcessImage(const int i) {
   const std::string& image_filepath = image_filepaths_[i];
 
+  // Get the image filename without the directory.
+  std::string image_filename;
+  CHECK(GetFilenameFromFilepath(image_filepath, true, &image_filename));
+
   // Get the camera intrinsics prior if it was provided.
-  CameraIntrinsicsPrior intrinsics =
-      FindWithDefault(intrinsics_, image_filepath, CameraIntrinsicsPrior());
+  CameraIntrinsicsPrior intrinsics;
+  if (features_and_matches_database_->ContainsCameraIntrinsicsPrior(
+          image_filename)) {
+    intrinsics = features_and_matches_database_->GetCameraIntrinsicsPrior(
+        image_filename);
+  }
 
   // Get the associated mask if it was provided.
   const std::string mask_filepath =
@@ -260,10 +273,6 @@ void FeatureExtractorAndMatcher::ProcessImage(const int i) {
           1.2 * static_cast<double>(
                     std::max(intrinsics.image_width, intrinsics.image_height));
     }
-
-    std::lock_guard<std::mutex> lock(intrinsics_mutex_);
-    // Insert or update the value of the intrinsics.
-    intrinsics_[image_filepath] = intrinsics;
   }
 
   // Early exit if no EXIF calibration exists and we are only processing
@@ -276,14 +285,16 @@ void FeatureExtractorAndMatcher::ProcessImage(const int i) {
     LOG(INFO) << "Image " << image_filepath
               << " is initialized with the focal length: "
               << intrinsics.focal_length.value[0];
+    // Insert or update the value of the intrinsics.
+    features_and_matches_database_->PutCameraIntrinsicsPrior(image_filename,
+                                                             intrinsics);
   }
 
-  // Get the image filename without the directory.
-  std::string image_filename;
-  CHECK(GetFilenameFromFilepath(image_filepath, true, &image_filename));
-
   // Extract the features if necessary.
-  if (!features_and_matches_database_->ContainsFeatures(image_filename)) {
+  if (features_and_matches_database_->ContainsFeatures(image_filename)) {
+    VLOG(1) << "Loading features for " << image_filename
+            << " from the features and matches database.";
+  } else {
     // Extract Features.
     KeypointsAndDescriptors features;
     features.image_name = image_filename;
@@ -292,6 +303,12 @@ void FeatureExtractorAndMatcher::ProcessImage(const int i) {
                     mask_filepath,
                     &features.keypoints,
                     &features.descriptors);
+
+    // Skip the image if not descriptors were extracted.
+    if (features.descriptors.size() == 0) {
+      return;
+    }
+
     // Add the features to the DB.
     features_and_matches_database_->PutFeatures(image_filename, features);
   }
@@ -308,7 +325,7 @@ void FeatureExtractorAndMatcher::ProcessImage(const int i) {
 
   // Add the image to the matcher.
   std::lock_guard<std::mutex> lock(matcher_mutex_);
-  matcher_->AddImage(image_filename, intrinsics);
+  matcher_->AddImage(image_filename);
   return;
 }
 
@@ -339,10 +356,8 @@ void FeatureExtractorAndMatcher::
   CHECK(global_image_descriptor_extractor_->Train());
 
   // Get the image filename without the directory.
-  std::vector<std::string> image_names(image_filepaths_.size());
-  for (int i = 0; i < image_names.size(); i++) {
-    CHECK(GetFilenameFromFilepath(image_filepaths_[i], true, &image_names[i]));
-  }
+  const std::vector<std::string> image_names =
+      features_and_matches_database_->ImageNamesOfFeatures();
 
   // Extract global image descriptors.
   std::vector<Eigen::VectorXf> global_descriptors;
@@ -355,8 +370,8 @@ void FeatureExtractorAndMatcher::
   const int num_nearest_neighbors =
       std::min(static_cast<int>(image_names.size() - 1),
                options_.num_nearest_neighbors_for_global_descriptor_matching);
-  std::vector<std::pair<std::string, std::string>> pairs_to_match;
-  pairs_to_match.reserve(num_nearest_neighbors * image_names.size());
+
+  std::unordered_map<int, MatchedImages> pairs_to_match;
 
   // Match all pairs of global descriptors. For each image, the K most similar
   // image (i.e. the ones with the lowest distance between global descriptors)
@@ -381,26 +396,47 @@ void FeatureExtractorAndMatcher::
     // Add each of the kNN to the output indices.
     for (int j = 0; j < num_nearest_neighbors; j++) {
       const int second_id = global_matching_scores[i][j].second;
-      // Sort the pairwise index such that the pair put into the container is
-      // consistent and duplicate can be detected.
-      const auto id_pair = (i < second_id) ? std::make_pair(i, second_id)
-                                           : std::make_pair(second_id, i);
-      pairs_to_match.emplace_back(image_names[id_pair.first],
-                                  image_names[id_pair.second]);
+
+      // Perform query expansion by adding image i as a candidate match to all of its matches neighbors.
+      const auto& neighbors_of_second_id = pairs_to_match[second_id].ranked_matches;
+      for (const int neighbor_of_second_id : neighbors_of_second_id) {
+	pairs_to_match[neighbor_of_second_id].expanded_matches.insert(i);
+      }
+
+      // Add the match to both images so that edges are properly utilized for query expansion.
+      pairs_to_match[i].ranked_matches.insert(second_id);
+      pairs_to_match[second_id].ranked_matches.insert(i);
+
     }
 
     // Remove the matching scores for image i to free up memory.
     global_matching_scores[i].clear();
   }
 
-  // Remove duplicates from the output list.
-  std::sort(pairs_to_match.begin(), pairs_to_match.end());
-  pairs_to_match.erase(
-      std::unique(pairs_to_match.begin(), pairs_to_match.end()),
-      pairs_to_match.end());
 
+  // Collect all matches into one container.
+  std::vector<std::pair<std::string, std::string>> image_names_to_match;
+  image_names_to_match.reserve(num_nearest_neighbors * global_descriptors.size());
+  for (const auto& matches : pairs_to_match) {
+    for (const int match : matches.second.ranked_matches) {
+      if (matches.first < match) {
+	image_names_to_match.emplace_back(image_names[matches.first], image_names[match]);
+      }
+    }
+
+    for (const int match : matches.second.expanded_matches) {
+      if (matches.first < match) {
+	image_names_to_match.emplace_back(image_names[matches.first], image_names[match]);
+      }
+    }
+  }
+
+  // Uniquify the matches.
+  std::sort(image_names_to_match.begin(), image_names_to_match.end());
+  image_names_to_match.erase(std::unique(image_names_to_match.begin(), image_names_to_match.end()), image_names_to_match.end());
+  
   // Tell the matcher which pairs to match.
-  matcher_->SetImagePairsToMatch(pairs_to_match);
+  matcher_->SetImagePairsToMatch(image_names_to_match);
 }
 
 }  // namespace theia

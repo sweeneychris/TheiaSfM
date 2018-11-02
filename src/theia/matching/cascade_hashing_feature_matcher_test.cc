@@ -40,7 +40,6 @@
 #include "theia/matching/feature_matcher.h"
 #include "theia/matching/image_pair_match.h"
 #include "theia/matching/in_memory_features_and_matches_database.h"
-#include "theia/matching/local_features_and_matches_database.h"
 
 #include "gtest/gtest.h"
 
@@ -51,7 +50,7 @@ using Eigen::VectorXf;
 static const int kNumDescriptors = 10;
 static const int kNumDescriptorDimensions = 10;
 
-TEST(CascadeHashingFeatureMatcherTest, NoOptionsInCore) {
+TEST(CascadeHashingFeatureMatcherTest, NoOptions) {
   // Set up descriptors.
   KeypointsAndDescriptors features1, features2;
   features1.image_name = "1";
@@ -92,7 +91,7 @@ TEST(CascadeHashingFeatureMatcherTest, NoOptionsInCore) {
   EXPECT_GT(database.NumMatches(), 0);
 }
 
-TEST(CascadeHashingFeatureMatcherTest, RatioTestInCore) {
+TEST(CascadeHashingFeatureMatcherTest, RatioTest) {
   // Set up descriptors.
   KeypointsAndDescriptors features1, features2;
   features1.image_name = "1";
@@ -135,131 +134,6 @@ TEST(CascadeHashingFeatureMatcherTest, RatioTestInCore) {
 
   // Check that the results are valid.
   EXPECT_GT(database.NumMatches(), 0);
-}
-
-TEST(CascadeHashingFeatureMatcherTest, NoOptionsOutOfCore) {
-  // Set up descriptors.
-  KeypointsAndDescriptors features1, features2;
-  features1.image_name = "1";
-  features2.image_name = "2";
-  features1.descriptors.resize(kNumDescriptors);
-  features2.descriptors.resize(kNumDescriptors);
-  for (int i = 0; i < kNumDescriptors; i++) {
-    // Avoid a zero vector.
-    features1.descriptors[i] = VectorXf::Constant(kNumDescriptorDimensions, 1);
-    features2.descriptors[i] = VectorXf::Constant(kNumDescriptorDimensions, 1);
-    features1.descriptors[i].normalize();
-    features2.descriptors[i].normalize();
-  }
-
-  // Set options.
-  FeatureMatcherOptions options;
-  options.min_num_feature_matches = 0;
-  options.keep_only_symmetric_matches = false;
-  options.use_lowes_ratio = false;
-  options.perform_geometric_verification = false;
-
-  // Add features.
-  features1.keypoints.resize(features1.descriptors.size());
-  features2.keypoints.resize(features2.descriptors.size());
-
-  LocalFeaturesAndMatchesDatabase database(GTEST_TESTING_OUTPUT_DIRECTORY, 128);
-  database.PutFeatures("1", features1);
-  database.PutFeatures("2", features2);
-
-  CascadeHashingFeatureMatcher matcher(options, &database);
-  matcher.AddImage("1");
-  matcher.AddImage("2");
-
-  // Match features.
-  matcher.MatchImages();
-
-  // Check that the results are valid.
-  EXPECT_GT(database.NumMatches(), 0);
-}
-
-TEST(CascadeHashingFeatureMatcherTest, RatioTestOutOfCore) {
-  // Set up descriptors.
-  KeypointsAndDescriptors features1, features2;
-  features1.image_name = "1";
-  features2.image_name = "2";
-  features1.descriptors.resize(1);
-  features2.descriptors.resize(2);
-  features1.descriptors[0] =
-      VectorXf::Constant(kNumDescriptorDimensions, 1).normalized();
-
-  // Set the two descriptors to be very close to each other so that they do not
-  // pass the ratio test.
-  features2.descriptors[0] = VectorXf::Constant(kNumDescriptorDimensions, 1);
-  features2.descriptors[0](0) = 0.9;
-  features2.descriptors[0].normalize();
-  features2.descriptors[1] = VectorXf::Constant(kNumDescriptorDimensions, 1);
-  features2.descriptors[1](0) = 0.89;
-  features2.descriptors[1].normalize();
-
-  // Set options.
-  FeatureMatcherOptions options;
-  options.min_num_feature_matches = 0;
-  options.keep_only_symmetric_matches = false;
-  options.use_lowes_ratio = true;
-  options.perform_geometric_verification = false;
-
-  // Add features.
-  features1.keypoints.resize(features1.descriptors.size());
-  features2.keypoints.resize(features2.descriptors.size());
-
-  LocalFeaturesAndMatchesDatabase database(GTEST_TESTING_OUTPUT_DIRECTORY, 128);
-  database.PutFeatures("1", features1);
-  database.PutFeatures("2", features2);
-
-  CascadeHashingFeatureMatcher matcher(options, &database);
-  matcher.AddImage("1");
-  matcher.AddImage("2");
-
-  // Match features.
-  matcher.MatchImages();
-
-  // Check that the results are valid.
-  EXPECT_GT(database.NumMatches(), 0);
-}
-
-TEST(CascadeHashingFeatureMatcherTest, NoDescriptorsInCore) {
-  // Set up descriptors.
-  KeypointsAndDescriptors features1, features2;
-  features1.image_name = "1";
-  features2.image_name = "2";
-  features2.descriptors.resize(2);
-  // Set the two descriptors to be very close to each other so that they do not
-  // pass the ratio test.
-  features2.descriptors[0] = VectorXf::Constant(kNumDescriptorDimensions, 1);
-  features2.descriptors[0].normalize();
-  features2.descriptors[1] = VectorXf::Constant(kNumDescriptorDimensions, 1);
-  features2.descriptors[1].normalize();
-
-  // Set options.
-  FeatureMatcherOptions options;
-  options.min_num_feature_matches = 30;
-  options.keep_only_symmetric_matches = true;
-  options.use_lowes_ratio = true;
-  options.perform_geometric_verification = false;
-
-  // Add features.
-  features1.keypoints.resize(features1.descriptors.size());
-  features2.keypoints.resize(features2.descriptors.size());
-
-  LocalFeaturesAndMatchesDatabase database(GTEST_TESTING_OUTPUT_DIRECTORY, 128);
-  database.PutFeatures("1", features1);
-  database.PutFeatures("2", features2);
-
-  CascadeHashingFeatureMatcher matcher(options, &database);
-  matcher.AddImage("1");
-  matcher.AddImage("2");
-
-  // Match features.
-  matcher.MatchImages();
-
-  // Check that the results are valid.
-  EXPECT_EQ(database.NumMatches(), 0);
 }
 
 }  // namespace theia

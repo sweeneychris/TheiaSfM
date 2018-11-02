@@ -52,8 +52,41 @@
 
 namespace theia {
 
+bool InMemoryFeaturesAndMatchesDatabase::ContainsCameraIntrinsicsPrior(
+    const std::string& image_name) {
+  return ContainsKey(intrinsics_priors_, image_name);
+}
+
+// Get/set the features for the image.
+CameraIntrinsicsPrior
+InMemoryFeaturesAndMatchesDatabase::GetCameraIntrinsicsPrior(
+    const std::string& image_name) {
+  return FindOrDie(intrinsics_priors_, image_name);
+}
+
+// Set the features for the image.
+void InMemoryFeaturesAndMatchesDatabase::PutCameraIntrinsicsPrior(
+    const std::string& image_name, const CameraIntrinsicsPrior& intrinsics) {
+  intrinsics_priors_[image_name] = intrinsics;
+}
+
+// Supply an iterator to iterate over the priors.
+std::vector<std::string>
+InMemoryFeaturesAndMatchesDatabase::ImageNamesOfCameraIntrinsicsPriors() {
+  std::vector<std::string> image_names;
+  image_names.reserve(intrinsics_priors_.size());
+  for (const auto& intrinsics : intrinsics_priors_) {
+    image_names.push_back(intrinsics.first);
+  }
+  return image_names;
+}
+
+size_t InMemoryFeaturesAndMatchesDatabase::NumCameraIntrinsicsPrior() {
+  return intrinsics_priors_.size();
+}
+
 bool InMemoryFeaturesAndMatchesDatabase::ContainsFeatures(
-    const std::string& image_name) const {
+    const std::string& image_name) {
   return ContainsKey(features_, image_name);
 }
 
@@ -70,7 +103,7 @@ void InMemoryFeaturesAndMatchesDatabase::PutFeatures(
 }
 
 std::vector<std::string>
-InMemoryFeaturesAndMatchesDatabase::ImageNamesOfFeatures() const {
+InMemoryFeaturesAndMatchesDatabase::ImageNamesOfFeatures() {
   std::vector<std::string> features_keys;
   features_keys.reserve(features_.size());
   for (const auto& features : features_) {
@@ -79,7 +112,7 @@ InMemoryFeaturesAndMatchesDatabase::ImageNamesOfFeatures() const {
   return features_keys;
 }
 
-size_t InMemoryFeaturesAndMatchesDatabase::NumImages() const {
+size_t InMemoryFeaturesAndMatchesDatabase::NumImages() {
   return features_.size();
 }
 
@@ -99,7 +132,7 @@ void InMemoryFeaturesAndMatchesDatabase::PutImagePairMatch(
 }
 
 std::vector<std::pair<std::string, std::string>>
-InMemoryFeaturesAndMatchesDatabase::ImageNamesOfMatches() const {
+InMemoryFeaturesAndMatchesDatabase::ImageNamesOfMatches() {
   std::vector<std::pair<std::string, std::string>> match_keys;
   match_keys.reserve(matches_.size());
   for (const auto& match : matches_) {
@@ -108,51 +141,48 @@ InMemoryFeaturesAndMatchesDatabase::ImageNamesOfMatches() const {
   return match_keys;
 }
 
-size_t InMemoryFeaturesAndMatchesDatabase::NumMatches() const {
+size_t InMemoryFeaturesAndMatchesDatabase::NumMatches() {
   return matches_.size();
 }
 
-// Populate this database from the input matches_file, and output the view
-// names and camera intrinsics.
-bool InMemoryFeaturesAndMatchesDatabase::ReadMatchesAndGeometry(
-    const std::string& matches_file,
-    std::vector<std::string>* view_names,
-    std::vector<CameraIntrinsicsPrior>* camera_intrinsics_prior) {
-  CHECK_NOTNULL(view_names)->clear();
-  CHECK_NOTNULL(camera_intrinsics_prior)->clear();
-
+bool InMemoryFeaturesAndMatchesDatabase::ReadFromFile(
+    const std::string& filepath) {
   // Return false if the file cannot be opened.
-  std::ifstream matches_reader(matches_file, std::ios::in | std::ios::binary);
+  std::ifstream matches_reader(filepath, std::ios::in | std::ios::binary);
   if (!matches_reader.is_open()) {
-    LOG(ERROR) << "Could not open the matches file: " << matches_file
+    LOG(ERROR) << "Could not open the matches file: " << filepath
                << " for reading.";
     return false;
   }
 
   // Make sure that Cereal is able to finish executing before returning.
   std::vector<ImagePairMatch> matches;
+  std::vector<std::string> view_names;
+  std::vector<CameraIntrinsicsPrior> camera_intrinsics_prior;
   {
     cereal::PortableBinaryInputArchive input_archive(matches_reader);
-    input_archive(*view_names, *camera_intrinsics_prior, matches);
+    input_archive(view_names, camera_intrinsics_prior, matches);
   }
+  CHECK_EQ(view_names.size(), camera_intrinsics_prior.size());
 
   matches_.reserve(matches.size());
   for (const auto& match : matches) {
     matches_[std::make_pair(match.image1, match.image2)] = match;
   }
 
+  intrinsics_priors_.reserve(camera_intrinsics_prior.size());
+  for (int i = 0; i < view_names.size(); i++) {
+    intrinsics_priors_[view_names[i]] = camera_intrinsics_prior[i];
+  }
+
   return true;
 }
-
-// Save the matches and geometry to disk.
-bool InMemoryFeaturesAndMatchesDatabase::SaveMatchesAndGeometry(
-    const std::string& matches_file,
-    const std::vector<std::string>& view_names,
-    const std::vector<CameraIntrinsicsPrior>& camera_intrinsics_prior) {
+bool InMemoryFeaturesAndMatchesDatabase::WriteToFile(
+    const std::string& filepath) {
   // Return false if the file cannot be opened for writing.
-  std::ofstream matches_writer(matches_file, std::ios::out | std::ios::binary);
+  std::ofstream matches_writer(filepath, std::ios::out | std::ios::binary);
   if (!matches_writer.is_open()) {
-    LOG(ERROR) << "Could not open the matches file: " << matches_file
+    LOG(ERROR) << "Could not open the matches file: " << filepath
                << " for writing.";
     return false;
   }
@@ -163,6 +193,15 @@ bool InMemoryFeaturesAndMatchesDatabase::SaveMatchesAndGeometry(
   for (const auto& match : matches_) {
     matches.push_back(match.second);
   }
+
+  std::vector<std::string> view_names;
+  view_names.reserve(intrinsics_priors_.size());
+  std::vector<CameraIntrinsicsPrior> camera_intrinsics_prior;
+  camera_intrinsics_prior.reserve(intrinsics_priors_.size());
+  for (const auto& prior : intrinsics_priors_) {
+    view_names.push_back(prior.first);
+    camera_intrinsics_prior.push_back(prior.second);
+  }
   {
     cereal::PortableBinaryOutputArchive output_archive(matches_writer);
     output_archive(view_names, camera_intrinsics_prior, matches);
@@ -170,4 +209,9 @@ bool InMemoryFeaturesAndMatchesDatabase::SaveMatchesAndGeometry(
 
   return true;
 }
+
+void InMemoryFeaturesAndMatchesDatabase::RemoveAllMatches() {
+  matches_.clear();
+}
+
 }  // namespace theia

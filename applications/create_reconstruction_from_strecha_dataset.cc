@@ -54,111 +54,13 @@ DEFINE_string(input_dataset_directory, "",
 DEFINE_string(output_reconstruction, "",
               "Filepath of the output Theia reconstruction file generated.");
 
-using theia::Camera;
-using theia::PinholeCameraModel;
-using theia::Reconstruction;
-using theia::ViewId;
-
-void AddCameraToReconstruction(const std::string& camera_filepath,
-                               Reconstruction* reconstruction) {
-  static const int kCameraIntrinsicsGroup = 0;
-
-  std::ifstream ifs(camera_filepath, std::ios::in);
-  if (!ifs.is_open()) {
-    LOG(FATAL) << "Cannot read the camera file from: " << camera_filepath;
-  }
-  LOG(INFO) << "Reading camera parameters from file: " << camera_filepath;
-
-  std::string image_name;
-  CHECK(theia::GetFilenameFromFilepath(camera_filepath, true, &image_name));
-
-  // Remove the ".camera" from the filename so we are just left with the image
-  // name.
-  const std::size_t dot_camera_pos = image_name.find(".camera");
-  image_name = image_name.substr(0, dot_camera_pos);
-
-  // Add the view and ensure that the camera intrinsics are all the same.
-  const ViewId view_id =
-      reconstruction->AddView(image_name, kCameraIntrinsicsGroup);
-  CHECK_NE(view_id, theia::kInvalidViewId)
-      << "The image " << image_name
-      << " could not be added to the reconstruction.";
-
-  Camera* camera = reconstruction->MutableView(view_id)->MutableCamera();
-  camera->SetCameraIntrinsicsModelType(
-      theia::CameraIntrinsicsModelType::PINHOLE);
-
-  // The first three rows are the calibration matrix.
-  Eigen::Matrix3d calibration_matrix;
-  for (int i = 0; i < 3; i++) {
-    for (int j = 0; j < 3; j++) {
-      ifs >> calibration_matrix(i, j);
-    }
-  }
-  // Extract the camera intrinsics from the calibration matrix.
-  double* camera_intrinsics =
-      camera->MutableCameraIntrinsics()->mutable_parameters();
-  theia::CalibrationMatrixToIntrinsics(
-      calibration_matrix,
-      camera_intrinsics + PinholeCameraModel::FOCAL_LENGTH,
-      camera_intrinsics + PinholeCameraModel::SKEW,
-      camera_intrinsics + PinholeCameraModel::ASPECT_RATIO,
-      camera_intrinsics + PinholeCameraModel::PRINCIPAL_POINT_X,
-      camera_intrinsics + PinholeCameraModel::PRINCIPAL_POINT_Y);
-
-  // The next line is simply 0 0 0.
-  int unused_zero;
-  ifs >> unused_zero >> unused_zero >> unused_zero;
-
-  // Then comes the rotation matrix.
-  Eigen::Matrix3d rotation_matrix;
-  for (int i = 0; i < 3; i++) {
-    for (int j = 0; j < 3; j++) {
-      ifs >> rotation_matrix(j, i);
-    }
-  }
-  camera->SetOrientationFromRotationMatrix(rotation_matrix);
-
-  // Next, the camera position.
-  Eigen::Vector3d position;
-  ifs >> position(0) >> position(1) >> position(2);
-  camera->SetPosition(position);
-
-  // Image size (width, height).
-  int image_width, image_height;
-  ifs >> image_width >> image_height;
-  camera->SetImageSize(image_width, image_height);
-
-  // Set the camera to estimated, otherwise it will not be saved when writing
-  // the reconstruction.
-  reconstruction->MutableView(view_id)->SetEstimated(true);
-}
-
 int main(int argc, char* argv[]) {
   google::InitGoogleLogging(argv[0]);
   THEIA_GFLAGS_NAMESPACE::ParseCommandLineFlags(&argc, &argv, true);
 
-  // Ensure the input parameters are well-formed.
-  CHECK_GT(FLAGS_input_dataset_directory.length(), 0);
-  CHECK_GT(FLAGS_output_reconstruction.length(), 0);
-
-  // Get the filepaths of the Strecha MVS dataset camera files.
-  const std::string camera_wildcard =
-      FLAGS_input_dataset_directory + "/*.camera";
-  std::vector<std::string> camera_files;
-  CHECK(theia::GetFilepathsFromWildcard(camera_wildcard, &camera_files))
-      << "Could not find cameras that matched the filepath: " << camera_wildcard
-      << ". NOTE that the ~ filepath is not supported.";
-
-  CHECK_GT(camera_files.size(), 0)
-      << "No cameras found in: " << camera_wildcard;
-
   // Add each camera in the Strecha MVS dataset to the reconstruciton.
-  Reconstruction reconstruction;
-  for (const std::string camera_file : camera_files) {
-    AddCameraToReconstruction(camera_file, &reconstruction);
-  }
-
+  theia::Reconstruction reconstruction;
+  CHECK(theia::ReadStrechaDataset(FLAGS_input_dataset_directory, &reconstruction));
   CHECK(theia::WriteReconstruction(reconstruction, FLAGS_output_reconstruction))
       << "Could not write the reconstruction file to: "
       << FLAGS_output_reconstruction;

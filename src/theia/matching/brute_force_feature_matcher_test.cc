@@ -41,7 +41,6 @@
 #include "theia/matching/image_pair_match.h"
 #include "theia/matching/in_memory_features_and_matches_database.h"
 #include "theia/matching/keypoints_and_descriptors.h"
-#include "theia/matching/local_features_and_matches_database.h"
 
 #include "gtest/gtest.h"
 
@@ -52,7 +51,7 @@ using Eigen::VectorXf;
 static const int kNumDescriptors = 10;
 static const int kNumDescriptorDimensions = 10;
 
-TEST(BruteForceFeatureMatcherTest, NoOptionsInCore) {
+TEST(BruteForceFeatureMatcherTest, NoOptions) {
   // Set up descriptors.
   KeypointsAndDescriptors features1, features2;
   features1.descriptors.resize(kNumDescriptors);
@@ -90,7 +89,7 @@ TEST(BruteForceFeatureMatcherTest, NoOptionsInCore) {
   EXPECT_GT(database.NumMatches(), 0);
 }
 
-TEST(BruteForceFeatureMatcherTest, RatioTestInCore) {
+TEST(BruteForceFeatureMatcherTest, RatioTest) {
   // Set up descriptors.
   KeypointsAndDescriptors features1, features2;
   features1.descriptors.resize(1);
@@ -134,7 +133,7 @@ TEST(BruteForceFeatureMatcherTest, RatioTestInCore) {
   EXPECT_GT(database.NumMatches(), 0);
 }
 
-TEST(BruteForceFeatureMatcherTest, SymmetricMatchesInCore) {
+TEST(BruteForceFeatureMatcherTest, SymmetricMatches) {
   // Set up descriptors.
   KeypointsAndDescriptors features1, features2;
   features1.descriptors.resize(2);
@@ -179,135 +178,6 @@ TEST(BruteForceFeatureMatcherTest, SymmetricMatchesInCore) {
 
   // Check that the results are valid.
   EXPECT_EQ(database.NumMatches(), 1);
-}
-
-TEST(BruteForceFeatureMatcherTest, NoOptionsOutOfCore) {
-  // Set up descriptors.
-  KeypointsAndDescriptors features1, features2;
-  features1.descriptors.resize(kNumDescriptors);
-  features2.descriptors.resize(kNumDescriptors);
-
-  for (int i = 0; i < kNumDescriptors; i++) {
-    // Avoid a zero vector.
-    features1.descriptors[i] = VectorXf::Constant(kNumDescriptorDimensions, 1);
-    features2.descriptors[i] = VectorXf::Constant(kNumDescriptorDimensions, 1);
-    features1.descriptors[i].normalize();
-    features2.descriptors[i].normalize();
-  }
-
-  // Set options.
-  FeatureMatcherOptions options;
-  options.min_num_feature_matches = 0;
-  options.keep_only_symmetric_matches = false;
-  options.use_lowes_ratio = false;
-  options.perform_geometric_verification = false;
-
-  // Add features.
-  features1.keypoints.resize(features1.descriptors.size());
-  features2.keypoints.resize(features2.descriptors.size());
-
-  LocalFeaturesAndMatchesDatabase database(GTEST_TESTING_OUTPUT_DIRECTORY, 128);
-  database.PutFeatures("1", features1);
-  database.PutFeatures("2", features2);
-
-  BruteForceFeatureMatcher matcher(options, &database);
-  matcher.AddImage("1");
-  matcher.AddImage("2");
-
-  // Match features.
-  matcher.MatchImages();
-
-  // Check that the results are valid.
-  EXPECT_GT(database.NumMatches(), 0);
-}
-
-TEST(BruteForceFeatureMatcherTest, RatioTestOutOfCore) {
-  // Set up descriptors.
-  KeypointsAndDescriptors features1, features2;
-  features1.descriptors.resize(1);
-  features1.descriptors[0] =
-      VectorXf::Constant(kNumDescriptorDimensions, 1).normalized();
-
-  // Set the two descriptors to be very close to each other so that they do not
-  // pass the ratio test.
-  features2.descriptors.resize(2);
-  features2.descriptors[0] = VectorXf::Constant(kNumDescriptorDimensions, 1);
-  features2.descriptors[0](0) = 0.9;
-  features2.descriptors[0].normalize();
-  features2.descriptors[1] = VectorXf::Constant(kNumDescriptorDimensions, 1);
-  features2.descriptors[1](0) = 0.89;
-  features2.descriptors[1].normalize();
-
-  // Set options.
-  FeatureMatcherOptions options;
-  options.min_num_feature_matches = 0;
-  options.keep_only_symmetric_matches = false;
-  options.use_lowes_ratio = true;
-  options.perform_geometric_verification = false;
-
-  // Add features.
-  features1.keypoints.resize(features1.descriptors.size());
-  features2.keypoints.resize(features2.descriptors.size());
-
-  LocalFeaturesAndMatchesDatabase database(GTEST_TESTING_OUTPUT_DIRECTORY, 128);
-  database.PutFeatures("1", features1);
-  database.PutFeatures("2", features2);
-
-  BruteForceFeatureMatcher matcher(options, &database);
-  matcher.AddImage("1");
-  matcher.AddImage("2");
-
-  // Match features.
-  matcher.MatchImages();
-
-  // Check that the results are valid.
-  EXPECT_GT(database.NumMatches(), 0);
-}
-
-TEST(BruteForceFeatureMatcherTest, SymmetricMatchesOutOfCore) {
-  // Set up descriptors.
-  KeypointsAndDescriptors features1, features2;
-  features1.descriptors.resize(2);
-  features1.descriptors[0] =
-      VectorXf::Constant(kNumDescriptorDimensions, 1).normalized();
-  features1.descriptors[1] = VectorXf::Constant(kNumDescriptorDimensions, 0);
-  features1.descriptors[1](0) = 1.0;
-
-  // Set the two descriptors to be closer to features1.descriptors[0] so that
-  // the symmetric matching produces only 1 match.
-  features2.descriptors.resize(2);
-  features2.descriptors[0] = VectorXf::Constant(kNumDescriptorDimensions, 1);
-  features2.descriptors[0](0) = 0;
-  features2.descriptors[0].normalize();
-  features2.descriptors[1] = VectorXf::Constant(kNumDescriptorDimensions, 1);
-  features2.descriptors[1](1) = 0;
-  features2.descriptors[1](2) = 0;
-  features2.descriptors[1].normalize();
-
-  // Set options.
-  FeatureMatcherOptions options;
-  options.min_num_feature_matches = 0;
-  options.keep_only_symmetric_matches = true;
-  options.use_lowes_ratio = false;
-  options.perform_geometric_verification = false;
-
-  // Add features.
-  features1.keypoints.resize(features1.descriptors.size());
-  features2.keypoints.resize(features2.descriptors.size());
-
-  LocalFeaturesAndMatchesDatabase database(GTEST_TESTING_OUTPUT_DIRECTORY, 128);
-  database.PutFeatures("1", features1);
-  database.PutFeatures("2", features2);
-
-  BruteForceFeatureMatcher matcher(options, &database);
-  matcher.AddImage("1");
-  matcher.AddImage("2");
-
-  // Match features.
-  matcher.MatchImages();
-
-  // Check that the results are valid.
-  EXPECT_GT(database.NumMatches(), 0);
 }
 
 }  // namespace theia

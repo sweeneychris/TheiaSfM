@@ -41,8 +41,7 @@
 
 #include "theia/matching/features_and_matches_database.h"
 #include "theia/matching/image_pair_match.h"
-#include "theia/matching/in_memory_features_and_matches_database.h"
-#include "theia/matching/local_features_and_matches_database.h"
+#include "theia/matching/rocksdb_features_and_matches_database.h"
 #include "theia/sfm/camera_intrinsics_prior.h"
 #include "theia/sfm/feature_extractor_and_matcher.h"
 #include "theia/sfm/reconstruction.h"
@@ -150,8 +149,21 @@ void RemoveEstimatedViewsAndTracks(Reconstruction* reconstruction,
 }  // namespace
 
 ReconstructionBuilder::ReconstructionBuilder(
-    const ReconstructionBuilderOptions& options)
-    : options_(options) {
+    const ReconstructionBuilderOptions& options,
+    std::unique_ptr<Reconstruction> reconstruction,
+    std::unique_ptr<ViewGraph> view_graph)
+    : options_(options),
+      reconstruction_(std::move(reconstruction)),
+      view_graph_(std::move(view_graph)) {
+  CHECK_GT(options.num_threads, 0);
+  options_.reconstruction_estimator_options.rng = options.rng;
+}
+
+ReconstructionBuilder::ReconstructionBuilder(
+    const ReconstructionBuilderOptions& options,
+    FeaturesAndMatchesDatabase* features_and_matches_database)
+    : options_(options),
+      features_and_matches_database_(features_and_matches_database) {
   CHECK_GT(options.num_threads, 0);
 
   options_.reconstruction_estimator_options.rng = options.rng;
@@ -186,18 +198,8 @@ ReconstructionBuilder::ReconstructionBuilder(
   feam_options.max_num_features_for_fisher_vector_training =
       options_.max_num_features_for_fisher_vector_training;
 
-  // Setup the features and matches DB.
-  if (options_.match_out_of_core) {
-    features_and_matches_database_.reset(new LocalFeaturesAndMatchesDatabase(
-        options_.features_and_matches_database_directory,
-        options_.cache_capacity));
-  } else {
-    features_and_matches_database_.reset(
-        new InMemoryFeaturesAndMatchesDatabase());
-  }
-
   feature_extractor_and_matcher_.reset(new FeatureExtractorAndMatcher(
-      feam_options, features_and_matches_database_.get()));
+      feam_options, features_and_matches_database_));
 }
 
 ReconstructionBuilder::~ReconstructionBuilder() {}
@@ -268,22 +270,8 @@ bool ReconstructionBuilder::ExtractAndMatchFeatures() {
   // functions.
 
   // Extract features and obtain the feature matches.
-  std::vector<CameraIntrinsicsPrior> camera_intrinsics_priors;
-  feature_extractor_and_matcher_->ExtractAndMatchFeatures(
-      &camera_intrinsics_priors);
-
-  // If we only want calibrated views remove them from the reconstruction so
-  // that they no features are detected and matched between them.
-  if (options_.only_calibrated_views) {
-    // We iterate in the reverse order so that the erase() function does not
-    // disturb the iterating.
-    for (int i = image_filepaths_.size() - 1; i >= 0; --i) {
-      if (!camera_intrinsics_priors[i].focal_length.is_set) {
-        image_filepaths_.erase(image_filepaths_.begin() + i);
-        camera_intrinsics_priors.erase(camera_intrinsics_priors.begin() + i);
-      }
-    }
-  }
+  feature_extractor_and_matcher_->ExtractAndMatchFeatures();
+  feature_extractor_and_matcher_.release();
 
   // Log how many view pairs were geometrically verified.
   const int num_total_view_pairs =
@@ -292,27 +280,26 @@ bool ReconstructionBuilder::ExtractAndMatchFeatures() {
             << num_total_view_pairs
             << " view pairs were matched and geometrically verified.";
 
-  // Add the EXIF data to each view.
+  // Add the EXIF metadata to each view.
   std::vector<std::string> image_filenames(image_filepaths_.size());
-  for (int i = 0; i < image_filepaths_.size(); i++) {
-    CHECK(GetFilenameFromFilepath(
-        image_filepaths_[i], true, &image_filenames[i]));
-
+  const auto image_names_of_calibration =
+      features_and_matches_database_->ImageNamesOfCameraIntrinsicsPriors();
+  for (int i = 0; i < image_names_of_calibration.size(); i++) {
     // Add the camera intrinsic prior information to the view.
-    const ViewId view_id = reconstruction_->ViewIdFromName(image_filenames[i]);
+    const ViewId view_id =
+        reconstruction_->ViewIdFromName(image_names_of_calibration[i]);
     View* view = reconstruction_->MutableView(view_id);
-    *view->MutableCameraIntrinsicsPrior() = camera_intrinsics_priors[i];
+    const auto intrinsics_prior =
+        features_and_matches_database_->GetCameraIntrinsicsPrior(
+            image_names_of_calibration[i]);
+    *view->MutableCameraIntrinsicsPrior() = intrinsics_prior;
   }
 
-  // Optionally write out the matches.
-  if (options_.output_matches_file.length() > 0) {
-    LOG(INFO) << "Writing matches to file: " << options_.output_matches_file;
-    CHECK(features_and_matches_database_->SaveMatchesAndGeometry(
-        options_.output_matches_file,
-        image_filenames,
-        camera_intrinsics_priors))
-        << "Could not write the matches to " << options_.output_matches_file;
-  }
+  ///////////////////////////////////
+  //
+  // TODO: How to save the camera intrinsics priors????
+  //
+  ///////////////////////////////////
 
   // Add the matches to the view graph and reconstruction.
   const auto& match_keys =
@@ -358,12 +345,6 @@ bool ReconstructionBuilder::AddTwoViewMatch(const std::string& image1,
   AddTracksForMatch(view_id1, view_id2, matches);
 
   return true;
-}
-
-void ReconstructionBuilder::InitializeReconstructionAndViewGraph(
-    Reconstruction* reconstruction, ViewGraph* view_graph) {
-  reconstruction_.reset(std::move(reconstruction));
-  view_graph_.reset(std::move(view_graph));
 }
 
 bool ReconstructionBuilder::BuildReconstruction(

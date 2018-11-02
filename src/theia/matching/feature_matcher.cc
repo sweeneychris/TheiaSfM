@@ -50,9 +50,7 @@
 #include "theia/matching/feature_matcher_options.h"
 #include "theia/matching/features_and_matches_database.h"
 #include "theia/matching/image_pair_match.h"
-#include "theia/matching/in_memory_features_and_matches_database.h"
 #include "theia/matching/keypoints_and_descriptors.h"
-#include "theia/matching/local_features_and_matches_database.h"
 #include "theia/sfm/camera_intrinsics_prior.h"
 #include "theia/sfm/two_view_match_geometric_verification.h"
 
@@ -90,20 +88,11 @@ void FeatureMatcher::AddImage(const std::string& image_name) {
   image_names_.push_back(image_name);
 }
 
-void FeatureMatcher::AddImage(const std::string& image_name,
-                              const CameraIntrinsicsPrior& intrinsics) {
-  AddImage(image_name);
-  intrinsics_[image_name] = intrinsics;
-}
-
-void FeatureMatcher::AddImages(
-    const std::vector<std::string>& image_names,
-    const std::vector<CameraIntrinsicsPrior>& intrinsics) {
-  CHECK_EQ(image_names.size(), intrinsics.size());
+void FeatureMatcher::AddImages(const std::vector<std::string>& image_names) {
   image_names_.reserve(image_names.size() + image_names_.size());
 
   for (int i = 0; i < image_names.size(); ++i) {
-    AddImage(image_names[i], intrinsics[i]);
+    AddImage(image_names[i]);
   }
 }
 
@@ -137,7 +126,8 @@ void FeatureMatcher::MatchImages() {
   pool.reset(nullptr);
 
   VLOG(1) << "Matched " << feature_and_matches_db_->NumMatches()
-          << " image pairs out of " << num_matches << " possible image pairs.";
+          << " image pairs out of " << num_matches
+          << " pairs selected for matching.";
 }
 
 void FeatureMatcher::MatchAndVerifyImagePairs(const int start_index,
@@ -210,10 +200,19 @@ bool FeatureMatcher::GeometricVerification(
     const KeypointsAndDescriptors& features2,
     const std::vector<IndexedFeatureMatch>& putative_matches,
     ImagePairMatch* image_pair_match) {
-  const CameraIntrinsicsPrior intrinsics1 = FindWithDefault(
-      intrinsics_, features1.image_name, CameraIntrinsicsPrior());
-  const CameraIntrinsicsPrior intrinsics2 = FindWithDefault(
-      intrinsics_, features2.image_name, CameraIntrinsicsPrior());
+  CameraIntrinsicsPrior intrinsics1, intrinsics2;
+
+  // Load camera intrinsics if they are available.
+  if (feature_and_matches_db_->ContainsCameraIntrinsicsPrior(
+          features1.image_name)) {
+    intrinsics1 = feature_and_matches_db_->GetCameraIntrinsicsPrior(
+        features1.image_name);
+  }
+  if (feature_and_matches_db_->ContainsCameraIntrinsicsPrior(
+          features2.image_name)) {
+    intrinsics2 = feature_and_matches_db_->GetCameraIntrinsicsPrior(
+        features2.image_name);
+  }
 
   TwoViewMatchGeometricVerification geometric_verification(
       options_.geometric_verification_options,

@@ -69,9 +69,24 @@ double GetValidFirstOctave(const int first_octave,
 
 }  // namespace
 
-SiftDescriptorExtractor::~SiftDescriptorExtractor() {
-  if (sift_filter_ != nullptr) vl_sift_delete(sift_filter_);
-}
+SiftDescriptorExtractor::SiftDescriptorExtractor(
+    const SiftParameters& detector_params)
+    : sift_params_(detector_params), sift_filter_(nullptr, vl_sift_delete) {}
+
+SiftDescriptorExtractor::SiftDescriptorExtractor(int num_octaves,
+                                                 int num_levels,
+                                                 int first_octave)
+    : sift_params_(num_octaves,
+                   num_levels,
+                   first_octave,
+                   10.0f,
+                   255.0 * 0.02 / num_levels),
+      sift_filter_(nullptr, vl_sift_delete) {}
+
+SiftDescriptorExtractor::SiftDescriptorExtractor()
+    : SiftDescriptorExtractor(-1, 3, -1) {}
+
+SiftDescriptorExtractor::~SiftDescriptorExtractor() {}
 
 bool SiftDescriptorExtractor::ComputeDescriptor(const FloatImage& image,
                                                 const Keypoint& keypoint,
@@ -83,21 +98,20 @@ bool SiftDescriptorExtractor::ComputeDescriptor(const FloatImage& image,
   // width and height are different) then we must make a new filter. Adding this
   // statement will save the function from regenerating the filter for
   // successive calls with images of the same size (e.g. a video sequence).
-  if (sift_filter_ == nullptr || (sift_filter_->width != image.Cols() ||
-                                  sift_filter_->height != image.Rows())) {
-    vl_sift_delete(sift_filter_);
+  if (!sift_filter_ || (sift_filter_->width != image.Cols() ||
+                        sift_filter_->height != image.Rows())) {
     const int first_octave = GetValidFirstOctave(
         sift_params_.first_octave, image.Rows(), image.Cols());
-    sift_filter_ = vl_sift_new(image.Cols(),
-                               image.Rows(),
-                               sift_params_.num_octaves,
-                               sift_params_.num_levels,
-                               first_octave);
+    sift_filter_.reset(vl_sift_new(image.Cols(),
+                                   image.Rows(),
+                                   sift_params_.num_octaves,
+                                   sift_params_.num_levels,
+                                   first_octave));
   }
 
   // Create the vl sift keypoint from the one passed in.
   VlSiftKeypoint sift_keypoint;
-  vl_sift_keypoint_init(sift_filter_,
+  vl_sift_keypoint_init(sift_filter_.get(),
                         &sift_keypoint,
                         keypoint.x(),
                         keypoint.y(),
@@ -110,10 +124,10 @@ bool SiftDescriptorExtractor::ComputeDescriptor(const FloatImage& image,
 
   // Calculate the first octave to process.
   int vl_status =
-      vl_sift_process_first_octave(sift_filter_, mutable_image.Data());
+      vl_sift_process_first_octave(sift_filter_.get(), mutable_image.Data());
   // Proceed through the octaves we reach the same one as the keypoint.
   while (sift_keypoint.o != sift_filter_->o_cur) {
-    vl_sift_process_next_octave(sift_filter_);
+    vl_sift_process_next_octave(sift_filter_.get());
   }
 
   if (vl_status == VL_ERR_EOF) {
@@ -123,8 +137,10 @@ bool SiftDescriptorExtractor::ComputeDescriptor(const FloatImage& image,
   // Calculate the sift feature. Note that we are passing in a direct pointer to
   // the descriptor's underlying data.
   CHECK_NOTNULL(descriptor)->resize(128);
-  vl_sift_calc_keypoint_descriptor(
-      sift_filter_, descriptor->data(), &sift_keypoint, keypoint.orientation());
+  vl_sift_calc_keypoint_descriptor(sift_filter_.get(),
+                                   descriptor->data(),
+                                   &sift_keypoint,
+                                   keypoint.orientation());
   if (sift_params_.root_sift) {
     ConvertToRootSift(descriptor);
   }
@@ -139,16 +155,15 @@ bool SiftDescriptorExtractor::ComputeDescriptors(
   // width and height are different) then we must make a new filter. Adding this
   // statement will save the function from regenerating the filter for
   // successive calls with images of the same size (e.g. a video sequence).
-  if (sift_filter_ == nullptr || (sift_filter_->width != image.Cols() ||
-                                  sift_filter_->height != image.Rows())) {
-    vl_sift_delete(sift_filter_);
+  if (!sift_filter_ || (sift_filter_->width != image.Cols() ||
+                        sift_filter_->height != image.Rows())) {
     const int first_octave = GetValidFirstOctave(
         sift_params_.first_octave, image.Rows(), image.Cols());
-    sift_filter_ = vl_sift_new(image.Cols(),
-                               image.Rows(),
-                               sift_params_.num_octaves,
-                               sift_params_.num_levels,
-                               first_octave);
+    sift_filter_.reset(vl_sift_new(image.Cols(),
+                                   image.Rows(),
+                                   sift_params_.num_octaves,
+                                   sift_params_.num_levels,
+                                   first_octave));
   }
 
   // Create the vl sift keypoint from the one passed in.
@@ -157,7 +172,7 @@ bool SiftDescriptorExtractor::ComputeDescriptors(
     CHECK((*keypoints)[i].has_scale() && (*keypoints)[i].has_orientation())
         << "Keypoint must have scale and orientation to compute a SIFT "
         << "descriptor.";
-    vl_sift_keypoint_init(sift_filter_,
+    vl_sift_keypoint_init(sift_filter_.get(),
                           &sift_keypoints[i],
                           (*keypoints)[i].x(),
                           (*keypoints)[i].y(),
@@ -170,7 +185,7 @@ bool SiftDescriptorExtractor::ComputeDescriptors(
 
   // Calculate the first octave to process.
   int vl_status =
-      vl_sift_process_first_octave(sift_filter_, mutable_image.Data());
+      vl_sift_process_first_octave(sift_filter_.get(), mutable_image.Data());
 
   // Proceed through the octaves we reach the same one as the keypoint.  We
   // first resize the descriptors vector so that the keypoint indicies will be
@@ -181,12 +196,12 @@ bool SiftDescriptorExtractor::ComputeDescriptors(
     for (int i = 0; i < sift_keypoints.size(); i++) {
       if (sift_keypoints[i].o != sift_filter_->o_cur) continue;
 
-      vl_sift_calc_keypoint_descriptor(sift_filter_,
+      vl_sift_calc_keypoint_descriptor(sift_filter_.get(),
                                        (*descriptors)[i].data(),
                                        &sift_keypoints[i],
                                        (*keypoints)[i].orientation());
     }
-    vl_status = vl_sift_process_next_octave(sift_filter_);
+    vl_status = vl_sift_process_next_octave(sift_filter_.get());
   }
 
   if (sift_params_.root_sift) {
@@ -206,18 +221,17 @@ bool SiftDescriptorExtractor::DetectAndExtractDescriptors(
   // width and height are different) then we must make a new filter. Adding this
   // statement will save the function from regenerating the filter for
   // successive calls with images of the same size (e.g. a video sequence).
-  if (sift_filter_ == nullptr || (sift_filter_->width != image.Cols() ||
-                                  sift_filter_->height != image.Rows())) {
-    vl_sift_delete(sift_filter_);
+  if (!sift_filter_ || (sift_filter_->width != image.Cols() ||
+                        sift_filter_->height != image.Rows())) {
     const int first_octave = GetValidFirstOctave(
         sift_params_.first_octave, image.Rows(), image.Cols());
-    sift_filter_ = vl_sift_new(image.Cols(),
-                               image.Rows(),
-                               sift_params_.num_octaves,
-                               sift_params_.num_levels,
-                               first_octave);
-    vl_sift_set_edge_thresh(sift_filter_, sift_params_.edge_threshold);
-    vl_sift_set_peak_thresh(sift_filter_, sift_params_.peak_threshold);
+    sift_filter_.reset(vl_sift_new(image.Cols(),
+                                   image.Rows(),
+                                   sift_params_.num_octaves,
+                                   sift_params_.num_levels,
+                                   first_octave));
+    vl_sift_set_edge_thresh(sift_filter_.get(), sift_params_.edge_threshold);
+    vl_sift_set_peak_thresh(sift_filter_.get(), sift_params_.peak_threshold);
   }
 
   // The VLFeat functions take in a non-const image pointer so that it can
@@ -227,21 +241,22 @@ bool SiftDescriptorExtractor::DetectAndExtractDescriptors(
 
   // Calculate the first octave to process.
   int vl_status =
-      vl_sift_process_first_octave(sift_filter_, mutable_image.Data());
+      vl_sift_process_first_octave(sift_filter_.get(), mutable_image.Data());
   // Process octaves until you can't anymore.
   while (vl_status != VL_ERR_EOF) {
     // Detect the keypoints.
-    vl_sift_detect(sift_filter_);
+    vl_sift_detect(sift_filter_.get());
 
     // Get the keypoints.
-    const VlSiftKeypoint* vl_keypoints = vl_sift_get_keypoints(sift_filter_);
-    const int num_keypoints = vl_sift_get_nkeypoints(sift_filter_);
+    const VlSiftKeypoint* vl_keypoints =
+        vl_sift_get_keypoints(sift_filter_.get());
+    const int num_keypoints = vl_sift_get_nkeypoints(sift_filter_.get());
 
     for (int i = 0; i < num_keypoints; ++i) {
       // Calculate (up to 4) orientations of the keypoint.
       double angles[4];
       int num_angles = vl_sift_calc_keypoint_orientations(
-          sift_filter_, angles, &vl_keypoints[i]);
+          sift_filter_.get(), angles, &vl_keypoints[i]);
       // If upright sift is enabled, only use the first keypoint at a given
       // pixel location.
       if (sift_params_.upright_sift && num_angles > 1) {
@@ -252,7 +267,7 @@ bool SiftDescriptorExtractor::DetectAndExtractDescriptors(
       for (int j = 0; j < num_angles; ++j) {
         descriptor.setZero();
         vl_sift_calc_keypoint_descriptor(
-            sift_filter_, descriptor.data(), &vl_keypoints[i], angles[j]);
+            sift_filter_.get(), descriptor.data(), &vl_keypoints[i], angles[j]);
         descriptors->push_back(descriptor);
 
         Keypoint keypoint(vl_keypoints[i].x, vl_keypoints[i].y, Keypoint::SIFT);
@@ -262,7 +277,7 @@ bool SiftDescriptorExtractor::DetectAndExtractDescriptors(
       }
     }
     // Attempt to process the next octave.
-    vl_status = vl_sift_process_next_octave(sift_filter_);
+    vl_status = vl_sift_process_next_octave(sift_filter_.get());
   }
 
   if (sift_params_.root_sift) {

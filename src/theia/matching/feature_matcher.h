@@ -49,7 +49,6 @@
 namespace theia {
 class FeaturesAndMatchesDatabase;
 class Keypoint;
-struct CameraIntrinsicsPrior;
 struct ImagePairMatch;
 struct IndexedFeatureMatche;
 struct KeypointsAndDescriptors;
@@ -89,12 +88,9 @@ class FeatureMatcher {
   //
   // Care must be taken to ensure that the filenames are formatted correctly.
   virtual void AddImage(const std::string& image_name);
-  virtual void AddImage(const std::string& image_name,
-                        const CameraIntrinsicsPrior& intrinsics);
-  // This method is essentially the same as AddImage() but run in batch.
-  virtual void AddImages(const std::vector<std::string>& image_names,
-                         const std::vector<CameraIntrinsicsPrior>& intrinsics);
 
+  // This method is essentially the same as AddImage() but run in batch.
+  virtual void AddImages(const std::vector<std::string>& image_names);
   // Matches features between all images. No geometric verification is
   // performed. Only the matches which pass the have greater than
   // min_num_feature_matches are returned.
@@ -146,7 +142,7 @@ class FeatureMatcher {
   // DB to store and retrieve features and matches.
   FeaturesAndMatchesDatabase* feature_and_matches_db_;
 
-  std::unordered_map<std::string, CameraIntrinsicsPrior> intrinsics_;
+  // Pairs that we will perform matching on.
   std::vector<std::pair<std::string, std::string> > pairs_to_match_;
 
  private:

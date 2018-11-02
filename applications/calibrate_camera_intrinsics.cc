@@ -77,20 +77,10 @@ DEFINE_string(matching_strategy,
               "CASCADE_HASHING",
               "Strategy used to match features. Must be BRUTE_FORCE "
               " or CASCADE_HASHING");
-DEFINE_bool(match_out_of_core,
-            true,
-            "Perform matching out of core by saving features to disk and "
-            "reading them as needed. Set to false to perform matching all in "
-            "memory.");
 DEFINE_string(matching_working_directory,
               "",
               "Directory used during matching to store features for "
               "out-of-core matching.");
-DEFINE_int32(matching_max_num_images_in_cache,
-             128,
-             "Maximum number of images to store in the LRU cache during "
-             "feature matching. The higher this number is the more memory is "
-             "consumed during matching.");
 DEFINE_double(lowes_ratio, 0.8, "Lowes ratio used for feature matching.");
 DEFINE_double(max_sampson_error_for_verified_match,
               6.0,
@@ -179,10 +169,8 @@ ReconstructionBuilderOptions SetReconstructionBuilderOptions() {
 
   options.descriptor_type = StringToDescriptorExtractorType(FLAGS_descriptor);
   options.feature_density = StringToFeatureDensity(FLAGS_feature_density);
-  options.match_out_of_core = FLAGS_match_out_of_core;
   options.features_and_matches_database_directory =
       FLAGS_matching_working_directory;
-  options.cache_capacity = FLAGS_matching_max_num_images_in_cache;
   options.matching_strategy =
       StringToMatchingStrategyType(FLAGS_matching_strategy);
   options.matching_options.lowes_ratio = FLAGS_lowes_ratio;
@@ -328,7 +316,9 @@ int main(int argc, char* argv[]) {
   for (int i = 0; i < FLAGS_num_calibration_iterations; i++) {
     reconstructions.clear();
 
-    ReconstructionBuilder reconstruction_builder(options);
+    theia::RocksDbFeaturesAndMatchesDatabase features_db(
+        FLAGS_matching_working_directory);
+    ReconstructionBuilder reconstruction_builder(options, &features_db);
     AddImagesToReconstructionBuilder(&reconstruction_builder, prior);
 
     CHECK(reconstruction_builder.BuildReconstruction(&reconstructions))
@@ -350,5 +340,9 @@ int main(int argc, char* argv[]) {
     // Use the camera intrinsics from the optimized reconstruction as the
     // initialization for the next iteration.
     prior = view->Camera().CameraIntrinsicsPriorFromIntrinsics();
+
+    // Delete all matches from the DB so we can use the updated calibration to
+    // compute better matches.
+    features_db.RemoveAllMatches();
   }
 }
