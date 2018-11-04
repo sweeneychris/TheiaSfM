@@ -29,12 +29,14 @@
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //
 
+#include <vector>
+#include <Eigen/Core>
 #include <glog/logging.h>
 #include "gtest/gtest.h"
 #include "statx/distributions/evd/gpd.h"
 #include "statx/distributions/evd/gpd_mle.h"
 
-namespace statx {
+namespace libstatx {
 namespace distributions {
 namespace evd {
 
@@ -294,7 +296,7 @@ TEST(GPD, PDF_Exponential) {
   for (int i = 0; i < gpd_pdf_exp.size(); i++) {
     double y_gt = gpd_pdf_exp[i];
     double y = gpdpdf(x, xi, sigma);
-    ASSERT_NEAR(y_gt, y, 1e-3);
+    EXPECT_NEAR(y_gt, y, 1e-3);
     x += dx;
   }
 }
@@ -308,7 +310,7 @@ TEST(GPD, PDF_NonExponential) {
   for (int i = 0; i < gpd_pdf.size(); i++) {
     double y_gt = gpd_pdf[i];
     double y = gpdpdf(x, xi, sigma);
-    ASSERT_NEAR(y_gt, y, 1e-3);
+    EXPECT_NEAR(y_gt, y, 1e-3);
     x += dx;
   }
 }
@@ -322,7 +324,7 @@ TEST(GPD, CDF_Exponential) {
   for (int i = 0; i < gpd_cdf_exp.size(); i++) {
     double y_gt = gpd_cdf_exp[i];
     double y = gpdcdf(x, xi, sigma);
-    ASSERT_NEAR(y_gt, y, 1e-3);
+    EXPECT_NEAR(y_gt, y, 1e-3);
     x += dx;
   }
 }
@@ -336,22 +338,22 @@ TEST(GPD, CDF_NonExponential) {
   for (int i = 0; i < gpd_cdf.size(); i++) {
     double y_gt = gpd_cdf[i];
     double y = gpdcdf(x, xi, sigma);
-    ASSERT_NEAR(y_gt, y, 1e-3);
+    EXPECT_NEAR(y_gt, y, 1e-3);
     x += dx;
   }
 }
 
 TEST(GPD, InvalidParams) {
   // Non exponential -- out of domain
-  ASSERT_EQ(std::numeric_limits<double>::infinity(), gpdpdf(50.0, 1.0, -1.0));
+  EXPECT_EQ(std::numeric_limits<double>::infinity(), gpdpdf(50.0, 1.0, -1.0));
   // Invalid sigma
-  ASSERT_EQ(std::numeric_limits<double>::infinity(), gpdpdf(1.0, 1.0, 0.0));
+  EXPECT_EQ(std::numeric_limits<double>::infinity(), gpdpdf(1.0, 1.0, 0.0));
 }
 
 TEST(GPD, FitNoData) {
   vector<double> data;
   double xi, sigma;
-  ASSERT_FALSE(gpdfit(data, &xi, &sigma));
+  EXPECT_FALSE(gpdfit(data, &xi, &sigma));
 }
 
 TEST(GPD, Quantile_NonExponential) {
@@ -362,7 +364,7 @@ TEST(GPD, Quantile_NonExponential) {
   for (int i = 0; i < gpd_quantile_data.size(); i++) {
     double q_gt = gpd_quantile_data[i];
     double q = gpd_quantile(p, xi, sigma);
-    ASSERT_NEAR(q_gt, q, 1e-3);
+    EXPECT_NEAR(q_gt, q, 1e-3);
     p += dp;
   }
 }
@@ -375,7 +377,7 @@ TEST(GPD, Quantile_Exponential) {
   for (int i = 0; i < gpd_quantile_data_exp.size(); i++) {
     double q_gt = gpd_quantile_data_exp[i];
     double q = gpd_quantile(p, xi, sigma);
-    ASSERT_NEAR(q_gt, q, 1e-3);
+    EXPECT_NEAR(q_gt, q, 1e-3);
     p += dp;
   }
 }
@@ -388,7 +390,7 @@ TEST(GPD, MLE_Objective) {
   x(0) = -0.1730;  // xi
   x(1) = 0.5246;  // sigma
   double mle_val = mle(x);
-  ASSERT_NEAR(mle_gt, mle_val, 1e-3);
+  EXPECT_NEAR(mle_gt, mle_val, 1e-3);
 }
 
 
@@ -400,7 +402,7 @@ TEST(GPD, MLE_Objective2) {
   x(0) = -0.1870;  // xi
   x(1) = 1.4402;  // sigma
   double mle_val = mle(x);
-  ASSERT_NEAR(mle_gt, mle_val, 1e-3);
+  EXPECT_NEAR(mle_gt, mle_val, 1e-3);
 }
 
 TEST(GPD, MLE_Objective3) {
@@ -411,7 +413,7 @@ TEST(GPD, MLE_Objective3) {
   x(0) = 0.0247;  // xi
   x(1) = 0.9108;  // sigma
   double mle_val = mle(x);
-  ASSERT_NEAR(mle_gt, mle_val, 1e-3);
+  EXPECT_NEAR(mle_gt, mle_val, 1e-3);
 }
 
 TEST(GPD, MLE_Gradient1) {
@@ -423,7 +425,7 @@ TEST(GPD, MLE_Gradient1) {
   x(1) = 0.5246;  // sigma
   gradient(x, &g);
   VLOG(1) << "Gradient: " << g.transpose();
-  ASSERT_LT(g.norm(), sqrt(n));
+  EXPECT_LT(g.norm(), sqrt(n));
 }
 
 TEST(GPD, MLE_Gradient2) {
@@ -435,7 +437,7 @@ TEST(GPD, MLE_Gradient2) {
   x(1) = 1.4402;  // sigma
   gradient(x, &g);
   VLOG(1) << "Gradient: " << g.transpose();
-  ASSERT_LT(g.norm(), sqrt(n));
+  EXPECT_LT(g.norm(), sqrt(n));
 }
 
 TEST(GPD, MLE_Gradient3) {
@@ -447,7 +449,7 @@ TEST(GPD, MLE_Gradient3) {
   x(1) = 0.9108;  // sigma
   gradient(x, &g);
   VLOG(1) << "Gradient: " << g.transpose();
-  ASSERT_LT(g.norm(), sqrt(n));
+  EXPECT_LT(g.norm(), sqrt(n));
 }
 
 TEST(GPD, FitMLE1) {
@@ -458,10 +460,10 @@ TEST(GPD, FitMLE1) {
   x(0) = -0.1730;  // xi
   x(1) = 0.5246;  // sigma
   VLOG(1) << "Ground Truth: " << x.transpose();
-  ASSERT_TRUE(gpdfit(rayl_tail, &xi, &sigma));
+  EXPECT_TRUE(gpdfit(rayl_tail, &xi, &sigma));
   VLOG(1) << "sigma: " << sigma << " xi=" << xi;
-  ASSERT_NEAR(x(0), xi, 1.0);
-  ASSERT_NEAR(x(1), sigma, 1.0);
+  EXPECT_NEAR(x(0), xi, 1.0);
+  EXPECT_NEAR(x(1), sigma, 1.0);
 }
 
 TEST(GPD, FitMLE2_BadInitialPoint) {
@@ -471,7 +473,7 @@ TEST(GPD, FitMLE2_BadInitialPoint) {
   x(0) = -0.1870;  // xi
   x(1) = 1.4402;  // sigma
   VLOG(1) << "Ground Truth: " << x.transpose();
-  ASSERT_FALSE(gpdfit(rayl_tail2, &xi, &sigma));
+  EXPECT_FALSE(gpdfit(rayl_tail2, &xi, &sigma));
   VLOG(1) << "sigma: " << sigma << " xi=" << xi;
 }
 
@@ -482,10 +484,10 @@ TEST(GPD, FitMLE3) {
   x(0) = 0.0247;  // xi
   x(1) = 0.9108;  // sigma
   VLOG(1) << "Ground Truth: " << x.transpose();
-  ASSERT_TRUE(gpdfit(rayl_tail3, &xi, &sigma));
+  EXPECT_TRUE(gpdfit(rayl_tail3, &xi, &sigma));
   VLOG(1) << "sigma: " << sigma << " xi=" << xi;
-  ASSERT_NEAR(x(0), xi, 1.0);
-  ASSERT_NEAR(x(1), sigma, 1.0);
+  EXPECT_NEAR(x(0), xi, 1.0);
+  EXPECT_NEAR(x(1), sigma, 1.0);
 }
 
 TEST(GPD, FitMLE4) {
@@ -496,10 +498,10 @@ TEST(GPD, FitMLE4) {
   x(0) = 0.5;  // xi
   x(1) = 1.0;  // sigma
   VLOG(1) << "Ground Truth: " << x.transpose();
-  ASSERT_TRUE(gpdfit(gpd_data, &xi, &sigma));
+  EXPECT_TRUE(gpdfit(gpd_data, &xi, &sigma));
   VLOG(1) << "Computed: " << xi << " " << sigma;
-  ASSERT_NEAR(x(0), xi, 1.0);
-  ASSERT_NEAR(x(1), sigma, 1.0);
+  EXPECT_NEAR(x(0), xi, 1.0);
+  EXPECT_NEAR(x(1), sigma, 1.0);
 }
 #ifdef STATX_WITH_CERES
 //////////////////////////////////////////
@@ -512,10 +514,10 @@ TEST(GPD, FitQuantileLeastSquares_Case1) {
   x(0) = -0.1730;  // xi
   x(1) = 0.5246;  // sigma
   VLOG(1) << "Ground Truth: " << x.transpose();
-  ASSERT_TRUE(gpdfit(rayl_tail, &xi, &sigma, QUANTILE_NLS));
+  EXPECT_TRUE(gpdfit(rayl_tail, &xi, &sigma, QUANTILE_NLS));
   VLOG(1) << "sigma: " << sigma << " xi=" << xi;
-  ASSERT_NEAR(x(0), xi, 1.0);
-  ASSERT_NEAR(x(1), sigma, 1.0);
+  EXPECT_NEAR(x(0), xi, 1.0);
+  EXPECT_NEAR(x(1), sigma, 1.0);
 }
 
 TEST(GPD, FitQuantileLeastSquares_Case2) {
@@ -526,10 +528,10 @@ TEST(GPD, FitQuantileLeastSquares_Case2) {
   x(0) = 0.5;  // xi
   x(1) = 1.0;  // sigma
   VLOG(1) << "Ground Truth: " << x.transpose();
-  ASSERT_TRUE(gpdfit(gpd_data, &xi, &sigma, QUANTILE_NLS));
+  EXPECT_TRUE(gpdfit(gpd_data, &xi, &sigma, QUANTILE_NLS));
   VLOG(1) << "Computed: " << xi << " " << sigma;
-  ASSERT_NEAR(x(0), xi, 1.0);
-  ASSERT_NEAR(x(1), sigma, 1.0);
+  EXPECT_NEAR(x(0), xi, 1.0);
+  EXPECT_NEAR(x(1), sigma, 1.0);
 }
 
 TEST(GPD, FitQuantileLeastSquares_Case3) {
@@ -539,10 +541,10 @@ TEST(GPD, FitQuantileLeastSquares_Case3) {
   x(0) = 0.0247;  // xi
   x(1) = 0.9108;  // sigma
   VLOG(1) << "Ground Truth: " << x.transpose();
-  ASSERT_TRUE(gpdfit(rayl_tail3, &xi, &sigma, QUANTILE_NLS));
+  EXPECT_TRUE(gpdfit(rayl_tail3, &xi, &sigma, QUANTILE_NLS));
   VLOG(1) << "sigma: " << sigma << " xi=" << xi;
-  ASSERT_NEAR(x(0), xi, 1.0);
-  ASSERT_NEAR(x(1), sigma, 1.0);
+  EXPECT_NEAR(x(0), xi, 1.0);
+  EXPECT_NEAR(x(1), sigma, 1.0);
 }
 #endif
 }  // evd

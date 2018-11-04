@@ -32,10 +32,11 @@
 #ifndef STATX_DISTRIBUTIONS_EVD_GPD_MLE_H_
 #define STATX_DISTRIBUTIONS_EVD_GPD_MLE_H_
 
-#include <optimo/core/objects_ls.h>
 #include <vector>
+#include <optimo/core/objects_ls.h>
+#include <Eigen/Core>
 
-namespace statx {
+namespace libstatx {
 namespace distributions {
 namespace evd {
 
@@ -107,7 +108,8 @@ class GPDMLEHessianFunctor : public optimo::HessianFunctorLS<double> {
   operator()(const Matrix<double, Dynamic, 1>& x,
              Matrix<double, Dynamic, Dynamic>* h) const;
 };
-}  // evd
-}  // distributions
-}  // statx
+
+}  // namespace evd
+}  // namespace distributions
+}  // namespace libstatx
 #endif  // STATX_DISTRIBUTIONS_EVD_GPD_MLE_H_

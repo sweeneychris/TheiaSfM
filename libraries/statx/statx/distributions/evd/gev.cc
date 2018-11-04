@@ -36,7 +36,7 @@
 #include "statx/distributions/evd/gev_ceres.h"
 #endif
 
-namespace statx {
+namespace libstatx {
 namespace distributions {
 namespace evd {
 
@@ -64,6 +64,7 @@ bool gevfit(const vector<double>& data,
   }
   return exit_flag;
 }
-}  // evd
-}  // distributions
-}  // statx
+
+}  // namespace evd
+}  // namespace distributions
+}  // namespace libstatx

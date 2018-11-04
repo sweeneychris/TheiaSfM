@@ -37,7 +37,7 @@
 #include <limits>
 #include "statx/distributions/evd/common.h"
 
-namespace statx {
+namespace libstatx {
 namespace distributions {
 namespace evd {
 // Generalized Pareto Distribution (GPD)
@@ -97,7 +97,7 @@ bool gpdfit(const std::vector<double>& data,
               double* xi,
               double* sigma,
               FitType fit_type = MLE);
-}  // evd
-}  // distributions
-}  // statx
+}  // namespce evd
+}  // namespace distributions
+}  // namespace libstatx
 #endif  // STATX_DISTRIBUTIONS_EVD_GPD_H_

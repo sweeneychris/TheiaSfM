@@ -35,9 +35,10 @@
 #include <cmath>
 #include <vector>
 #include <limits>
+
 #include "statx/distributions/evd/common.h"
 
-namespace statx {
+namespace libstatx {
 namespace distributions {
 namespace evd {
 // Generalized Extreme Value Distribution
@@ -117,7 +118,7 @@ bool gevfit(const std::vector<double>& data,
             double* sigma,
             double* xi,
             FitType fit_type = MLE);
-}  // evd
-}  // distributions
-}  // statx
+}  // namespace evd
+}  // namespace distributions
+}  // namespace libstatx
 #endif  // STATX_DISTRIBUTIONS_EVD_GEV_H_

@@ -31,16 +31,18 @@
 
 #ifndef STATX_DISTRIBUTIONS_EVD_COMMON_H_
 #define STATX_DISTRIBUTIONS_EVD_COMMON_H_
-namespace statx {
+namespace libstatx {
 namespace distributions {
 namespace evd {
+
 // TODO(vfragoso): Change the name of this enum, and it should be in
-// distributions folder
+// distributions folder.
 enum FitType {
   MLE = 0,  // Maximum Likelihood fit
   QUANTILE_NLS = 1  // Quantile method via non-linear least squares
 };
-}  // evd
-}  // distributions
-}  // statx
+
+}  // namespace evd
+}  // namespace distributions
+}  // namespace libstatx
 #endif  // STATX_DISTRIBUTIONS_EVD_COMMON_H_

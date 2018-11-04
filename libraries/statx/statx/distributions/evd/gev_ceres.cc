@@ -31,10 +31,12 @@
 #define _USE_MATH_DEFINES
 
 #include "statx/distributions/evd/gev_ceres.h"
+
+#include <vector>
 #include "statx/utils/common_funcs.h"
 #include "statx/utils/ecdf.h"
 
-namespace statx {
+namespace libstatx {
 namespace distributions {
 namespace evd {
 
@@ -82,9 +84,9 @@ bool gevfit_ceres(const vector<double>& data,
                   double* sigma,
                   double* xi) {
   // TODO(vfragoso): Should I consider avoiding temporal variables?
-  const double var = statx::utils::stddev(data);
+  const double var = libstatx::utils::stddev(data);
   const double sigma0 = sqrt(6*var*var)/M_PI;  // sigma
-  const double mu0 = statx::utils::mean(data) -0.57722*sigma0;  // mu
+  const double mu0 = libstatx::utils::mean(data) -0.57722*sigma0;  // mu
   const double xi0 = 0.1;  // according to EVIR's package
 
   // Initialize Params
@@ -96,7 +98,7 @@ bool gevfit_ceres(const vector<double>& data,
           << " xi=" << xi0;
   // Calculate the ECDF from the data
   vector<double> fx, x;
-  statx::utils::ecdf(data, &fx, &x);
+  libstatx::utils::ecdf(data, &fx, &x);
 
   // Build Ceres Objects
   Problem problem;
@@ -125,6 +127,7 @@ bool gevfit_ceres(const vector<double>& data,
 
   return exit_flag;
 }
-}  // evd
-}  // distributions
-}  // statx
+
+}  // namespace evd
+}  // namespace distributions
+}  // namespace libstatx
