@@ -35,7 +35,7 @@
 
 #include <vector>
 
-namespace statx {
+namespace libstatx {
 namespace utils {
 // Calculates the Empirical Cummulative Distribution Function
 // using Kaplan-Meier estimate
@@ -43,5 +43,5 @@ void ecdf(const std::vector<double>& y,
           std::vector<double>* fx,
           std::vector<double>* x);
 }  // utils
-}  // statx
+}  // libstatx
 #endif  // STATX_UTILS_ECDF_H_

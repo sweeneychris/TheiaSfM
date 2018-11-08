@@ -30,10 +30,12 @@
 //
 
 #include "statx/distributions/rayleigh.h"
+
+#include <vector>
 #include <glog/logging.h>
 #include "gtest/gtest.h"
 
-namespace statx {
+namespace libstatx {
 namespace distributions {
 using std::vector;
 // Rayleigh data generated w/ z = raylrnd(5, 1, 100);
@@ -112,7 +114,7 @@ TEST(Rayleigh, PDF) {
   const double sigma = 5.0;
   for (int i = 0; i < rayl_pdf_data.size(); i++) {
     const double d = raylpdf(x, sigma);
-    ASSERT_NEAR(rayl_pdf_data[i], d, 1e-3);
+    EXPECT_NEAR(rayl_pdf_data[i], d, 1e-3);
     x += 0.1;
   }
 }
@@ -122,7 +124,7 @@ TEST(Rayleigh, CDF) {
   const double sigma = 5.0;
   for (int i = 0; i < rayl_cdf_data.size(); i++) {
     const double d = raylcdf(x, sigma);
-    ASSERT_NEAR(rayl_cdf_data[i], d, 1e-3);
+    EXPECT_NEAR(rayl_cdf_data[i], d, 1e-3);
     x += 0.1;
   }
 }
@@ -130,7 +132,8 @@ TEST(Rayleigh, CDF) {
 TEST(Rayleigh, FitMLE) {
   const double sigma_gt = 5.0;
   const double sigma = raylfit(rayl_data);
-  ASSERT_NEAR(sigma_gt, sigma, 1.0);
+  EXPECT_NEAR(sigma_gt, sigma, 1.0);
 }
-}  // distributions
-}  // statx
+
+}  // namespace distributions
+}  // namespace libstatx

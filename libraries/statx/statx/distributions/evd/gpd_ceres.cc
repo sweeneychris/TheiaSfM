@@ -33,7 +33,7 @@
 #include "statx/utils/common_funcs.h"
 #include "statx/utils/ecdf.h"
 
-namespace statx {
+namespace libstatx {
 namespace distributions {
 namespace evd {
 
@@ -67,8 +67,8 @@ bool GPDCostFunctionAnalytic::Evaluate(double const* const* parameters,
 bool gpdfit_ceres(const vector<double>& data,
                   double* sigma,
                   double* xi) {
-  const double mean = statx::utils::mean(data);
-  const double temp = statx::utils::stddev(data, mean);
+  const double mean = libstatx::utils::mean(data);
+  const double temp = libstatx::utils::stddev(data, mean);
   const double var = temp*temp;
   const double mean_sqrd= mean*mean;
 
@@ -91,7 +91,7 @@ bool gpdfit_ceres(const vector<double>& data,
 
   // Calculate the ECDF from the data
   vector<double> fx, x;
-  statx::utils::ecdf(data, &fx, &x);
+  libstatx::utils::ecdf(data, &fx, &x);
 
   // Build Ceres Objects
   Problem problem;
@@ -120,6 +120,6 @@ bool gpdfit_ceres(const vector<double>& data,
 
   return exit_flag;
 }
-}  // evd
-}  // distributions
-}  // statx
+}  // namespace evd
+}  // namespace distributions
+}  // namespace libstatx

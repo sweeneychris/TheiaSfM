@@ -32,10 +32,12 @@
 #ifndef STATX_DISTRIBUTIONS_EVD_GEV_MLE_H_
 #define STATX_DISTRIBUTIONS_EVD_GEV_MLE_H_
 
-#include <optimo/core/objects_ls.h>
 #include <vector>
 
-namespace statx {
+#include <Eigen/Core>
+#include <optimo/core/objects_ls.h>
+
+namespace libstatx {
 namespace distributions {
 namespace evd {
 
@@ -118,11 +120,14 @@ class GEVMLEGradientFunctor : public optimo::GradientFunctorLS<double> {
 
  protected:
   const vector<double>& data_;
-  const double alpha_;  // Penalty for constraint 0 < sigma
-  const double beta_;  // Penalty for constraint 1 + xi*(z - mu)/sigma > 0
-  const double lambda_;  // Control of threshold over the argument of log-barrier
+  // Penalty for constraint 0 < sigma.
+  const double alpha_;
+  // Penalty for constraint 1 + xi*(z - mu)/sigma > 0.
+  const double beta_;
+  // Control of threshold over the argument of log-barrier.
+  const double lambda_;
 };
-}  // evd
-}  // distributions
-}  // statx
+}  // namespace evd
+}  // namespace distributions
+}  // namespace libstatx
 #endif  // STATX_DISTRIBUTIONS_EVD_GEV_MLE_H_

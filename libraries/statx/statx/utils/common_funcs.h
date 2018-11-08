@@ -36,7 +36,7 @@
 #include <cmath>
 #include <vector>
 
-namespace statx {
+namespace libstatx {
 namespace utils {
 
 using Eigen::Matrix;
@@ -112,6 +112,7 @@ Scalar mahalanobis_distance(const Matrix<Scalar, Dynamic, 1>& x,
                             const Matrix<Scalar, Dynamic, Dynamic>& covar_mat) {
   return static_cast<Scalar>(sqrt(x.dot(covar_mat.inverse()*x)));
 }
+
 }  // utils
-}  // statx
+}  // libstatx
 #endif  // STATX_UTILS_COMMON_FUNCS_H_

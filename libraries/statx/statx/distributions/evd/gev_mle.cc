@@ -33,6 +33,8 @@
 #include <cmath>
 #include <vector>
 #include <limits>
+
+#include <Eigen/Core>
 #include <glog/logging.h>
 #include "statx/utils/common_funcs.h"
 #include <optimo/solvers/bfgs.h>
@@ -42,7 +44,7 @@
 #endif
 
 
-namespace statx {
+namespace libstatx {
 namespace distributions {
 namespace evd {
 
@@ -227,8 +229,8 @@ bool gevfit_mle(const vector<double>& data,
   const int n = 3;
   Matrix<double, Dynamic, 1> x(n);
   static const double delta = 0.1;
-  const double mean = statx::utils::mean(data);
-  const double var = statx::utils::stddev(data, mean);
+  const double mean = libstatx::utils::mean(data);
+  const double var = libstatx::utils::stddev(data, mean);
   const double sigma0 = sqrt(6*var*var)/M_PI;  // sigma
   const double mu0 = mean - 0.57722*sigma0;  // mu
   const double xi0 = 0.1;  // according to EVIR's package
@@ -256,6 +258,7 @@ bool gevfit_mle(const vector<double>& data,
 
   return exit_flag;
 }
-}  // evd
-}  // distributions
-}  // statx
+
+}  // namespace evd
+}  // namespace distributions
+}  // namespace libstatx

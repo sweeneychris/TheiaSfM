@@ -128,10 +128,10 @@ class EvsacSampler : public Sampler {
         sorted_distances.data() + 1,
         sorted_distances.data() + sorted_distances.size());
     // Fit distribution tail!
-    const double sigma = statx::distributions::raylfit(tail);
+    const double sigma = libstatx::distributions::raylfit(tail);
     // Calculate belief of correctness.
     const double confidence =
-        1.0 - statx::distributions::raylcdf(sorted_distances[0], sigma);
+        1.0 - libstatx::distributions::raylcdf(sorted_distances[0], sigma);
     return confidence >= predictor_threshold;
   }
 
@@ -400,7 +400,7 @@ void EvsacSampler<Datum>::SetQPCostFunctionParams(
     PrimalDualQP::Params* qp_params) {
   std::vector<double> empirical_cdf_vector;
   std::vector<double> empirical_cdf_support;
-  statx::utils::ecdf(
+  libstatx::utils::ecdf(
       smallest_distances, &empirical_cdf_vector, &empirical_cdf_support);
   Eigen::Map<Eigen::VectorXd> empirical_cdf(&empirical_cdf_vector[0],
                                             empirical_cdf_vector.size());
@@ -409,14 +409,14 @@ void EvsacSampler<Datum>::SetQPCostFunctionParams(
   Eigen::MatrixXd A(empirical_cdf_support.size(), 2);
 
   for (int i = 0; i < empirical_cdf_support.size(); i++) {
-    A(i, 0) = statx::distributions::gammacdf(empirical_cdf_support[i],
-                                             mixture_model_params.k,
-                                             mixture_model_params.theta);
+    A(i, 0) = libstatx::distributions::gammacdf(empirical_cdf_support[i],
+                                                mixture_model_params.k,
+                                                mixture_model_params.theta);
     A(i, 1) =
-        1.0 - statx::distributions::evd::gevcdf(-empirical_cdf_support[i],
-                                                mixture_model_params.mu,
-                                                mixture_model_params.sigma,
-                                                mixture_model_params.xi);
+        1.0 - libstatx::distributions::evd::gevcdf(-empirical_cdf_support[i],
+                                                   mixture_model_params.mu,
+                                                   mixture_model_params.sigma,
+                                                   mixture_model_params.xi);
   }
   CHECK_NOTNULL(qp_params)->Q = A.transpose() * A;
   qp_params->d = -1.0 * A.transpose() * empirical_cdf;
@@ -479,15 +479,15 @@ void EvsacSampler<Datum>::ComputePosteriorAndWeights(
     // Calculate posterior.
     const double gam_val =
         mixture_model_params.inlier_ratio *
-        statx::distributions::gammapdf(smallest_distances[i],
-                                       mixture_model_params.k,
-                                       mixture_model_params.theta);
+        libstatx::distributions::gammapdf(smallest_distances[i],
+                                          mixture_model_params.k,
+                                          mixture_model_params.theta);
     const double gev_val =
         (1.0 - mixture_model_params.inlier_ratio) *
-        statx::distributions::evd::gevpdf(smallest_distances[i],
-                                          mixture_model_params.mu,
-                                          mixture_model_params.sigma,
-                                          mixture_model_params.xi);
+        libstatx::distributions::evd::gevpdf(smallest_distances[i],
+                                             mixture_model_params.mu,
+                                             mixture_model_params.sigma,
+                                             mixture_model_params.xi);
     const double posterior = gam_val / (gam_val + gev_val);
     // Removing those matches that are likely to be incorrect.
     (*probabilities)[i] = static_cast<float>(posterior);
@@ -500,7 +500,7 @@ template <class Datum>
 bool EvsacSampler<Datum>::FitGamma(
     const std::vector<double>& predicted_correct_correspondences_distances,
     MixtureModelParams* mixture_model_parameters) {
-  const bool gam_success = statx::distributions::gammafit(
+  const bool gam_success = libstatx::distributions::gammafit(
       predicted_correct_correspondences_distances,
       &CHECK_NOTNULL(mixture_model_parameters)->k,
       &mixture_model_parameters->theta);
@@ -515,9 +515,9 @@ bool EvsacSampler<Datum>::FitGEV(
     const FittingMethod fitting_method,
     const std::vector<double>& negated_second_smallest_distances,
     MixtureModelParams* mixture_model_parameters) {
-  const statx::distributions::evd::FitType fitting_type =
-      (fitting_method == MLE) ? statx::distributions::evd::MLE
-                              : statx::distributions::evd::QUANTILE_NLS;
+  const libstatx::distributions::evd::FitType fitting_type =
+      (fitting_method == MLE) ? libstatx::distributions::evd::MLE
+                              : libstatx::distributions::evd::QUANTILE_NLS;
   const bool gev_success = gevfit(negated_second_smallest_distances,
                                   &CHECK_NOTNULL(mixture_model_parameters)->mu,
                                   &mixture_model_parameters->sigma,

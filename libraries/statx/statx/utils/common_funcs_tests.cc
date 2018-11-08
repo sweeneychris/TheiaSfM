@@ -33,6 +33,7 @@
 #include <glog/logging.h>
 #include <random>
 #include <cmath>
+#include <vector>
 #include "gtest/gtest.h"
 
 namespace statx {
@@ -72,17 +73,17 @@ TEST(CommonFuncs, Mean) {
   vector<double> samples {2, 2, 2, 2, 2, 2, 2};
   const double m = mean(samples);
   const double m_gt = 2.0;
-  ASSERT_NEAR(m_gt, m, 1e-3);
+  EXPECT_NEAR(m_gt, m, 1e-3);
 }
 
 TEST(CommonFuncs, Stddev) {
   vector<double> samples {2.1, 2.2, 1.8, 1.9, 2.0};
   const double s = stddev(samples);
   const double s_gt = 0.1581;
-  ASSERT_NEAR(s_gt, s, 1e-3);
+  EXPECT_NEAR(s_gt, s, 1e-3);
   const double mu = mean(samples);
   const double s2 = stddev(samples, mu);
-  ASSERT_NEAR(s_gt, s, 1e-3);
+  EXPECT_NEAR(s_gt, s, 1e-3);
 }
 
 TEST(CommonFuncs, VecMean) {
@@ -99,9 +100,9 @@ TEST(CommonFuncs, VecMean) {
   }
   bool exit_flag = mean(vec_samples, &mean_vec);
   VLOG(1) << mean_vec.transpose();
-  ASSERT_TRUE(exit_flag);
+  EXPECT_TRUE(exit_flag);
   double error = (mean_gt - mean_vec).norm();
-  ASSERT_LT(error, 1.0);
+  EXPECT_LT(error, 1.0);
 }
 
 TEST(CommonFuncs, CovarianceEstimation) {
@@ -123,9 +124,10 @@ TEST(CommonFuncs, CovarianceEstimation) {
     }
   }
   mean(vec_samples, &mean_vec);
-  ASSERT_TRUE(cov(vec_samples, mean_vec, &cov_mat));
+  EXPECT_TRUE(cov(vec_samples, mean_vec, &cov_mat));
   const double error = (cov_mat - cov_mat_gt).norm();
-  ASSERT_LT(error, 1.0);
+  EXPECT_LT(error, 1.0);
 }
+
 }  // utils
 }  // statx

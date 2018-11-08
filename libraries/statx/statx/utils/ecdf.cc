@@ -31,13 +31,16 @@
 
 #include "statx/utils/ecdf.h"
 
-#include <map>
 #include <algorithm>
+#include <map>
+#include <vector>
 
-// TODO(vfragoso): Document me!
-void statx::utils::ecdf(const std::vector<double>& y,
-                        std::vector<double>* fx,
-                        std::vector<double>* x) {
+namespace libstatx {
+namespace utils {
+
+void ecdf(const std::vector<double>& y,
+          std::vector<double>* fx,
+          std::vector<double>* x) {
   if (y.empty() || !fx || !x) return;
   const size_t N = y.size();
   std::map<double, unsigned long> hist;
@@ -52,15 +55,18 @@ void statx::utils::ecdf(const std::vector<double>& y,
   x->resize(hist.size());
   // S_hat(x) = Pi_{x_i < x} (1 - d_i/n_i)
   std::map<double, unsigned long>::const_iterator it;
-  size_t d = 0;  // deaths (as in survival analysis)
-  size_t r = N;  // samples at risk
+  size_t d = 0;  // Deaths (as in survival analysis).
+  size_t r = N;  // Samples at risk.
   double prod = 1.0;
   i = 0;
   for (it = hist.begin(); it != hist.end(); ++it, i++) {
-    d = it->second;  // deaths
-    prod *= (1.0 - static_cast<double>(d)/static_cast<double>(r));  // s_hat
-    r -= d;  // update number at risk
-    (*x)[i] = it->first;  // x
-    (*fx)[i] = 1.0 - prod;  // CDF = 1.0 - s_hat
+    d = it->second;  // Deaths.
+    prod *= (1.0 - static_cast<double>(d)/static_cast<double>(r));  // s_hat.
+    r -= d;  // Update number at risk.
+    (*x)[i] = it->first;  // x.
+    (*fx)[i] = 1.0 - prod;  // CDF = 1.0 - s_hat.
   }
 }
+
+}  // namespace utils
+}  // namespace libstatx
