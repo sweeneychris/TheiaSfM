@@ -148,9 +148,10 @@ bool AddViewsToReconstruction(const BundlerFileReader& reader,
   return true;
 }
 
-bool AddCamerasToReconstruction(const BundlerFileReader& reader,
-                                Reconstruction* reconstruction,
-                                std::unordered_set<ViewId>* views_to_remove) {
+ std::unordered_set<ViewId> AddCamerasToReconstruction(
+     const BundlerFileReader& reader,
+     Reconstruction* reconstruction) {
+  std::unordered_set<ViewId> views_to_remove;
   // Populate camera parameters.
   static const Eigen::Matrix3d bundler_to_theia =
       Eigen::Vector3d(1.0, -1.0, -1.0).asDiagonal();
@@ -170,7 +171,7 @@ bool AddCamerasToReconstruction(const BundlerFileReader& reader,
 
     // Do not consider this view if an invalid focal length is present.
     if (bundler_camera.focal_length <= 0.0) {
-      views_to_remove->insert(i);
+      views_to_remove.insert(i);
     } else {
       camera->SetFocalLength(bundler_camera.focal_length);
     }
@@ -199,7 +200,7 @@ bool AddCamerasToReconstruction(const BundlerFileReader& reader,
   }
   std::cout << std::endl;
 
-  return true;
+  return views_to_remove;
 }
 
 int AddTracksToReconstruction(
@@ -323,9 +324,8 @@ bool ReadBundlerFiles(const std::string& lists_file,
       bundler_file_reader, CHECK_NOTNULL(reconstruction)));
 
   // Populate cameras to reconstruction.
-  std::unordered_set<ViewId> views_to_remove;
-  CHECK(AddCamerasToReconstruction(
-      bundler_file_reader, reconstruction, &views_to_remove));
+  const std::unordered_set<ViewId> views_to_remove =
+      AddCamerasToReconstruction(bundler_file_reader, reconstruction);
 
   // Populate tracks to reconstruction.
   const int num_invalid_tracks = AddTracksToReconstruction(
