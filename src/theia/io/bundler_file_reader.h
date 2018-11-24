@@ -47,12 +47,14 @@ namespace theia {
 // Camera extrinsics and intrinsics.
 struct BundlerCamera {
   // Rigid transformation from world to camera.
-  Eigen::Vector3f translation;
-  Eigen::Matrix3f rotation;
+  Eigen::Vector3d translation;
+  Eigen::Matrix3d rotation;
   // Estimated focal lengths and radial dist coeffs.
   float focal_length;
   float radial_coeff_1;
   float radial_coeff_2;
+
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 // Feature2d information.
@@ -69,11 +71,12 @@ struct FeatureInfo {
 // Reconstructed 3D point.
 struct BundlerPoint {
   // 3D point's position.
-  Eigen::Vector3f position;
+  Eigen::Vector3d position;
   // 3D point's color.
-  Eigen::Vector3f color;
+  Eigen::Vector3d color;
   // A list of where this poins is viewed.
   std::vector<FeatureInfo> view_list;
+
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
@@ -116,7 +119,7 @@ class BundlerFileReader {
   int NumPoints() { return points_.size();}
   int NumPoints() const { return points_.size();}
 
-  // REturns the number of entries in the lists.txt file.
+  // Returns the number of entries in the lists.txt file.
   int NumListEntries() { return img_entries_.size();}
   int NumListEntries() const { return img_entries_.size();}
 

@@ -78,25 +78,25 @@ bool ReadCamera(FILE* in, BundlerCamera* camera) {
     return false;
   }
   // Read rotation matrix.
-  Eigen::Matrix3f& rotation = camera->rotation;
-  if (fscanf(in, "%f %f %f",
+  Eigen::Matrix3d& rotation = camera->rotation;
+  if (fscanf(in, "%lf %lf %lf",
              &rotation(0, 0), &rotation(0, 1), &rotation(0, 2)) != 3) {
     VLOG(3) << "Unable to read first row of rotation matrix.";
     return false;
   }
-  if (fscanf(in, "%f %f %f",
+  if (fscanf(in, "%lf %lf %lf",
              &rotation(1, 0), &rotation(1, 1), &rotation(1, 2)) != 3) {
     VLOG(3) << "Unable to read second row of rotation matrix.";
     return false;
   }
-  if (fscanf(in, "%f %f %f",
+  if (fscanf(in, "%lf %lf %lf",
              &rotation(2, 0), &rotation(2, 1), &rotation(2, 2)) != 3) {
     VLOG(3) << "Unable to read third row of rotation matrix.";
     return false;
   }
   // Read position.
-  Eigen::Vector3f& translation = camera->translation;
-  if (fscanf(in, "%f %f %f",
+  Eigen::Vector3d& translation = camera->translation;
+  if (fscanf(in, "%lf %lf %lf",
              &translation(0), &translation(1), &translation(2)) != 3) {
     VLOG(3) << "Unable to read camera translation.";
     return false;
@@ -165,14 +165,16 @@ bool ReadViewList(FILE* in, std::vector<FeatureInfo>* view_list) {
 
 bool ReadPoint(FILE* in, BundlerPoint* point) {
   // Read position.
-  Eigen::Vector3f& position = point->position;
-  if (fscanf(in, "%f %f %f", &position(0), &position(1), &position(2)) != 3) {
+  Eigen::Vector3d& position = point->position;
+  if (fscanf(in, "%lf %lf %lf",
+             &position(0), &position(1), &position(2)) != 3) {
       VLOG(3) << "Unable to read point position. ";
     return false;
   }
   // Read color.
-  Eigen::Vector3f& color = point->color;
-  if (fscanf(in, "%f %f %f", &color(0), &color(1), &color(2)) != 3) {
+  Eigen::Vector3d& color = point->color;
+  if (fscanf(in, "%lf %lf %lf",
+             &color(0), &color(1), &color(2)) != 3) {
     VLOG(3) << "Unable to read point color.";
     return false;
   }
