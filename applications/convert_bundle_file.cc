@@ -48,6 +48,7 @@ DEFINE_string(images_directory, "",
               "Directory of input images. This is used to extract the "
               "principal point and image dimensions since Bundler does not "
               "provide those.");
+
 int main(int argc, char* argv[]) {
   google::InitGoogleLogging(argv[0]);
   THEIA_GFLAGS_NAMESPACE::ParseCommandLineFlags(&argc, &argv, true);

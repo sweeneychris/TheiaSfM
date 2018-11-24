@@ -45,6 +45,7 @@
 #include <utility>
 #include <vector>
 
+#include "theia/io/bundler_file_reader.h"
 #include "theia/sfm/camera/camera.h"
 #include "theia/sfm/camera/pinhole_camera_model.h"
 #include "theia/sfm/reconstruction.h"
@@ -168,6 +169,7 @@ bool ReadBundlerFiles(const std::string& lists_file,
   CHECK_EQ(reconstruction->NumTracks(), 0)
       << "An empty reconstruction must be provided to load a bundler dataset.";
 
+  // TODO(vfragoso): Add the bundler reader here and parse the files.
   if (!ReadListsFile(lists_file, reconstruction)) {
     LOG(ERROR) << "Could not read the lists file from " << lists_file;
     return false;
