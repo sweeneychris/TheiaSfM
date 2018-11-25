@@ -309,11 +309,13 @@ bool ReadBundlerFiles(const std::string& lists_file,
 
   // Parse the bundler files.
   BundlerFileReader bundler_file_reader(lists_file, bundle_file);
+  VLOG(0) << "Parsing lists file: " << lists_file;
   if (!bundler_file_reader.ParseListsFile()) {
     LOG(ERROR) << "Could not read the lists file from " << lists_file;
     return false;
   }
 
+    VLOG(0) << "Parsing bundler file: " << bundle_file;
   if (!bundler_file_reader.ParseBundleFile()) {
     LOG(ERROR) << "Could not parse the bundler file from " << bundle_file;
     return false;
