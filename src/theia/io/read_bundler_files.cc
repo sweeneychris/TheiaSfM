@@ -59,68 +59,6 @@ namespace theia {
 
 namespace {
 
-// // Description of the list files from the Big SfM website:
-// // http://www.cs.cornell.edu/projects/p2f/README_Dubrovnik6K.txt
-// //
-// // A. List files (list.db.txt, list.query.txt).
-// //      List files specify filenames to images in jpg format, one per
-// //      line (keep in mind that the actual jpg files are not distributed
-// //      unless requested).  In addition, if the focal length of the image
-// //      has been estimated from Exif tags, then that is also included.
-// //
-// //      Images without known focal length information are specified with
-// //      a line with a single field, the image name.  Example:
-// //        query/10970812@N05_2553027508.jpg
-// //
-// //      Images with known focal length information are specified with a
-// //      line with three fields: the image name, a zero, and the Exif
-// //      focal length.  (The second field is always zero but may change in
-// //      future datasets.)  Example:
-// //        query/11289373@N03_2733280477.jpg 0 1280.00000
-// //
-// // NOTE: We set the exif focal length to zero if it is not available (since 0 is
-// // never a valid focal length).
-// bool ReadListsFile(const std::string& list_filename,
-//                    Reconstruction* reconstruction) {
-//   std::ifstream ifs(list_filename.c_str(), std::ios::in);
-//   if (!ifs.is_open()) {
-//     LOG(ERROR) << "Cannot read the list file from " << list_filename;
-//     return false;
-//   }
-
-//   const char space = static_cast<char>(' ');
-//   while (!ifs.eof()) {
-//     // Read in the filename.
-//     std::string filename, truncated_filename;
-//     ifs >> filename;
-//     if (filename.length() == 0) {
-//       break;
-//     }
-//     CHECK(theia::GetFilenameFromFilepath(filename, true, &truncated_filename));
-//     const ViewId view_id = reconstruction->AddView(truncated_filename);
-//     CHECK_NE(view_id, kInvalidViewId)
-//         << "View " << truncated_filename << " could not be added.";
-
-//     // Check to see if the exif focal length is given.
-//     double focal_length = 0;
-//     if (ifs.peek() == space) {
-//       int temp;
-//       ifs >> temp;
-//       ifs >> focal_length;
-//     }
-
-//     if (focal_length != 0) {
-//       reconstruction->MutableView(view_id)
-//           ->MutableCameraIntrinsicsPrior()
-//           ->focal_length.value[0] = focal_length;
-//       reconstruction->MutableView(view_id)
-//           ->MutableCameraIntrinsicsPrior()
-//           ->focal_length.is_set = true;
-//     }
-//   }
-//   return true;
-// }
-
 bool AddViewsToReconstruction(const BundlerFileReader& reader,
                               Reconstruction* reconstruction) {
   if (reader.img_entries().empty()) {
@@ -221,7 +159,7 @@ int AddTracksToReconstruction(
     std::vector<std::pair<ViewId, Feature> > track;
     track.reserve(num_views);
     for (int j = 0; j < num_views; j++) {
-      // TODO(vfragoso): Should we store SIFT indices? It is useful for
+      // TODO(vfragoso): Should we store SIFT indices in Theia? It is useful for
       // img-based localization.
       const FeatureInfo& feature_info = point.view_list[j];
 
