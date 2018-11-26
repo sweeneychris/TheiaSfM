@@ -86,9 +86,9 @@ bool AddViewsToReconstruction(const BundlerFileReader& reader,
   return true;
 }
 
- std::unordered_set<ViewId> AddCamerasToReconstruction(
-     const BundlerFileReader& reader,
-     Reconstruction* reconstruction) {
+std::unordered_set<ViewId> AddCamerasToReconstruction(
+    const BundlerFileReader& reader,
+    Reconstruction* reconstruction) {
   std::unordered_set<ViewId> views_to_remove;
   // Populate camera parameters.
   static const Eigen::Matrix3d bundler_to_theia =
@@ -125,7 +125,8 @@ bool AddViewsToReconstruction(const BundlerFileReader& reader,
 
     const Eigen::Matrix3d rotation =
         bundler_to_theia * bundler_camera.rotation;
-    const Eigen::Vector3d translation = bundler_to_theia * bundler_camera.translation;
+    const Eigen::Vector3d translation =
+        bundler_to_theia * bundler_camera.translation;
 
     const Eigen::Vector3d position = -rotation.transpose() * translation;
     camera->SetPosition(position);
@@ -253,7 +254,7 @@ bool ReadBundlerFiles(const std::string& lists_file,
     return false;
   }
 
-    VLOG(0) << "Parsing bundler file: " << bundle_file;
+  VLOG(0) << "Parsing bundler file: " << bundle_file;
   if (!bundler_file_reader.ParseBundleFile()) {
     LOG(ERROR) << "Could not parse the bundler file from " << bundle_file;
     return false;
