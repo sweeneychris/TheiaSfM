@@ -60,7 +60,7 @@ int main(int argc, char *argv[]) {
   if (!ofs.is_open()) {
     LOG(ERROR) << "Could not open the calibration file: "
                << FLAGS_output_calibration_file << " for writing.";
-    return false;
+    return -1;
   }
 
   theia::ExifReader exif_reader;
@@ -98,4 +98,5 @@ int main(int argc, char *argv[]) {
         << prior.principal_point.value[1] << " 1.0 0.0 0.0 0.0\n";
   }
   ofs.close();
+  return 0;
 }
