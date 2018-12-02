@@ -61,7 +61,7 @@ namespace theia {
 // matches are kept in memory. This class is guaranteed to be thread safe.
 class RocksDbFeaturesAndMatchesDatabase : public FeaturesAndMatchesDatabase {
  public:
-  RocksDbFeaturesAndMatchesDatabase(const std::string& directory);
+  explicit RocksDbFeaturesAndMatchesDatabase(const std::string& directory);
   ~RocksDbFeaturesAndMatchesDatabase();
 
   bool ContainsCameraIntrinsicsPrior(const std::string& image_name) override;
