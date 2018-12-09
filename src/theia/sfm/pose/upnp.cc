@@ -38,7 +38,70 @@
 #include <Eigen/Geometry>
 #include <vector>
 
+#include <glog/logging.h>
+
 namespace theia {
+
+namespace {
+typedef Eigen::Matrix<double, 3, 10> Matrix3x10d;
+
+// Computes the H Matrix (see Eq. (6)) and the outer products of the ray
+// directions, since these are used to compute matrix V (Eq. (5)).
+inline Eigen::Matrix3d ComputeHMatrixAndRayDirectionsOuterProducts(
+    const std::vector<Eigen::Vector3d>& ray_directions,
+    std::vector<Eigen::Matrix3d>* outer_products) {
+  CHECK_NOTNULL(outer_products)->reserve(ray_directions.size());
+  Eigen::Matrix3d h_inverse;
+  h_inverse.setZero();
+  for (const Eigen::Vector3d& ray : ray_directions) {
+    outer_products->emplace_back(ray * ray.transpose());
+    h_inverse -= outer_products->back();
+  }
+  h_inverse += ray_directions.size() * Eigen::Matrix3d::Identity();
+  return h_inverse.inverse();
+}
+
+void LeftMultiply(const Eigen::Vector3d& point,
+                  Matrix3x10d* left_multiply_matrix) {
+  Matrix3x10d& phi_mat = *CHECK_NOTNULL(left_multiply_matrix);
+  // Row 0.
+  phi_mat(0, 0) = point.x();
+  phi_mat(0, 1) = point.x();
+  phi_mat(0, 2) = -point.x();
+  phi_mat(0, 3) = -point.x();
+  phi_mat(0, 4) = 0.0;
+  phi_mat(0, 5) = 2 * point.z();
+  phi_mat(0, 6) = -2 * point.y();
+  phi_mat(0, 7) = 2 * point.y();
+  phi_mat(0, 8) = 2 * point.z();
+  phi_mat(0, 9) = 0.0;
+
+  // Row 1.
+  phi_mat(1, 0) = point.y();
+  phi_mat(1, 1) = -point.y();
+  phi_mat(1, 2) = point.y();
+  phi_mat(1, 3) = -point.y();
+  phi_mat(1, 4) = -2.0 * point.z();
+  phi_mat(1, 5) = 0.0;
+  phi_mat(1, 6) = 2 * point.x();
+  phi_mat(1, 7) = 2 * point.x();
+  phi_mat(1, 8) = 0.0;
+  phi_mat(1, 9) = 2 * point.z();
+
+  // Row 3.
+  phi_mat(2, 0) = point.y();
+  phi_mat(2, 1) = -point.y();
+  phi_mat(2, 2) = point.y();
+  phi_mat(2, 3) = -point.y();
+  phi_mat(2, 4) = -2.0 * point.z();
+  phi_mat(2, 5) = 0.0;
+  phi_mat(2, 6) = 2 * point.x();
+  phi_mat(2, 7) = 2 * point.x();
+  phi_mat(2, 8) = 0.0;
+  phi_mat(2, 9) = 2 * point.z();
+}
+
+}  // namespace
 
 // TODO(vfragoso): Document me!
 void Upnp(const std::vector<Eigen::Vector3d>& ray_origins,
@@ -46,7 +109,15 @@ void Upnp(const std::vector<Eigen::Vector3d>& ray_origins,
           const std::vector<Eigen::Vector3d>& world_points,
           std::vector<Eigen::Quaterniond>* solution_rotations,
           std::vector<Eigen::Vector3d>* solution_translations) {
-  
+  CHECK_NOTNULL(solution_rotations)->clear();
+  CHECK_NOTNULL(solution_translations)->clear();
+
+  // 1. Compute the H matrix and the outer products of the ray directions.
+  std::vector<Eigen::Matrix3d> outer_products;
+  const Eigen::Matrix3d h_matrix =
+      ComputeHMatrixAndRayDirectionsOuterProducts(
+          ray_directions, &outer_products);
+
 }
 
 }  // namespace theia
