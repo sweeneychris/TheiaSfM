@@ -170,6 +170,7 @@ set(THEIA_SRC
   sfm/pose/test_util.cc
   sfm/pose/three_point_relative_pose_partial_rotation.cc
   sfm/pose/two_point_pose_partial_rotation.cc
+  sfm/pose/upnp.cc
   sfm/pose/util.cc
   sfm/reconstruction_builder.cc
   sfm/reconstruction_estimator_utils.cc
