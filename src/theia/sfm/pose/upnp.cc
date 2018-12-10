@@ -35,10 +35,10 @@
 #include "theia/sfm/pose/upnp.h"
 
 #include <Eigen/Core>
+#include <Eigen/Dense>
 #include <Eigen/Geometry>
-#include <vector>
-
 #include <glog/logging.h>
+#include <vector>
 
 #include "theia/alignment/alignment.h"
 
@@ -46,6 +46,8 @@ namespace theia {
 
 namespace {
 typedef Eigen::Matrix<double, 3, 10> Matrix3x10d;
+typedef Eigen::Matrix<double, 10, 10> Matrix10d;
+typedef Eigen::Matrix<double, 10, 1> Vector10d;
 
 // Computes the H Matrix (see Eq. (6)) and the outer products of the ray
 // directions, since these are used to compute matrix V (Eq. (5)).
@@ -63,9 +65,8 @@ inline Eigen::Matrix3d ComputeHMatrixAndRayDirectionsOuterProducts(
   return h_inverse.inverse();
 }
 
-void LeftMultiply(const Eigen::Vector3d& point,
-                  Matrix3x10d* left_multiply_matrix) {
-  Matrix3x10d& phi_mat = *CHECK_NOTNULL(left_multiply_matrix);
+inline Matrix3x10d LeftMultiply(const Eigen::Vector3d& point) {
+  Matrix3x10d phi_mat;
   // Row 0.
   phi_mat(0, 0) = point.x();
   phi_mat(0, 1) = point.x();
@@ -101,9 +102,10 @@ void LeftMultiply(const Eigen::Vector3d& point,
   phi_mat(2, 7) = 2 * point.x();
   phi_mat(2, 8) = 0.0;
   phi_mat(2, 9) = 2 * point.z();
+  return phi_mat;
 }
 
-void ComputeHelperMatrices(
+inline void ComputeHelperMatrices(
     const std::vector<Eigen::Vector3d>& world_points,
     const std::vector<Eigen::Vector3d>& ray_origins,
     const std::vector<Eigen::Matrix3d>& outer_products,
@@ -114,16 +116,52 @@ void ComputeHelperMatrices(
   CHECK_NOTNULL(g_matrix)->setZero();
   CHECK_NOTNULL(j_matrix)->setZero();
   const Eigen::Matrix3d identity = Eigen::Matrix3d::Identity();
-  Matrix3x10d left_multiply_mat;
   for (int i = 0; i < ray_origins.size(); ++i) {
     const Eigen::Matrix3d& outer_product = outer_products[i];
     // Computation following Eq. (5).
     const Eigen::Matrix3d v_matrix = h_matrix * (outer_product - identity);
     // Compute the left multiplication matrix or Phi matrix in the paper.
-    LeftMultiply(world_points[i], &left_multiply_mat);
+    const Matrix3x10d left_multiply_mat = LeftMultiply(world_points[i]);
     *j_matrix += v_matrix * ray_origins[i];
     *g_matrix += v_matrix * left_multiply_mat;
   }
+}
+
+// Computes the block matrices that compose the M matrix in Eq. 17. These
+// blocks are:
+// a_matrix = \sum A_i^T * A_i,
+// b_matrix = \sum A_i^T * b_i ,
+// gamma = \sum b_i^T * b_i.
+inline double ComputeCostMatrices(
+    const std::vector<Eigen::Vector3d>& world_points,
+    const std::vector<Eigen::Vector3d>& ray_origins,
+    const std::vector<Eigen::Matrix3d>& outer_products,
+    const Matrix3x10d& g_matrix,
+    const Eigen::Vector3d& j_matrix,
+    Matrix10d* a_matrix,
+    Vector10d* b_matrix) {
+  const Eigen::Matrix3d identity = Eigen::Matrix3d::Identity();
+  CHECK_NOTNULL(a_matrix)->setZero();
+  CHECK_NOTNULL(b_matrix)->setZero();
+  // Gamma is the sum of the dot products of b_matrices.
+  double gamma = 0.0;
+  for (int i = 0; i < world_points.size(); ++i) {
+    // Compute the left multiplication matrix or Phi matrix in the paper.
+    const Matrix3x10d left_multiply_mat = LeftMultiply(world_points[i]);
+    const Eigen::Matrix3d outer_prod_minus_identity =
+        outer_products[i] - identity;
+    // Compute the i-th a_matrix.
+    const Matrix3x10d temp_a_mat =
+        outer_prod_minus_identity * (left_multiply_mat + g_matrix);
+    *a_matrix += temp_a_mat.transpose() * temp_a_mat;
+    // Compute the i-th b_matrix.
+    const Eigen::Vector3d temp_b_mat =
+        -outer_prod_minus_identity * (ray_origins[i] + j_matrix);
+    *b_matrix += temp_a_mat.transpose() * temp_b_mat;
+    // Compute the i-th gamma.
+    gamma += temp_b_mat.squaredNorm();
+  }
+  return gamma;
 }
 
 }  // namespace
@@ -152,6 +190,17 @@ void Upnp(const std::vector<Eigen::Vector3d>& ray_origins,
                         h_matrix,
                         &g_matrix,
                         &j_matrix);
+
+  // 3. Compute matrix the block-matrix of matrix M from Eq. 17.
+  Matrix10d a_matrix;
+  Vector10d b_mat;
+  const double gamma = ComputeCostMatrices(world_points,
+                                           ray_origins,
+                                           outer_products,
+                                           g_matrix,
+                                           j_matrix,
+                                           &a_matrix,
+                                           &b_mat);
 }
 
 }  // namespace theia
