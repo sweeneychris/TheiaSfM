@@ -40,6 +40,8 @@
 
 #include <glog/logging.h>
 
+#include "theia/alignment/alignment.h"
+
 namespace theia {
 
 namespace {
@@ -101,6 +103,29 @@ void LeftMultiply(const Eigen::Vector3d& point,
   phi_mat(2, 9) = 2 * point.z();
 }
 
+void ComputeHelperMatrices(
+    const std::vector<Eigen::Vector3d>& world_points,
+    const std::vector<Eigen::Vector3d>& ray_origins,
+    const std::vector<Eigen::Matrix3d>& outer_products,
+    const Eigen::Matrix3d& h_matrix,
+    Matrix3x10d* g_matrix,
+    Eigen::Vector3d* j_matrix) {
+  CHECK_EQ(ray_origins.size(), outer_products.size());
+  CHECK_NOTNULL(g_matrix)->setZero();
+  CHECK_NOTNULL(j_matrix)->setZero();
+  const Eigen::Matrix3d identity = Eigen::Matrix3d::Identity();
+  Matrix3x10d left_multiply_mat;
+  for (int i = 0; i < ray_origins.size(); ++i) {
+    const Eigen::Matrix3d& outer_product = outer_products[i];
+    // Computation following Eq. (5).
+    const Eigen::Matrix3d v_matrix = h_matrix * (outer_product - identity);
+    // Compute the left multiplication matrix or Phi matrix in the paper.
+    LeftMultiply(world_points[i], &left_multiply_mat);
+    *j_matrix += v_matrix * ray_origins[i];
+    *g_matrix += v_matrix * left_multiply_mat;
+  }
+}
+
 }  // namespace
 
 // TODO(vfragoso): Document me!
@@ -118,6 +143,15 @@ void Upnp(const std::vector<Eigen::Vector3d>& ray_origins,
       ComputeHMatrixAndRayDirectionsOuterProducts(
           ray_directions, &outer_products);
 
+  // 2. Compute matrices J and G from page 132 or 6-th page in the paper.
+  Matrix3x10d g_matrix;
+  Eigen::Vector3d j_matrix;
+  ComputeHelperMatrices(world_points,
+                        ray_origins,
+                        outer_products,
+                        h_matrix,
+                        &g_matrix,
+                        &j_matrix);
 }
 
 }  // namespace theia
