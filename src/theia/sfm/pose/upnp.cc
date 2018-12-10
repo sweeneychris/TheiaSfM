@@ -38,24 +38,64 @@
 #include <Eigen/Dense>
 #include <Eigen/Geometry>
 #include <glog/logging.h>
+
+#include <complex>
 #include <vector>
 
 #include "theia/alignment/alignment.h"
+#include "theia/sfm/pose/build_upnp_action_matrix.h"
 
 namespace theia {
 
 namespace {
 typedef Eigen::Matrix<double, 3, 10> Matrix3x10d;
 typedef Eigen::Matrix<double, 8, 8> Matrix8d;
+typedef Eigen::Matrix<std::complex<double>, 8, 8> Matrix8cd;
 typedef Eigen::Matrix<double, 10, 10> Matrix10d;
 typedef Eigen::Matrix<double, 16, 16> Matrix16d;
+typedef Eigen::Matrix<std::complex<double>, 16, 16> Matrix16cd;
 typedef Eigen::Matrix<double, 10, 1> Vector10d;
+
+const int kNumMaxRotations = 16;
+const int kNumMaxRotationsExploitingSymmetry = 8;
+const int kNumMinCorrespondences = 4;
+
+// TODO(vfragoso): Document me!
+struct CostParameters {
+  CostParameters() {
+    a_matrix.setZero();
+    b_vector.setZero();
+    gamma = 0.0;
+  }
+  Matrix10d a_matrix;
+  Vector10d b_vector;
+  double gamma;
+
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+};
+
+// TODO(vfragoso): Document me!
+struct InputDatum {
+  InputDatum(const std::vector<Eigen::Vector3d>& _ray_origins,
+             const std::vector<Eigen::Vector3d>& _ray_directions,
+             const std::vector<Eigen::Vector3d>& _world_points) :
+      ray_origins(_ray_origins),
+      ray_directions(_ray_directions),
+      world_points(_world_points) {}
+  ~InputDatum() = default;
+
+  const std::vector<Eigen::Vector3d>& ray_origins;
+  const std::vector<Eigen::Vector3d>& ray_directions;
+  const std::vector<Eigen::Vector3d>& world_points;
+};
 
 // Computes the H Matrix (see Eq. (6)) and the outer products of the ray
 // directions, since these are used to compute matrix V (Eq. (5)).
 inline Eigen::Matrix3d ComputeHMatrixAndRayDirectionsOuterProducts(
-    const std::vector<Eigen::Vector3d>& ray_directions,
+    const InputDatum& input_datum,
     std::vector<Eigen::Matrix3d>* outer_products) {
+  const std::vector<Eigen::Vector3d>& ray_directions =
+      input_datum.ray_directions;
   CHECK_NOTNULL(outer_products)->reserve(ray_directions.size());
   Eigen::Matrix3d h_inverse;
   h_inverse.setZero();
@@ -108,12 +148,13 @@ inline Matrix3x10d LeftMultiply(const Eigen::Vector3d& point) {
 }
 
 inline void ComputeHelperMatrices(
-    const std::vector<Eigen::Vector3d>& world_points,
-    const std::vector<Eigen::Vector3d>& ray_origins,
+    const InputDatum& input_datum,
     const std::vector<Eigen::Matrix3d>& outer_products,
     const Eigen::Matrix3d& h_matrix,
     Matrix3x10d* g_matrix,
     Eigen::Vector3d* j_matrix) {
+  const std::vector<Eigen::Vector3d>& world_points = input_datum.world_points;
+  const std::vector<Eigen::Vector3d>& ray_origins = input_datum.ray_origins;
   CHECK_EQ(ray_origins.size(), outer_products.size());
   CHECK_NOTNULL(g_matrix)->setZero();
   CHECK_NOTNULL(j_matrix)->setZero();
@@ -134,19 +175,19 @@ inline void ComputeHelperMatrices(
 // a_matrix = \sum A_i^T * A_i,
 // b_vector = \sum A_i^T * b_i ,
 // gamma = \sum b_i^T * b_i.
-inline double ComputeCostMatrices(
-    const std::vector<Eigen::Vector3d>& world_points,
-    const std::vector<Eigen::Vector3d>& ray_origins,
+CostParameters ComputeCostParameters(
+    const InputDatum& input_datum,
     const std::vector<Eigen::Matrix3d>& outer_products,
     const Matrix3x10d& g_matrix,
-    const Eigen::Vector3d& j_matrix,
-    Matrix10d* a_matrix,
-    Vector10d* b_vector) {
+    const Eigen::Vector3d& j_matrix) {
   const Eigen::Matrix3d identity = Eigen::Matrix3d::Identity();
-  CHECK_NOTNULL(a_matrix)->setZero();
-  CHECK_NOTNULL(b_vector)->setZero();
+  CostParameters cost_params;
+  const std::vector<Eigen::Vector3d>& world_points = input_datum.world_points;
+  const std::vector<Eigen::Vector3d>& ray_origins = input_datum.ray_origins;
+  Matrix10d& a_matrix = cost_params.a_matrix;
+  Vector10d& b_vector = cost_params.b_vector;
+  double& gamma = cost_params.gamma;
   // Gamma is the sum of the dot products of b_matrices.
-  double gamma = 0.0;
   for (int i = 0; i < world_points.size(); ++i) {
     // Compute the left multiplication matrix or Phi matrix in the paper.
     const Matrix3x10d left_multiply_mat = LeftMultiply(world_points[i]);
@@ -155,16 +196,84 @@ inline double ComputeCostMatrices(
     // Compute the i-th a_matrix.
     const Matrix3x10d temp_a_mat =
         outer_prod_minus_identity * (left_multiply_mat + g_matrix);
-    *a_matrix += temp_a_mat.transpose() * temp_a_mat;
+    a_matrix += temp_a_mat.transpose() * temp_a_mat;
     // Compute the i-th b_vector.
     const Eigen::Vector3d temp_b_mat =
         -outer_prod_minus_identity * (ray_origins[i] + j_matrix);
-    *b_vector += temp_a_mat.transpose() * temp_b_mat;
+    b_vector += temp_a_mat.transpose() * temp_b_mat;
     // Compute the i-th gamma.
     gamma += temp_b_mat.squaredNorm();
   }
 
-  return gamma;
+  return cost_params;
+}
+
+std::vector<Eigen::Quaterniond> SolveUpnpFromNonMinimalSample(
+    const InputDatum& input_datum,
+    const CostParameters& cost_params) {
+  std::vector<Eigen::Quaterniond> rotations(kNumMaxRotationsExploitingSymmetry);
+  // Build action matrix.
+  const Matrix8d action_matrix = BuildActionMatrixUsingSymmetry(
+      cost_params.a_matrix,
+      cost_params.b_vector,
+      cost_params.gamma);
+  const Eigen::EigenSolver<Matrix8d> eigen_solver(action_matrix, true);
+  const Matrix8cd eigen_vectors = eigen_solver.eigenvectors();
+  for (int i = 0; i < rotations.size(); ++i) {
+    Eigen::Quaterniond quaternion(eigen_vectors(4, i).real(),
+                                  eigen_vectors(5, i).real(),
+                                  eigen_vectors(6, i).real(),
+                                  eigen_vectors(7, i).real());
+    quaternion.normalize();
+    rotations[i] = quaternion;
+  }
+
+  return rotations;
+}
+
+std::vector<Eigen::Quaterniond> SolveUpnpFromMinimalSample(
+    const InputDatum& input_datum,
+    const CostParameters& cost_params) {
+  std::vector<Eigen::Quaterniond> rotations(kNumMaxRotations);
+  // Build action matrix.
+  const Matrix16d action_matrix = BuildActionMatrix(cost_params.a_matrix,
+                                                    cost_params.b_vector,
+                                                    cost_params.gamma);
+  const Eigen::EigenSolver<Matrix16d> eigen_solver(action_matrix, true);
+  const Matrix16cd eigen_vectors = eigen_solver.eigenvectors();
+  for (int i = 0; i < rotations.size(); ++i) {
+    // According to the original implementation, the complex solutions
+    // can be good, in particular when the number of correspondences is really
+    // low. The solutions simply ignore the imaginary part.
+    Eigen::Vector4d quaternion(eigen_vectors(11, i).real(),
+                               eigen_vectors(12, i).real(),
+                               eigen_vectors(13, i).real(),
+                               eigen_vectors(14, i).real());
+    quaternion.normalize();
+
+    if (quaternion[0] < 0.0) {
+      quaternion *= -1.0;
+    }
+
+    rotations[i] = quaternion;
+  }
+
+  return rotations;
+}
+
+std::vector<Eigen::Quaterniond> ComputeRotations(
+    const InputDatum& input_datum,
+    const CostParameters& cost_params) {
+  // Build the action matrix.
+  std::vector<Eigen::Quaterniond> rotations;
+  if (input_datum.world_points.size() > kNumMinCorrespondences) {
+    rotations = SolveUpnpFromNonMinimalSample(input_datum, cost_params);
+  } else {
+    rotations = SolveUpnpFromMinimalSample(input_datum, cost_params);
+  }
+
+  // Remove rotations with complex numbers.
+  return rotations;
 }
 
 }  // namespace
@@ -178,32 +287,31 @@ void Upnp(const std::vector<Eigen::Vector3d>& ray_origins,
   CHECK_NOTNULL(solution_rotations)->clear();
   CHECK_NOTNULL(solution_translations)->clear();
 
+  InputDatum input_datum(ray_origins, ray_directions, world_points);
   // 1. Compute the H matrix and the outer products of the ray directions.
   std::vector<Eigen::Matrix3d> outer_products;
   const Eigen::Matrix3d h_matrix =
-      ComputeHMatrixAndRayDirectionsOuterProducts(
-          ray_directions, &outer_products);
+      ComputeHMatrixAndRayDirectionsOuterProducts(input_datum, &outer_products);
 
   // 2. Compute matrices J and G from page 132 or 6-th page in the paper.
   Matrix3x10d g_matrix;
   Eigen::Vector3d j_matrix;
-  ComputeHelperMatrices(world_points,
-                        ray_origins,
+  ComputeHelperMatrices(input_datum,
                         outer_products,
                         h_matrix,
                         &g_matrix,
                         &j_matrix);
 
   // 3. Compute matrix the block-matrix of matrix M from Eq. 17.
-  Matrix10d a_matrix;
-  Vector10d b_mat;
-  const double gamma = ComputeCostMatrices(world_points,
-                                           ray_origins,
-                                           outer_products,
-                                           g_matrix,
-                                           j_matrix,
-                                           &a_matrix,
-                                           &b_mat);
+  const CostParameters cost_params =
+      ComputeCostParameters(input_datum,
+                            outer_products,
+                            g_matrix,
+                            j_matrix);
+
+  // 4. Compute rotations.
+  const std::vector<Eigen::Quaterniond> rotations =
+      ComputeRotations(input_datum, cost_params);
 }
 
 }  // namespace theia
