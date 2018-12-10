@@ -151,6 +151,7 @@ set(THEIA_SRC
   sfm/hybrid_reconstruction_estimator.cc
   sfm/incremental_reconstruction_estimator.cc
   sfm/localize_view_to_reconstruction.cc
+  sfm/pose/build_upnp_action_matrix.cc
   sfm/pose/dls_impl.cc
   sfm/pose/dls_pnp.cc
   sfm/pose/eight_point_fundamental_matrix.cc

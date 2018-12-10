@@ -46,7 +46,9 @@ namespace theia {
 
 namespace {
 typedef Eigen::Matrix<double, 3, 10> Matrix3x10d;
+typedef Eigen::Matrix<double, 8, 8> Matrix8d;
 typedef Eigen::Matrix<double, 10, 10> Matrix10d;
+typedef Eigen::Matrix<double, 16, 16> Matrix16d;
 typedef Eigen::Matrix<double, 10, 1> Vector10d;
 
 // Computes the H Matrix (see Eq. (6)) and the outer products of the ray
@@ -92,16 +94,16 @@ inline Matrix3x10d LeftMultiply(const Eigen::Vector3d& point) {
   phi_mat(1, 9) = 2 * point.z();
 
   // Row 3.
-  phi_mat(2, 0) = point.y();
-  phi_mat(2, 1) = -point.y();
-  phi_mat(2, 2) = point.y();
-  phi_mat(2, 3) = -point.y();
-  phi_mat(2, 4) = -2.0 * point.z();
-  phi_mat(2, 5) = 0.0;
-  phi_mat(2, 6) = 2 * point.x();
-  phi_mat(2, 7) = 2 * point.x();
-  phi_mat(2, 8) = 0.0;
-  phi_mat(2, 9) = 2 * point.z();
+  phi_mat(2, 0) = point.z();
+  phi_mat(2, 1) = -point.z();
+  phi_mat(2, 2) = -point.z();
+  phi_mat(2, 3) = point.z();
+  phi_mat(2, 4) = 2.0 * point.y();
+  phi_mat(2, 5) = -2.0 * point.x();
+  phi_mat(2, 6) = 0.0;
+  phi_mat(2, 7) = 0.0;
+  phi_mat(2, 8) = 2.0 * point.x();
+  phi_mat(2, 9) = 2.0 * point.y();
   return phi_mat;
 }
 
@@ -130,7 +132,7 @@ inline void ComputeHelperMatrices(
 // Computes the block matrices that compose the M matrix in Eq. 17. These
 // blocks are:
 // a_matrix = \sum A_i^T * A_i,
-// b_matrix = \sum A_i^T * b_i ,
+// b_vector = \sum A_i^T * b_i ,
 // gamma = \sum b_i^T * b_i.
 inline double ComputeCostMatrices(
     const std::vector<Eigen::Vector3d>& world_points,
@@ -139,10 +141,10 @@ inline double ComputeCostMatrices(
     const Matrix3x10d& g_matrix,
     const Eigen::Vector3d& j_matrix,
     Matrix10d* a_matrix,
-    Vector10d* b_matrix) {
+    Vector10d* b_vector) {
   const Eigen::Matrix3d identity = Eigen::Matrix3d::Identity();
   CHECK_NOTNULL(a_matrix)->setZero();
-  CHECK_NOTNULL(b_matrix)->setZero();
+  CHECK_NOTNULL(b_vector)->setZero();
   // Gamma is the sum of the dot products of b_matrices.
   double gamma = 0.0;
   for (int i = 0; i < world_points.size(); ++i) {
@@ -154,13 +156,14 @@ inline double ComputeCostMatrices(
     const Matrix3x10d temp_a_mat =
         outer_prod_minus_identity * (left_multiply_mat + g_matrix);
     *a_matrix += temp_a_mat.transpose() * temp_a_mat;
-    // Compute the i-th b_matrix.
+    // Compute the i-th b_vector.
     const Eigen::Vector3d temp_b_mat =
         -outer_prod_minus_identity * (ray_origins[i] + j_matrix);
-    *b_matrix += temp_a_mat.transpose() * temp_b_mat;
+    *b_vector += temp_a_mat.transpose() * temp_b_mat;
     // Compute the i-th gamma.
     gamma += temp_b_mat.squaredNorm();
   }
+
   return gamma;
 }
 
