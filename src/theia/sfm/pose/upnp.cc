@@ -267,13 +267,9 @@ std::vector<Eigen::Quaterniond> ComputeRotations(
   // Build the action matrix.
   std::vector<Eigen::Quaterniond> rotations;
   if (input_datum.world_points.size() > kNumMinCorrespondences) {
-    rotations = SolveUpnpFromNonMinimalSample(input_datum, cost_params);
-  } else {
-    rotations = SolveUpnpFromMinimalSample(input_datum, cost_params);
+    return SolveUpnpFromNonMinimalSample(input_datum, cost_params);
   }
-
-  // Remove rotations with complex numbers.
-  return rotations;
+  return SolveUpnpFromMinimalSample(input_datum, cost_params);
 }
 
 }  // namespace
