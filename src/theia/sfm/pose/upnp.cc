@@ -247,7 +247,7 @@ std::vector<Eigen::Quaterniond> SolveUpnpFromMinimalSample(
   return rotations;
 }
 
-std::vector<Eigen::Quaterniond> ComputeRotations(
+inline std::vector<Eigen::Quaterniond> ComputeRotations(
     const InputDatum& input_datum,
     const UpnpCostParameters& cost_params) {
   // Build the action matrix.
@@ -268,7 +268,7 @@ Vector10d ComputeRotationVector(const Eigen::Quaterniond& rotation) {
   const Eigen::Vector4d quaternion(
       rotation.w(), rotation.x(), rotation.y(), rotation.z());
   // Set the values of the rotation vector.
-  rotation_vector[0] = rotation.x();
+  rotation_vector[9] = 1.0;
   return rotation_vector;
 }
 
@@ -280,7 +280,7 @@ double EvaluateUpnpCost(const UpnpCostParameters& parameters,
   const Matrix10d cost_matrix = ComputeQuadraticCostMatrix(parameters);
   // Compute the quaternion vector.
   const Vector10d rotation_vector = ComputeRotationVector(rotation);
-  return 0.0;
+  return rotation_vector.transpose() * cost_matrix * rotation_vector;
 }
 
 // TODO(vfragoso): Document me!
@@ -292,7 +292,7 @@ UpnpCostParameters Upnp(const std::vector<Eigen::Vector3d>& ray_origins,
   CHECK_NOTNULL(solution_rotations)->clear();
   CHECK_NOTNULL(solution_translations)->clear();
 
-  InputDatum input_datum(ray_origins, ray_directions, world_points);
+  const InputDatum input_datum(ray_origins, ray_directions, world_points);
   // 1. Compute the H matrix and the outer products of the ray directions.
   std::vector<Eigen::Matrix3d> outer_products;
   const Eigen::Matrix3d h_matrix =
