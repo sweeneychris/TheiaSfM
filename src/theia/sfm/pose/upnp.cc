@@ -61,20 +61,6 @@ const int kNumMaxRotationsExploitingSymmetry = 8;
 const int kNumMinCorrespondences = 4;
 
 // TODO(vfragoso): Document me!
-struct CostParameters {
-  CostParameters() {
-    a_matrix.setZero();
-    b_vector.setZero();
-    gamma = 0.0;
-  }
-  Matrix10d a_matrix;
-  Vector10d b_vector;
-  double gamma;
-
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-};
-
-// TODO(vfragoso): Document me!
 struct InputDatum {
   InputDatum(const std::vector<Eigen::Vector3d>& _ray_origins,
              const std::vector<Eigen::Vector3d>& _ray_directions,
@@ -175,13 +161,13 @@ inline void ComputeHelperMatrices(
 // a_matrix = \sum A_i^T * A_i,
 // b_vector = \sum A_i^T * b_i ,
 // gamma = \sum b_i^T * b_i.
-CostParameters ComputeCostParameters(
+UpnpCostParameters ComputeCostParameters(
     const InputDatum& input_datum,
     const std::vector<Eigen::Matrix3d>& outer_products,
     const Matrix3x10d& g_matrix,
     const Eigen::Vector3d& j_matrix) {
   const Eigen::Matrix3d identity = Eigen::Matrix3d::Identity();
-  CostParameters cost_params;
+  UpnpCostParameters cost_params;
   const std::vector<Eigen::Vector3d>& world_points = input_datum.world_points;
   const std::vector<Eigen::Vector3d>& ray_origins = input_datum.ray_origins;
   Matrix10d& a_matrix = cost_params.a_matrix;
@@ -210,7 +196,7 @@ CostParameters ComputeCostParameters(
 
 std::vector<Eigen::Quaterniond> SolveUpnpFromNonMinimalSample(
     const InputDatum& input_datum,
-    const CostParameters& cost_params) {
+    const UpnpCostParameters& cost_params) {
   std::vector<Eigen::Quaterniond> rotations(kNumMaxRotationsExploitingSymmetry);
   // Build action matrix.
   const Matrix8d action_matrix = BuildActionMatrixUsingSymmetry(
@@ -233,7 +219,7 @@ std::vector<Eigen::Quaterniond> SolveUpnpFromNonMinimalSample(
 
 std::vector<Eigen::Quaterniond> SolveUpnpFromMinimalSample(
     const InputDatum& input_datum,
-    const CostParameters& cost_params) {
+    const UpnpCostParameters& cost_params) {
   std::vector<Eigen::Quaterniond> rotations(kNumMaxRotations);
   // Build action matrix.
   const Matrix16d action_matrix = BuildActionMatrix(cost_params.a_matrix,
@@ -263,23 +249,46 @@ std::vector<Eigen::Quaterniond> SolveUpnpFromMinimalSample(
 
 std::vector<Eigen::Quaterniond> ComputeRotations(
     const InputDatum& input_datum,
-    const CostParameters& cost_params) {
+    const UpnpCostParameters& cost_params) {
   // Build the action matrix.
-  std::vector<Eigen::Quaterniond> rotations;
   if (input_datum.world_points.size() > kNumMinCorrespondences) {
     return SolveUpnpFromNonMinimalSample(input_datum, cost_params);
   }
   return SolveUpnpFromMinimalSample(input_datum, cost_params);
 }
 
+Matrix10d ComputeQuadraticCostMatrix(const UpnpCostParameters& parameters) {
+  Matrix10d cost_matrix;
+  cost_matrix.setIdentity();
+  return cost_matrix;
+}
+
+Vector10d ComputeRotationVector(const Eigen::Quaterniond& rotation) {
+  Vector10d rotation_vector;
+  const Eigen::Vector4d quaternion(
+      rotation.w(), rotation.x(), rotation.y(), rotation.z());
+  // Set the values of the rotation vector.
+  rotation_vector[0] = rotation.x();
+  return rotation_vector;
+}
+
 }  // namespace
 
+double EvaluateUpnpCost(const UpnpCostParameters& parameters,
+                        const Eigen::Quaterniond& rotation) {
+  // Compute the quadratic cost matrix.
+  const Matrix10d cost_matrix = ComputeQuadraticCostMatrix(parameters);
+  // Compute the quaternion vector.
+  const Vector10d rotation_vector = ComputeRotationVector(rotation);
+  return 0.0;
+}
+
 // TODO(vfragoso): Document me!
-void Upnp(const std::vector<Eigen::Vector3d>& ray_origins,
-          const std::vector<Eigen::Vector3d>& ray_directions,
-          const std::vector<Eigen::Vector3d>& world_points,
-          std::vector<Eigen::Quaterniond>* solution_rotations,
-          std::vector<Eigen::Vector3d>* solution_translations) {
+UpnpCostParameters Upnp(const std::vector<Eigen::Vector3d>& ray_origins,
+                        const std::vector<Eigen::Vector3d>& ray_directions,
+                        const std::vector<Eigen::Vector3d>& world_points,
+                        std::vector<Eigen::Quaterniond>* solution_rotations,
+                        std::vector<Eigen::Vector3d>* solution_translations) {
   CHECK_NOTNULL(solution_rotations)->clear();
   CHECK_NOTNULL(solution_translations)->clear();
 
@@ -299,7 +308,7 @@ void Upnp(const std::vector<Eigen::Vector3d>& ray_origins,
                         &j_matrix);
 
   // 3. Compute matrix the block-matrix of matrix M from Eq. 17.
-  const CostParameters cost_params =
+  const UpnpCostParameters cost_params =
       ComputeCostParameters(input_datum,
                             outer_products,
                             g_matrix,
@@ -308,6 +317,8 @@ void Upnp(const std::vector<Eigen::Vector3d>& ray_origins,
   // 4. Compute rotations.
   const std::vector<Eigen::Quaterniond> rotations =
       ComputeRotations(input_datum, cost_params);
+
+  return cost_params;
 }
 
 }  // namespace theia

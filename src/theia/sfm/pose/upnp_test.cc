@@ -32,43 +32,21 @@
 // Please contact the author of this library if you have any questions.
 // Author: Victor Fragoso (victor.fragoso@mail.wvu.edu)
 
-#ifndef THEIA_SFM_POSE_UPNP_H_
-#define THEIA_SFM_POSE_UPNP_H_
-
 #include <Eigen/Core>
 #include <Eigen/Geometry>
+#include <glog/logging.h>
+#include "gtest/gtest.h"
 
-#include <vector>
+#include "theia/sfm/pose/upnp.h"
 
 namespace theia {
+namespace {
 
-// TODO(vfragoso): Document me!
-struct UpnpCostParameters {
-  UpnpCostParameters() {
-    a_matrix.setZero();
-    b_vector.setZero();
-    gamma = 0.0;
-  }
-  ~UpnpCostParameters() = default;
+TEST(UpnpTests, MinimalCentralCameraPoseEstimation) {
+}
 
-  Eigen::Matrix<double, 10, 10> a_matrix;
-  Eigen::Matrix<double, 10, 1> b_vector;
-  double gamma;
+TEST(UpnpTests, MinimalNonCentralCameraPoseEstimation) {
+}
 
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-};
-
-// TODO(vfragoso): Document me!
-double EvaluateUpnpCost(const UpnpCostParameters& parameters,
-                        const Eigen::Quaterniond& rotation);
-
-// TODO(vfragoso): Document me!
-UpnpCostParameters Upnp(const std::vector<Eigen::Vector3d>& ray_origins,
-                        const std::vector<Eigen::Vector3d>& ray_directions,
-                        const std::vector<Eigen::Vector3d>& world_points,
-                        std::vector<Eigen::Quaterniond>* solution_rotations,
-                        std::vector<Eigen::Vector3d>* solution_translations);
-
+}  // namespace
 }  // namespace theia
-
-#endif  // THEIA_SFM_POSE_UPNP_H_
