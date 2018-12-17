@@ -63,6 +63,12 @@ double EvaluateUpnpCost(const UpnpCostParameters& parameters,
                         const Eigen::Quaterniond& rotation);
 
 // TODO(vfragoso): Document me!
+UpnpCostParameters ComputeUpnpCostParameters(
+    const std::vector<Eigen::Vector3d>& ray_origins,
+    const std::vector<Eigen::Vector3d>& ray_directions,
+    const std::vector<Eigen::Vector3d>& world_points);
+
+// TODO(vfragoso): Document me!
 UpnpCostParameters Upnp(const std::vector<Eigen::Vector3d>& ray_origins,
                         const std::vector<Eigen::Vector3d>& ray_directions,
                         const std::vector<Eigen::Vector3d>& world_points,

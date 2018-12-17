@@ -106,7 +106,7 @@ TEST(UpnpTests, ComputeCostParametersForCentralCameraPoseEstimation) {
                                             Vector3d(2.0, 1.0, 3.0) };
   const std::vector<Vector3d> kImageOrigin = { Vector3d(2.0, 0.0, 0.0) };
   const Quaterniond soln_rotation = Quaterniond(
-      AngleAxisd(DegToRad(13.0), Vector3d(0.0, 0.0, 1.0)));
+      AngleAxisd(DegToRad(13.0), Vector3d(1.0, 0.0, 1.0).normalized()));
   const Vector3d soln_translation(1.0, 1.0, 1.0);
   const double kNoise = 0.0;
   InputDatum input_datum = ComputeInputDatum(kPoints3d,

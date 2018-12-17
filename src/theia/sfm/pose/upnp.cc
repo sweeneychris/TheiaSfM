@@ -282,22 +282,16 @@ double EvaluateUpnpCost(const UpnpCostParameters& parameters,
   // Compute the quaternion vector.
   const Vector10d rotation_vector = ComputeRotationVector(rotation);
   const double cost =
-      (rotation_vector.transpose() *
-       parameters.a_matrix.transpose() * parameters.a_matrix * rotation_vector +
-       2.0 * parameters.b_vector.transpose() * parameters.a_matrix *
-       rotation_vector)(0, 0) + parameters.gamma;
+      (rotation_vector.transpose() * parameters.a_matrix * rotation_vector +
+       2.0 * parameters.b_vector.transpose() * rotation_vector)(0, 0) +
+      parameters.gamma;
   return cost;
 }
 
-// TODO(vfragoso): Document me!
-UpnpCostParameters Upnp(const std::vector<Eigen::Vector3d>& ray_origins,
-                        const std::vector<Eigen::Vector3d>& ray_directions,
-                        const std::vector<Eigen::Vector3d>& world_points,
-                        std::vector<Eigen::Quaterniond>* solution_rotations,
-                        std::vector<Eigen::Vector3d>* solution_translations) {
-  CHECK_NOTNULL(solution_rotations)->clear();
-  CHECK_NOTNULL(solution_translations)->clear();
-
+UpnpCostParameters ComputeUpnpCostParameters(
+    const std::vector<Eigen::Vector3d>& ray_origins,
+    const std::vector<Eigen::Vector3d>& ray_directions,
+    const std::vector<Eigen::Vector3d>& world_points) {
   const InputDatum input_datum(ray_origins, ray_directions, world_points);
   // 1. Compute the H matrix and the outer products of the ray directions.
   std::vector<Eigen::Matrix3d> outer_products;
@@ -314,15 +308,31 @@ UpnpCostParameters Upnp(const std::vector<Eigen::Vector3d>& ray_origins,
                         &j_matrix);
 
   // 3. Compute matrix the block-matrix of matrix M from Eq. 17.
-  const UpnpCostParameters cost_params =
-      ComputeCostParameters(input_datum,
-                            outer_products,
-                            g_matrix,
-                            j_matrix);
+  return ComputeCostParameters(input_datum,
+                               outer_products,
+                               g_matrix,
+                               j_matrix);
+}
 
-  // 4. Compute rotations.
+// TODO(vfragoso): Document me!
+UpnpCostParameters Upnp(const std::vector<Eigen::Vector3d>& ray_origins,
+                        const std::vector<Eigen::Vector3d>& ray_directions,
+                        const std::vector<Eigen::Vector3d>& world_points,
+                        std::vector<Eigen::Quaterniond>* solution_rotations,
+                        std::vector<Eigen::Vector3d>* solution_translations) {
+  CHECK_NOTNULL(solution_rotations)->clear();
+  CHECK_NOTNULL(solution_translations)->clear();
+
+  // Compute Upnp cost parameters.
+  const InputDatum input_datum(ray_origins, ray_directions, world_points);
+  const UpnpCostParameters cost_params =
+      ComputeUpnpCostParameters(ray_origins, ray_directions, world_points);
+
+  // Compute rotations.
   const std::vector<Eigen::Quaterniond> rotations =
       ComputeRotations(input_datum, cost_params);
+
+  // TODO(vfragoso): Compute translation.
 
   return cost_params;
 }
