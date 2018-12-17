@@ -258,12 +258,19 @@ inline std::vector<Eigen::Quaterniond> ComputeRotations(
 }
 
 // Constructs the vector s as indicated in Eq. 12.
-Vector10d ComputeRotationVector(const Eigen::Quaterniond& rotation) {
+inline Vector10d ComputeRotationVector(const Eigen::Quaterniond& rotation) {
   Vector10d rotation_vector;
-  const Eigen::Vector4d quaternion(
-      rotation.w(), rotation.x(), rotation.y(), rotation.z());
   // Set the values of the rotation vector.
-  rotation_vector[9] = 1.0;
+  rotation_vector[0] = rotation.w() * rotation.w();
+  rotation_vector[1] = rotation.x() * rotation.x();
+  rotation_vector[2] = rotation.y() * rotation.y();
+  rotation_vector[3] = rotation.z() * rotation.z();
+  rotation_vector[4] = rotation.w() * rotation.x();
+  rotation_vector[5] = rotation.w() * rotation.y();
+  rotation_vector[6] = rotation.w() * rotation.z();
+  rotation_vector[7] = rotation.x() * rotation.y();
+  rotation_vector[8] = rotation.x() * rotation.z();
+  rotation_vector[9] = rotation.y() * rotation.z();
   return rotation_vector;
 }
 

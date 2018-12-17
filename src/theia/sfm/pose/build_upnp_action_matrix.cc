@@ -35,6 +35,7 @@
 #include "theia/sfm/pose/build_upnp_action_matrix.h"
 
 #include <Eigen/Core>
+#include <Eigen/Dense>
 #include <vector>
 
 namespace theia {
