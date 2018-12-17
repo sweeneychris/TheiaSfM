@@ -257,12 +257,7 @@ inline std::vector<Eigen::Quaterniond> ComputeRotations(
   return SolveUpnpFromMinimalSample(input_datum, cost_params);
 }
 
-Matrix10d ComputeQuadraticCostMatrix(const UpnpCostParameters& parameters) {
-  Matrix10d cost_matrix;
-  cost_matrix.setIdentity();
-  return cost_matrix;
-}
-
+// Constructs the vector s as indicated in Eq. 12.
 Vector10d ComputeRotationVector(const Eigen::Quaterniond& rotation) {
   Vector10d rotation_vector;
   const Eigen::Vector4d quaternion(
@@ -274,13 +269,17 @@ Vector10d ComputeRotationVector(const Eigen::Quaterniond& rotation) {
 
 }  // namespace
 
+// Evaluates the cost introduced in Eq. 17.
 double EvaluateUpnpCost(const UpnpCostParameters& parameters,
                         const Eigen::Quaterniond& rotation) {
-  // Compute the quadratic cost matrix.
-  const Matrix10d cost_matrix = ComputeQuadraticCostMatrix(parameters);
   // Compute the quaternion vector.
   const Vector10d rotation_vector = ComputeRotationVector(rotation);
-  return rotation_vector.transpose() * cost_matrix * rotation_vector;
+  const double cost =
+      (rotation_vector.transpose() *
+       parameters.a_matrix.transpose() * parameters.a_matrix * rotation_vector +
+       2.0 * parameters.b_vector.transpose() * parameters.a_matrix *
+       rotation_vector)(0, 0) + parameters.gamma;
+  return cost;
 }
 
 // TODO(vfragoso): Document me!
