@@ -173,6 +173,7 @@
 #include "theia/sfm/pose/five_point_relative_pose.h"
 #include "theia/sfm/pose/four_point_focal_length.h"
 #include "theia/sfm/pose/four_point_focal_length_helper.h"
+#include "theia/sfm/pose/four_point_focal_length_radial_distortion.h"
 #include "theia/sfm/pose/four_point_homography.h"
 #include "theia/sfm/pose/four_point_relative_pose_partial_rotation.h"
 #include "theia/sfm/pose/fundamental_matrix_util.h"
