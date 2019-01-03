@@ -57,12 +57,23 @@ typedef Matrix<double, Dynamic, Dynamic, RowMajor> RowMajorMatrixXd;
 void GaussJordanElimination(const int maximum_num_iterations,
                             RowMajorMatrixXd* template_matrix) {
   CHECK_GT(maximum_num_iterations, 0);
+  CHECK_LE(maximum_num_iterations, CHECK_NOTNULL(template_matrix)->rows());
   // Initialize a vector holding pointers to the rows of template_matrix.
   std::vector<double*> rows(template_matrix->rows());
   for (int i = 0; i < rows.size(); ++i) {
     rows[i] = template_matrix->row(i).data();
   }
   // TODO(vfragoso): Implement the function.
+  // https://martin-thoma.com/solving-linear-equations-with-gaussian-elimination/
+  //
+  // for (row = 0; row < max_num_iterations; ++row) {
+  //   // Search for the maximum entry in column = row. Keep its value and row.
+  //   // Swap row with maximum entry to be the current one.
+  //   // Make all the entries in column zero.
+  // }
+
+  // TODO(vfragoso): Re-shuffle template_matrix so that it follows the order of
+  // rows vector.
 }
 
 RowMajorMatrixXd SetUpTemplateMatrixUsingSymmetry(
