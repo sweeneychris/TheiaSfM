@@ -1,4 +1,4 @@
-// Copyright (C) 2014 The Regents of the University of California (Regents).
+// Copyright (C) 2019 The Regents of the University of California (Regents).
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -32,8 +32,8 @@
 // Please contact the author of this file if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-
-// This file was created by Steffen Urban (urbste@googlemail.com) or company address (steffen.urban@zeiss.com)
+// This file was created by Steffen Urban (urbste@googlemail.com) or
+// company address (steffen.urban@zeiss.com)
 // December 2018
 
 #include <math.h>
@@ -41,13 +41,12 @@
 #include <random>
 #include "gtest/gtest.h"
 
-#include "theia/test/test_utils.h"
 #include "theia/sfm/pose/four_point_focal_length_radial_distortion.h"
+#include "theia/test/test_utils.h"
 
 namespace theia {
 
 namespace {
-
 
 const int min_nr_points = 4;
 
@@ -57,19 +56,14 @@ using Eigen::Matrix;
 using Eigen::Matrix3d;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
+using Eigen::Matrix4d;
 
-void P4pfrTestWithNoise(const Matrix3d& gt_rotation,
-                        const Vector3d& gt_translation,
+void P4pfrTestWithNoise(const Matrix3d &gt_rotation,
+                        const Vector3d &gt_translation,
                         const double focal_length,
                         const double radial_distortion,
-                        const std::vector<Vector3d>& world_points_vector,
-                        const double noise,
-                        const double reproj_tolerance) {
-  Map<const Matrix<double, 3, min_nr_points> > world_points(world_points_vector[0].data());
-  Eigen::Matrix4d world_points_hom;
-  for (int i = 0; i < min_nr_points; ++i)
-      world_points_hom.col(i) = world_points_vector[i].homogeneous();
-
+                        const std::vector<Vector3d> &world_points_vector,
+                        const double noise, const double reproj_tolerance) {
   // Camera intrinsics matrix.
   const Matrix3d camera_matrix =
       Eigen::DiagonalMatrix<double, 3>(focal_length, focal_length, 1.0);
@@ -78,29 +72,29 @@ void P4pfrTestWithNoise(const Matrix3d& gt_rotation,
   gt_projection = camera_matrix * gt_transformation;
 
   // Reproject 3D points to get undistorted image points.
-  Matrix<double, 2, min_nr_points> undistorted_image_point =
-      (gt_projection * world_points.colwise().homogeneous()).colwise()
-          .hnormalized();
 
+  Matrix<double, 2, min_nr_points> undistorted_image_point;
+  for (int i = 0; i < min_nr_points; ++i) {
+    undistorted_image_point.col(i) =
+        (gt_projection * world_points_vector[i].homogeneous()).hnormalized();
+  }
   // Determine radius of undistorted points and use that to compute the radius
   // of the distorted points.
   Array<double, 1, min_nr_points> radius_undistorted =
       undistorted_image_point.colwise().norm();
   Array<double, 1, min_nr_points> radius_distorted =
-      (1.0 - (1.0 - 4.0 * radial_distortion * radius_undistorted.square())
-                 .sqrt()) / (2.0 * radial_distortion * radius_undistorted);
-  Array<double, 1, min_nr_points> distortion_vec = radius_distorted / radius_undistorted;
+      (1.0 -
+       (1.0 - 4.0 * radial_distortion * radius_undistorted.square()).sqrt()) /
+      (2.0 * radial_distortion * radius_undistorted);
+  Array<double, 1, min_nr_points> distortion_vec =
+      radius_distorted / radius_undistorted;
 
   // Apply radial distortion.
   std::vector<Vector2d> distorted_image_points_vector(min_nr_points);
-  Map<Matrix<double, 2, min_nr_points> > distorted_image_point(
+  Map<Matrix<double, 2, min_nr_points>> distorted_image_point(
       distorted_image_points_vector[0].data());
   distorted_image_point = undistorted_image_point.cwiseProduct(
       distortion_vec.matrix().replicate<2, 1>());
-  Eigen::Matrix<double, 3, 4> distorted_image_point_hom;
-  distorted_image_point_hom.setOnes();
-  distorted_image_point_hom.row(0) = distorted_image_point.row(0);
-  distorted_image_point_hom.row(1) = distorted_image_point.row(1);
 
   // Add noise to distorted image points.
   if (noise) {
@@ -113,14 +107,14 @@ void P4pfrTestWithNoise(const Matrix3d& gt_rotation,
   }
 
   // Run the P4Pfr algorithm.
-  std::vector<Eigen::Matrix3d> soln_rotations;
-  std::vector<Eigen::Vector3d> soln_translations;
+  std::vector<Matrix3d> soln_rotations;
+  std::vector<Vector3d> soln_translations;
   std::vector<double> soln_focal_lenghts;
   std::vector<double> soln_radial_distortions;
 
-  CHECK(FourPointsPoseFocalLengthRadialDistortion(distorted_image_point_hom, world_points_hom,
-                                            soln_rotations, soln_translations,
-                                            soln_radial_distortions, soln_focal_lenghts));
+  CHECK(FourPointsPoseFocalLengthRadialDistortion(
+      distorted_image_points_vector, world_points_vector, &soln_rotations,
+      &soln_translations, &soln_radial_distortions, &soln_focal_lenghts));
   bool matched_transform = false;
   for (int i = 0; i < soln_radial_distortions.size(); ++i) {
     matched_transform = true;
@@ -128,12 +122,13 @@ void P4pfrTestWithNoise(const Matrix3d& gt_rotation,
     for (int n = 0; n < min_nr_points; n++) {
       const double distortion_w =
           1.0 +
-          soln_radial_distortions[i] * distorted_image_point.col(n).squaredNorm();
-      Eigen::Vector2d undist_pt = distorted_image_point.col(n) / distortion_w;
-      Eigen::Vector3d reproj_pt =
-          soln_rotations[i] * world_points.col(n)  + soln_translations[i];
-      Eigen::Matrix3d K =
-              Eigen::Vector3d(soln_focal_lenghts[i], soln_focal_lenghts[i], 1.0).asDiagonal();
+          soln_radial_distortions[i] *
+              distorted_image_point.col(n).squaredNorm();
+      Vector2d undist_pt = distorted_image_point.col(n) / distortion_w;
+      Vector3d reproj_pt =
+          soln_rotations[i] * world_points_vector[n] + soln_translations[i];
+      Matrix3d K = Vector3d(soln_focal_lenghts[i], soln_focal_lenghts[i], 1.0)
+                       .asDiagonal();
       reproj_pt = K * reproj_pt;
       const double reproj_error =
           (undist_pt - reproj_pt.hnormalized()).squaredNorm();
@@ -163,15 +158,9 @@ void BasicTest(const double noise, const double reproj_tolerance) {
 
   // Create a ground truth pose.
   Matrix3d Rz, Ry, Rx;
-  Rz << cos(z), sin(z), 0,
-        -sin(z), cos(z), 0,
-        0, 0, 1;
-  Ry << cos(y), 0, -sin(y),
-        0, 1, 0,
-        sin(y), 0, cos(y);
-  Rx << 1, 0, 0,
-        0, cos(x), sin(x),
-        0, -sin(x), cos(x);
+  Rz << cos(z), sin(z), 0, -sin(z), cos(z), 0, 0, 0, 1;
+  Ry << cos(y), 0, -sin(y), 0, 1, 0, sin(y), 0, cos(y);
+  Rx << 1, 0, 0, 0, cos(x), sin(x), 0, -sin(x), cos(x);
   const Matrix3d gt_rotation = Rz * Ry * Rx;
   const Vector3d gt_translation =
       Vector3d(-0.00950692, 000.0171496, 000.0508743);
@@ -179,10 +168,10 @@ void BasicTest(const double noise, const double reproj_tolerance) {
   // Create 3D world points that are viable based on the camera intrinsics and
   // extrinsics.
   std::vector<Vector3d> world_points_vector(min_nr_points);
-  Map<Matrix<double, 3, min_nr_points> > world_points(world_points_vector[0].data());
-  world_points << -0.42941, 0.000621211, -0.350949, -1.45205,
-      0.415794, -0.556605, -1.92898, -1.89976,
-      1.4949, 0.838307, 1.41972, 1.25756;
+  Map<Matrix<double, 3, min_nr_points>> world_points(
+      world_points_vector[0].data());
+  world_points << -0.42941, 0.000621211, -0.350949, -1.45205, 0.415794,
+      -0.556605, -1.92898, -1.89976, 1.4949, 0.838307, 1.41972, 1.25756;
   P4pfrTestWithNoise(gt_rotation, gt_translation, focal_length,
                      radial_distortion, world_points_vector, noise,
                      reproj_tolerance);
@@ -203,15 +192,9 @@ void PlanarTestWithNoise(const double noise, const double reproj_tolerance) {
 
   // Create a ground truth pose.
   Matrix3d Rz, Ry, Rx;
-  Rz << cos(z), sin(z), 0,
-        -sin(z), cos(z), 0,
-        0, 0, 1;
-  Ry << cos(y), 0, -sin(y),
-        0, 1, 0,
-        sin(y), 0, cos(y);
-  Rx << 1, 0, 0,
-        0, cos(x), sin(x),
-        0, -sin(x), cos(x);
+  Rz << cos(z), sin(z), 0, -sin(z), cos(z), 0, 0, 0, 1;
+  Ry << cos(y), 0, -sin(y), 0, 1, 0, sin(y), 0, cos(y);
+  Rx << 1, 0, 0, 0, cos(x), sin(x), 0, -sin(x), cos(x);
   const Matrix3d gt_rotation = Rz * Ry * Rx;
   const Vector3d gt_translation =
       Vector3d(-0.00950692, 000.0171496, 000.0508743);
@@ -219,31 +202,22 @@ void PlanarTestWithNoise(const double noise, const double reproj_tolerance) {
   // Create 3D world points that are viable based on the camera intrinsics and
   // extrinsics.
   std::vector<Vector3d> world_points_vector(min_nr_points);
-  world_points_vector[0] = Eigen::Vector3d(-size/2, -size/2, depth);
-  world_points_vector[1] = Eigen::Vector3d(size/2, -size/2, depth);
-  world_points_vector[2] = Eigen::Vector3d(size/2, size/2, depth);
-  world_points_vector[3] = Eigen::Vector3d(-size/2, size/2, depth);
+  world_points_vector[0] = Vector3d(-size / 2, -size / 2, depth);
+  world_points_vector[1] = Vector3d(size / 2, -size / 2, depth);
+  world_points_vector[2] = Vector3d(size / 2, size / 2, depth);
+  world_points_vector[3] = Vector3d(-size / 2, size / 2, depth);
 
   P4pfrTestWithNoise(gt_rotation, gt_translation, focal_length,
                      radial_distortion, world_points_vector, noise,
                      reproj_tolerance);
 }
 
-TEST(P4Pfr, BasicTest) {
-  BasicTest(0.0, 1e-12);
-}
+TEST(P4Pfr, BasicTest) { BasicTest(0.0, 1e-12); }
 
-TEST(P4Pfr, BasicNoiseTest) {
-  BasicTest(0.5 / 800.0, 5 / 800.0);
-}
+TEST(P4Pfr, BasicNoiseTest) { BasicTest(0.5, 5); }
 
-TEST(P4Pfr, PlanarTestNoNoise) {
-  PlanarTestWithNoise(0.0, 1e-12);
-}
+TEST(P4Pfr, PlanarTestNoNoise) { PlanarTestWithNoise(0.0, 1e-12); }
 
-TEST(P4Pfr, PlanarTestWithNoise) {
-  PlanarTestWithNoise(0.5 / 800.0, 5 / 800.0);
-}
-
+TEST(P4Pfr, PlanarTestWithNoise) { PlanarTestWithNoise(0.5, 5); }
 }
 }  // namespace theia

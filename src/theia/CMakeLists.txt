@@ -159,6 +159,7 @@ set(THEIA_SRC
   sfm/pose/four_point_focal_length_helper.cc
   sfm/pose/four_point_focal_length.cc
   sfm/pose/four_point_focal_length_radial_distortion.cc
+  sfm/pose/four_point_focal_length_radial_distortion_helper.cc
   sfm/pose/four_point_homography.cc
   sfm/pose/four_point_relative_pose_partial_rotation.cc
   sfm/pose/fundamental_matrix_util.cc
