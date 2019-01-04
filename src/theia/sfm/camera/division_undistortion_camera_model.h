@@ -282,7 +282,7 @@ void DivisionUndistortionCameraModel::DistortPoint(
     distorted_point[0] = undistorted_point[0];
     distorted_point[1] = undistorted_point[1];
   } else {
-    const T scale = (1.0 - ceres::sqrt(inner_sqrt)) / (2.0 * k * r_u_sq);
+    const T scale = (1.0 - ceres::sqrt(inner_sqrt)) / denom;
     distorted_point[0] = undistorted_point[0] * scale;
     distorted_point[1] = undistorted_point[1] * scale;
   }
