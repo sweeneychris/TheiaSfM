@@ -42,7 +42,7 @@
 #include "gtest/gtest.h"
 
 #include "theia/math/util.h"
-#include "theia/sfm/pose/six_point_radial_distortion_homography.h"
+#include "theia/sfm/pose/ten_point_radial_distortion_fundamental_matrix.h"
 #include "theia/sfm/pose/test_util.h"
 #include "theia/util/random.h"
 
@@ -144,33 +144,44 @@ void GenerateDistortedImagePoints(
     image_1_points_normalized->push_back(points2d_1.hnormalized());
     image_2_points_normalized->push_back(points2d_2.hnormalized());
   }
-
-
 }
 
-Vector3d ProjectCameraToCamera(const Matrix3d& H, const Vector3d& X, Vector3d* Y) {
-  (*Y) = H * X;
-  (*Y) /= (*Y)(2);
+Vector3d ProjectCameraToCameraF(const Matrix3d& fundamental_matrix,
+                                const Vector3d& point_image_1,
+                                const Vector3d& point_image_2,
+                                Vector3d* output_vector) {
+  const Eigen::Vector3d ls = fundamental_matrix * point_image_1;
+  const double ay = ls[0] * point_image_2[1];
+  const double bx = ls[1] * point_image_2[0];
+  const double ac = ls[0] * ls[2];
+  const double bc = ls[1] * ls[2];
+
+  const double dd = ls[0] * ls[0] + ls[1] * ls[1];
+
+  (*output_vector) << (ls[1] * (bx - ay) - ac) / dd,
+      (ls[0] * (ay - bx) - bc) / dd, 1.0;
 }
 
 double CheckRadialSymmetricError(
-    const RadialHomographyResult& radial_homography, const Vector2d& pt_left,
-    const Vector2d& pt_right, const double focal_length1,
-    const double focal_length2) {
+    const RadialFundamentalMatrixResult& radial_fundamental_matrix,
+    const Vector2d& pt_left, const Vector2d& pt_right,
+    const double focal_length1, const double focal_length2) {
   Vector3d bearing_vector_left, bearing_vector_right;
-  UndistortPoint(pt_left, focal_length1, radial_homography.l1,
+  UndistortPoint(pt_left, focal_length1, radial_fundamental_matrix.l1,
                  bearing_vector_left);
-  UndistortPoint(pt_right, focal_length2, radial_homography.l2,
+  UndistortPoint(pt_right, focal_length2, radial_fundamental_matrix.l2,
                  bearing_vector_right);
 
   Eigen::Vector3d ray2_in_1, ray1_in_2;
-  ProjectCameraToCamera(radial_homography.H, bearing_vector_right, &ray2_in_1);
-  ProjectCameraToCamera(radial_homography.H.inverse(), bearing_vector_left, &ray1_in_2);
+  ProjectCameraToCameraF(radial_fundamental_matrix.F, bearing_vector_right,
+                         bearing_vector_left, &ray2_in_1);
+  ProjectCameraToCameraF(radial_fundamental_matrix.F.transpose(),
+                         bearing_vector_left, bearing_vector_right, &ray1_in_2);
 
   Vector2d pt_left_from_right, pt_right_from_left;
-  DistortPoint(ray2_in_1, focal_length1, radial_homography.l1,
+  DistortPoint(ray2_in_1, focal_length1, radial_fundamental_matrix.l1,
                pt_left_from_right);
-  DistortPoint(ray1_in_2, focal_length2, radial_homography.l2,
+  DistortPoint(ray1_in_2, focal_length2, radial_fundamental_matrix.l2,
                pt_right_from_left);
 
   double dleft_x = pt_left(0) - pt_left_from_right(0);
@@ -201,22 +212,22 @@ void SixPointHomographyWithNoiseTest(
       radial_distortion2, &image_points_1_normalized,
       &image_points_2_normalized, &image_1_points, &image_2_points);
   // Compute two-sided radial distortion homography matrix.
-  std::vector<RadialHomographyResult> radial_homography_result;
-  EXPECT_TRUE(SixPointRadialDistortionHomography(image_points_1_normalized,
-                                                 image_points_2_normalized,
-                                                 &radial_homography_result));
+  std::vector<RadialFundamentalMatrixResult> radial_fundamental_matrix_result;
+  EXPECT_TRUE(TenPointRadialDistortionFundamentalMatrix(
+      image_points_1_normalized, image_points_2_normalized,
+      &radial_fundamental_matrix_result));
   bool one_correct_solution = false;
-  for (int i = 0; i < radial_homography_result.size(); ++i) {
+  for (int i = 0; i < radial_fundamental_matrix_result.size(); ++i) {
     // we need to scale the radial distortion values,
     // since we used normalized image points for estimation
-    radial_homography_result[i].l1 /= (focal_length1 * focal_length1);
-    radial_homography_result[i].l2 /= (focal_length2 * focal_length2);
+    radial_fundamental_matrix_result[i].l1 /= (focal_length1 * focal_length1);
+    radial_fundamental_matrix_result[i].l2 /= (focal_length2 * focal_length2);
 
     double sym_error = 0.0;
     for (int p = 0; p < image_1_points.size(); ++p) {
       sym_error += CheckRadialSymmetricError(
-          radial_homography_result[i], image_1_points[p], image_2_points[p],
-          focal_length1, focal_length2);
+          radial_fundamental_matrix_result[i], image_1_points[p],
+          image_2_points[p], focal_length1, focal_length2);
     }
     sym_error /= (double)image_1_points.size();
     if (sym_error < kMaxSymmetricError) {
@@ -228,12 +239,14 @@ void SixPointHomographyWithNoiseTest(
 
 void BasicTest() {
   const std::vector<Vector3d> points_3d = {
-      Vector3d(-1.0, 3.0, 1.0), Vector3d(1.0, -1.0, 1.0),
-      Vector3d(-1.0, 1.0, 1.0), Vector3d(2.0, 1.0, 1.0),
-      Vector3d(3.0, 1.0, 1.0),  Vector3d(2.0, 2.0, 1.0)};
+      Vector3d(-1.0, 3.0, 1.0), Vector3d(1.0, -1.0, 2.0),
+      Vector3d(-1.0, 1.0, 3.0), Vector3d(2.0, 1.0, 1.0),
+      Vector3d(3.0, 1.0, 2.0),  Vector3d(2.0, 2.0, 3.0),
+      Vector3d(3.0, -1.0, 2.0), Vector3d(-2.0, 2.0, 3.0),
+      Vector3d(-3.0, 1.0, 4.0), Vector3d(2.0, 2.0, 4.0)};
 
   const Quaterniond soln_rotation(
-      AngleAxisd(DegToRad(10.0), Vector3d(0.0, 0.0, 1.0)));
+      AngleAxisd(DegToRad(13.0), Vector3d(0.0, 0.0, 1.0)));
   const Vector3d soln_translation(1.0, 1.0, 1.0);
   const double kNoise = 0.0 / 512.0;
   const double kMaxSymmetricError = 1e-4;
@@ -252,15 +265,17 @@ TEST(SixPointRadialHomography, BasicTest) { BasicTest(); }
 
 TEST(SixPointRadialHomography, NoiseTest) {
   const std::vector<Vector3d> points_3d = {
-      Vector3d(-1.0, 3.0, 1.0), Vector3d(1.0, -1.0, 1.0),
-      Vector3d(-1.0, 1.0, 1.0), Vector3d(2.0, 1.0, 1.0),
-      Vector3d(3.0, 1.0, 1.0),  Vector3d(2.0, 2.0, 1.0)};
+      Vector3d(-1.0, 3.0, 1.0), Vector3d(1.0, -1.0, 2.0),
+      Vector3d(-1.0, 1.0, 3.0), Vector3d(2.0, 1.0, 1.0),
+      Vector3d(3.0, 1.0, 2.0),  Vector3d(2.0, 2.0, 3.0),
+      Vector3d(3.0, -1.0, 2.0), Vector3d(-2.0, 2.0, 3.0),
+      Vector3d(-3.0, 1.0, 4.0), Vector3d(2.0, 2.0, 4.0)};
 
   const Quaterniond soln_rotation(
       AngleAxisd(DegToRad(13.0), Vector3d(0.0, 0.0, 1.0)));
-  const Vector3d soln_translation(0.0, 1.0, 1.0);
+  const Vector3d soln_translation(1.0, 1.0, 1.0);
   const double kNoise = 0.5;
-  const double kMaxSymmetricError = 2.0;
+  const double kMaxSymmetricError = 4.0;
 
   const double focal_length1 = 1500.0;
   const double focal_length2 = 1600.0;

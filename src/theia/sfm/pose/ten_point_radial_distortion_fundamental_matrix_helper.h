@@ -32,45 +32,75 @@
 // Please contact the author of this library if you have any questions.
 // Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
 
-// This solver is taken from http://cmp.felk.cvut.cz/~hellej1/ and implements
-// the (non-minimal) six point
-// (two-sided) radial distortion homography solver (H6_l1l2).
-// Compared to the minimal five point solver (H5_l1l2) it yields only 2
-// solutions and is almost twice as fast.
-
 // This file was created by Steffen Urban (urbste@googlemail.com) or
 // company address (steffen.urban@zeiss.com)
 // January 2019
 
-#ifndef THEIA_SFM_POSE_SIX_POINT_RADIAL_DISTORTION_HOMOGRAPHY_H_
-#define THEIA_SFM_POSE_SIX_POINT_RADIAL_DISTORTION_HOMOGRAPHY_H_
+#ifndef THEIA_SFM_POSE_TEN_POINT_RADIAL_DISTORTION_FUNDAMENTAL_MATRIX_HELPER_H_
+#define THEIA_SFM_POSE_TEN_POINT_RADIAL_DISTORTION_FUNDAMENTAL_MATRIX_HELPER_H_
 
 #include <Eigen/Core>
 #include <vector>
 
-#include "theia/sfm/pose/six_point_radial_distortion_homography.h"
-
 namespace theia {
 
-struct RadialHomographyResult {
-  Eigen::Matrix3d H;
-  double l1;
-  double l2;
-};
+int TenPointRadialDistortionFundamentalMatrixHelper(
+        Eigen::Matrix<double, 29, 1>& pr,
+        Eigen::Matrix<double, 2, 10>& sols);
 
-// Input:
-//   normalized_feature_points_left  - six normalized image positions  (inv(K)*p)
-//   normalized_feature_points_right - six normalized image positions (inv(K)*p)
-//   lmin - minimum radial distortion (can be used to speed up ransac loops)
-//   lmax - maximum radial distortion (can be used to speed up ransac loops)
-// Output: bool - returns true if at least one solution was found
-// Return: RadialHomographyResult - struct that contains homography and a radial
-// distortion parameter for each image (i.e. two-sided, called: H6_l1l2 in the paper)
-bool SixPointRadialDistortionHomography(
-    const std::vector<Eigen::Vector2d>& normalized_feature_points_left,
-    const std::vector<Eigen::Vector2d>& normalized_feature_points_right,
-    std::vector<RadialHomographyResult>* results, double lmin = -5.0,
-    double lmax = 0.0);
+template <typename Derived>
+inline void colEchelonForm(Eigen::MatrixBase<Derived> &M, double pivtol = 1e-12)
+{
+  typedef typename Derived::Scalar Scalar;
+
+  int n = M.rows();
+  int m = M.cols();
+  int i = 0, j = 0, k = 0;
+  int col = 0;
+  Scalar p, tp;
+
+  while((i < m) && (j < n))
+    {
+      p = std::numeric_limits<Scalar>::min();
+      col = i;
+
+      for (k = i; k < m; k++)
+        {
+          tp = std::abs(M(j, k));
+          if (tp > p)
+        {
+          p = tp;
+          col = k;
+        }
+        }
+
+      if (p < Scalar(pivtol))
+        {
+          M.block(j, i, 1, m - i).setZero();
+          j++;
+        }
+      else
+        {
+          if (col != i)
+        M.block(j, i, n - j, 1).swap(M.block(j, col, n - j, 1));
+
+          M.block(j + 1, i, n - j - 1, 1) /= M(j, i);
+          M(j, i) = 1.0;
+
+          for (k = 0; k < m; k++)
+        {
+          if (k == i)
+            continue;
+
+          M.block(j, k, n - j, 1) -= M(j, k) * M.block(j, i, n - j, 1);
+        }
+
+          i++;
+          j++;
+        }
+    }
+}
+
 }
 
 #endif
