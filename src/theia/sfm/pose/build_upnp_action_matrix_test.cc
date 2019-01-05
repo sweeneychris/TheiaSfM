@@ -48,12 +48,23 @@ namespace {
 TEST(BuildUpnpActionMatrixTests, GaussJordanEliminationOnSquaredMatrix) {
   const int kNumRows = 32;
   RowMajorMatrixXd mat = RowMajorMatrixXd::Random(kNumRows, kNumRows);
-  GaussJordanElimination(1, &mat);
+  //  GaussJordanElimination(kNumRows - 1, &mat);
+  GaussJordanElimination(0, &mat);
   // Trace of matrix must be equals to the number of rows.
   EXPECT_NEAR(mat.trace(), static_cast<double>(kNumRows), 1e-6);
   // Verify that the lower triangular part sums to the trace.
-  EXPECT_NEAR(RowMajorMatrixXd(mat.triangularView<Eigen::Lower>()).sum(),
-              mat.trace(), 1e-6);
+  EXPECT_NEAR(mat.sum(), mat.trace(), 1e-6);
+  // RowMajorMatrixXd(mat.triangularView<Eigen::Lower>()).sum()
+}
+
+TEST(BuildUpnpActionMatrixTests, GaussJordanEliminationOnFatMatrix) {
+  const int kNumRows = 32;
+  const int kNumCols = kNumRows + 4;
+  RowMajorMatrixXd mat = RowMajorMatrixXd::Random(kNumRows, kNumCols);
+  GaussJordanElimination(0, &mat);
+  // Verify that the left-block (rows, rows) is diagonalized.
+  EXPECT_NEAR(mat.block(0, 0, kNumRows, kNumRows).sum(),
+              mat.block(0, 0, kNumRows, kNumRows).trace(), 1e-6);
 }
 
 }  // namespace

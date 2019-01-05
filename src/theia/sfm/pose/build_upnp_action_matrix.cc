@@ -997,15 +997,17 @@ inline double FindLargestValueInColumn(const RowMajorMatrixXd& matrix,
 //
 // and also inspired by the implementation from OpenGV:
 // src/math/gauss_jordan.cpp.
-void GaussJordanElimination(const int maximum_num_iterations,
+void GaussJordanElimination(const int last_row_to_process,
                             RowMajorMatrixXd* template_matrix) {
   const double kPrecisionThreshold = 1e-9;
-  CHECK_GT(maximum_num_iterations, 0);
-  CHECK_LE(maximum_num_iterations, CHECK_NOTNULL(template_matrix)->rows());
+  CHECK_GE(last_row_to_process, 0);
+  CHECK_LT(last_row_to_process, CHECK_NOTNULL(template_matrix)->rows());
   // Check that the template matrix is a fat matrix.
   CHECK_GE(template_matrix->cols(), template_matrix->rows());
 
   const int num_rows = template_matrix->rows();
+  // This for loop eliminates entries in the lower-left triangular part, and it
+  // operates from top to bottom of the matrix.
   for (int current_row = 0; current_row < num_rows; ++current_row) {
     // Search for the maxium entry in column with current_row index.
     const int tail_size = num_rows - current_row;
@@ -1035,6 +1037,25 @@ void GaussJordanElimination(const int maximum_num_iterations,
     }
   }
 
+  // This for loop eliminates entries in the upper-left triangular part, and it
+  // operates from bottom to top of the matrix.
+  for (int current_row = num_rows - 1;
+       current_row >= last_row_to_process; --current_row) {
+    // Column to process.
+    const int col = current_row;
+    // Eliminate coefficients in column.
+    for (int row = current_row - 1; row >= last_row_to_process; --row) {
+      // Get the leading coefficient to eliminate.
+      const double leading_coeff = (*template_matrix)(row, col);
+      if (std::abs(leading_coeff) < kPrecisionThreshold) {
+        continue;
+      }
+
+      // Eliminate.
+      template_matrix->row(row) -=
+          leading_coeff * template_matrix->row(current_row);
+    }
+  }
 }
 
 // TODO(vfragoso): Document me!
