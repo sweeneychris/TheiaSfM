@@ -46,7 +46,7 @@ namespace theia {
 namespace {
 
 TEST(BuildUpnpActionMatrixTests, GaussJordanEliminationSquaredMatrix) {
-  RowMajorMatrixXd mat = RowMajorMatrixXd::Random(2, 2);
+  RowMajorMatrixXd mat = RowMajorMatrixXd::Random(16, 16);
   VLOG(1) << "Mat before: \n" << mat;
   GaussJordanElimination(1, &mat);
   VLOG(1) << "Mat after: \n" << mat;

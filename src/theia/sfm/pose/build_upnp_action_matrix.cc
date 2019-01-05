@@ -968,6 +968,21 @@ RowMajorMatrixXd SetUpTemplateMatrix(
   return template_matrix;
 }
 
+inline double FindLargestValueInColumn(const RowMajorMatrixXd& matrix,
+                                       const int column,
+                                       const int starting_row,
+                                       int* max_value_index) {
+  double max_value = matrix(starting_row, column);
+  *max_value_index = starting_row;
+  for (int row = starting_row; row < matrix.rows(); ++row) {
+    if (std::abs(max_value) < std::abs(matrix(row, column))) {
+      max_value = matrix(row, column);
+      *max_value_index = row;
+    }
+  }
+  return max_value;
+}
+
 }  // namespace
 
 // The implementation is based on Gauss Jordan Elimination algorithm explained
@@ -993,9 +1008,10 @@ void GaussJordanElimination(const int maximum_num_iterations,
   const int num_rows = template_matrix->rows();
   for (int current_row = 0; current_row < num_rows; ++current_row) {
     // Search for the maxium entry in column with current_row index.
+    const int tail_size = num_rows - current_row;
     int max_coeff_row_idx = 0;
-    const double max_value =
-        template_matrix->col(current_row).maxCoeff(&max_coeff_row_idx);
+    const double max_value = FindLargestValueInColumn(
+        *template_matrix, current_row, current_row, &max_coeff_row_idx);
 
     // Swap rows.
     template_matrix->row(current_row).
@@ -1007,9 +1023,8 @@ void GaussJordanElimination(const int maximum_num_iterations,
     // Set the remaining entries of the column to zero.
     for (int temp_row = current_row + 1; temp_row < num_rows; ++temp_row) {
       // If the number is too small, it is best to consider it as zero already.
-      const double leading_coeff =
-          std::abs((*template_matrix)(temp_row, current_row));
-      if (leading_coeff < kPrecisionThreshold) {
+      const double leading_coeff = (*template_matrix)(temp_row, current_row);
+      if (std::abs(leading_coeff) < kPrecisionThreshold) {
         continue;
       }
 
