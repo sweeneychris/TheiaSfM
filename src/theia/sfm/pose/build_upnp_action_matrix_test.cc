@@ -45,11 +45,15 @@
 namespace theia {
 namespace {
 
-TEST(BuildUpnpActionMatrixTests, GaussJordanEliminationSquaredMatrix) {
-  RowMajorMatrixXd mat = RowMajorMatrixXd::Random(16, 16);
-  VLOG(1) << "Mat before: \n" << mat;
+TEST(BuildUpnpActionMatrixTests, GaussJordanEliminationOnSquaredMatrix) {
+  const int kNumRows = 32;
+  RowMajorMatrixXd mat = RowMajorMatrixXd::Random(kNumRows, kNumRows);
   GaussJordanElimination(1, &mat);
-  VLOG(1) << "Mat after: \n" << mat;
+  // Trace of matrix must be equals to the number of rows.
+  EXPECT_NEAR(mat.trace(), static_cast<double>(kNumRows), 1e-6);
+  // Verify that the lower triangular part sums to the trace.
+  EXPECT_NEAR(RowMajorMatrixXd(mat.triangularView<Eigen::Lower>()).sum(),
+              mat.trace(), 1e-6);
 }
 
 }  // namespace
