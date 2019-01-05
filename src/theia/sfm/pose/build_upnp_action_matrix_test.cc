@@ -54,7 +54,6 @@ TEST(BuildUpnpActionMatrixTests, GaussJordanEliminationOnSquaredMatrix) {
   EXPECT_NEAR(mat.trace(), static_cast<double>(kNumRows), 1e-6);
   // Verify that the lower triangular part sums to the trace.
   EXPECT_NEAR(mat.sum(), mat.trace(), 1e-6);
-  // RowMajorMatrixXd(mat.triangularView<Eigen::Lower>()).sum()
 }
 
 TEST(BuildUpnpActionMatrixTests, GaussJordanEliminationOnFatMatrix) {
@@ -65,6 +64,30 @@ TEST(BuildUpnpActionMatrixTests, GaussJordanEliminationOnFatMatrix) {
   // Verify that the left-block (rows, rows) is diagonalized.
   EXPECT_NEAR(mat.block(0, 0, kNumRows, kNumRows).sum(),
               mat.block(0, 0, kNumRows, kNumRows).trace(), 1e-6);
+}
+
+TEST(BuildUpnpActionMatrixTests, PartialDiagonalizationOnFatMatrix) {
+  const int kNumRows = 32;
+  const int kNumCols = kNumRows + 4;
+  const int kLastRowToProcess = 2;
+  RowMajorMatrixXd mat = RowMajorMatrixXd::Random(kNumRows, kNumCols);
+  GaussJordanElimination(kLastRowToProcess, &mat);
+  // Verify that the left-block (rows, rows) is partially diagonalized.
+  EXPECT_NEAR(mat.block(kLastRowToProcess, kLastRowToProcess,
+                        kNumRows - kLastRowToProcess,
+                        kNumRows - kLastRowToProcess).sum(),
+              kNumRows - kLastRowToProcess, 1e-6);
+  EXPECT_NEAR(mat.block(kLastRowToProcess, kLastRowToProcess,
+                        kNumRows - kLastRowToProcess,
+                        kNumRows - kLastRowToProcess).sum(),
+              mat.block(kLastRowToProcess, kLastRowToProcess,
+                        kNumRows - kLastRowToProcess,
+                        kNumRows - kLastRowToProcess).trace(),
+              1e-6);
+  EXPECT_NE(mat.block(0, 0, kNumRows, kNumRows).sum(),
+            mat.block(kLastRowToProcess, kLastRowToProcess,
+                      kNumRows - kLastRowToProcess,
+                      kNumRows - kLastRowToProcess).sum());
 }
 
 }  // namespace
