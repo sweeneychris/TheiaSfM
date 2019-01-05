@@ -32,39 +32,25 @@
 // Please contact the author of this library if you have any questions.
 // Author: Victor Fragoso (victor.fragoso@mail.wvu.edu)
 
-#ifndef THEIA_SFM_POSE_BUILD_UPNP_ACTION_MATRIX_H_
-#define THEIA_SFM_POSE_BUILD_UPNP_ACTION_MATRIX_H_
-
 #include <Eigen/Core>
+#include <Eigen/Geometry>
+#include <glog/logging.h>
+#include "gtest/gtest.h"
+
 #include <vector>
 
+#include "theia/math/util.h"
+#include "theia/sfm/pose/build_upnp_action_matrix.h"
+
 namespace theia {
+namespace {
 
-// TODO(vfragoso): Document me!
-// Implementation based on:
-// OpenGV file: src/absolute_pose/modules/upnp4.cpp
-Eigen::Matrix<double, 8, 8> BuildActionMatrixUsingSymmetry(
-    const Eigen::Matrix<double, 10, 10>& a_matrix,
-    const Eigen::Matrix<double, 10, 1>& b_vector,
-    const double gamma);
+TEST(BuildUpnpActionMatrixTests, GaussJordanEliminationSquaredMatrix) {
+  RowMajorMatrixXd mat = RowMajorMatrixXd::Random(2, 2);
+  VLOG(1) << "Mat before: \n" << mat;
+  GaussJordanElimination(1, &mat);
+  VLOG(1) << "Mat after: \n" << mat;
+}
 
-// TODO(vfragoso): Document me!
-// Implementation based on:
-// OpenGV file: src/absolute_pose/modules/upnp2.cpp
-Eigen::Matrix<double, 16, 16> BuildActionMatrix(
-    const Eigen::Matrix<double, 10, 10>& a_matrix,
-    const Eigen::Matrix<double, 10, 1>& b_vector,
-    const double gamma);
-
-// Gauss Jordan elimination. Exposed for testing purposes.
-// TODO(vfragoso): Document params.
-using RowMajorMatrixXd =
-    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
-// Forward declaration.
-// class RowMajorMatrixXd;
-void GaussJordanElimination(const int maximum_num_iterations,
-                            RowMajorMatrixXd* template_matrix);
-
+}  // namespace
 }  // namespace theia
-
-#endif  // THEIA_SFM_POSE_BUILD_UPNP_ACTION_MATRIX_H_

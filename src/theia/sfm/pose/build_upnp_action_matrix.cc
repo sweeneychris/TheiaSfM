@@ -55,60 +55,6 @@ using Eigen::Dynamic;
 using Eigen::RowMajor;
 using Eigen::Matrix4d;
 
-typedef Matrix<double, Dynamic, Dynamic, RowMajor> RowMajorMatrixXd;
-
-// The implementation is based on Gauss Jordan Elimination algorithm explained
-// in
-// https://martin-thoma.com/solving-linear-equations-with-gaussian-elimination/
-//
-// for (row = 0; row < max_num_iterations; ++row) {
-//   // Search for the maximum entry in column = row. Keep its value and row.
-//   // Swap row with maximum entry to be the current one.
-//   // Make all the entries in column zero.
-// }
-//
-// and also inspired by the implementation from OpenGV:
-// src/math/gauss_jordan.cpp.
-void GaussJordanElimination(const int maximum_num_iterations,
-                            RowMajorMatrixXd* template_matrix) {
-  const double kPrecisionThreshold = 1e-9;
-  CHECK_GT(maximum_num_iterations, 0);
-  CHECK_LE(maximum_num_iterations, CHECK_NOTNULL(template_matrix)->rows());
-  // Check that the template matrix is a fat matrix.
-  CHECK_GE(template_matrix->cols(), template_matrix->rows());
-
-  const int num_rows = template_matrix->rows();
-  for (int current_row = 0; current_row < num_rows; ++current_row) {
-    // Search for the maxium entry in column with current_row index.
-    int max_coeff_row_idx = 0;
-    const double max_value =
-        template_matrix->col(current_row).maxCoeff(&max_coeff_row_idx);
-
-    // Swap rows.
-    template_matrix->row(current_row).
-        swap(template_matrix->row(max_coeff_row_idx));
-
-    // Divide the current row by the leading coefficient or max value.
-    template_matrix->row(current_row) /= max_value;
-
-    // Set the remaining entries of the column to zero.
-    for (int temp_row = current_row + 1; temp_row < num_rows; ++temp_row) {
-      // If the number is too small, it is best to consider it as zero already.
-      const double leading_coeff =
-          std::abs((*template_matrix)(temp_row, current_row));
-      if (leading_coeff < kPrecisionThreshold) {
-        continue;
-      }
-
-      // Multiply current_row by the leading coeff and subtract it from temp_row
-      // to eliminate or set the leading coefficient to zero.
-      template_matrix->row(temp_row) -=
-          leading_coeff * template_matrix->row(current_row);
-    }
-  }
-
-}
-
 RowMajorMatrixXd SetUpTemplateMatrixUsingSymmetry(
     const Matrix<double, 8, 24>& M1) {
   const int kTemplateRows = 141;
@@ -1023,6 +969,58 @@ RowMajorMatrixXd SetUpTemplateMatrix(
 }
 
 }  // namespace
+
+// The implementation is based on Gauss Jordan Elimination algorithm explained
+// in
+// https://martin-thoma.com/solving-linear-equations-with-gaussian-elimination/
+//
+// for (row = 0; row < max_num_iterations; ++row) {
+//   // Search for the maximum entry in column = row. Keep its value and row.
+//   // Swap row with maximum entry to be the current one.
+//   // Make all the entries in column zero.
+// }
+//
+// and also inspired by the implementation from OpenGV:
+// src/math/gauss_jordan.cpp.
+void GaussJordanElimination(const int maximum_num_iterations,
+                            RowMajorMatrixXd* template_matrix) {
+  const double kPrecisionThreshold = 1e-9;
+  CHECK_GT(maximum_num_iterations, 0);
+  CHECK_LE(maximum_num_iterations, CHECK_NOTNULL(template_matrix)->rows());
+  // Check that the template matrix is a fat matrix.
+  CHECK_GE(template_matrix->cols(), template_matrix->rows());
+
+  const int num_rows = template_matrix->rows();
+  for (int current_row = 0; current_row < num_rows; ++current_row) {
+    // Search for the maxium entry in column with current_row index.
+    int max_coeff_row_idx = 0;
+    const double max_value =
+        template_matrix->col(current_row).maxCoeff(&max_coeff_row_idx);
+
+    // Swap rows.
+    template_matrix->row(current_row).
+        swap(template_matrix->row(max_coeff_row_idx));
+
+    // Divide the current row by the leading coefficient or max value.
+    template_matrix->row(current_row) /= max_value;
+
+    // Set the remaining entries of the column to zero.
+    for (int temp_row = current_row + 1; temp_row < num_rows; ++temp_row) {
+      // If the number is too small, it is best to consider it as zero already.
+      const double leading_coeff =
+          std::abs((*template_matrix)(temp_row, current_row));
+      if (leading_coeff < kPrecisionThreshold) {
+        continue;
+      }
+
+      // Multiply current_row by the leading coeff and subtract it from temp_row
+      // to eliminate or set the leading coefficient to zero.
+      template_matrix->row(temp_row) -=
+          leading_coeff * template_matrix->row(current_row);
+    }
+  }
+
+}
 
 // TODO(vfragoso): Document me!
 // Implementation based on:
