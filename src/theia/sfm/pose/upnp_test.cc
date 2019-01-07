@@ -99,6 +99,7 @@ void TestUpnpPoseEstimationWithNoise(
   // TODO(vfragoso): Implement me!
 }
 
+// Verifies that the cost-function parameters are correct for central cameras.
 TEST(UpnpTests, ComputeCostParametersForCentralCameraPoseEstimation) {
   const std::vector<Vector3d> kPoints3d = { Vector3d(-1.0, 3.0, 3.0),
                                             Vector3d(1.0, -1.0, 2.0),
@@ -126,6 +127,8 @@ TEST(UpnpTests, ComputeCostParametersForCentralCameraPoseEstimation) {
   EXPECT_NEAR(upnp_cost, 0.0, 1e-6);
 }
 
+// Verifies that the cost-function parameters are correct for non-central
+// cameras.
 TEST(UpnpTests, ComputeCostParametersForNonCentralCameraPoseEstimation) {
   const std::vector<Vector3d> kPoints3d = { Vector3d(-1.0, 3.0, 3.0),
                                             Vector3d(1.0, -1.0, 2.0),
@@ -157,10 +160,16 @@ TEST(UpnpTests, ComputeCostParametersForNonCentralCameraPoseEstimation) {
 }
 
 TEST(UpnpTests, MinimalCentralCameraPoseEstimation) {
-  
 }
 
 TEST(UpnpTests, MinimalNonCentralCameraPoseEstimation) {
+}
+
+
+TEST(UpnpTests, NonMinimalCentralCameraPoseEstimation) {
+}
+
+TEST(UpnpTests, NonMinimalNonCentralCameraPoseEstimation) {
 }
 
 }  // namespace
