@@ -90,11 +90,11 @@ TEST(BuildUpnpActionMatrixTests, PartialDiagonalizationOnFatMatrix) {
                       kNumRows - kLastRowToProcess).sum());
 }
 
-TEST(BuildUpnpActionMatrixTests, BuildActionMatrixForCentralMinimalCase) {
+TEST(BuildUpnpActionMatrixTests, BuildActionMatrixForCentralCameraMinimalCase) {
   // The upnp cost parmaeters are from
   // UpnpTests.MinimalCentralCameraPoseEstimation.
-    Eigen::Matrix<double, 10, 10> a_matrix;
-    a_matrix <<
+  Eigen::Matrix<double, 10, 10> a_matrix;
+  a_matrix <<
       00.646311, 0-1.80655, 001.32834, -0.168107, 001.41862, 00.730516,
       0-5.65344, -0.481733, 00.621246, 001.14998,
       0-1.80655, 0012.6466, 0-11.5022, 00.662098, 0-3.57447, 0-4.33037,
@@ -115,7 +115,6 @@ TEST(BuildUpnpActionMatrixTests, BuildActionMatrixForCentralMinimalCase) {
       0-5.47262, 0-2.34604, 008.63544, 0-6.23962,
       001.14998, 0-9.49427, 006.33111, 002.01318, 0010.7572, 0012.1559,
       0-10.3226, 0016.3519, 0-6.23962, 0018.1126;
-
   Eigen::Matrix<double, 10, 1> b_vector;
   b_vector <<
       -1.82424e-30, 
@@ -156,6 +155,68 @@ TEST(BuildUpnpActionMatrixTests, BuildActionMatrixForCentralMinimalCase) {
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0;
   const Eigen::Matrix<double, 16, 16> computed_action_matrix =
       BuildActionMatrix(a_matrix, b_vector, gamma);
+  EXPECT_NEAR((computed_action_matrix - action_matrix).squaredNorm(),
+              0.0, 1e-6);
+}
+
+TEST(BuildUpnpActionMatrixTests,
+     BuildActionMatrixUsingSymmetryForNonCentralMinimalCase) {
+  // The upnp cost parmaeters are from
+  // UpnpTests.MinimalNonCentralCameraPoseEstimation.
+  Eigen::Matrix<double, 10, 10> a_matrix;
+  a_matrix <<
+      006.71742, 001.85533, 0-2.17812, 0-6.39463, 00-2.5622, 0-2.51401,
+      001.00919, 0-5.13897, 004.51181, -0.658492,
+      001.85533, 008.78853, 0-10.4981, -0.145733, 003.58971, 0-3.30778,
+      000015.55, 0-5.03747, 001.45259, 00.299855,
+      0-2.17812, 0-10.4981, 00013.386, -0.709788, 0-6.60231, 003.38488,
+      00-16.878, 004.98896, 0-2.39375, 0-1.37423,
+      0-6.39463, -0.145733, -0.709788, 007.25015, 0005.5748, 002.43691,
+      00.318745, 005.18747, 0-3.57065, 001.73287,
+      00-2.5622, 003.58971, 0-6.60231, 0005.5748, 0014.3744, 002.36133,
+      007.77514, 00-6.9803, 0-7.06722, 005.97198,
+      0-2.51401, 0-3.30778, 003.38488, 002.43691, 002.36133, 004.78982,
+      001.28329, 007.11912, 0-5.71837, 005.08662,
+      001.00919, 000015.55, 00-16.878, 00.318745, 007.77514, 001.28329,
+      0053.9373, 0-3.14292, 0-14.5032, 0011.3284,
+      0-5.13897, 0-5.03747, 004.98896, 005.18747, 00-6.9803, 007.11912,
+      0-3.14292, 0040.8286, 005.32323, 005.22061,
+      004.51181, 001.45259, 0-2.39375, 0-3.57065, 0-7.06722, 0-5.71837,
+      0-14.5032, 005.32323, 0017.2046, 0-7.62227,
+      -0.658492, 00.299855, 0-1.37423, 001.73287, 005.97198, 005.08662,
+      0011.3284, 005.22061, 0-7.62227, 008.45574; 
+  Eigen::Matrix<double, 10, 1> b_vector;
+  b_vector <<
+      00-6.6629,
+      0-3.57868,
+      004.05766,
+      006.18392,
+      001.58341,
+      002.30622,
+      0-7.06697,
+      005.36014,
+      0-2.77699,
+      -0.646325;
+  const double gamma = 7.29313;
+  // Expected action matrix;
+  Eigen::Matrix<double, 8, 8> action_matrix;
+  action_matrix <<
+      -0.45047, 0.390688, -1.15408, -0.0828841, -0.019765, 0.0389208, 0.0736624,
+      0.226646,
+      2.50121, 0.00267812, 2.12052, 1.27115, -0.0042492, -0.0786345, 0.0675796,
+      -0.260323,
+      2.27437, -0.648776, 1.05155, 1.24298, 0.0243789, -0.0625738, -0.0237413,
+      -0.485711,
+      -1.80143, -0.212471, -0.548587, -0.993304, 0.0345941, 0.08877, -0.105789,
+      -0.0881157,
+      1, 0, 0, 0, 0, 0, 0, 0,
+      0, 1, 0, 0, 0, 0, 0, 0,
+      0, 0, 1, 0, 0, 0, 0, 0,
+      0, 0, 0, 1, 0, 0, 0, 0;
+  const Eigen::Matrix<double, 8, 8> computed_action_matrix =
+      BuildActionMatrixUsingSymmetry(a_matrix, b_vector, gamma);
+  VLOG(2) << "Action matrix using symmetry: \n" << computed_action_matrix;
+  VLOG(2) << "Expected action matrix: \n" << action_matrix;
   EXPECT_NEAR((computed_action_matrix - action_matrix).squaredNorm(),
               0.0, 1e-6);
 }

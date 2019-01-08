@@ -202,7 +202,7 @@ TEST(UpnpTests, ComputeCostParametersForNonCentralCameraPoseEstimation) {
   EXPECT_NEAR(upnp_cost, 0.0, 1e-6);
 }
 
-// Checks the case of a minimal and central camera pose estimation.
+// Checks the case of a minimal sample and central camera pose estimation.
 TEST(UpnpTests, MinimalCentralCameraPoseEstimation) {
   const double kNoiseStdDev = 0.0;
   const double kMaxReprojectionError = 1.0 / 512.0;
@@ -231,7 +231,37 @@ TEST(UpnpTests, MinimalCentralCameraPoseEstimation) {
                                   &input_datum);
 }
 
+
+// Checks the case of a minimal sample and a non-central camera pose estimation.
 TEST(UpnpTests, MinimalNonCentralCameraPoseEstimation) {
+  const double kNoiseStdDev = 0.0;
+  const double kMaxReprojectionError = 1.0 / 512.0;
+  const double kMaxAllowedRotationDifference = DegToRad(1e-4);
+  const double kMaxAllowedTranslationDifference = 1e-6;
+  const std::vector<Vector3d> kPoints3d = { Vector3d(-1.0, 3.0, 3.0),
+                                            Vector3d(1.0, -1.0, 2.0),
+                                            Vector3d(-1.0, 1.0, 2.0),
+                                            Vector3d(2.0, 1.0, 3.0) };
+  const std::vector<Vector3d> kImageOrigins = { Vector3d(-1.0, 0.0, 0.0),
+                                                Vector3d(0.0, 0.0, 0.0),
+                                                Vector3d(2.0, 0.0, 0.0),
+                                                Vector3d(3.0, 0.0, 0.0) };
+  const Quaterniond soln_rotation = Quaterniond(
+      AngleAxisd(DegToRad(13.0), Vector3d(0.0, 0.0, 1.0)));
+  const Vector3d soln_translation(1.0, 1.0, 1.0);
+  // Compute input datum.
+  InputDatum input_datum = ComputeInputDatum(kPoints3d,
+                                             kImageOrigins,
+                                             soln_rotation,
+                                             soln_translation);
+  // Execute test.
+  TestUpnpPoseEstimationWithNoise(soln_rotation,
+                                  soln_translation,
+                                  kNoiseStdDev,
+                                  kMaxReprojectionError,
+                                  kMaxAllowedRotationDifference,
+                                  kMaxAllowedTranslationDifference,
+                                  &input_datum);
 }
 
 
