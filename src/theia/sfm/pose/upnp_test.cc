@@ -41,6 +41,8 @@
 
 #include "theia/math/util.h"
 #include "theia/sfm/pose/upnp.h"
+#include "theia/sfm/pose/test_util.h"
+#include "theia/util/random.h"
 
 namespace theia {
 namespace {
@@ -48,6 +50,8 @@ namespace {
 using Eigen::Quaterniond;
 using Eigen::AngleAxisd;
 using Eigen::Vector3d;
+
+RandomNumberGenerator rng(57);
 
 struct InputDatum {
   std::vector<Eigen::Vector3d> ray_origins;
@@ -88,15 +92,54 @@ InputDatum ComputeInputDatum(
 }
 
 void TestUpnpPoseEstimationWithNoise(
-    const std::vector<Vector3d>& world_points,
     const Quaterniond& expected_rotation,
     const Vector3d& expected_translation,
     const double projection_noise_std_dev,
     const double max_reprojection_error,
     const double max_rotation_difference,
-    const double max_translation_difference) {
-  const int num_points = world_points.size();
-  // TODO(vfragoso): Implement me!
+    const double max_translation_difference,
+    InputDatum* input_datum) {
+  const int num_points = input_datum->world_points.size();
+  // Add noise to ray.
+  if (projection_noise_std_dev > 0.0) {
+    for (int i = 0; i < input_datum->world_points.size(); ++i) {
+      AddNoiseToRay(projection_noise_std_dev,
+                    &rng,
+                    &input_datum->world_points[i]);
+    }
+  }
+
+  // Estimate pose.
+  std::vector<Quaterniond> solution_rotations;
+  std::vector<Vector3d> solution_translations;
+  const UpnpCostParameters upnp_params =
+      Upnp(input_datum->ray_origins,
+           input_datum->ray_directions,
+           input_datum->world_points,
+           &solution_rotations,
+           &solution_translations);
+  const double upnp_cost = EvaluateUpnpCost(upnp_params, expected_rotation);
+  EXPECT_NEAR(upnp_cost, 0.0, 1e-6);
+  VLOG(2) << "A matrix: \n" << upnp_params.a_matrix
+          << "\nB vector: \n" << upnp_params.b_vector
+          << "\nGamma: " << upnp_params.gamma;
+
+  // Check solutions and verify at least one is close to the actual solution.
+  const int num_solutions = solution_rotations.size();
+  EXPECT_GT(num_solutions, 0);
+  bool matched_transform = false;
+  for (int i = 0; i < num_solutions; ++i) {
+    
+    // TODO(vfragoso): Check reprojection error here.
+    const double rotation_difference =
+        expected_rotation.angularDistance(solution_rotations[i]);
+    const bool matched_rotation = rotation_difference < max_rotation_difference;
+
+    if (matched_rotation) {
+      matched_transform = true;
+    }
+  }
+  EXPECT_TRUE(matched_transform);
 }
 
 // Verifies that the cost-function parameters are correct for central cameras.
@@ -159,7 +202,33 @@ TEST(UpnpTests, ComputeCostParametersForNonCentralCameraPoseEstimation) {
   EXPECT_NEAR(upnp_cost, 0.0, 1e-6);
 }
 
+// Checks the case of a minimal and central camera pose estimation.
 TEST(UpnpTests, MinimalCentralCameraPoseEstimation) {
+  const double kNoiseStdDev = 0.0;
+  const double kMaxReprojectionError = 1.0 / 512.0;
+  const double kMaxAllowedRotationDifference = DegToRad(1e-4);
+  const double kMaxAllowedTranslationDifference = 1e-6;
+  const std::vector<Vector3d> kPoints3d = { Vector3d(-1.0, 3.0, 3.0),
+                                            Vector3d(1.0, -1.0, 2.0),
+                                            Vector3d(-1.0, 1.0, 2.0),
+                                            Vector3d(2.0, 1.0, 3.0) };
+  const std::vector<Vector3d> kImageOrigin = { Vector3d(2.0, 0.0, 0.0) };
+  const Quaterniond soln_rotation = Quaterniond(
+      AngleAxisd(DegToRad(13.0), Vector3d(0.0, 0.0, 1.0)));
+  const Vector3d soln_translation(1.0, 1.0, 1.0);
+  // Compute input datum.
+  InputDatum input_datum = ComputeInputDatum(kPoints3d,
+                                             kImageOrigin,
+                                             soln_rotation,
+                                             soln_translation);
+  // Execute test.
+  TestUpnpPoseEstimationWithNoise(soln_rotation,
+                                  soln_translation,
+                                  kNoiseStdDev,
+                                  kMaxReprojectionError,
+                                  kMaxAllowedRotationDifference,
+                                  kMaxAllowedTranslationDifference,
+                                  &input_datum);
 }
 
 TEST(UpnpTests, MinimalNonCentralCameraPoseEstimation) {

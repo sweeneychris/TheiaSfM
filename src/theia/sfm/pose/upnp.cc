@@ -220,11 +220,15 @@ std::vector<Eigen::Quaterniond> SolveUpnpFromNonMinimalSample(
 std::vector<Eigen::Quaterniond> SolveUpnpFromMinimalSample(
     const InputDatum& input_datum,
     const UpnpCostParameters& cost_params) {
+  VLOG(2) << "Solve upnp from a minimal sample";
   std::vector<Eigen::Quaterniond> rotations(kNumMaxRotations);
   // Build action matrix.
+  // TODO(vfragoso): Verify that A, b, and gamma satisfy what is expected from
+  // UPNP.
   const Matrix16d action_matrix = BuildActionMatrix(cost_params.a_matrix,
                                                     cost_params.b_vector,
                                                     cost_params.gamma);
+  VLOG(2) << "Action matrix: \n"<< action_matrix;
   const Eigen::EigenSolver<Matrix16d> eigen_solver(action_matrix, true);
   const Matrix16cd eigen_vectors = eigen_solver.eigenvectors();
   for (int i = 0; i < rotations.size(); ++i) {
@@ -333,6 +337,8 @@ UpnpCostParameters Upnp(const std::vector<Eigen::Vector3d>& ray_origins,
       ComputeRotations(input_datum, cost_params);
 
   // TODO(vfragoso): Compute translation.
+
+  *solution_rotations = std::move(rotations);
 
   return cost_params;
 }
