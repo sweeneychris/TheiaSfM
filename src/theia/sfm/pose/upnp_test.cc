@@ -120,25 +120,32 @@ void TestUpnpPoseEstimationWithNoise(
            &solution_translations);
   const double upnp_cost = EvaluateUpnpCost(upnp_params, expected_rotation);
   EXPECT_NEAR(upnp_cost, 0.0, 1e-6);
-  VLOG(2) << "A matrix: \n" << upnp_params.a_matrix
-          << "\nB vector: \n" << upnp_params.b_vector
-          << "\nGamma: " << upnp_params.gamma;
 
   // Check solutions and verify at least one is close to the actual solution.
   const int num_solutions = solution_rotations.size();
   EXPECT_GT(num_solutions, 0);
   bool matched_transform = false;
   for (int i = 0; i < num_solutions; ++i) {
-    
+    EXPECT_NEAR(EvaluateUpnpCost(upnp_params, solution_rotations[i]),
+                0.0, 1e-6);
     // TODO(vfragoso): Check reprojection error here.
     const double rotation_difference =
         expected_rotation.angularDistance(solution_rotations[i]);
+    VLOG(2) << "Rotation: "
+            << Eigen::Vector4d(solution_rotations[i].w(),
+                               solution_rotations[i].x(),
+                               solution_rotations[i].y(),
+                               solution_rotations[i].z()).transpose();
     const bool matched_rotation = rotation_difference < max_rotation_difference;
 
     if (matched_rotation) {
       matched_transform = true;
     }
   }
+  VLOG(2) << "Expected rotation: "
+          << Eigen::Vector4d(
+              expected_rotation.w(), expected_rotation.x(),
+              expected_rotation.y(), expected_rotation.z()).transpose();
   EXPECT_TRUE(matched_transform);
 }
 
@@ -214,7 +221,7 @@ TEST(UpnpTests, MinimalCentralCameraPoseEstimation) {
                                             Vector3d(2.0, 1.0, 3.0) };
   const std::vector<Vector3d> kImageOrigin = { Vector3d(2.0, 0.0, 0.0) };
   const Quaterniond soln_rotation = Quaterniond(
-      AngleAxisd(DegToRad(13.0), Vector3d(0.0, 0.0, 1.0)));
+      AngleAxisd(DegToRad(13.0), Vector3d(1.0, 0.0, 1.0).normalized()));
   const Vector3d soln_translation(1.0, 1.0, 1.0);
   // Compute input datum.
   InputDatum input_datum = ComputeInputDatum(kPoints3d,
@@ -247,7 +254,7 @@ TEST(UpnpTests, MinimalNonCentralCameraPoseEstimation) {
                                                 Vector3d(2.0, 0.0, 0.0),
                                                 Vector3d(3.0, 0.0, 0.0) };
   const Quaterniond soln_rotation = Quaterniond(
-      AngleAxisd(DegToRad(13.0), Vector3d(0.0, 0.0, 1.0)));
+      AngleAxisd(DegToRad(13.0), Vector3d(1.0, 0.0, 1.0).normalized()));
   const Vector3d soln_translation(1.0, 1.0, 1.0);
   // Compute input datum.
   InputDatum input_datum = ComputeInputDatum(kPoints3d,
