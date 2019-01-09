@@ -241,13 +241,10 @@ std::vector<Eigen::Quaterniond> SolveUpnpFromMinimalSample(
       quaternion *= -1.0;
     }
 
-    rotations[i] = quaternion;
-    VLOG(2) << "Vector: " << quaternion.transpose()
-            << " Quaternion: "
-             << Eigen::Vector4d(rotations[i].w(),
-                                rotations[i].x(),
-                                rotations[i].y(),
-                                rotations[i].z()).transpose();
+    rotations[i] = Eigen::Quaterniond(quaternion[0],
+                                      quaternion[1],
+                                      quaternion[2],
+                                      quaternion[3]);
   }
 
   return rotations;

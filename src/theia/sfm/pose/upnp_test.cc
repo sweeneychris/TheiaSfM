@@ -126,26 +126,15 @@ void TestUpnpPoseEstimationWithNoise(
   EXPECT_GT(num_solutions, 0);
   bool matched_transform = false;
   for (int i = 0; i < num_solutions; ++i) {
-    EXPECT_NEAR(EvaluateUpnpCost(upnp_params, solution_rotations[i]),
-                0.0, 1e-6);
     // TODO(vfragoso): Check reprojection error here.
     const double rotation_difference =
         expected_rotation.angularDistance(solution_rotations[i]);
-    VLOG(2) << "Rotation: "
-            << Eigen::Vector4d(solution_rotations[i].w(),
-                               solution_rotations[i].x(),
-                               solution_rotations[i].y(),
-                               solution_rotations[i].z()).transpose();
     const bool matched_rotation = rotation_difference < max_rotation_difference;
 
     if (matched_rotation) {
       matched_transform = true;
     }
   }
-  VLOG(2) << "Expected rotation: "
-          << Eigen::Vector4d(
-              expected_rotation.w(), expected_rotation.x(),
-              expected_rotation.y(), expected_rotation.z()).transpose();
   EXPECT_TRUE(matched_transform);
 }
 
@@ -210,7 +199,7 @@ TEST(UpnpTests, ComputeCostParametersForNonCentralCameraPoseEstimation) {
 }
 
 // Checks the case of a minimal sample and central camera pose estimation.
-TEST(UpnpTests, MinimalCentralCameraPoseEstimation) {
+TEST(UpnpTests, MinimalSampleCentralCameraPoseEstimation) {
   const double kNoiseStdDev = 0.0;
   const double kMaxReprojectionError = 1.0 / 512.0;
   const double kMaxAllowedRotationDifference = DegToRad(1e-4);
@@ -240,7 +229,7 @@ TEST(UpnpTests, MinimalCentralCameraPoseEstimation) {
 
 
 // Checks the case of a minimal sample and a non-central camera pose estimation.
-TEST(UpnpTests, MinimalNonCentralCameraPoseEstimation) {
+TEST(UpnpTests, MinimalSampleNonCentralCameraPoseEstimation) {
   const double kNoiseStdDev = 0.0;
   const double kMaxReprojectionError = 1.0 / 512.0;
   const double kMaxAllowedRotationDifference = DegToRad(1e-4);
