@@ -133,7 +133,7 @@ inline Matrix3x10d LeftMultiply(const Eigen::Vector3d& point) {
   return phi_mat;
 }
 
-inline void ComputeHelperMatrices(
+inline std::vector<Eigen::Matrix3d> ComputeHelperMatrices(
     const InputDatum& input_datum,
     const std::vector<Eigen::Matrix3d>& outer_products,
     const Eigen::Matrix3d& h_matrix,
@@ -145,15 +145,19 @@ inline void ComputeHelperMatrices(
   CHECK_NOTNULL(g_matrix)->setZero();
   CHECK_NOTNULL(j_matrix)->setZero();
   const Eigen::Matrix3d identity = Eigen::Matrix3d::Identity();
+  std::vector<Eigen::Matrix3d> v_matrices(
+      world_points.size(), Eigen::Matrix3d::Zero());
   for (int i = 0; i < ray_origins.size(); ++i) {
     const Eigen::Matrix3d& outer_product = outer_products[i];
     // Computation following Eq. (5).
-    const Eigen::Matrix3d v_matrix = h_matrix * (outer_product - identity);
+    v_matrices[i] = h_matrix * (outer_product - identity);
+    const Eigen::Matrix3d& v_matrix = v_matrices[i];
     // Compute the left multiplication matrix or Phi matrix in the paper.
     const Matrix3x10d left_multiply_mat = LeftMultiply(world_points[i]);
     *j_matrix += v_matrix * ray_origins[i];
     *g_matrix += v_matrix * left_multiply_mat;
   }
+  return v_matrices;
 }
 
 // Computes the block matrices that compose the M matrix in Eq. 17. These
@@ -277,6 +281,32 @@ inline Vector10d ComputeRotationVector(const Eigen::Quaterniond& rotation) {
   return rotation_vector;
 }
 
+Eigen::Vector3d ComputeTranslation(
+    const InputDatum& input_datum,
+    const Eigen::Quaterniond& rotation,
+    const std::vector<Eigen::Matrix3d>& v_matrices) {
+  Eigen::Vector3d translation = Eigen::Vector3d::Zero();
+  for (int i = 0; i < input_datum.world_points.size(); ++i) {
+    translation +=
+        v_matrices[i] *
+        (rotation * input_datum.world_points[i] - input_datum.ray_origins[i]);
+  }
+  return translation;
+}
+
+std::vector<Eigen::Vector3d> ComputeTranslations(
+    const InputDatum& input_datum,
+    const std::vector<Eigen::Quaterniond>& rotations,
+    const std::vector<Eigen::Matrix3d>& v_matrices) {
+  std::vector<Eigen::Vector3d> translations(rotations.size());
+  const int num_points = input_datum.world_points.size();
+  const int num_rotations = rotations.size();
+  for (int i = 0; i < num_rotations; ++i) {
+    translations[i] = ComputeTranslation(input_datum, rotations[i], v_matrices);
+  }
+  return translations;
+}
+
 }  // namespace
 
 // Evaluates the cost introduced in Eq. 17.
@@ -291,10 +321,19 @@ double EvaluateUpnpCost(const UpnpCostParameters& parameters,
   return cost;
 }
 
-UpnpCostParameters ComputeUpnpCostParameters(
+inline UpnpCostParameters ComputeUpnpCostParameters(
     const std::vector<Eigen::Vector3d>& ray_origins,
     const std::vector<Eigen::Vector3d>& ray_directions,
     const std::vector<Eigen::Vector3d>& world_points) {
+  return ComputeUpnpCostParameters(
+      ray_origins, ray_directions, world_points, nullptr);
+}
+
+UpnpCostParameters ComputeUpnpCostParameters(
+    const std::vector<Eigen::Vector3d>& ray_origins,
+    const std::vector<Eigen::Vector3d>& ray_directions,
+    const std::vector<Eigen::Vector3d>& world_points,
+    std::vector<Eigen::Matrix3d>* v_matrices) {
   const InputDatum input_datum(ray_origins, ray_directions, world_points);
   // 1. Compute the H matrix and the outer products of the ray directions.
   std::vector<Eigen::Matrix3d> outer_products;
@@ -304,11 +343,16 @@ UpnpCostParameters ComputeUpnpCostParameters(
   // 2. Compute matrices J and G from page 132 or 6-th page in the paper.
   Matrix3x10d g_matrix;
   Eigen::Vector3d j_matrix;
-  ComputeHelperMatrices(input_datum,
-                        outer_products,
-                        h_matrix,
-                        &g_matrix,
-                        &j_matrix);
+  const std::vector<Eigen::Matrix3d> v_matrices_temp =
+      ComputeHelperMatrices(input_datum,
+                            outer_products,
+                            h_matrix,
+                            &g_matrix,
+                            &j_matrix);
+
+  if (v_matrices) {
+    *v_matrices = std::move(v_matrices_temp);
+  }
 
   // 3. Compute matrix the block-matrix of matrix M from Eq. 17.
   return ComputeCostParameters(input_datum,
@@ -317,7 +361,6 @@ UpnpCostParameters ComputeUpnpCostParameters(
                                j_matrix);
 }
 
-// TODO(vfragoso): Document me!
 UpnpCostParameters Upnp(const std::vector<Eigen::Vector3d>& ray_origins,
                         const std::vector<Eigen::Vector3d>& ray_directions,
                         const std::vector<Eigen::Vector3d>& world_points,
@@ -328,16 +371,23 @@ UpnpCostParameters Upnp(const std::vector<Eigen::Vector3d>& ray_origins,
 
   // Compute Upnp cost parameters.
   const InputDatum input_datum(ray_origins, ray_directions, world_points);
+  std::vector<Eigen::Matrix3d> v_matrices;
   const UpnpCostParameters cost_params =
-      ComputeUpnpCostParameters(ray_origins, ray_directions, world_points);
+      ComputeUpnpCostParameters(ray_origins,
+                                ray_directions,
+                                world_points,
+                                &v_matrices);
 
   // Compute rotations.
   const std::vector<Eigen::Quaterniond> rotations =
       ComputeRotations(input_datum, cost_params);
 
-  // TODO(vfragoso): Compute translation.
+  // Compute translation.
+  const std::vector<Eigen::Vector3d> translations =
+      ComputeTranslations(input_datum, rotations, v_matrices);
 
   *solution_rotations = std::move(rotations);
+  *solution_translations = std::move(translations);
 
   return cost_params;
 }

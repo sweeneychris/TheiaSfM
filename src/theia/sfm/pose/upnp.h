@@ -66,6 +66,12 @@ double EvaluateUpnpCost(const UpnpCostParameters& parameters,
 UpnpCostParameters ComputeUpnpCostParameters(
     const std::vector<Eigen::Vector3d>& ray_origins,
     const std::vector<Eigen::Vector3d>& ray_directions,
+    const std::vector<Eigen::Vector3d>& world_points,
+    std::vector<Eigen::Matrix3d>* v_matrices);
+
+UpnpCostParameters ComputeUpnpCostParameters(
+    const std::vector<Eigen::Vector3d>& ray_origins,
+    const std::vector<Eigen::Vector3d>& ray_directions,
     const std::vector<Eigen::Vector3d>& world_points);
 
 // TODO(vfragoso): Document me!

@@ -91,6 +91,32 @@ InputDatum ComputeInputDatum(
   return input_datum;
 }
 
+bool CheckReprojectionErrors(const InputDatum& input_datum,
+                             const Eigen::Quaterniond& soln_rotation,
+                             const Eigen::Vector3d& soln_translation,
+                             const double kMaxReprojectionError) {
+  const int num_points = input_datum.world_points.size();
+  double good_reprojection_errors = true;
+  for (int i = 0; i < num_points; ++i) {
+    const Quaterniond unrot =
+        Quaterniond::FromTwoVectors(input_datum.ray_directions[i],
+                                    Vector3d(0, 0, 1));
+    const Vector3d reprojected_point =
+        soln_rotation * input_datum.world_points[i] + soln_translation -
+        input_datum.ray_origins[i];
+  
+    const Vector3d unrot_cam_ray = unrot * input_datum.ray_directions[i];
+    const Vector3d unrot_reproj_pt = unrot * reprojected_point;
+
+    const double reprojection_error =
+        (unrot_cam_ray.hnormalized() - unrot_reproj_pt.hnormalized()).norm();
+
+    good_reprojection_errors = (good_reprojection_errors &&
+                                (reprojection_error < kMaxReprojectionError));
+  }
+  return good_reprojection_errors;
+}
+
 void TestUpnpPoseEstimationWithNoise(
     const Quaterniond& expected_rotation,
     const Vector3d& expected_translation,
@@ -105,7 +131,7 @@ void TestUpnpPoseEstimationWithNoise(
     for (int i = 0; i < input_datum->world_points.size(); ++i) {
       AddNoiseToRay(projection_noise_std_dev,
                     &rng,
-                    &input_datum->world_points[i]);
+                    &input_datum->ray_directions[i]);
     }
   }
 
@@ -119,19 +145,31 @@ void TestUpnpPoseEstimationWithNoise(
            &solution_rotations,
            &solution_translations);
   const double upnp_cost = EvaluateUpnpCost(upnp_params, expected_rotation);
-  EXPECT_NEAR(upnp_cost, 0.0, 1e-6);
+  VLOG(2) << "Upnp cost with expected rotation: " << upnp_cost;
 
   // Check solutions and verify at least one is close to the actual solution.
   const int num_solutions = solution_rotations.size();
   EXPECT_GT(num_solutions, 0);
   bool matched_transform = false;
   for (int i = 0; i < num_solutions; ++i) {
-    // TODO(vfragoso): Check reprojection error here.
+    const bool good_reprojection_errors =
+        CheckReprojectionErrors(*input_datum,
+                                solution_rotations[i],
+                                solution_translations[i],
+                                max_reprojection_error);
     const double rotation_difference =
         expected_rotation.angularDistance(solution_rotations[i]);
     const bool matched_rotation = rotation_difference < max_rotation_difference;
-
-    if (matched_rotation) {
+    const double translation_difference =
+        (expected_translation - solution_translations[i]).squaredNorm();
+    const bool matched_translation =
+        translation_difference < max_translation_difference;
+    VLOG(2) << "Matched rotation: " << matched_rotation
+            << " rotation error [deg]=" << RadToDeg(rotation_difference);
+    VLOG(2) << "Matched translation: " << matched_translation
+            << " translation error=" << translation_difference;
+    VLOG(2) << "Good reprojection errors: " << good_reprojection_errors;
+    if (matched_rotation && matched_translation && good_reprojection_errors) {
       matched_transform = true;
     }
   }
@@ -227,6 +265,34 @@ TEST(UpnpTests, MinimalSampleCentralCameraPoseEstimation) {
                                   &input_datum);
 }
 
+// Checks the case of a minimal sample and central camera pose estimation.
+TEST(UpnpTests, MinimalSampleCentralCameraPoseEstimationWithNoise) {
+  const double kNoiseStdDev = 0.6 / 512.0;
+  const double kMaxReprojectionError = 1.0 / 512.0;
+  const double kMaxAllowedRotationDifference = DegToRad(1.0);
+  const double kMaxAllowedTranslationDifference = 1e-3;
+  const std::vector<Vector3d> kPoints3d = { Vector3d(-1.0, 3.0, 3.0),
+                                            Vector3d(1.0, -1.0, 2.0),
+                                            Vector3d(-1.0, 1.0, 2.0),
+                                            Vector3d(2.0, 1.0, 3.0) };
+  const std::vector<Vector3d> kImageOrigin = { Vector3d(2.0, 0.0, 0.0) };
+  const Quaterniond soln_rotation = Quaterniond(
+      AngleAxisd(DegToRad(13.0), Vector3d(1.0, 0.0, 1.0).normalized()));
+  const Vector3d soln_translation(1.0, 1.0, 1.0);
+  // Compute input datum.
+  InputDatum input_datum = ComputeInputDatum(kPoints3d,
+                                             kImageOrigin,
+                                             soln_rotation,
+                                             soln_translation);
+  // Execute test.
+  TestUpnpPoseEstimationWithNoise(soln_rotation,
+                                  soln_translation,
+                                  kNoiseStdDev,
+                                  kMaxReprojectionError,
+                                  kMaxAllowedRotationDifference,
+                                  kMaxAllowedTranslationDifference,
+                                  &input_datum);
+}
 
 // Checks the case of a minimal sample and a non-central camera pose estimation.
 TEST(UpnpTests, MinimalSampleNonCentralCameraPoseEstimation) {
@@ -260,11 +326,186 @@ TEST(UpnpTests, MinimalSampleNonCentralCameraPoseEstimation) {
                                   &input_datum);
 }
 
-
-TEST(UpnpTests, NonMinimalCentralCameraPoseEstimation) {
+// Checks the case of a minimal sample and a non-central camera pose estimation
+// with noise.
+TEST(UpnpTests, MinimalSampleNonCentralCameraPoseEstimationWithNoise) {
+  const double kNoiseStdDev = 1e-3;
+  const double kMaxReprojectionError = 3.0 / 512.0;
+  const double kMaxAllowedRotationDifference = DegToRad(1.0);
+  const double kMaxAllowedTranslationDifference = 1e-3;
+  const std::vector<Vector3d> kPoints3d = { Vector3d(-1.0, 3.0, 3.0),
+                                            Vector3d(1.0, -1.0, 2.0),
+                                            Vector3d(-1.0, 1.0, 2.0),
+                                            Vector3d(2.0, 1.0, 3.0) };
+  const std::vector<Vector3d> kImageOrigins = { Vector3d(-1.0, 0.0, 0.0),
+                                                Vector3d(0.0, 0.0, 0.0),
+                                                Vector3d(2.0, 0.0, 0.0),
+                                                Vector3d(3.0, 0.0, 0.0) };
+  const Quaterniond soln_rotation = Quaterniond(
+      AngleAxisd(DegToRad(13.0), Vector3d(1.0, 0.0, 1.0).normalized()));
+  const Vector3d soln_translation(1.0, 1.0, 1.0);
+  // Compute input datum.
+  InputDatum input_datum = ComputeInputDatum(kPoints3d,
+                                             kImageOrigins,
+                                             soln_rotation,
+                                             soln_translation);
+  // Execute test.
+  TestUpnpPoseEstimationWithNoise(soln_rotation,
+                                  soln_translation,
+                                  kNoiseStdDev,
+                                  kMaxReprojectionError,
+                                  kMaxAllowedRotationDifference,
+                                  kMaxAllowedTranslationDifference,
+                                  &input_datum);
 }
 
-TEST(UpnpTests, NonMinimalNonCentralCameraPoseEstimation) {
+// Checks that the estimator works well using a non-minimal sample of data
+// points.
+TEST(UpnpTests, NonMinimalSampleCentralCameraPoseEstimation) {
+  const double kNoiseStdDev = 0.0;
+  const double kMaxReprojectionError = 1.0 / 512.0;
+  const double kMaxAllowedRotationDifference = DegToRad(1e-4);
+  const double kMaxAllowedTranslationDifference = 1e-6;
+  const std::vector<Vector3d> kPoints3d = {
+    Vector3d(-1.0, 3.0, 3.0),
+    Vector3d(1.0, -1.0, 2.0),
+    Vector3d(-1.0, 1.0, 2.0),
+    Vector3d(2.0, 1.0, 3.0),
+    Vector3d(-1.0, -3.0, 2.0),
+    Vector3d(1.0, -2.0, 1.0),
+    Vector3d(-1.0, 4.0, 2.0),
+    Vector3d(-2.0, 2.0, 3.0)
+  };
+  const std::vector<Vector3d> kImageOrigins = { Vector3d(0.0, 0.0, 0.0) };
+  const Quaterniond soln_rotation = Quaterniond(
+      AngleAxisd(DegToRad(13.0), Vector3d(1.0, 0.0, 1.0).normalized()));
+  const Vector3d soln_translation(1.0, 1.0, 1.0);
+  // Compute input datum.
+  InputDatum input_datum = ComputeInputDatum(kPoints3d,
+                                             kImageOrigins,
+                                             soln_rotation,
+                                             soln_translation);
+  // Execute test.
+  TestUpnpPoseEstimationWithNoise(soln_rotation,
+                                  soln_translation,
+                                  kNoiseStdDev,
+                                  kMaxReprojectionError,
+                                  kMaxAllowedRotationDifference,
+                                  kMaxAllowedTranslationDifference,
+                                  &input_datum);
+}
+
+// Checks that the estimator works well using a non-minimal sample of data
+// points.
+TEST(UpnpTests, NonMinimalSampleCentralCameraPoseEstimationWithNoise) {
+  const double kNoiseStdDev = 1e-3;
+  const double kMaxReprojectionError = 3.0 / 512.0;
+  const double kMaxAllowedRotationDifference = DegToRad(1.0);
+  const double kMaxAllowedTranslationDifference = 1e-3;
+  const std::vector<Vector3d> kPoints3d = {
+    Vector3d(-1.0, 3.0, 3.0),
+    Vector3d(1.0, -1.0, 2.0),
+    Vector3d(-1.0, 1.0, 2.0),
+    Vector3d(2.0, 1.0, 3.0),
+    Vector3d(-1.0, -3.0, 2.0),
+    Vector3d(1.0, -2.0, 1.0),
+    Vector3d(-1.0, 4.0, 2.0),
+    Vector3d(-2.0, 2.0, 3.0)
+  };
+  const std::vector<Vector3d> kImageOrigins = { Vector3d(0.0, 0.0, 0.0) };
+  const Quaterniond soln_rotation = Quaterniond(
+      AngleAxisd(DegToRad(13.0), Vector3d(1.0, 0.0, 1.0).normalized()));
+  const Vector3d soln_translation(1.0, 1.0, 1.0);
+  // Compute input datum.
+  InputDatum input_datum = ComputeInputDatum(kPoints3d,
+                                             kImageOrigins,
+                                             soln_rotation,
+                                             soln_translation);
+  // Execute test.
+  TestUpnpPoseEstimationWithNoise(soln_rotation,
+                                  soln_translation,
+                                  kNoiseStdDev,
+                                  kMaxReprojectionError,
+                                  kMaxAllowedRotationDifference,
+                                  kMaxAllowedTranslationDifference,
+                                  &input_datum);
+}
+
+// Checks that the estimator works well using a non-minimal sample of data.
+TEST(UpnpTests, NonMinimalSampleNonCentralCameraPoseEstimation) {
+  const double kNoiseStdDev = 0.0;
+  const double kMaxReprojectionError = 1.0 / 512.0;
+  const double kMaxAllowedRotationDifference = DegToRad(1e-4);
+  const double kMaxAllowedTranslationDifference = 1e-6;
+  const std::vector<Vector3d> kPoints3d = {
+    Vector3d(-1.0, 3.0, 3.0),
+    Vector3d(1.0, -1.0, 2.0),
+    Vector3d(-1.0, 1.0, 2.0),
+    Vector3d(2.0, 1.0, 3.0),
+    Vector3d(-1.0, -3.0, 2.0),
+    Vector3d(1.0, -2.0, 1.0),
+    Vector3d(-1.0, 4.0, 2.0),
+    Vector3d(-2.0, 2.0, 3.0)
+  };
+  const std::vector<Vector3d> kImageOrigins = { Vector3d(-1.0, 0.0, 0.0),
+                                                Vector3d(0.0, 0.0, 0.0),
+                                                Vector3d(2.0, 0.0, 0.0),
+                                                Vector3d(3.0, 0.0, 0.0) };
+  const Quaterniond soln_rotation = Quaterniond(
+      AngleAxisd(DegToRad(13.0), Vector3d(1.0, 0.0, 1.0).normalized()));
+  const Vector3d soln_translation(1.0, 1.0, 1.0);
+  // Compute input datum.
+  InputDatum input_datum = ComputeInputDatum(kPoints3d,
+                                             kImageOrigins,
+                                             soln_rotation,
+                                             soln_translation);
+  // Execute test.
+  TestUpnpPoseEstimationWithNoise(soln_rotation,
+                                  soln_translation,
+                                  kNoiseStdDev,
+                                  kMaxReprojectionError,
+                                  kMaxAllowedRotationDifference,
+                                  kMaxAllowedTranslationDifference,
+                                  &input_datum);
+}
+
+// Checks that the estimator works well using a non-minimal sample of data
+// points with noise.
+TEST(UpnpTests, NonMinimalSampleNonCentralCameraPoseEstimationWithNoise) {
+  const double kNoiseStdDev = 1e-3;
+  const double kMaxReprojectionError = 3.0 / 512.0;
+  const double kMaxAllowedRotationDifference = DegToRad(1.0);
+  const double kMaxAllowedTranslationDifference = 1e-3;
+  const std::vector<Vector3d> kPoints3d = {
+    Vector3d(-1.0, 3.0, 3.0),
+    Vector3d(1.0, -1.0, 2.0),
+    Vector3d(-1.0, 1.0, 2.0),
+    Vector3d(2.0, 1.0, 3.0),
+    Vector3d(-1.0, -3.0, 2.0),
+    Vector3d(1.0, -2.0, 1.0),
+    Vector3d(-1.0, 4.0, 2.0),
+    Vector3d(-2.0, 2.0, 3.0)
+  };
+  const std::vector<Vector3d> kImageOrigins = { Vector3d(-1.0, 0.0, 0.0),
+                                                Vector3d(0.0, 0.0, 0.0),
+                                                Vector3d(2.0, 0.0, 0.0),
+                                                Vector3d(3.0, 0.0, 0.0) };
+  const Quaterniond soln_rotation = Quaterniond(
+      AngleAxisd(DegToRad(13.0), Vector3d(1.0, 0.0, 1.0).normalized()));
+  const Vector3d soln_translation(1.0, 1.0, 1.0);
+  // Compute input datum.
+  InputDatum input_datum = ComputeInputDatum(kPoints3d,
+                                             kImageOrigins,
+                                             soln_rotation,
+                                             soln_translation);
+  // Execute test.
+  TestUpnpPoseEstimationWithNoise(soln_rotation,
+                                  soln_translation,
+                                  kNoiseStdDev,
+                                  kMaxReprojectionError,
+                                  kMaxAllowedRotationDifference,
+                                  kMaxAllowedTranslationDifference,
+                                  &input_datum);
 }
 
 }  // namespace
