@@ -199,7 +199,6 @@ UpnpCostParameters ComputeCostParameters(
 }
 
 std::vector<Eigen::Quaterniond> SolveUpnpFromNonMinimalSample(
-    const InputDatum& input_datum,
     const UpnpCostParameters& cost_params) {
   std::vector<Eigen::Quaterniond> rotations(kNumMaxRotationsExploitingSymmetry);
   // Build action matrix.
@@ -222,7 +221,6 @@ std::vector<Eigen::Quaterniond> SolveUpnpFromNonMinimalSample(
 }
 
 std::vector<Eigen::Quaterniond> SolveUpnpFromMinimalSample(
-    const InputDatum& input_datum,
     const UpnpCostParameters& cost_params) {
   std::vector<Eigen::Quaterniond> rotations(kNumMaxRotations);
   // Build action matrix.
@@ -259,9 +257,9 @@ inline std::vector<Eigen::Quaterniond> ComputeRotations(
     const UpnpCostParameters& cost_params) {
   // Build the action matrix.
   if (input_datum.world_points.size() > kNumMinCorrespondences) {
-    return SolveUpnpFromNonMinimalSample(input_datum, cost_params);
+    return SolveUpnpFromNonMinimalSample(cost_params);
   }
-  return SolveUpnpFromMinimalSample(input_datum, cost_params);
+  return SolveUpnpFromMinimalSample(cost_params);
 }
 
 // Constructs the vector s as indicated in Eq. 12.
