@@ -152,6 +152,7 @@ set(THEIA_SRC
   sfm/incremental_reconstruction_estimator.cc
   sfm/localize_view_to_reconstruction.cc
   sfm/pose/build_upnp_action_matrix.cc
+  sfm/pose/build_upnp_action_matrix_using_symmetry.cc
   sfm/pose/dls_impl.cc
   sfm/pose/dls_pnp.cc
   sfm/pose/eight_point_fundamental_matrix.cc
@@ -163,6 +164,7 @@ set(THEIA_SRC
   sfm/pose/four_point_homography.cc
   sfm/pose/four_point_relative_pose_partial_rotation.cc
   sfm/pose/fundamental_matrix_util.cc
+  sfm/pose/gauss_jordan_elimination.cc
   sfm/pose/perspective_three_point.cc
   sfm/pose/position_from_two_rays.cc
   sfm/pose/relative_pose_from_two_points_with_known_rotation.cc
@@ -318,6 +320,7 @@ if (BUILD_TESTING)
   gtest(sfm/hybrid_reconstruction_estimator)
   gtest(sfm/incremental_reconstruction_estimator)
   gtest(sfm/pose/build_upnp_action_matrix)
+  gtest(sfm/pose/build_upnp_action_matrix_using_symmetry)
   gtest(sfm/pose/dls_pnp)
   gtest(sfm/pose/eight_point_fundamental_matrix)
   gtest(sfm/pose/essential_matrix_utils)
@@ -327,6 +330,7 @@ if (BUILD_TESTING)
   gtest(sfm/pose/four_point_homography)
   gtest(sfm/pose/four_point_relative_pose_partial_rotation)
   gtest(sfm/pose/fundamental_matrix_util)
+  gtest(sfm/pose/gauss_jordan_elimination)
   gtest(sfm/pose/perspective_three_point)
   gtest(sfm/pose/position_from_two_rays)
   gtest(sfm/pose/relative_pose_from_two_points_with_known_rotation)

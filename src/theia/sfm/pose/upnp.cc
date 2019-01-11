@@ -44,6 +44,7 @@
 
 #include "theia/alignment/alignment.h"
 #include "theia/sfm/pose/build_upnp_action_matrix.h"
+#include "theia/sfm/pose/build_upnp_action_matrix_using_symmetry.h"
 
 namespace theia {
 

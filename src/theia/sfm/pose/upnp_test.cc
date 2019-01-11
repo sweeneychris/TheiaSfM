@@ -267,7 +267,7 @@ TEST(UpnpTests, MinimalSampleCentralCameraPoseEstimation) {
 
 // Checks the case of a minimal sample and central camera pose estimation.
 TEST(UpnpTests, MinimalSampleCentralCameraPoseEstimationWithNoise) {
-  const double kNoiseStdDev = 0.6 / 512.0;
+  const double kNoiseStdDev = 0.4 / 512.0;
   const double kMaxReprojectionError = 1.0 / 512.0;
   const double kMaxAllowedRotationDifference = DegToRad(1.0);
   const double kMaxAllowedTranslationDifference = 1e-3;
@@ -329,7 +329,7 @@ TEST(UpnpTests, MinimalSampleNonCentralCameraPoseEstimation) {
 // Checks the case of a minimal sample and a non-central camera pose estimation
 // with noise.
 TEST(UpnpTests, MinimalSampleNonCentralCameraPoseEstimationWithNoise) {
-  const double kNoiseStdDev = 1e-3;
+  const double kNoiseStdDev = 1e-4;
   const double kMaxReprojectionError = 3.0 / 512.0;
   const double kMaxAllowedRotationDifference = DegToRad(1.0);
   const double kMaxAllowedTranslationDifference = 1e-3;
@@ -398,7 +398,7 @@ TEST(UpnpTests, NonMinimalSampleCentralCameraPoseEstimation) {
 // Checks that the estimator works well using a non-minimal sample of data
 // points.
 TEST(UpnpTests, NonMinimalSampleCentralCameraPoseEstimationWithNoise) {
-  const double kNoiseStdDev = 1e-3;
+  const double kNoiseStdDev = 5e-4;
   const double kMaxReprojectionError = 3.0 / 512.0;
   const double kMaxAllowedRotationDifference = DegToRad(1.0);
   const double kMaxAllowedTranslationDifference = 1e-3;
