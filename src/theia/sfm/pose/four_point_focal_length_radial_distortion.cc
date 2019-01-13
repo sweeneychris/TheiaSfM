@@ -83,8 +83,7 @@ bool FourPointsPoseFocalLengthRadialDistortion(
   Matrix34d world_points_;
   Matrix34d u;  // image points. Will be normalized.
   for (int i = 0; i < 4; ++i) {
-    d[i] = feature_vectors[i][0] * feature_vectors[i][0] +
-           feature_vectors[i][1] * feature_vectors[i][1];
+    d[i] = feature_vectors[i].squaredNorm();
     world_points_.col(i) = world_points[i];
     u.col(i) = feature_vectors[i].homogeneous();
   }
@@ -94,8 +93,8 @@ bool FourPointsPoseFocalLengthRadialDistortion(
   t0_mat << t0, t0, t0, t0;
 
   Matrix4d U;
-  U.fill(1.0);
   U.topRows<3>() = world_points_ - t0_mat;
+  U.bottomRows<1>() << 1.0, 1.0, 1.0, 1.0;
 
   Eigen::JacobiSVD<Eigen::MatrixXd> svd(
       U.topRows<3>(), Eigen::ComputeFullV | Eigen::ComputeFullU);
@@ -149,7 +148,7 @@ bool FourPointsPoseFocalLengthRadialDistortion(
   Eigen::AngleAxisd random_rot(rot_vec.norm(), rot_vec);
   N.leftCols<3>() *= random_rot.toRotationMatrix();
   Matrix<double, 8, 1> x0 =
-      Q.leftCols<5>() * (R.topRows<5>().transpose().inverse() * b);
+      Q.leftCols<5>() * (R.topRows<5>().transpose().fullPivLu().solve(b));
   N.rightCols<1>() = x0;
 
   Matrix<double, 6, 3> C;
