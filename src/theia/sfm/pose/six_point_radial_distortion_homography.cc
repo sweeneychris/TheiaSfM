@@ -98,7 +98,7 @@ bool SixPointRadialDistortionHomography(
   int nsols = 0;
   Vector2d rs;
 
-  if (isNearZero(d)) {
+  if (IsNearZero(d)) {
     nsols = 1;
     rs(0) = (-b) / (2.0 * a);
   } else if (d > 0.0) {
@@ -117,7 +117,6 @@ bool SixPointRadialDistortionHomography(
   T.col(0) = -M.col(3);
   T.col(1) = -M.col(4);
 
-  // Matrix<double, 9, 1> Hs;
   for (int i = 0; i < nsols; i++) {
     n = rs(i) * V1.col(6) + V1.col(7);
     const double l2 = n(6) / n(2);
