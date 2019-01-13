@@ -87,7 +87,7 @@ bool SixPointRadialDistortionHomography(
 
   Eigen::JacobiSVD<Matrix68d, Eigen::FullPivHouseholderQRPreconditioner> Svd1(
       M, Eigen::ComputeFullV);
-  const Eigen::Matrix<double, 8, 8> &V1 = Svd1.matrixV();
+  const Eigen::Matrix<double, 8, 8>& V1 = Svd1.matrixV();
 
   const double a = -V1(2, 6) * V1(7, 6) + V1(5, 6) * V1(6, 6);
   const double b = -V1(2, 6) * V1(7, 7) - V1(2, 7) * V1(7, 6) +
