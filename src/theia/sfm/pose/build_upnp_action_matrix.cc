@@ -44,6 +44,24 @@
 
 #include "theia/sfm/pose/gauss_jordan_elimination.h"
 
+// Helper macros to accelerate compilation with Eigen operations.
+// a_atrix and input_atrix are column major.
+#ifdef M
+#undef M
+#endif
+#define M(X, Y) a_matrix.col(Y).data()[X]
+
+#ifdef M1
+#undef M
+#endif
+#define M1(X, Y) input_matrix.col(Y).data()[X]
+
+// Template matrix is row-major.
+#ifdef M2
+#undef M2
+#endif
+#define M2(X, Y) template_matrix.row(X).data()[Y]
+
 namespace theia {
 typedef Eigen::Matrix<double, 8, 8> Matrix8d;
 typedef Eigen::Matrix<double, 10, 10> Matrix10d;
@@ -56,14 +74,14 @@ using Eigen::Dynamic;
 using Eigen::RowMajor;
 using Eigen::Matrix4d;
 
-RowMajorMatrixXd SetUpTemplateMatrix(const Matrix<double, 5, 29>& M1) {
+RowMajorMatrixXd SetUpTemplateMatrix(const Matrix<double, 5, 29>& input_matrix) {
   const int kTemplateRows = 395;
   const int kTemplateCols = 412;
   RowMajorMatrixXd template_matrix(kTemplateRows, kTemplateCols);
   template_matrix.setZero();
 
   // Filling in the template matrix.
-  RowMajorMatrixXd& M2 = template_matrix;
+  // RowMajorMatrixXd& M2 = template_matrix;
   M2(0, 59) = M1(4,20); M2(0, 61) = M1(4,21); M2(0, 70) = M1(4,22);
   M2(0, 91) = M1(4,23); M2(0, 252) = M1(4,28);
   M2(1, 40) = M1(4,20); M2(1, 42) = M1(4,21); M2(1, 51) = M1(4,22);
@@ -2461,9 +2479,10 @@ RowMajorMatrixXd SetUpTemplateMatrix(const Matrix<double, 5, 29>& M1) {
 Matrix16d BuildActionMatrix(const Matrix10d& a_matrix,
                             const Vector10d& b_vector,
                             const double gamma) {
-  const Matrix10d& M = a_matrix;
-  const Vector10d& C = b_vector;
-  Matrix<double, 5, 29> M1 = Matrix<double, 5, 29>::Zero();
+  //  const Matrix10d& M = a_matrix;
+  //  const Vector10d& C = b_vector;
+  const double* C = b_vector.data();
+  Matrix<double, 5, 29> input_matrix = Matrix<double, 5, 29>::Zero();
 
   // Row 0.
   M1(0,0) = 4 * M(0,0); M1(0,1) = 4 * M(4,0) + 2 * M(0,4);
@@ -2479,8 +2498,8 @@ Matrix16d BuildActionMatrix(const Matrix10d& a_matrix,
   M1(0,14) = 2 * M(9,4) + 2 * M(8,5) + 2 * M(7,6);
   M1(0,15) = 2 * M(9,5) + 2 * M(2,6); M1(0,16) = 2 * M(6,6) + 4 * M(3,0);
   M1(0,17) = 2 * M(8,6) + 2 * M(3,4); M1(0,18) = 2 * M(9,6) + 2 * M(3,5);
-  M1(0,19) = 2 * M(3,6); M1(0,24) = 4 * C(0); M1(0,25) = 2 * C(4);
-  M1(0,26) = 2 * C(5); M1(0,27) = 2 * C(6);
+  M1(0,19) = 2 * M(3,6); M1(0,24) = 4 * C[0]; M1(0,25) = 2 * C[4];
+  M1(0,26) = 2 * C[5]; M1(0,27) = 2 * C[6];
 
   // Row 1.
   M1(1,0) = 2 * M(0,4); M1(1,1) = 2 * M(4,4) + 4 * M(0,1);
@@ -2496,8 +2515,8 @@ Matrix16d BuildActionMatrix(const Matrix10d& a_matrix,
   M1(1,14) = 4 * M(9,1) + 2 * M(8,7) + 2 * M(7,8);
   M1(1,15) = 2 * M(9,7) + 2 * M(2,8); M1(1,16) = 2 * M(6,8) + 2 * M(3,4);
   M1(1,17) = 2 * M(8,8) + 4 * M(3,1); M1(1,18) = 2 * M(9,8) + 2 * M(3,7);
-  M1(1,19) = 2 * M(3,8); M1(1,24) = 2 * C(4); M1(1,25) = 4 * C(1);
-  M1(1,26) = 2 * C(7); M1(1,27) = 2 * C(8); 
+  M1(1,19) = 2 * M(3,8); M1(1,24) = 2 * C[4]; M1(1,25) = 4 * C[1];
+  M1(1,26) = 2 * C[7]; M1(1,27) = 2 * C[8];
 
   // Row 2.
   M1(2,0) = 2 * M(0,5); M1(2,1) = 2 * M(4,5) + 2 * M(0,7);
@@ -2515,8 +2534,8 @@ Matrix16d BuildActionMatrix(const Matrix10d& a_matrix,
   M1(2,15) = 4 * M(9,2) + 2 * M(2,9);
   M1(2,16) = 2 * M(6,9) + 2 * M(3,5); M1(2,17) = 2 * M(8,9) + 2 * M(3,7);
   M1(2,18) = 2 * M(9,9) + 4 * M(3,2); M1(2,19) = 2 * M(3,9);
-  M1(2,24) = 2 * C(5);
-  M1(2,25) = 2 * C(7); M1(2,26) = 4 * C(2); M1(2,27) = 2 * C(9); 
+  M1(2,24) = 2 * C[5];
+  M1(2,25) = 2 * C[7]; M1(2,26) = 4 * C[2]; M1(2,27) = 2 * C[9]; 
 
   // Row 3.
   M1(3,0) = 2 * M(0,6); M1(3,1) = 2 * M(4,6) + 2 * M(0,8);
@@ -2534,19 +2553,18 @@ Matrix16d BuildActionMatrix(const Matrix10d& a_matrix,
   M1(3,15) = 2 * M(9,9) + 4 * M(2,3);
   M1(3,16) = 4 * M(6,3) + 2 * M(3,6); M1(3,17) = 4 * M(8,3) + 2 * M(3,8);
   M1(3,18) = 4 * M(9,3) + 2 * M(3,9); M1(3,19) = 4 * M(3,3);
-  M1(3,24) = 2 * C(6);
-  M1(3,25) = 2 * C(8); M1(3,26) = 2 * C(9); M1(3,27) = 4 * C(3);
+  M1(3,24) = 2 * C[6];
+  M1(3,25) = 2 * C[8]; M1(3,26) = 2 * C[9]; M1(3,27) = 4 * C[3];
 
   // Row 4.
   M1(4,20) = 1; M1(4,21) = 1; M1(4,22) = 1; M1(4,23) = 1; M1(4,28) = -1;
 
-  const Matrix4d M1_part1 = M1.block<4, 4>(0, 0);
-  const Matrix<double, 4, 29> M1_part2 =
-      M1_part1.inverse() * M1.block<4, 29>(0, 0);
-  M1.block<4, 29>(0, 0) = M1_part2;
+  input_matrix.block<4, 29>(0, 0) =
+      input_matrix.block<4, 4>(0, 0).inverse() *
+      input_matrix.block<4, 29>(0, 0);
 
   // Compute template matrix.
-  RowMajorMatrixXd template_matrix = SetUpTemplateMatrix(M1);
+  RowMajorMatrixXd template_matrix = SetUpTemplateMatrix(input_matrix);
   GaussJordanElimination(340, &template_matrix);
   Matrix16d action_matrix = Matrix16d::Zero();
   for (int s = 0; s < 16; ++s) {
