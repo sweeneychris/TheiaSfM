@@ -45,12 +45,11 @@
 namespace theia {
 
 int TenPointRadialDistortionFundamentalMatrixHelper(
-        Eigen::Matrix<double, 29, 1>& pr,
-        Eigen::Matrix<double, 2, 10>& sols);
+    Eigen::Matrix<double, 29, 1>& pr, Eigen::Matrix<double, 2, 10>& sols);
 
 template <typename Derived>
-inline void colEchelonForm(Eigen::MatrixBase<Derived> &M, double pivtol = 1e-12)
-{
+inline void colEchelonForm(Eigen::MatrixBase<Derived>& M,
+                           double pivtol = 1e-12) {
   typedef typename Derived::Scalar Scalar;
 
   int n = M.rows();
@@ -59,48 +58,40 @@ inline void colEchelonForm(Eigen::MatrixBase<Derived> &M, double pivtol = 1e-12)
   int col = 0;
   Scalar p, tp;
 
-  while((i < m) && (j < n))
-    {
-      p = std::numeric_limits<Scalar>::min();
-      col = i;
+  while ((i < m) && (j < n)) {
+    p = std::numeric_limits<Scalar>::min();
+    col = i;
 
-      for (k = i; k < m; k++)
-        {
-          tp = std::abs(M(j, k));
-          if (tp > p)
-        {
-          p = tp;
-          col = k;
-        }
-        }
+    for (k = i; k < m; k++) {
+      tp = std::abs(M(j, k));
+      if (tp > p) {
+        p = tp;
+        col = k;
+      }
+    }
 
-      if (p < Scalar(pivtol))
-        {
-          M.block(j, i, 1, m - i).setZero();
-          j++;
-        }
-      else
-        {
-          if (col != i)
+    if (p < Scalar(pivtol)) {
+      M.block(j, i, 1, m - i).setZero();
+      j++;
+    } else {
+      if (col != i)
         M.block(j, i, n - j, 1).swap(M.block(j, col, n - j, 1));
 
-          M.block(j + 1, i, n - j - 1, 1) /= M(j, i);
-          M(j, i) = 1.0;
+      M.block(j + 1, i, n - j - 1, 1) /= M(j, i);
+      M(j, i) = 1.0;
 
-          for (k = 0; k < m; k++)
-        {
-          if (k == i)
-            continue;
+      for (k = 0; k < m; k++) {
+        if (k == i)
+          continue;
 
-          M.block(j, k, n - j, 1) -= M(j, k) * M.block(j, i, n - j, 1);
-        }
+        M.block(j, k, n - j, 1) -= M(j, k) * M.block(j, i, n - j, 1);
+      }
 
-          i++;
-          j++;
-        }
+      i++;
+      j++;
     }
+  }
 }
-
 }
 
 #endif

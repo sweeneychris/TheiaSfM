@@ -59,9 +59,8 @@ using Matrix210d = Eigen::Matrix<double, 2, 10>;
 bool TenPointRadialDistortionFundamentalMatrix(
     const std::vector<Eigen::Vector2d>& normalized_feature_points_left,
     const std::vector<Eigen::Vector2d>& normalized_feature_points_right,
-    std::vector<RadialFundamentalMatrixResult>* results,
-    double lmin, double lmax) {
-
+    std::vector<RadialFundamentalMatrixResult>* results, double lmin,
+    double lmax) {
   Matrix102d X;
   Matrix102d U;
   for (int i = 0; i < 10; ++i) {
@@ -138,10 +137,9 @@ bool TenPointRadialDistortionFundamentalMatrix(
       RadialFundamentalMatrixResult res;
       res.l1 = l1;
       res.l2 = l2;
-      res.F <<
-          m3.dot(-Mr.row(0)), m3.dot(-Mr.row(1)), m3.dot(-Mr.row(9)),
-          m3.dot(-Mr.row(2)), m3.dot(-Mr.row(3)), f23,
-          m3.dot(-Mr.row(5)), m3.dot(-Mr.row(7)), 1.0;
+      res.F << m3.dot(-Mr.row(0)), m3.dot(-Mr.row(1)), m3.dot(-Mr.row(9)),
+          m3.dot(-Mr.row(2)), m3.dot(-Mr.row(3)), f23, m3.dot(-Mr.row(5)),
+          m3.dot(-Mr.row(7)), 1.0;
       results->push_back(res);
     }
 
