@@ -55,7 +55,7 @@ using Matrix62d = Eigen::Matrix<double, 6, 2>;
 using Matrix65d = Eigen::Matrix<double, 6, 5>;
 using Eigen::Matrix3d;
 
-bool isNearZero(double val) {
+bool IsNearZero(double val) {
   return (+val < (100.0 * std::numeric_limits<double>::epsilon())) &&
          (-val < (100.0 * std::numeric_limits<double>::epsilon()));
 }
