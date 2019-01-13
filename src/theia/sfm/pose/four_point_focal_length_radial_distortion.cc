@@ -86,7 +86,7 @@ bool FourPointsPoseFocalLengthRadialDistortion(
     d[i] = feature_vectors[i][0] * feature_vectors[i][0] +
            feature_vectors[i][1] * feature_vectors[i][1];
     world_points_.col(i) = world_points[i];
-    u.col(i) = Vector3d(feature_vectors[i][0], feature_vectors[i][1], 1.0);
+    u.col(i) = feature_vectors[i].homogeneous();
   }
 
   const Vector3d t0 = world_points_.rowwise().mean();
