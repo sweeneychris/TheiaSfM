@@ -61,7 +61,7 @@ bool IsNearZero(double val) {
 }
 
 bool SixPointRadialDistortionHomography(
-    const std::vector<Eigen::Vector2d> &normalized_feature_points_left,
+    const std::vector<Eigen::Vector2d>& normalized_feature_points_left,
     const std::vector<Eigen::Vector2d> &normalized_feature_points_right,
     std::vector<RadialHomographyResult> *results, const double lmin,
     const double lmax) {
