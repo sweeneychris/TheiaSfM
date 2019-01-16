@@ -87,5 +87,14 @@ TEST(BuildUpnpActionMatrixTests, PartialDiagonalizationOnFatMatrix) {
                       kNumRows - kLastRowToProcess).sum());
 }
 
+TEST(BuildUpnpActionMatrixTests, FullDiagonalizationOnLargeSquaredMatrix) {
+  const int kNumRows = 400;
+  const int kNumCols = kNumRows;
+  const int kLastRowToProcess = 0;
+  RowMajorMatrixXd mat = RowMajorMatrixXd::Random(kNumRows, kNumCols);
+  GaussJordanElimination(kLastRowToProcess, &mat);
+  EXPECT_NEAR(mat.sum(), mat.trace(), 1e-6);
+}
+
 }  // namespace
 }  // namespace theia

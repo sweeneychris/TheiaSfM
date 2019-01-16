@@ -35,15 +35,16 @@
 #include "theia/sfm/pose/gauss_jordan_elimination.h"
 
 #include <cmath>
+#include <utility>
 #include <Eigen/Core>
 #include <glog/logging.h>
 
 namespace theia {
 namespace {
-inline double FindLargestValueInColumn(const RowMajorMatrixXd& matrix,
-                                       const int column,
-                                       const int starting_row,
-                                       int* max_value_index) {
+inline double FindLargestAbsoluteValueInColumn(const RowMajorMatrixXd& matrix,
+                                               const int column,
+                                               const int starting_row,
+                                               int* max_value_index) {
   double max_value = matrix(starting_row, column);
   *max_value_index = starting_row;
   for (int row = starting_row; row < matrix.rows(); ++row) {
@@ -84,7 +85,7 @@ void GaussJordanElimination(const int last_row_to_process,
     // Search for the maxium entry in column with current_row index.
     const int tail_size = num_rows - current_row;
     int max_coeff_row_idx = 0;
-    const double max_value = FindLargestValueInColumn(
+    const double max_value = FindLargestAbsoluteValueInColumn(
         *template_matrix, current_row, current_row, &max_coeff_row_idx);
 
     // Swap rows.

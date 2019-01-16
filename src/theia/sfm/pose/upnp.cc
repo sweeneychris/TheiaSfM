@@ -209,8 +209,10 @@ std::vector<Eigen::Quaterniond> SolveUpnpFromNonMinimalSample(
       cost_params.a_matrix,
       cost_params.b_vector,
       cost_params.gamma);
-  const Eigen::EigenSolver<Matrix8d> eigen_solver(action_matrix, true);
+
+  const Eigen::EigenSolver<Matrix8d> eigen_solver(action_matrix);
   const Matrix8cd eigen_vectors = eigen_solver.eigenvectors();
+
   for (int i = 0; i < rotations.size(); ++i) {
     rotations[i] = Eigen::Quaterniond(eigen_vectors(4, i).real(),
                                       eigen_vectors(5, i).real(),
@@ -228,8 +230,10 @@ std::vector<Eigen::Quaterniond> SolveUpnpFromMinimalSample(
   const Matrix16d action_matrix = BuildActionMatrix(cost_params.a_matrix,
                                                     cost_params.b_vector,
                                                     cost_params.gamma);
+
   const Eigen::EigenSolver<Matrix16d> eigen_solver(action_matrix, true);
   const Matrix16cd eigen_vectors = eigen_solver.eigenvectors();
+
   for (int i = 0; i < rotations.size(); ++i) {
     // According to the original implementation, the complex solutions
     // can be good, in particular when the number of correspondences is really

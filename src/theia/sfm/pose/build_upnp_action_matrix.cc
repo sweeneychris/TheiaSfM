@@ -67,6 +67,7 @@ typedef Eigen::Matrix<double, 8, 8> Matrix8d;
 typedef Eigen::Matrix<double, 10, 10> Matrix10d;
 typedef Eigen::Matrix<double, 16, 16> Matrix16d;
 typedef Eigen::Matrix<double, 10, 1> Vector10d;
+typedef Eigen::Matrix<double, 5, 29> Matrix5x29d;
 
 namespace {
 using Eigen::Matrix;
@@ -74,14 +75,13 @@ using Eigen::Dynamic;
 using Eigen::RowMajor;
 using Eigen::Matrix4d;
 
-RowMajorMatrixXd SetUpTemplateMatrix(const Matrix<double, 5, 29>& input_matrix) {
+RowMajorMatrixXd SetUpTemplateMatrix(const Matrix5x29d& input_matrix) {
   const int kTemplateRows = 395;
   const int kTemplateCols = 412;
   RowMajorMatrixXd template_matrix(kTemplateRows, kTemplateCols);
   template_matrix.setZero();
 
   // Filling in the template matrix.
-  // RowMajorMatrixXd& M2 = template_matrix;
   M2(0, 59) = M1(4,20); M2(0, 61) = M1(4,21); M2(0, 70) = M1(4,22);
   M2(0, 91) = M1(4,23); M2(0, 252) = M1(4,28);
   M2(1, 40) = M1(4,20); M2(1, 42) = M1(4,21); M2(1, 51) = M1(4,22);
@@ -2473,16 +2473,13 @@ RowMajorMatrixXd SetUpTemplateMatrix(const Matrix<double, 5, 29>& input_matrix) 
 
 }  // namespace
 
-// TODO(vfragoso): Document me!
 // Implementation based on:
 // OpenGV file: src/absolute_pose/modules/upnp2.cpp
 Matrix16d BuildActionMatrix(const Matrix10d& a_matrix,
                             const Vector10d& b_vector,
                             const double gamma) {
-  //  const Matrix10d& M = a_matrix;
-  //  const Vector10d& C = b_vector;
   const double* C = b_vector.data();
-  Matrix<double, 5, 29> input_matrix = Matrix<double, 5, 29>::Zero();
+  Matrix5x29d input_matrix = Matrix5x29d::Zero();
 
   // Row 0.
   M1(0,0) = 4 * M(0,0); M1(0,1) = 4 * M(4,0) + 2 * M(0,4);
