@@ -41,6 +41,7 @@
 
 #include <algorithm>
 #include <complex>
+#include <utility>
 #include <vector>
 
 #include "theia/alignment/alignment.h"
@@ -211,12 +212,10 @@ std::vector<Eigen::Quaterniond> SolveUpnpFromNonMinimalSample(
   const Eigen::EigenSolver<Matrix8d> eigen_solver(action_matrix, true);
   const Matrix8cd eigen_vectors = eigen_solver.eigenvectors();
   for (int i = 0; i < rotations.size(); ++i) {
-    Eigen::Quaterniond quaternion(eigen_vectors(4, i).real(),
-                                  eigen_vectors(5, i).real(),
-                                  eigen_vectors(6, i).real(),
-                                  eigen_vectors(7, i).real());
-    quaternion.normalize();
-    rotations[i] = quaternion;
+    rotations[i] = Eigen::Quaterniond(eigen_vectors(4, i).real(),
+                                      eigen_vectors(5, i).real(),
+                                      eigen_vectors(6, i).real(),
+                                      eigen_vectors(7, i).real()).normalized();
   }
 
   return rotations;
@@ -239,7 +238,6 @@ std::vector<Eigen::Quaterniond> SolveUpnpFromMinimalSample(
                                eigen_vectors(12, i).real(),
                                eigen_vectors(13, i).real(),
                                eigen_vectors(14, i).real());
-    quaternion.normalize();
 
     if (quaternion[0] < 0.0) {
       quaternion *= -1.0;
@@ -248,7 +246,7 @@ std::vector<Eigen::Quaterniond> SolveUpnpFromMinimalSample(
     rotations[i] = Eigen::Quaterniond(quaternion[0],
                                       quaternion[1],
                                       quaternion[2],
-                                      quaternion[3]);
+                                      quaternion[3]).normalized();
   }
 
   return rotations;
@@ -336,7 +334,7 @@ void DiscardBadSolutions(const InputDatum& input_datum,
     for (int j = 0; j < world_points.size(); ++j) {
       const Eigen::Vector3d transformed_point =
           soln_rotation * world_points[j] + soln_translation - ray_origins[j];
-      
+
       // Find the rotation that puts the image ray at [0, 0, 1] i.e. looking
       // straightforward from the camera.
       const Eigen::Quaterniond unrot =
