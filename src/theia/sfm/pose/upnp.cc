@@ -39,6 +39,7 @@
 #include <Eigen/Geometry>
 #include <glog/logging.h>
 
+#include <algorithm>
 #include <complex>
 #include <vector>
 
@@ -306,6 +307,63 @@ std::vector<Eigen::Vector3d> ComputeTranslations(
   return translations;
 }
 
+void DiscardBadSolutions(const InputDatum& input_datum,
+                         std::vector<Eigen::Quaterniond>* solution_rotations,
+                         std::vector<Eigen::Vector3d>* solution_translations) {
+  CHECK_EQ(CHECK_NOTNULL(solution_rotations)->size(),
+           CHECK_NOTNULL(solution_translations)->size());
+  std::vector<Eigen::Quaterniond> final_rotations;
+  std::vector<Eigen::Vector3d> final_translations;
+  final_rotations.reserve(solution_rotations->size());
+  final_translations.reserve(solution_translations->size());
+
+  // Useful aliases.
+  const std::vector<Eigen::Vector3d>& world_points = input_datum.world_points;
+  const std::vector<Eigen::Vector3d>& ray_origins = input_datum.ray_origins;
+  const std::vector<Eigen::Vector3d>& ray_directions =
+      input_datum.ray_directions;
+
+  // For every computed solution, check that points are in front of camera.
+  for (int i = 0; i < solution_rotations->size(); ++i) {
+    const Eigen::Quaterniond& soln_rotation = solution_rotations->at(i);
+    const Eigen::Vector3d& soln_translation = solution_translations->at(i);
+
+    // Check that all points are in front of the camera. Discard the solution
+    // if this is not the case.
+    bool all_points_in_front_of_camera = true;
+
+
+    for (int j = 0; j < world_points.size(); ++j) {
+      const Eigen::Vector3d transformed_point =
+          soln_rotation * world_points[j] + soln_translation - ray_origins[j];
+      
+      // Find the rotation that puts the image ray at [0, 0, 1] i.e. looking
+      // straightforward from the camera.
+      const Eigen::Quaterniond unrot =
+          Eigen::Quaterniond::FromTwoVectors(ray_directions[j],
+                                             Eigen::Vector3d::UnitZ());
+
+      // Rotate the transformed point and check if the z coordinate is
+      // negative. This will indicate if the point is projected behind the
+      // camera.
+      const Eigen::Vector3d rotated_projection = unrot * transformed_point;
+      if (rotated_projection.z() < 0) {
+        all_points_in_front_of_camera = false;
+        break;
+      }
+    }
+
+    if (all_points_in_front_of_camera) {
+      final_rotations.emplace_back(soln_rotation);
+      final_translations.emplace_back(soln_translation);
+    }
+  }
+
+  // Set the final solutions.
+  std::swap(*solution_rotations, final_rotations);
+  std::swap(*solution_translations, final_translations);
+}
+
 }  // namespace
 
 // Evaluates the cost introduced in Eq. 17.
@@ -378,12 +436,15 @@ UpnpCostParameters Upnp(const std::vector<Eigen::Vector3d>& ray_origins,
                                 &v_matrices);
 
   // Compute rotations.
-  const std::vector<Eigen::Quaterniond> rotations =
+  std::vector<Eigen::Quaterniond> rotations =
       ComputeRotations(input_datum, cost_params);
 
   // Compute translation.
-  const std::vector<Eigen::Vector3d> translations =
+  std::vector<Eigen::Vector3d> translations =
       ComputeTranslations(input_datum, rotations, v_matrices);
+
+  // Discard solutions that have points behind the camera.
+  DiscardBadSolutions(input_datum, &rotations, &translations);
 
   *solution_rotations = std::move(rotations);
   *solution_translations = std::move(translations);

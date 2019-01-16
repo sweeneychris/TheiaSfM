@@ -54,8 +54,6 @@ struct UpnpCostParameters {
   Eigen::Matrix<double, 10, 10> a_matrix;
   Eigen::Matrix<double, 10, 1> b_vector;
   double gamma;
-
-  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };
 
 // TODO(vfragoso): Document me!
