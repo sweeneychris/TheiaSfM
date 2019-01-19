@@ -46,7 +46,7 @@ namespace theia {
 // www.ceres-solver.org
 class LinearOperator {
  public:
-  virtual ~LinearOperator();
+  virtual ~LinearOperator()=default;
 
   // y = y + Ax;
   virtual void RightMultiply(const Eigen::VectorXd& x,
