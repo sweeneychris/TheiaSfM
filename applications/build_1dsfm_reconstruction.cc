@@ -296,8 +296,7 @@ std::unique_ptr<ReconstructionBuilder>
 InitializeReconstructionBuilderFrom1DSFM() {
   const ReconstructionBuilderOptions options =
       SetReconstructionBuilderOptions();
-  std::unique_ptr<theia::Reconstruction> reconstruction(
-      new theia::Reconstruction);
+  std::unique_ptr<Reconstruction> reconstruction(new Reconstruction);
   std::unique_ptr<theia::ViewGraph> view_graph(new theia::ViewGraph);
   CHECK(Read1DSFM(
       FLAGS_1dsfm_dataset_directory, reconstruction.get(), view_graph.get()))
