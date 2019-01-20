@@ -93,12 +93,15 @@ int TopDownGaussJordan(const int last_row, Eigen::MatrixBase<Derived>* input) {
   using ScalarType = typename Derived::Scalar;
   const ScalarType kPrecisionThreshold = static_cast<ScalarType>(1e-9);
   CHECK_GE(last_row, 1) << "last_row must be larger than or equal to 1.";
+  CHECK_GE(CHECK_NOTNULL(input)->cols(), input->rows())
+      << "Expected a sqaured or fat matrix.";
   // Compute the maximum number of rows to process. Note that if the matrix is
   // skinny, then we cannot process all the rows.
-  const int min_dimension = std::min(
-      static_cast<int>(CHECK_NOTNULL(input)->rows()),
-      static_cast<int>(input->cols()));
-  const int num_rows_to_process = std::min(min_dimension, last_row + 1);
+  // const int min_dimension = std::min(
+  //     static_cast<int>(CHECK_NOTNULL(input)->rows()),
+  //     static_cast<int>(input->cols()));
+  const int num_rows_to_process = std::min(
+      static_cast<int>(input->rows()), last_row + 1);
 
   // This for loop eliminates entries in the lower-left triangular part, and it
   // operates from top to bottom of the matrix.
@@ -206,41 +209,6 @@ void GaussJordan(Eigen::MatrixBase<Derived>* input) {
   GaussJordan(CHECK_NOTNULL(input)->rows() - 1, 0, input);
 }
 
-// // Gauss-Jordan elimination on a matrix.
-// // Modifies the input matrix to be the matrix after gauss-jordan elimation.
-// template <typename Derived>
-// void GaussJordan(Eigen::MatrixBase<Derived>* input, int max_rows = 99999) {
-//   max_rows = std::min(static_cast<int>(input->rows()), max_rows);
-//   // Iterate through each column one by one.
-//   for (int i = 0; i < max_rows; i++) {
-//     // Find row with the largest value in the pivot column and swap.
-//     int swap_row = i;
-//     double max_val = 0.0;
-//     for (int j = i + 1; j < input->rows(); j++) {
-//       double temp_max_val = std::abs((*input)(j, i));
-//       if (temp_max_val > max_val) {
-//         max_val = temp_max_val;
-//         swap_row = j;
-//       }
-//     }
-//     input->row(swap_row).swap(input->row(i));
-
-//     // Eliminate all values in the column of the pivot.
-//     for (int j = 0; j < input->rows(); j++) {
-//       if (j != i) {
-//         input->row(j) -= ((*input)(j, i) / (*input)(i, i)) * input->row(i);
-//         (*input)(j, i) = 0.0;
-//       }
-//     }
-//   }
-
-//   for (int i = 0; i < max_rows; i++) {
-//     // Scale current row so that leading value is 1.0. Leading value should be
-//     // along the diagonal as we proceed with gauss-jordan.
-//     input->row(i) *= 1.0 / (*input)(i, i);
-//     (*input)(i, i) = 1.0;
-//   }
-// }
 }  // namespace theia
 
 #endif  // THEIA_MATH_MATRIX_GAUSS_JORDAN_H_

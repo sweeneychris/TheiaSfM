@@ -72,18 +72,6 @@ TEST(GaussJordan, EliminationOnFatMatrix) {
               mat.block(0, 0, kNumRows, kNumRows).trace(), 1e-6);
 }
 
-TEST(GaussJordan, EliminationOnSkinnyMatrix) {
-  const int kNumRows = 6;
-  const int kNumCols = kNumRows - 4;
-  RowMajorMatrixXd mat = RowMajorMatrixXd::Random(kNumRows, kNumCols);
-  VLOG(1) << "Before: \n" << mat;
-  GaussJordan(&mat);
-  VLOG(1) << "After: \n" << mat;
-  // Verify that the left-block (rows, rows) is diagonalized.
-  EXPECT_NEAR(mat.block(0, 0, kNumCols, kNumCols).sum(),
-              mat.block(0, 0, kNumCols, kNumCols).trace(), 1e-6);
-}
-
 TEST(GaussJordan, PartialDiagonalizationOnFatMatrix) {
   const int kNumRows = 32;
   const int kNumCols = kNumRows + 4;
