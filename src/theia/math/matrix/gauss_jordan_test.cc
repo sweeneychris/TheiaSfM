@@ -52,6 +52,16 @@ TEST(GaussJordan, FullDiagonalizationOnSquaredRowMajorMatrix) {
   EXPECT_NEAR(mat.sum(), mat.trace(), 1e-6);
 }
 
+TEST(GaussJordan, FullDiagonalizationOnSquaredColumnMajorMatrix) {
+  const int kNumRows = 32;
+  Eigen::MatrixXd mat = Eigen::MatrixXd::Random(kNumRows, kNumRows);
+  GaussJordan(&mat);
+  // Trace of matrix must be equals to the number of rows.
+  EXPECT_NEAR(mat.trace(), static_cast<double>(kNumRows), 1e-6);
+  // Verify that the lower triangular part sums to the trace.
+  EXPECT_NEAR(mat.sum(), mat.trace(), 1e-6);
+}
+
 TEST(GaussJordan, EliminationOnFatMatrix) {
   const int kNumRows = 32;
   const int kNumCols = kNumRows + 4;
@@ -60,6 +70,18 @@ TEST(GaussJordan, EliminationOnFatMatrix) {
   // Verify that the left-block (rows, rows) is diagonalized.
   EXPECT_NEAR(mat.block(0, 0, kNumRows, kNumRows).sum(),
               mat.block(0, 0, kNumRows, kNumRows).trace(), 1e-6);
+}
+
+TEST(GaussJordan, EliminationOnSkinnyMatrix) {
+  const int kNumRows = 6;
+  const int kNumCols = kNumRows - 4;
+  RowMajorMatrixXd mat = RowMajorMatrixXd::Random(kNumRows, kNumCols);
+  VLOG(1) << "Before: \n" << mat;
+  GaussJordan(&mat);
+  VLOG(1) << "After: \n" << mat;
+  // Verify that the left-block (rows, rows) is diagonalized.
+  EXPECT_NEAR(mat.block(0, 0, kNumCols, kNumCols).sum(),
+              mat.block(0, 0, kNumCols, kNumCols).trace(), 1e-6);
 }
 
 TEST(GaussJordan, PartialDiagonalizationOnFatMatrix) {
