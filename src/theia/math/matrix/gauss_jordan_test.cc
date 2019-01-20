@@ -62,4 +62,36 @@ TEST(GaussJordan, EliminationOnFatMatrix) {
               mat.block(0, 0, kNumRows, kNumRows).trace(), 1e-6);
 }
 
+TEST(GaussJordan, PartialDiagonalizationOnFatMatrix) {
+  const int kNumRows = 32;
+  const int kNumCols = kNumRows + 4;
+  const int kLastRowToProcess = 2;
+  RowMajorMatrixXd mat = RowMajorMatrixXd::Random(kNumRows, kNumCols);
+  GaussJordan(kNumRows - 1, kLastRowToProcess, &mat);
+  // Verify that the left-block (rows, rows) is partially diagonalized.
+  EXPECT_NEAR(mat.block(kLastRowToProcess, kLastRowToProcess,
+                        kNumRows - kLastRowToProcess,
+                        kNumRows - kLastRowToProcess).sum(),
+              kNumRows - kLastRowToProcess, 1e-6);
+  EXPECT_NEAR(mat.block(kLastRowToProcess, kLastRowToProcess,
+                        kNumRows - kLastRowToProcess,
+                        kNumRows - kLastRowToProcess).sum(),
+              mat.block(kLastRowToProcess, kLastRowToProcess,
+                        kNumRows - kLastRowToProcess,
+                        kNumRows - kLastRowToProcess).trace(),
+              1e-6);
+  EXPECT_NE(mat.block(0, 0, kNumRows, kNumRows).sum(),
+            mat.block(kLastRowToProcess, kLastRowToProcess,
+                      kNumRows - kLastRowToProcess,
+                      kNumRows - kLastRowToProcess).sum());
+}
+
+TEST(GaussJordan, FullDiagonalizationOnLargeSquaredMatrix) {
+  const int kNumRows = 400;
+  const int kNumCols = kNumRows;
+  RowMajorMatrixXd mat = RowMajorMatrixXd::Random(kNumRows, kNumCols);
+  GaussJordan(&mat);
+  EXPECT_NEAR(mat.sum(), mat.trace(), 1e-6);
+}
+
 }  // namespace theia
