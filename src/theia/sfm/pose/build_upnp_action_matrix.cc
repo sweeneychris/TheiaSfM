@@ -42,7 +42,7 @@
 #include <Eigen/Dense>
 #include <glog/logging.h>
 
-#include "theia/sfm/pose/gauss_jordan_elimination.h"
+#include "theia/math/matrix/gauss_jordan.h"
 
 // Helper macros to accelerate compilation with Eigen operations.
 // a_atrix and input_atrix are column major.
@@ -74,6 +74,9 @@ using Eigen::Matrix;
 using Eigen::Dynamic;
 using Eigen::RowMajor;
 using Eigen::Matrix4d;
+
+using RowMajorMatrixXd =
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 
 RowMajorMatrixXd SetUpTemplateMatrix(const Matrix5x29d& input_matrix) {
   const int kTemplateRows = 395;
@@ -2562,7 +2565,7 @@ Matrix16d BuildActionMatrix(const Matrix10d& a_matrix,
 
   // Compute template matrix.
   RowMajorMatrixXd template_matrix = SetUpTemplateMatrix(input_matrix);
-  GaussJordanElimination(340, &template_matrix);
+  GaussJordan(template_matrix.rows() - 1, 340, &template_matrix);
   Matrix16d action_matrix = Matrix16d::Zero();
   for (int s = 0; s < 16; ++s) {
     action_matrix(0, s) -= template_matrix(340, 396 + s);
