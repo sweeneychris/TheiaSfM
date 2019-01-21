@@ -30,8 +30,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //
 // Please contact the author of this library if you have any questions.
-// Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
-// Modified by Victor Fragoso (victor.fragoso@mail.wvu.edu)
+// Author: Victor Fragoso (victor.fragoso@mail.wvu.edu)
 
 #include <Eigen/Dense>
 #include "gtest/gtest.h"
@@ -70,6 +69,19 @@ TEST(GaussJordan, EliminationOnFatMatrix) {
   // Verify that the left-block (rows, rows) is diagonalized.
   EXPECT_NEAR(mat.block(0, 0, kNumRows, kNumRows).sum(),
               mat.block(0, 0, kNumRows, kNumRows).trace(), 1e-6);
+}
+
+TEST(GaussJordan, PartialEliminationOnFatMatrix) {
+  const int kNumRows = 32;
+  const int kNumCols = kNumRows + 4;
+  const int kNumRowsToProcess = kNumRows - 4;
+  const int kLastRowToProcess = kNumRowsToProcess - 1;
+  RowMajorMatrixXd mat = RowMajorMatrixXd::Random(kNumRows, kNumCols);
+  GaussJordan(kLastRowToProcess, &mat);
+  // Verify that the left-block (rows, rows) is diagonalized.
+  EXPECT_NEAR(mat.block(0, 0, kNumRowsToProcess, kNumRowsToProcess).trace(),
+              static_cast<double>(kNumRowsToProcess),
+              1e-6);
 }
 
 TEST(GaussJordan, PartialDiagonalizationOnFatMatrix) {

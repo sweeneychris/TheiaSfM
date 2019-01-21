@@ -30,8 +30,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //
 // Please contact the author of this library if you have any questions.
-// Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
-// Modified by Victor Fragoso (victor.fragoso@mail.wvu.edu)
+// Author: Victor Fragoso (victor.fragoso@mail.wvu.edu)
 
 #ifndef THEIA_MATH_MATRIX_GAUSS_JORDAN_H_
 #define THEIA_MATH_MATRIX_GAUSS_JORDAN_H_
@@ -50,11 +49,12 @@ typename Derived::Scalar FindLargestAbsoluteValueInColumn(
     const Eigen::MatrixBase<Derived>& matrix,
     const int column,
     const int starting_row,
+    const int ending_row,
     int* max_value_index) {
   using ScalarType = typename Derived::Scalar;
   ScalarType max_value = matrix(starting_row, column);
   *max_value_index = starting_row;
-  for (int row = starting_row; row < matrix.rows(); ++row) {
+  for (int row = starting_row; row < ending_row; ++row) {
     const ScalarType candidate_max_value = matrix(row, column);
     if (std::abs(max_value) < std::abs(candidate_max_value)) {
       max_value = candidate_max_value;
@@ -95,13 +95,9 @@ int TopDownGaussJordan(const int last_row, Eigen::MatrixBase<Derived>* input) {
   CHECK_GE(last_row, 1) << "last_row must be larger than or equal to 1.";
   CHECK_GE(CHECK_NOTNULL(input)->cols(), input->rows())
       << "Expected a sqaured or fat matrix.";
-  // Compute the maximum number of rows to process. Note that if the matrix is
-  // skinny, then we cannot process all the rows.
-  // const int min_dimension = std::min(
-  //     static_cast<int>(CHECK_NOTNULL(input)->rows()),
-  //     static_cast<int>(input->cols()));
   const int num_rows_to_process = std::min(
       static_cast<int>(input->rows()), last_row + 1);
+  const int last_row_to_process = num_rows_to_process - 1;
 
   // This for loop eliminates entries in the lower-left triangular part, and it
   // operates from top to bottom of the matrix.
@@ -111,7 +107,8 @@ int TopDownGaussJordan(const int last_row, Eigen::MatrixBase<Derived>* input) {
     int max_coeff_row_idx = 0;
     const ScalarType max_value =
         FindLargestAbsoluteValueInColumn(
-            *input, current_row, current_row, &max_coeff_row_idx);
+            *input, current_row, current_row,
+            last_row_to_process, &max_coeff_row_idx);
 
     // Swap rows.
     input->row(current_row).swap(input->row(max_coeff_row_idx));
@@ -138,7 +135,16 @@ int TopDownGaussJordan(const int last_row, Eigen::MatrixBase<Derived>* input) {
   return num_rows_to_process;
 }
 
-// TODO(vfragoso): Document me!
+// This function eliminates the upper-triangular part of the upper-left
+// block of the input matrix. This function requires as input a matrix processed
+// by the TopDownGaussJordan() function a priori.
+//
+// Example:
+//
+//         |1 x ... y |                           | 1 0 ... 0 |
+// input = |0 1 ... z | => BottomUpGaussJordan => | 0 1 ... 0 |
+//         |0 0 ... w |                           | 0 0 ... 0 |
+//         |0 0 ... 1 |                           | 0 0 ... 1 |
 template <typename Derived>
 void BottomUpGaussJordan(const int start_row,
                          const int last_row_to_process,
@@ -180,7 +186,20 @@ void BottomUpGaussJordan(const int start_row,
 
 }  // namespace internal
 
-// TODO(vfragoso): Document me!
+// This function performs Gauss-Jordan elimination on a squared or fat-matrix.
+// The implementation operates only on the upper-left-squared block of size
+// num. rows x num. rows, and can be used to perform the following operations:
+//
+// 1. Top-down elimination of the lower-triangular part up to a certain row; and
+// 2. Bottom-up elimination of the upper-triangular part up to a certain row.
+//
+// Example:
+//
+// Case 1: Top-down elimination up to second row:
+//
+//         | a b c d |                            | 1 x y z |
+// input = | e f g h |  => TopDownGaussJordan =>  | 0 1 u v |
+//         | i j k l |                            | 0 0 w q |
 template <typename Derived>
 void GaussJordan(const int top_down_last_row,
                  const int bottom_up_last_row,
