@@ -164,7 +164,6 @@ set(THEIA_SRC
   sfm/pose/four_point_homography.cc
   sfm/pose/four_point_relative_pose_partial_rotation.cc
   sfm/pose/fundamental_matrix_util.cc
-  sfm/pose/gauss_jordan_elimination.cc
   sfm/pose/perspective_three_point.cc
   sfm/pose/position_from_two_rays.cc
   sfm/pose/relative_pose_from_two_points_with_known_rotation.cc
@@ -330,7 +329,6 @@ if (BUILD_TESTING)
   gtest(sfm/pose/four_point_homography)
   gtest(sfm/pose/four_point_relative_pose_partial_rotation)
   gtest(sfm/pose/fundamental_matrix_util)
-  gtest(sfm/pose/gauss_jordan_elimination)
   gtest(sfm/pose/perspective_three_point)
   gtest(sfm/pose/position_from_two_rays)
   gtest(sfm/pose/relative_pose_from_two_points_with_known_rotation)
