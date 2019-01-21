@@ -34,13 +34,13 @@
 
 #include "theia/sfm/pose/build_upnp_action_matrix_using_symmetry.h"
 
-#include <algorithm>
-#include <cmath>
-#include <vector>
-
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <glog/logging.h>
+
+#include <algorithm>
+#include <cmath>
+#include <vector>
 
 #include "theia/math/matrix/gauss_jordan.h"
 
@@ -49,18 +49,18 @@
 #ifdef M
 #undef M
 #endif
-#define M(X, Y) a_matrix.col(Y).data()[X]
+#define M(X, Y) a_matrix.data()[Y * a_matrix.rows() + X]
 
 #ifdef M1
 #undef M
 #endif
-#define M1(X, Y) input_matrix.col(Y).data()[X]
+#define M1(X, Y) input_matrix.data()[Y * input_matrix.rows() + X]
 
 // Template matrix is row-major.
 #ifdef M2
 #undef M2
 #endif
-#define M2(X, Y) template_matrix->row(X).data()[Y]
+#define M2(X, Y) template_matrix->data()[X * template_matrix->cols() + Y]
 
 namespace theia {
 typedef Eigen::Matrix<double, 8, 8> Matrix8d;

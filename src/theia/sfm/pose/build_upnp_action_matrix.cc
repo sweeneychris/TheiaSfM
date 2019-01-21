@@ -34,13 +34,13 @@
 
 #include "theia/sfm/pose/build_upnp_action_matrix.h"
 
-#include <algorithm>
-#include <cmath>
-#include <vector>
-
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <glog/logging.h>
+
+#include <cmath>
+#include <algorithm>
+#include <vector>
 
 #include "theia/math/matrix/gauss_jordan.h"
 
@@ -49,18 +49,18 @@
 #ifdef M
 #undef M
 #endif
-#define M(X, Y) a_matrix.col(Y).data()[X]
+#define M(X, Y) a_matrix.data()[Y * a_matrix.rows() + X]
 
 #ifdef M1
 #undef M
 #endif
-#define M1(X, Y) input_matrix.col(Y).data()[X]
+#define M1(X, Y) input_matrix.data()[Y * input_matrix.rows() + X]
 
 // Template matrix is row-major.
 #ifdef M2
 #undef M2
 #endif
-#define M2(X, Y) template_matrix->row(X).data()[Y]
+#define M2(X, Y) template_matrix->data()[X * template_matrix->cols() + Y]
 
 namespace theia {
 typedef Eigen::Matrix<double, 8, 8> Matrix8d;
@@ -94,11 +94,11 @@ void SetUpTemplateMatrix(const Matrix5x29d& input_matrix,
   M2(1, 40) = M1(4,20); M2(1, 42) = M1(4,21); M2(1, 51) = M1(4,22);
   M2(1, 83) = M1(4,23); M2(1, 237) = M1(4,28);
   M2(2, 14) = M1(4,20); M2(2, 16) = M1(4,21); M2(2, 25) = M1(4,22);
-  M2(2, 70) = M1(4,23); M2(2, 216) = M1(4,28); 
+  M2(2, 70) = M1(4,23); M2(2, 216) = M1(4,28);
   M2(3, 34) = M1(4,20); M2(3, 36) = M1(4,21); M2(3, 47) = M1(4,22);
-  M2(3, 79) = M1(4,23); M2(3, 232) = M1(4,28); 
+  M2(3, 79) = M1(4,23); M2(3, 232) = M1(4,28);
   M2(4, 8) = M1(4,20); M2(4, 10) = M1(4,21); M2(4, 21) = M1(4,22);
-  M2(4, 66) = M1(4,23); M2(4, 211) = M1(4,28); 
+  M2(4, 66) = M1(4,23); M2(4, 211) = M1(4,28);
   M2(5, 2) = M1(4,20); M2(5, 4) = M1(4,21); M2(5, 16) = M1(4,22);
   M2(5, 61) = M1(4,23); M2(5, 205) = M1(4,28); 
   M2(6, 33) = M1(4,20); M2(6, 35) = M1(4,21); M2(6, 46) = M1(4,22);

@@ -41,9 +41,23 @@
 #include <vector>
 #include "theia/alignment/alignment.h"
 
-// TODO(vfragoso): Document me!
 namespace theia {
-
+// This class computes the pose of a central or non-central camera using the
+// Universal  Perspective N-point method from "UPnP: An Optimal O(n) Solution to
+// the Absolute Pose Problem with Universal Applicability" by Kneip et al. Upnp
+// solves for the pose by minimizing the following cost function:
+//
+// J(R, t) = \sum_i || depth_i * ray_direction_ + ray_origin_i - R * p_i -t||^2,
+//
+// where R and t are the rotation and translations, respectively. Upnp re-writes
+// the cost function above as a function that only depends on the rotation
+// matrix, yielding a cost function of the form:
+//
+// J(R) = vec(R)' * quadratic_penalty_matrix * vec(R) +
+//        linear_penalty_vector * vec(R) + gamma,
+//
+// where vec(R) is a 10-vector formed as a function of the corresponding
+// quaternion of R.
 class Upnp {
   // Useful aliases for data types.
   using Matrix10d = Eigen::Matrix<double, 10, 10>;
@@ -64,11 +78,19 @@ class Upnp {
   Upnp() = default;
   ~Upnp() = default;
 
-  // TODO(vfragoso): Document me!
+  // The Upnp cost function can be rewritten as follows:
+  //
+  // J(R) = vec(R)' * quadratic_penatly_mat * vec(R) +
+  //        2 * linear_penalty_vector' * vec(R) + gamma,
+  //
+  // where vec(R) is the vector shown in Eq. 12 of the Upnp paper.
   struct CostParameters {
     CostParameters() {
+      // The quadratic penalty matrix.
       quadratic_penalty_mat.setZero();
+      // The linear penalty matrix.
       linear_penalty_vector.setZero();
+      // The constant term.
       gamma = 0.0;
     }
     ~CostParameters() = default;
@@ -78,8 +100,18 @@ class Upnp {
     double gamma;
   };
 
-  // Estimates poses.
-  // TODO(vfragoso): Document me!
+  // Estimates pose of a central and non-central camera. The function returns
+  // true when a pose is found, and false otherwise.
+  //
+  // Params:
+  //   ray_origins:  The origins of each of the ray directions.
+  //   ray_directions:  The unit-vector representing the direction from the
+  //     center of a camera to a 3D point.
+  //   world_points:  The 3D points. For the i-th world point there must be a
+  //     corresponding ray origin and direction at the i-th entry in ray_origins
+  //     and ray_directions.
+  //   solution_rotations:  The computed and candidate quaternions or rotations.
+  //   solution_translations:  The estimated and candidate translations.
   bool EstimatePose(const std::vector<Eigen::Vector3d>& ray_origins,
                     const std::vector<Eigen::Vector3d>& ray_directions,
                     const std::vector<Eigen::Vector3d>& world_points,
@@ -91,8 +123,18 @@ class Upnp {
     return cost_params_;
   }
 
-  // Helper functions.
   // Evaluates the Upnp cost function given a rotation and the cost parameters.
+  // The evaluated cost is the following:
+  //
+  // J(R) = vec(R)' * quadratic_penatly_mat * vec(R) +
+  //        2 * linear_penalty_vector' * vec(R) + gamma.
+  //
+  // The function returns the cost given the rotation and parameters.
+  //
+  // Params:
+  //   parameters:  The cost parameters of the function (i.e., quadratic penalty
+  //     matrix, linear penalty vector, and gamma.
+  //   rotation:  The quaternion representing the rotation.
   static double EvaluateCost(const CostParameters& parameters,
                              const Eigen::Quaterniond& rotation);
 
@@ -121,14 +163,35 @@ class Upnp {
   std::vector<Eigen::Quaterniond> SolveForRotationsFromNonMinimalSample();
 };
 
-// Estimates the pose of a non-central camera.
+// Estimates the pose of a non-central camera. The function returns the cost
+// parameters of the problem given the input datum.
+//
+// Params:
+//   ray_origins:  The origins of each of the ray directions.
+//   ray_directions:  The unit-vector representing the direction from the
+//     center of a camera to a 3D point.
+//   world_points:  The 3D points. For the i-th world point there must be a
+//     corresponding ray origin and direction at the i-th entry in ray_origins
+//     and ray_directions.
+//   solution_rotations:  The computed and candidate quaternions or rotations.
+//   solution_translations:  The estimated and candidate translations.
 Upnp::CostParameters Upnp(const std::vector<Eigen::Vector3d>& ray_origins,
                           const std::vector<Eigen::Vector3d>& ray_directions,
                           const std::vector<Eigen::Vector3d>& world_points,
                           std::vector<Eigen::Quaterniond>* solution_rotations,
                           std::vector<Eigen::Vector3d>* solution_translations);
 
-// Estimates the pose of a central camera.
+// Estimates the pose of a central camera. The function returns the cost
+// parameters of the problem given the input datum.
+//
+// Params:
+//   normalized_pixels:  The 2D pixel positions using the normalized image
+//    coordinates.
+//   world_points:  The 3D points. For the i-th world point there must be a
+//     corresponding ray origin and direction at the i-th entry in ray_origins
+//     and ray_directions.
+//   solution_rotations:  The computed and candidate quaternions or rotations.
+//   solution_translations:  The estimated and candidate translations.
 Upnp::CostParameters Upnp(const std::vector<Eigen::Vector2d>& normalized_pixels,
                           const std::vector<Eigen::Vector3d>& world_points,
                           std::vector<Eigen::Quaterniond>* solution_rotations,

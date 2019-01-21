@@ -180,7 +180,7 @@ void ComputeCostParameters(
   Matrix10d& a_matrix = CHECK_NOTNULL(cost_params)->quadratic_penalty_mat;
   Vector10d& b_vector = cost_params->linear_penalty_vector;
   double& gamma = cost_params->gamma;
-   
+
   // Gamma is the sum of the dot products of b_matrices.
   for (int i = 0; i < world_points.size(); ++i) {
     // Compute the left multiplication matrix or Phi matrix in the paper.
