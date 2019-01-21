@@ -60,7 +60,7 @@
 #ifdef M2
 #undef M2
 #endif
-#define M2(X, Y) template_matrix.row(X).data()[Y]
+#define M2(X, Y) template_matrix->row(X).data()[Y]
 
 namespace theia {
 typedef Eigen::Matrix<double, 8, 8> Matrix8d;
@@ -77,15 +77,16 @@ using Eigen::Matrix4d;
 using RowMajorMatrixXd =
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 
-RowMajorMatrixXd SetUpTemplateMatrixUsingSymmetry(
-    const Matrix<double, 8, 24>& input_matrix) {
-  const int kTemplateRows = 141;
-  const int kTemplateCols = 149;
-  RowMajorMatrixXd template_matrix(kTemplateRows, kTemplateCols);
-  template_matrix.setZero();
+const int kTemplateRows = 141;
+const int kTemplateCols = 149;
+
+void SetUpTemplateMatrixUsingSymmetry(
+    const Matrix<double, 8, 24>& input_matrix,
+    RowMajorMatrixXd* template_matrix) {
+  template_matrix->resize(kTemplateRows, kTemplateCols);
+  template_matrix->setZero();
 
   // Filling in the template matrix.
-  // RowMajorMatrixXd& M2 = template_matrix;
   M2(0, 32) = M1(3,3); M2(0, 38) = M1(3,7); M2(0, 39) = M1(3,8);
   M2(0, 41) = M1(3,9); M2(0, 49) = M1(3,11); M2(0, 50) = M1(3,12);
   M2(0, 52) = M1(3,13); M2(0, 53) = M1(3,14); M2(0, 55) = M1(3,15);
@@ -976,20 +977,16 @@ RowMajorMatrixXd SetUpTemplateMatrixUsingSymmetry(
 
   M2(140, 135) = M1(7,10); M2(140, 137) = M1(7,12); M2(140, 140) = M1(7,15);
   M2(140, 144) = M1(7,19); M2(140, 148) = M1(7,23);
-
-  return template_matrix;
 }
 
 }  // namespace
 
-// TODO(vfragoso): Document me!
 // Implementation based on:
 // OpenGV file: src/absolute_pose/modules/upnp4.cpp
 Matrix8d BuildActionMatrixUsingSymmetry(const Matrix10d& a_matrix,
                                         const Vector10d& b_vector,
-                                        const double gamma) {
-  // const Matrix10d& M = a_matrix;
-  // const Vector10d& C = b_vector;
+                                        RowMajorMatrixXd* template_matrix) {
+  CHECK_NOTNULL(template_matrix)->resize(kTemplateRows, kTemplateCols);
   const double* C = b_vector.data();
   Matrix<double, 8, 24> input_matrix = Matrix<double, 8, 24>::Zero();
       
@@ -1083,16 +1080,15 @@ Matrix8d BuildActionMatrixUsingSymmetry(const Matrix10d& a_matrix,
   }
 
   // Compute action matrix.
-  RowMajorMatrixXd template_matrix =
-      SetUpTemplateMatrixUsingSymmetry(input_matrix);
-  GaussJordan(template_matrix.rows() - 1, 121, &template_matrix);
+  SetUpTemplateMatrixUsingSymmetry(input_matrix, template_matrix);
+  GaussJordan(template_matrix->rows() - 1, 121, template_matrix);
   Matrix8d action_matrix = Matrix8d::Zero();
 
   for(int s = 0; s < 8; ++s) {
-    action_matrix(0, s) -= template_matrix(121, 141 + s);
-    action_matrix(1, s) -= template_matrix(122, 141 + s);
-    action_matrix(2, s) -= template_matrix(123, 141 + s);
-    action_matrix(3, s) -= template_matrix(124, 141 + s);
+    action_matrix(0, s) -= (*template_matrix)(121, 141 + s);
+    action_matrix(1, s) -= (*template_matrix)(122, 141 + s);
+    action_matrix(2, s) -= (*template_matrix)(123, 141 + s);
+    action_matrix(3, s) -= (*template_matrix)(124, 141 + s);
   }
   action_matrix(4, 0) = 1.0;
   action_matrix(5, 1) = 1.0;

@@ -357,16 +357,18 @@ std::vector<Eigen::Matrix3d> Upnp::ComputeCostParameters(
 std::vector<Eigen::Quaterniond> Upnp::SolveForRotationsFromNonMinimalSample() {
   std::vector<Eigen::Quaterniond> rotations(kNumMaxRotationsExploitingSymmetry);
   // Build action matrix.
-  // TODO(vfragoso): Update signature.
   const Matrix8d action_matrix = BuildActionMatrixUsingSymmetry(
       cost_params_.quadratic_penalty_mat,
       cost_params_.linear_penalty_vector,
-      cost_params_.gamma);
+      &non_minimal_sample_template_matrix_);
 
   const Eigen::EigenSolver<Matrix8d> eigen_solver(action_matrix);
   const Matrix8cd eigen_vectors = eigen_solver.eigenvectors();
 
   for (int i = 0; i < rotations.size(); ++i) {
+    // According to the original implementation, the complex solutions
+    // can be good, in particular when the number of correspondences is really
+    // low. The solutions simply ignore the imaginary part.
     rotations[i] = Eigen::Quaterniond(eigen_vectors(4, i).real(),
                                       eigen_vectors(5, i).real(),
                                       eigen_vectors(6, i).real(),
@@ -450,6 +452,24 @@ Upnp::CostParameters Upnp(const std::vector<Eigen::Vector3d>& ray_origins,
                                solution_translations))
       << "Could not estimate pose";
   return estimator.cost_params();
+}
+
+Upnp::CostParameters Upnp(const std::vector<Eigen::Vector2d>& normalized_pixels,
+                          const std::vector<Eigen::Vector3d>& world_points,
+                          std::vector<Eigen::Quaterniond>* solution_rotations,
+                          std::vector<Eigen::Vector3d>* solution_translations) {
+  CHECK_EQ(normalized_pixels.size(), world_points.size());
+  std::vector<Eigen::Vector3d> ray_directions(world_points.size());
+  std::vector<Eigen::Vector3d> ray_origins(world_points.size());
+
+  // Compute the ray directions and origins from the normalized pixels.
+  for (int i = 0; i < world_points.size(); ++i) {
+    ray_directions[i] = normalized_pixels[i].homogeneous().normalized();
+    ray_origins[i].setZero();
+  }
+
+  return Upnp(ray_origins, ray_directions, world_points,
+              solution_rotations, solution_translations);
 }
 
 }  // namespace theia

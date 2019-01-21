@@ -83,7 +83,6 @@ TEST(BuildUpnpActionMatrixTests,
       005.36014,
       0-2.77699,
       -0.646325;
-  const double gamma = 7.29313;
 
   // Expected action matrix;
   Eigen::Matrix<double, 8, 8> action_matrix;
@@ -101,7 +100,7 @@ TEST(BuildUpnpActionMatrixTests,
       0, 0, 1, 0, 0, 0, 0, 0,
       0, 0, 0, 1, 0, 0, 0, 0;
   const Eigen::Matrix<double, 8, 8> computed_action_matrix =
-      BuildActionMatrixUsingSymmetry(a_matrix, b_vector, gamma);
+      BuildActionMatrixUsingSymmetry(a_matrix, b_vector);
   EXPECT_NEAR((computed_action_matrix - action_matrix).squaredNorm(),
               0.0, 1e-6);
 }

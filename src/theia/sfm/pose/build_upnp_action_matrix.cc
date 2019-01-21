@@ -45,7 +45,7 @@
 #include "theia/math/matrix/gauss_jordan.h"
 
 // Helper macros to accelerate compilation with Eigen operations.
-// a_atrix and input_atrix are column major.
+// a_matrix and input_matrix are column major.
 #ifdef M
 #undef M
 #endif

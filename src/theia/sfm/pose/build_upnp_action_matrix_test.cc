@@ -79,7 +79,7 @@ TEST(BuildUpnpActionMatrixTests, BuildActionMatrixForCentralCameraMinimalCase) {
       -3.15544e-30,
       -1.77494e-30,
       -5.91646e-31;
-  const double gamma = 3.41921e-30;
+
   // Expected action matrix;
   Eigen::Matrix<double, 16, 16> action_matrix;
   action_matrix <<

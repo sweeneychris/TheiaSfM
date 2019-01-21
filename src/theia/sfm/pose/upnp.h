@@ -39,6 +39,7 @@
 #include <Eigen/Geometry>
 
 #include <vector>
+#include "theia/alignment/alignment.h"
 
 // TODO(vfragoso): Document me!
 namespace theia {
@@ -120,45 +121,18 @@ class Upnp {
   std::vector<Eigen::Quaterniond> SolveForRotationsFromNonMinimalSample();
 };
 
-// TODO(vfragoso): Document me!
+// Estimates the pose of a non-central camera.
 Upnp::CostParameters Upnp(const std::vector<Eigen::Vector3d>& ray_origins,
                           const std::vector<Eigen::Vector3d>& ray_directions,
                           const std::vector<Eigen::Vector3d>& world_points,
                           std::vector<Eigen::Quaterniond>* solution_rotations,
                           std::vector<Eigen::Vector3d>* solution_translations);
 
-
-
-// // TODO(vfragoso): Document me!
-// struct UpnpCostParameters {
-//   UpnpCostParameters() {
-//     a_matrix.setZero();
-//     b_vector.setZero();
-//     gamma = 0.0;
-//   }
-//   ~UpnpCostParameters() = default;
-
-//   Eigen::Matrix<double, 10, 10> a_matrix;
-//   Eigen::Matrix<double, 10, 1> b_vector;
-//   double gamma;
-// };
-
-// // TODO(vfragoso): Document me!
-// double EvaluateUpnpCost(const UpnpCostParameters& parameters,
-//                         const Eigen::Quaterniond& rotation);
-
-// // TODO(vfragoso): Document me!
-// UpnpCostParameters ComputeUpnpCostParameters(
-//     const std::vector<Eigen::Vector3d>& ray_origins,
-//     const std::vector<Eigen::Vector3d>& ray_directions,
-//     const std::vector<Eigen::Vector3d>& world_points,
-//     std::vector<Eigen::Matrix3d>* v_matrices);
-
-// UpnpCostParameters ComputeUpnpCostParameters(
-//     const std::vector<Eigen::Vector3d>& ray_origins,
-//     const std::vector<Eigen::Vector3d>& ray_directions,
-//     const std::vector<Eigen::Vector3d>& world_points);
-
+// Estimates the pose of a central camera.
+Upnp::CostParameters Upnp(const std::vector<Eigen::Vector2d>& normalized_pixels,
+                          const std::vector<Eigen::Vector3d>& world_points,
+                          std::vector<Eigen::Quaterniond>* solution_rotations,
+                          std::vector<Eigen::Vector3d>* solution_translations);
 
 }  // namespace theia
 
