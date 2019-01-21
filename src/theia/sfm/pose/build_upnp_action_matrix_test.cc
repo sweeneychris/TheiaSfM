@@ -106,7 +106,7 @@ TEST(BuildUpnpActionMatrixTests, BuildActionMatrixForCentralCameraMinimalCase) {
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,
       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0;
   const Eigen::Matrix<double, 16, 16> computed_action_matrix =
-      BuildActionMatrix(a_matrix, b_vector, gamma);
+      BuildActionMatrix(a_matrix, b_vector);
   EXPECT_NEAR((computed_action_matrix - action_matrix).squaredNorm(),
               0.0, 1e-6);
 }

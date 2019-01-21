@@ -40,44 +40,125 @@
 
 #include <vector>
 
+// TODO(vfragoso): Document me!
 namespace theia {
 
-// TODO(vfragoso): Document me!
-struct UpnpCostParameters {
-  UpnpCostParameters() {
-    a_matrix.setZero();
-    b_vector.setZero();
-    gamma = 0.0;
+class Upnp {
+  // Useful aliases for data types.
+  using Matrix10d = Eigen::Matrix<double, 10, 10>;
+  using Vector10d = Eigen::Matrix<double, 10, 1>;
+  using RowMajorMatrixXd =
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+
+  // Dimensions for the minimal-sample template matrix.
+  const int kMinimalSampleTemplateRows = 395;
+  const int kMinimalSampleTemplateCols = 412;
+
+  // Dimensions for the non-minimal-sample template matrix.
+  const int kNonMinimalSampleTemplateRows = 141;
+  const int kNonMinimalSampleTemplateCols = 149;
+
+ public:
+  // Constructors and destructors.
+  Upnp() = default;
+  ~Upnp() = default;
+
+  // TODO(vfragoso): Document me!
+  struct CostParameters {
+    CostParameters() {
+      quadratic_penalty_mat.setZero();
+      linear_penalty_vector.setZero();
+      gamma = 0.0;
+    }
+    ~CostParameters() = default;
+
+    Matrix10d quadratic_penalty_mat;
+    Vector10d linear_penalty_vector;
+    double gamma;
+  };
+
+  // Estimates poses.
+  // TODO(vfragoso): Document me!
+  bool EstimatePose(const std::vector<Eigen::Vector3d>& ray_origins,
+                    const std::vector<Eigen::Vector3d>& ray_directions,
+                    const std::vector<Eigen::Vector3d>& world_points,
+                    std::vector<Eigen::Quaterniond>* solution_rotations,
+                    std::vector<Eigen::Vector3d>* solution_translations);
+
+  // Getters.
+  const CostParameters& cost_params() const {
+    return cost_params_;
   }
-  ~UpnpCostParameters() = default;
 
-  Eigen::Matrix<double, 10, 10> a_matrix;
-  Eigen::Matrix<double, 10, 1> b_vector;
-  double gamma;
-};
+  // Helper functions.
+  // Evaluates the Upnp cost function given a rotation and the cost parameters.
+  static double EvaluateCost(const CostParameters& parameters,
+                             const Eigen::Quaterniond& rotation);
 
-// TODO(vfragoso): Document me!
-double EvaluateUpnpCost(const UpnpCostParameters& parameters,
-                        const Eigen::Quaterniond& rotation);
+ private:
+  // Cost parameters.
+  CostParameters cost_params_;
 
-// TODO(vfragoso): Document me!
-UpnpCostParameters ComputeUpnpCostParameters(
-    const std::vector<Eigen::Vector3d>& ray_origins,
-    const std::vector<Eigen::Vector3d>& ray_directions,
-    const std::vector<Eigen::Vector3d>& world_points,
-    std::vector<Eigen::Matrix3d>* v_matrices);
+  // Template matrices.
+  RowMajorMatrixXd minimal_sample_template_matrix_;
+  RowMajorMatrixXd non_minimal_sample_template_matrix_;
 
-UpnpCostParameters ComputeUpnpCostParameters(
+  // Computes the entries of the cost parameters given 2D-3D correspondences.
+  std::vector<Eigen::Matrix3d> ComputeCostParameters(
     const std::vector<Eigen::Vector3d>& ray_origins,
     const std::vector<Eigen::Vector3d>& ray_directions,
     const std::vector<Eigen::Vector3d>& world_points);
 
+  // Compute rotations.
+  std::vector<Eigen::Quaterniond> ComputeRotations(
+      const int num_correspondences);
+
+  // Solve Upnp polynomial solver from minimal sample.
+  std::vector<Eigen::Quaterniond> SolveForRotationsFromMinimalSample();
+
+  // Solve Upnp polynomial solver from a non-minimal sample.
+  std::vector<Eigen::Quaterniond> SolveForRotationsFromNonMinimalSample();
+};
+
 // TODO(vfragoso): Document me!
-UpnpCostParameters Upnp(const std::vector<Eigen::Vector3d>& ray_origins,
-                        const std::vector<Eigen::Vector3d>& ray_directions,
-                        const std::vector<Eigen::Vector3d>& world_points,
-                        std::vector<Eigen::Quaterniond>* solution_rotations,
-                        std::vector<Eigen::Vector3d>* solution_translations);
+Upnp::CostParameters Upnp(const std::vector<Eigen::Vector3d>& ray_origins,
+                          const std::vector<Eigen::Vector3d>& ray_directions,
+                          const std::vector<Eigen::Vector3d>& world_points,
+                          std::vector<Eigen::Quaterniond>* solution_rotations,
+                          std::vector<Eigen::Vector3d>* solution_translations);
+
+
+
+// // TODO(vfragoso): Document me!
+// struct UpnpCostParameters {
+//   UpnpCostParameters() {
+//     a_matrix.setZero();
+//     b_vector.setZero();
+//     gamma = 0.0;
+//   }
+//   ~UpnpCostParameters() = default;
+
+//   Eigen::Matrix<double, 10, 10> a_matrix;
+//   Eigen::Matrix<double, 10, 1> b_vector;
+//   double gamma;
+// };
+
+// // TODO(vfragoso): Document me!
+// double EvaluateUpnpCost(const UpnpCostParameters& parameters,
+//                         const Eigen::Quaterniond& rotation);
+
+// // TODO(vfragoso): Document me!
+// UpnpCostParameters ComputeUpnpCostParameters(
+//     const std::vector<Eigen::Vector3d>& ray_origins,
+//     const std::vector<Eigen::Vector3d>& ray_directions,
+//     const std::vector<Eigen::Vector3d>& world_points,
+//     std::vector<Eigen::Matrix3d>* v_matrices);
+
+// UpnpCostParameters ComputeUpnpCostParameters(
+//     const std::vector<Eigen::Vector3d>& ray_origins,
+//     const std::vector<Eigen::Vector3d>& ray_directions,
+//     const std::vector<Eigen::Vector3d>& world_points);
+
 
 }  // namespace theia
 

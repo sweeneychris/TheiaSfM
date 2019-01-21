@@ -39,13 +39,23 @@
 
 namespace theia {
 
+using Matrix10d = Eigen::Matrix<double, 10, 10>;
+using Vector10d = Eigen::Matrix<double, 10, 1>;
+using RowMajorMatrixXd =
+    Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+
 // TODO(vfragoso): Document me!
-// Implementation based on:
-// OpenGV file: src/absolute_pose/modules/upnp2.cpp
 Eigen::Matrix<double, 16, 16> BuildActionMatrix(
-    const Eigen::Matrix<double, 10, 10>& a_matrix,
-    const Eigen::Matrix<double, 10, 1>& b_vector,
-    const double gamma);
+    const Matrix10d& a_matrix,
+    const Vector10d& b_vector,
+    RowMajorMatrixXd* template_matrix);
+
+inline Eigen::Matrix<double, 16, 16> BuildActionMatrix(
+    const Matrix10d& a_matrix,
+    const Vector10d& b_vector) {
+  RowMajorMatrixXd template_matrix;
+  return BuildActionMatrix(a_matrix, b_vector, &template_matrix);
+}
 
 }  // namespace theia
 

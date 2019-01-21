@@ -60,7 +60,7 @@
 #ifdef M2
 #undef M2
 #endif
-#define M2(X, Y) template_matrix.row(X).data()[Y]
+#define M2(X, Y) template_matrix->row(X).data()[Y]
 
 namespace theia {
 typedef Eigen::Matrix<double, 8, 8> Matrix8d;
@@ -75,14 +75,18 @@ using Eigen::Dynamic;
 using Eigen::RowMajor;
 using Eigen::Matrix4d;
 
+const int kTemplateRows = 395;
+const int kTemplateCols = 412;
+
 using RowMajorMatrixXd =
     Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 
-RowMajorMatrixXd SetUpTemplateMatrix(const Matrix5x29d& input_matrix) {
-  const int kTemplateRows = 395;
-  const int kTemplateCols = 412;
-  RowMajorMatrixXd template_matrix(kTemplateRows, kTemplateCols);
-  template_matrix.setZero();
+void SetUpTemplateMatrix(const Matrix5x29d& input_matrix,
+                         RowMajorMatrixXd* template_matrix) {
+  //  RowMajorMatrixXd template_matrix(kTemplateRows, kTemplateCols);
+  CHECK_EQ(template_matrix->rows(), kTemplateRows);
+  CHECK_EQ(template_matrix->cols(), kTemplateCols);
+  template_matrix->setZero();
 
   // Filling in the template matrix.
   M2(0, 59) = M1(4,20); M2(0, 61) = M1(4,21); M2(0, 70) = M1(4,22);
@@ -2471,7 +2475,7 @@ RowMajorMatrixXd SetUpTemplateMatrix(const Matrix5x29d& input_matrix) {
   M2(394, 391) = M1(4,20); M2(394, 393) = M1(4,21); M2(394, 402) = M1(4,22);
   M2(394, 406) = M1(4,23); M2(394, 411) = M1(4,28); 
   
-  return template_matrix;
+  // return template_matrix;
 }
 
 }  // namespace
@@ -2480,7 +2484,8 @@ RowMajorMatrixXd SetUpTemplateMatrix(const Matrix5x29d& input_matrix) {
 // OpenGV file: src/absolute_pose/modules/upnp2.cpp
 Matrix16d BuildActionMatrix(const Matrix10d& a_matrix,
                             const Vector10d& b_vector,
-                            const double gamma) {
+                            RowMajorMatrixXd* template_matrix) {
+  CHECK_NOTNULL(template_matrix)->resize(kTemplateRows, kTemplateCols);
   const double* C = b_vector.data();
   Matrix5x29d input_matrix = Matrix5x29d::Zero();
 
@@ -2564,16 +2569,17 @@ Matrix16d BuildActionMatrix(const Matrix10d& a_matrix,
       input_matrix.block<4, 29>(0, 0);
 
   // Compute template matrix.
-  RowMajorMatrixXd template_matrix = SetUpTemplateMatrix(input_matrix);
-  GaussJordan(template_matrix.rows() - 1, 340, &template_matrix);
+  // RowMajorMatrixXd template_matrix = SetUpTemplateMatrix(input_matrix);
+  SetUpTemplateMatrix(input_matrix, template_matrix);
+  GaussJordan(template_matrix->rows() - 1, 340, template_matrix);
   Matrix16d action_matrix = Matrix16d::Zero();
   for (int s = 0; s < 16; ++s) {
-    action_matrix(0, s) -= template_matrix(340, 396 + s);
-    action_matrix(1, s) -= template_matrix(372, 396 + s);
-    action_matrix(2, s) -= template_matrix(373, 396 + s);
-    action_matrix(3, s) -= template_matrix(374, 396 + s);
-    action_matrix(5, s) -= template_matrix(389, 396 + s);
-    action_matrix(6, s) -= template_matrix(390, 396 + s);
+    action_matrix(0, s) -= (*template_matrix)(340, 396 + s);
+    action_matrix(1, s) -= (*template_matrix)(372, 396 + s);
+    action_matrix(2, s) -= (*template_matrix)(373, 396 + s);
+    action_matrix(3, s) -= (*template_matrix)(374, 396 + s);
+    action_matrix(5, s) -= (*template_matrix)(389, 396 + s);
+    action_matrix(6, s) -= (*template_matrix)(390, 396 + s);
   }
 
   action_matrix(4, 0) = 1.0;

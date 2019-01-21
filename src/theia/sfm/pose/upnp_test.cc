@@ -138,13 +138,13 @@ void TestUpnpPoseEstimationWithNoise(
   // Estimate pose.
   std::vector<Quaterniond> solution_rotations;
   std::vector<Vector3d> solution_translations;
-  const UpnpCostParameters upnp_params =
+  const Upnp::CostParameters upnp_params =
       Upnp(input_datum->ray_origins,
            input_datum->ray_directions,
            input_datum->world_points,
            &solution_rotations,
            &solution_translations);
-  const double upnp_cost = EvaluateUpnpCost(upnp_params, expected_rotation);
+  const double upnp_cost = Upnp::EvaluateCost(upnp_params, expected_rotation);
   VLOG(3) << "Upnp cost with expected rotation: " << upnp_cost;
 
   // Check solutions and verify at least one is close to the actual solution.
@@ -194,13 +194,13 @@ TEST(UpnpTests, ComputeCostParametersForCentralCameraPoseEstimation) {
 
   std::vector<Eigen::Quaterniond> solution_rotations;
   std::vector<Eigen::Vector3d> solution_translations;
-  const UpnpCostParameters upnp_params = Upnp(input_datum.ray_origins,
+  const Upnp::CostParameters upnp_params = Upnp(input_datum.ray_origins,
                                               input_datum.ray_directions,
                                               input_datum.world_points,
                                               &solution_rotations,
                                               &solution_translations);
 
-  const double upnp_cost = EvaluateUpnpCost(upnp_params, soln_rotation);
+  const double upnp_cost = Upnp::EvaluateCost(upnp_params, soln_rotation);
   EXPECT_NEAR(upnp_cost, 0.0, 1e-6);
 }
 
@@ -226,13 +226,13 @@ TEST(UpnpTests, ComputeCostParametersForNonCentralCameraPoseEstimation) {
 
   std::vector<Eigen::Quaterniond> solution_rotations;
   std::vector<Eigen::Vector3d> solution_translations;
-  const UpnpCostParameters upnp_params = Upnp(input_datum.ray_origins,
-                                              input_datum.ray_directions,
-                                              input_datum.world_points,
-                                              &solution_rotations,
-                                              &solution_translations);
+  const Upnp::CostParameters upnp_params = Upnp(input_datum.ray_origins,
+                                                input_datum.ray_directions,
+                                                input_datum.world_points,
+                                                &solution_rotations,
+                                                &solution_translations);
 
-  const double upnp_cost = EvaluateUpnpCost(upnp_params, soln_rotation);
+  const double upnp_cost = Upnp::EvaluateCost(upnp_params, soln_rotation);
   EXPECT_NEAR(upnp_cost, 0.0, 1e-6);
 }
 
