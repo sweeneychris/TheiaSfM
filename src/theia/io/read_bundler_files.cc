@@ -45,6 +45,7 @@
 #include <utility>
 #include <vector>
 
+#include "theia/io/bundler_file_reader.h"
 #include "theia/sfm/camera/camera.h"
 #include "theia/sfm/camera/pinhole_camera_model.h"
 #include "theia/sfm/reconstruction.h"
@@ -58,66 +59,144 @@ namespace theia {
 
 namespace {
 
-// Description of the list files from the Big SfM website:
-// http://www.cs.cornell.edu/projects/p2f/README_Dubrovnik6K.txt
-//
-// A. List files (list.db.txt, list.query.txt).
-//      List files specify filenames to images in jpg format, one per
-//      line (keep in mind that the actual jpg files are not distributed
-//      unless requested).  In addition, if the focal length of the image
-//      has been estimated from Exif tags, then that is also included.
-//
-//      Images without known focal length information are specified with
-//      a line with a single field, the image name.  Example:
-//        query/10970812@N05_2553027508.jpg
-//
-//      Images with known focal length information are specified with a
-//      line with three fields: the image name, a zero, and the Exif
-//      focal length.  (The second field is always zero but may change in
-//      future datasets.)  Example:
-//        query/11289373@N03_2733280477.jpg 0 1280.00000
-//
-// NOTE: We set the exif focal length to zero if it is not available (since 0 is
-// never a valid focal length).
-bool ReadListsFile(const std::string& list_filename,
-                   Reconstruction* reconstruction) {
-  std::ifstream ifs(list_filename.c_str(), std::ios::in);
-  if (!ifs.is_open()) {
-    LOG(ERROR) << "Cannot read the list file from " << list_filename;
+bool AddViewsToReconstruction(const BundlerFileReader& reader,
+                              Reconstruction* reconstruction) {
+  if (reader.img_entries().empty()) {
     return false;
   }
 
-  const char space = static_cast<char>(' ');
-  while (!ifs.eof()) {
-    // Read in the filename.
-    std::string filename, truncated_filename;
-    ifs >> filename;
-    if (filename.length() == 0) {
-      break;
-    }
-    CHECK(theia::GetFilenameFromFilepath(filename, true, &truncated_filename));
+  std::string truncated_filename;
+  for (const ListImgEntry& entry : reader.img_entries()) {
+    CHECK(theia::GetFilenameFromFilepath(
+        entry.filename, true, &truncated_filename));
     const ViewId view_id = reconstruction->AddView(truncated_filename);
     CHECK_NE(view_id, kInvalidViewId)
         << "View " << truncated_filename << " could not be added.";
-
-    // Check to see if the exif focal length is given.
-    double focal_length = 0;
-    if (ifs.peek() == space) {
-      int temp;
-      ifs >> temp;
-      ifs >> focal_length;
-    }
-
-    if (focal_length != 0) {
+    // Set the focal length.
+    if (entry.focal_length > 0.0f) {
       reconstruction->MutableView(view_id)
           ->MutableCameraIntrinsicsPrior()
-          ->focal_length.value[0] = focal_length;
+          ->focal_length.value[0] = entry.focal_length;
       reconstruction->MutableView(view_id)
           ->MutableCameraIntrinsicsPrior()
           ->focal_length.is_set = true;
     }
   }
+
   return true;
+}
+
+std::unordered_set<ViewId> AddCamerasToReconstruction(
+    const BundlerFileReader& reader,
+    Reconstruction* reconstruction) {
+  std::unordered_set<ViewId> views_to_remove;
+  // Populate camera parameters.
+  static const Eigen::Matrix3d bundler_to_theia =
+      Eigen::Vector3d(1.0, -1.0, -1.0).asDiagonal();
+
+  const int num_cameras = reader.NumCameras();
+  CHECK_EQ(num_cameras, reconstruction->NumViews())
+      << "The number of cameras in the lists file is not equal to the number "
+      "of cameras in the bundle file. Data is corrupted!";
+
+  // Read in the camera params.
+  const std::vector<BundlerCamera>& bundler_cameras = reader.cameras();
+  for (int i = 0; i < num_cameras; i++) {
+    const BundlerCamera& bundler_camera = bundler_cameras[i];
+    reconstruction->MutableView(i)->SetEstimated(true);
+    Camera* camera = reconstruction->MutableView(i)->MutableCamera();
+    camera->SetCameraIntrinsicsModelType(CameraIntrinsicsModelType::PINHOLE);
+
+    // Do not consider this view if an invalid focal length is present.
+    if (bundler_camera.focal_length <= 0.0) {
+      views_to_remove.insert(i);
+    } else {
+      camera->SetFocalLength(bundler_camera.focal_length);
+    }
+
+    camera->MutableCameraIntrinsics()->SetParameter(
+        PinholeCameraModel::RADIAL_DISTORTION_1, bundler_camera.radial_coeff_1);
+    camera->MutableCameraIntrinsics()->SetParameter(
+        PinholeCameraModel::RADIAL_DISTORTION_2, bundler_camera.radial_coeff_2);
+
+    // These cameras (and the features below) already have the principal point
+    // removed.
+    camera->SetPrincipalPoint(0, 0);
+
+    const Eigen::Matrix3d rotation =
+        bundler_to_theia * bundler_camera.rotation;
+    const Eigen::Vector3d translation =
+        bundler_to_theia * bundler_camera.translation;
+
+    const Eigen::Vector3d position = -rotation.transpose() * translation;
+    camera->SetPosition(position);
+    camera->SetOrientationFromRotationMatrix(rotation);
+
+    if ((i + 1) % 100 == 0 || i == num_cameras - 1) {
+      std::cout << "\r Loading parameters for camera " << i + 1 << " / "
+                << num_cameras << std::flush;
+    }
+  }
+  std::cout << std::endl;
+
+  return views_to_remove;
+}
+
+int AddTracksToReconstruction(
+    const BundlerFileReader& reader,
+    const  std::unordered_set<ViewId>& views_to_remove,
+    Reconstruction* reconstruction) {
+  // Read in each 3D point and correspondences.
+  int num_invalid_tracks = 0;
+  const int num_points = reader.NumPoints();
+  const std::vector<BundlerPoint>& points = reader.points();
+  for (int i = 0; i < num_points; i++) {
+    const BundlerPoint point = points[i];
+    const Eigen::Vector3d& position = point.position;
+    const Eigen::Vector3d& color = point.color;
+    const int num_views = point.view_list.size();
+
+    // Reserve the view list for this 3D point.
+    std::vector<std::pair<ViewId, Feature> > track;
+    track.reserve(num_views);
+    for (int j = 0; j < num_views; j++) {
+      // TODO(vfragoso): Should we store SIFT indices in Theia? It is useful for
+      // img-based localization.
+      const FeatureInfo& feature_info = point.view_list[j];
+
+      // NOTE: We flip the pixel directions to compensate for Bundlers different
+      // coordinate system in images.
+      const Feature feature(feature_info.kpt_x, -feature_info.kpt_y);
+
+      // Push the sift key correspondence to the view list if the view is valid.
+      if (!ContainsKey(views_to_remove, feature_info.camera_index)) {
+        track.emplace_back(feature_info.camera_index, feature);
+      }
+    }
+
+    // Do not add the track if it is underconstrained.
+    if (track.size() < 2 || position.squaredNorm() == 0.0) {
+      continue;
+    }
+
+    const TrackId track_id = reconstruction->AddTrack(track);
+    if (track_id == kInvalidTrackId) {
+      ++num_invalid_tracks;
+      continue;
+    }
+
+    Track* mutable_track = reconstruction->MutableTrack(track_id);
+    mutable_track->SetEstimated(true);
+    *mutable_track->MutablePoint() = position.homogeneous();
+    *mutable_track->MutableColor() = color.cast<uint8_t>();
+
+    if ((i + 1) % 100 == 0 || i == num_points - 1) {
+      std::cout << "\r Loading 3D points " << i + 1 << " / " << num_points
+                << std::flush;
+    }
+  }
+
+  return num_invalid_tracks;
 }
 
 }  // namespace
@@ -162,209 +241,55 @@ bool ReadListsFile(const std::string& list_filename,
 bool ReadBundlerFiles(const std::string& lists_file,
                       const std::string& bundle_file,
                       Reconstruction* reconstruction) {
-  CHECK_NOTNULL(reconstruction);
   CHECK_EQ(reconstruction->NumViews(), 0)
       << "An empty reconstruction must be provided to load a bundler dataset.";
   CHECK_EQ(reconstruction->NumTracks(), 0)
       << "An empty reconstruction must be provided to load a bundler dataset.";
 
-  if (!ReadListsFile(lists_file, reconstruction)) {
+  // Parse the bundler files.
+  BundlerFileReader bundler_file_reader(lists_file, bundle_file);
+  VLOG(1) << "Parsing lists file: " << lists_file;
+  if (!bundler_file_reader.ParseListsFile()) {
     LOG(ERROR) << "Could not read the lists file from " << lists_file;
     return false;
   }
 
-  // Read in num cameras, num points.
-  std::ifstream ifs(bundle_file.c_str(), std::ios::in);
-  if (!ifs.is_open()) {
-    LOG(ERROR) << "Cannot read the bundler file from " << bundle_file;
+  VLOG(1) << "Parsing bundler file: " << bundle_file;
+  if (!bundler_file_reader.ParseBundleFile()) {
+    LOG(ERROR) << "Could not parse the bundler file from " << bundle_file;
     return false;
   }
 
-  const Eigen::Matrix3d bundler_to_theia =
-      Eigen::Vector3d(1.0, -1.0, -1.0).asDiagonal();
+  // Populate views in the reconstruction.
+  CHECK(AddViewsToReconstruction(
+      bundler_file_reader, CHECK_NOTNULL(reconstruction)));
 
-  std::string header_string;
-  std::getline(ifs, header_string);
+  // Populate cameras to reconstruction.
+  const std::unordered_set<ViewId> views_to_remove =
+      AddCamerasToReconstruction(bundler_file_reader, reconstruction);
 
-  // If the first line starts with '#' then it is a comment, so skip it!
-  if (header_string[0] == '#') {
-    std::getline(ifs, header_string);
-  }
-  const char* p = header_string.c_str();
-  char* p2;
-  const int num_cameras = strtol(p, &p2, 10);
-  CHECK_EQ(num_cameras, reconstruction->NumViews())
-      << "The number of cameras in the lists file is not equal to the number "
-         "of cameras in the bundle file. Data is corrupted!";
-
-  p = p2;
-  const int num_points = strtol(p, &p2, 10);
-
-  // Read in the camera params.
-  std::unordered_set<ViewId> views_to_remove;
-  for (int i = 0; i < num_cameras; i++) {
-    reconstruction->MutableView(i)->SetEstimated(true);
-    Camera* camera = reconstruction->MutableView(i)->MutableCamera();
-    camera->SetCameraIntrinsicsModelType(CameraIntrinsicsModelType::PINHOLE);
-
-    // Read in focal length, radial distortion.
-    std::string internal_params;
-    std::getline(ifs, internal_params);
-    p = internal_params.c_str();
-    double focal_length = strtod(p, &p2);
-    p = p2;
-    const double k1 = strtod(p, &p2);
-    p = p2;
-    const double k2 = strtod(p, &p2);
-    p = p2;
-
-    // Do not consider this view if an invalid focal length is present.
-    if (focal_length <= 0.0) {
-      views_to_remove.insert(i);
-    } else {
-      camera->SetFocalLength(focal_length);
-    }
-
-    camera->MutableCameraIntrinsics()->SetParameter(
-        PinholeCameraModel::RADIAL_DISTORTION_1, k1);
-    camera->MutableCameraIntrinsics()->SetParameter(
-        PinholeCameraModel::RADIAL_DISTORTION_2, k2);
-
-    // These cameras (and the features below) already have the principal point
-    // removed.
-    camera->SetPrincipalPoint(0, 0);
-
-    // Read in rotation (row-major).
-    Eigen::Matrix3d rotation;
-    for (int r = 0; r < 3; r++) {
-      std::string rotation_row;
-      std::getline(ifs, rotation_row);
-      p = rotation_row.c_str();
-
-      for (int c = 0; c < 3; c++) {
-        rotation(r, c) = strtod(p, &p2);
-        p = p2;
-      }
-    }
-
-    std::string translation_string;
-    std::getline(ifs, translation_string);
-    p = translation_string.c_str();
-    Eigen::Vector3d translation;
-    for (int j = 0; j < 3; j++) {
-      translation(j) = strtod(p, &p2);
-      p = p2;
-    }
-
-    rotation = bundler_to_theia * rotation;
-    translation = bundler_to_theia * translation;
-
-    const Eigen::Vector3d position = -rotation.transpose() * translation;
-    camera->SetPosition(position);
-    camera->SetOrientationFromRotationMatrix(rotation);
-
-    if ((i + 1) % 100 == 0 || i == num_cameras - 1) {
-      std::cout << "\r Loading parameters for camera " << i + 1 << " / "
-                << num_cameras << std::flush;
-    }
-  }
-  std::cout << std::endl;
-
-  // Read in each 3D point and correspondences.
-  int num_invalid_tracks = 0;
-  for (int i = 0; i < num_points; i++) {
-    // Read position.
-    std::string position_str;
-    std::getline(ifs, position_str);
-    p = position_str.c_str();
-    Eigen::Vector3d position;
-    for (int j = 0; j < 3; j++) {
-      position(j) = strtod(p, &p2);
-      p = p2;
-    }
-
-    // Read color.
-    std::string color_str;
-    std::getline(ifs, color_str);
-    p = color_str.c_str();
-    Eigen::Vector3f color;
-    for (int j = 0; j < 3; j++) {
-      color(j) = strtol(p, &p2, 10);
-      p = p2;
-    }
-
-    // Read viewlist.
-    std::string view_list_string;
-    std::getline(ifs, view_list_string);
-    p = view_list_string.c_str();
-    const int num_views = strtol(p, &p2, 10);
-    p = p2;
-
-    // Reserve the view list for this 3D point.
-    std::vector<std::pair<ViewId, Feature> > track;
-    for (int j = 0; j < num_views; j++) {
-      // Camera key x y
-      const int camera_index = strtol(p, &p2, 10);
-      p = p2;
-      // Returns the index of the sift descriptor in the camera for this track.
-      strtol(p, &p2, 10);
-      p = p2;
-      const float x_pos = strtof(p, &p2);
-      p = p2;
-      const float y_pos = strtof(p, &p2);
-      p = p2;
-
-      // NOTE: We flip the pixel directions to compensate for Bundlers different
-      // coordinate system in images.
-      const Feature feature(x_pos, -y_pos);
-
-      // Push the sift key correspondence to the view list if the view is valid.
-      if (!ContainsKey(views_to_remove, camera_index)) {
-        track.emplace_back(camera_index, feature);
-      }
-    }
-
-    // Do not add the track if it is underconstrained.
-    if (track.size() < 2 || position.squaredNorm() == 0.0) {
-      continue;
-    }
-
-    const TrackId track_id = reconstruction->AddTrack(track);
-    if (track_id == kInvalidTrackId) {
-      ++num_invalid_tracks;
-      continue;
-    }
-
-    Track* mutable_track = reconstruction->MutableTrack(track_id);
-    mutable_track->SetEstimated(true);
-    *mutable_track->MutablePoint() = position.homogeneous();
-    *mutable_track->MutableColor() = color.cast<uint8_t>();
-
-    if ((i + 1) % 100 == 0 || i == num_points - 1) {
-      std::cout << "\r Loading 3D points " << i + 1 << " / " << num_points
-                << std::flush;
-    }
-  }
+  // Populate tracks to reconstruction.
+  const int num_invalid_tracks = AddTracksToReconstruction(
+      bundler_file_reader, views_to_remove, reconstruction);
 
   // Remove any invalid views.
   for (const ViewId view_to_remove : views_to_remove) {
     reconstruction->RemoveView(view_to_remove);
   }
 
+  const int num_cameras = bundler_file_reader.NumCameras();
   if (views_to_remove.size() > 0) {
     LOG(INFO) << "Could not add " << views_to_remove.size() << " out of "
               << num_cameras << " views due to invalid camera parameters.";
   }
 
+  const int num_points = bundler_file_reader.NumPoints();
   if (num_invalid_tracks > 0) {
     LOG(INFO) << "Could not load " << num_invalid_tracks
               << " invalid tracks out of " << num_points
               << " total tracks from Bundler file. This typically occurs when "
                  "tracks contain multiple observations from the same image.";
   }
-
-  std::cout << std::endl;
-  ifs.close();
 
   return true;
 }
