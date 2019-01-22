@@ -39,7 +39,9 @@
 #include <Eigen/Geometry>
 
 #include <vector>
+
 #include "theia/alignment/alignment.h"
+#include "theia/util/util.h"
 
 namespace theia {
 // This class computes the pose of a central or non-central camera using the
@@ -112,11 +114,22 @@ class Upnp {
   //     and ray_directions.
   //   solution_rotations:  The computed and candidate quaternions or rotations.
   //   solution_translations:  The estimated and candidate translations.
+  //   solution_costs:  The costs of the solutions.
   bool EstimatePose(const std::vector<Eigen::Vector3d>& ray_origins,
                     const std::vector<Eigen::Vector3d>& ray_directions,
                     const std::vector<Eigen::Vector3d>& world_points,
                     std::vector<Eigen::Quaterniond>* solution_rotations,
-                    std::vector<Eigen::Vector3d>* solution_translations);
+                    std::vector<Eigen::Vector3d>* solution_translations,
+                    std::vector<double>* solution_costs);
+
+  bool EstimatePose(const std::vector<Eigen::Vector3d>& ray_origins,
+                    const std::vector<Eigen::Vector3d>& ray_directions,
+                    const std::vector<Eigen::Vector3d>& world_points,
+                    std::vector<Eigen::Quaterniond>* solution_rotations,
+                    std::vector<Eigen::Vector3d>* solution_translations) {
+    return EstimatePose(ray_origins, ray_directions, world_points,
+                        solution_rotations, solution_translations, nullptr);
+  }
 
   // Getters.
   const CostParameters& cost_params() const {
@@ -137,6 +150,27 @@ class Upnp {
   //   rotation:  The quaternion representing the rotation.
   static double EvaluateCost(const CostParameters& parameters,
                              const Eigen::Quaterniond& rotation);
+
+  // Computes the Upnp cost residual for a 3D point given a rotation and
+  // translation. The evaluated residual is the following:
+  //
+  // Residual = || depth * ray_direction + ray_origin - R * p - t||^2
+  //
+  // where R is the rotation, t is the translation, and p is the 3D point.
+  // The function returns the computed residual.
+  //
+  // Params:
+  //   ray_origin:  The origin of the ray direction.
+  //   ray_direction:  The unit-vector representing the direction from the
+  //     center of a camera to a 3D point.
+  //   world_point:  The 3D points
+  //   rotation:  The quaternion representing the rotation.
+  //   translation:  The translation.
+  static double ComputeResidual(const Eigen::Vector3d& ray_origin,
+                                const Eigen::Vector3d& ray_direction,
+                                const Eigen::Vector3d& world_point,
+                                const Eigen::Quaterniond& rotation,
+                                const Eigen::Vector3d& translation);
 
  private:
   // Cost parameters.
@@ -161,6 +195,8 @@ class Upnp {
 
   // Solve Upnp polynomial solver from a non-minimal sample.
   std::vector<Eigen::Quaterniond> SolveForRotationsFromNonMinimalSample();
+
+  DISALLOW_COPY_AND_ASSIGN(Upnp);
 };
 
 // Estimates the pose of a non-central camera. The function returns the cost

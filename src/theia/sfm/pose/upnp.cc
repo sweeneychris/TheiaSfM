@@ -63,7 +63,7 @@ const int kNumMaxRotations = 16;
 const int kNumMaxRotationsExploitingSymmetry = 8;
 const int kNumMinCorrespondences = 4;
 
-// TODO(vfragoso): Document me!
+// Helper structure to simplify function argument list.
 struct InputDatum {
   InputDatum(const std::vector<Eigen::Vector3d>& _ray_origins,
              const std::vector<Eigen::Vector3d>& _ray_directions,
@@ -246,6 +246,43 @@ std::vector<Eigen::Vector3d> ComputeTranslations(
   return translations;
 }
 
+std::vector<double> ComputeCostsAndRankSolutions(
+    const Upnp::CostParameters& cost_params,
+    std::vector<Eigen::Quaterniond>* solution_rotations,
+    std::vector<Eigen::Vector3d>* solution_translations) {
+  std::vector<double> costs(solution_rotations->size(), 0.0);
+  std::vector<std::pair<int, double>> indexes_and_costs;
+  indexes_and_costs.reserve(costs.size());
+  // 1. Compute the costs of the solutions.
+  for (int i = 0; i < costs.size(); ++i) {
+    costs[i] = Upnp::EvaluateCost(cost_params, solution_rotations->at(i));
+    indexes_and_costs.emplace_back(i, costs[i]);
+  }
+
+  // 2. Sort the costs such that the best rotation (i.e., lowest error) is the
+  // first solution.
+  std::sort(indexes_and_costs.begin(), indexes_and_costs.end(),
+            [](const std::pair<int, double>& lhs,
+               const std::pair<int, double>& rhs) {
+              return lhs.second < rhs.second;
+            });
+
+  // 3. Rank the solutions.
+  std::vector<Eigen::Quaterniond> ranked_rotations(costs.size());
+  std::vector<Eigen::Vector3d> ranked_translations(costs.size());
+  for (int i = 0; i < costs.size(); ++i) {
+    costs[i] = indexes_and_costs[i].second;
+    ranked_rotations[i] = solution_rotations->at(indexes_and_costs[i].first);
+    ranked_translations[i] =
+        solution_translations->at(indexes_and_costs[i].first);
+  }
+
+  *solution_rotations = std::move(ranked_rotations);
+  *solution_translations = std::move(ranked_translations);
+  
+  return costs;
+}
+
 void DiscardBadSolutions(const InputDatum& input_datum,
                          std::vector<Eigen::Quaterniond>* solution_rotations,
                          std::vector<Eigen::Vector3d>* solution_translations) {
@@ -321,6 +358,17 @@ double Upnp::EvaluateCost(const Upnp::CostParameters& parameters,
           parameters.quadratic_penalty_mat * rotation_vector +
           2.0 * parameters.linear_penalty_vector.transpose() *
           rotation_vector)(0, 0) + parameters.gamma;
+}
+
+double Upnp::ComputeResidual(const Eigen::Vector3d& ray_origin,
+                             const Eigen::Vector3d& ray_direction,
+                             const Eigen::Vector3d& world_point,
+                             const Eigen::Quaterniond& rotation,
+                             const Eigen::Vector3d& translation) {
+  const Eigen::Vector3d estimated_ray_direction =
+      rotation * world_point + translation - ray_origin;
+  const double depth = estimated_ray_direction.norm();
+  return (estimated_ray_direction - depth * ray_direction).squaredNorm();
 }
 
 std::vector<Eigen::Matrix3d> Upnp::ComputeCostParameters(
@@ -415,7 +463,8 @@ bool Upnp::EstimatePose(const std::vector<Eigen::Vector3d>& ray_origins,
                         const std::vector<Eigen::Vector3d>& ray_directions,
                         const std::vector<Eigen::Vector3d>& world_points,
                         std::vector<Eigen::Quaterniond>* solution_rotations,
-                        std::vector<Eigen::Vector3d>* solution_translations) {
+                        std::vector<Eigen::Vector3d>* solution_translations,
+                        std::vector<double>* solution_costs) {
   CHECK_NOTNULL(solution_rotations)->clear();
   CHECK_NOTNULL(solution_translations)->clear();
   CHECK_EQ(ray_origins.size(), ray_directions.size());
@@ -435,6 +484,12 @@ bool Upnp::EstimatePose(const std::vector<Eigen::Vector3d>& ray_origins,
 
   // Discard solutions that have points behind the camera.
   DiscardBadSolutions(input_datum, solution_rotations, solution_translations);
+
+  if (solution_costs) {
+    *solution_costs = ComputeCostsAndRankSolutions(cost_params_,
+                                                   solution_rotations,
+                                                   solution_translations);
+  }
 
   return !solution_rotations->empty();
 }
