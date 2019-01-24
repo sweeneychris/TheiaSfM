@@ -44,6 +44,7 @@
 #include "theia/sfm/camera/camera.h"
 #include "theia/sfm/create_and_initialize_ransac_variant.h"
 #include "theia/sfm/feature.h"
+#include "theia/sfm/estimators/camera_and_feature_correspondence_2d_3d.h"
 #include "theia/sfm/similarity_transformation.h"
 #include "theia/sfm/transformation/gdls_similarity_transform.h"
 #include "theia/solvers/estimator.h"

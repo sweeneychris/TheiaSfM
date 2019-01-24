@@ -35,8 +35,11 @@
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <glog/logging.h>
+#include "gtest/gtest.h"
 
 #include "theia/math/util.h"
+#include "theia/sfm/camera/camera.h"
+#include "theia/sfm/estimators/camera_and_feature_correspondence_2d_3d.h"
 #include "theia/sfm/estimators/estimate_similarity_transformation_2d_3d.h"
 #include "theia/sfm/pose/test_util.h"
 #include "theia/sfm/pose/util.h"
@@ -53,7 +56,7 @@ static const int kNumCameras = 100;
 
 RandomNumberGenerator rng(154);
 
-Camera RandomCamera() {
+inline Camera RandomCamera() {
   Camera camera;
   camera.SetPosition(rng.RandVector3d(-10.0, 10.0));
   camera.SetOrientationFromRotationMatrix(RandomRotation(10.0, &rng));
@@ -90,7 +93,7 @@ void ExecuteRandomTest(
       depth = correspondence.camera.ProjectPoint(correspondence.point3d,
                                                  &correspondence.observation);
     } while (depth < 0);
-    correspondences.emplace_back(correspondence);
+    correspondences.emplace_back(std::move(correspondence));
   }
 
   // Add noise to the image observations.
@@ -111,9 +114,9 @@ void ExecuteRandomTest(
   for (int i = 0; i < kNumCameras; i++) {
     const Eigen::Vector3d old_point = correspondences[i].point3d.hnormalized();
     const Eigen::Vector3d new_point = similarity_transformation.scale *
-                                          similarity_transformation.rotation *
-                                          old_point +
-                                      similarity_transformation.translation;
+        similarity_transformation.rotation *
+        old_point +
+        similarity_transformation.translation;
     correspondences[i].point3d = new_point.homogeneous();
   }
 
@@ -160,7 +163,7 @@ TEST(EstimateSimilarityTransformation2D3D, AllInliersNoNoise) {
   SimilarityTransformation similarity_transformation;
   similarity_transformation.rotation =
       Eigen::AngleAxisd(DegToRad(12.0), Eigen::Vector3d(1.0, 0.2, -0.8)
-                                            .normalized()).toRotationMatrix();
+                        .normalized()).toRotationMatrix();
   similarity_transformation.translation = Eigen::Vector3d(-1.3, 2.1, 0.5);
   similarity_transformation.scale = 0.8;
   ExecuteRandomTest(options,
@@ -184,7 +187,7 @@ TEST(EstimateSimilarityTransformation2D3D, AllInliersWithNoise) {
   SimilarityTransformation similarity_transformation;
   similarity_transformation.rotation =
       Eigen::AngleAxisd(DegToRad(12.0), Eigen::Vector3d(1.0, 0.2, -0.8)
-                                            .normalized()).toRotationMatrix();
+                        .normalized()).toRotationMatrix();
   similarity_transformation.translation = Eigen::Vector3d(-1.3, 2.1, 0.5);
   similarity_transformation.scale = 0.8;
   ExecuteRandomTest(options,
@@ -208,7 +211,7 @@ TEST(EstimateSimilarityTransformation2D3D, OutliersNoNoise) {
   SimilarityTransformation similarity_transformation;
   similarity_transformation.rotation =
       Eigen::AngleAxisd(DegToRad(12.0), Eigen::Vector3d(1.0, 0.2, -0.8)
-                                            .normalized()).toRotationMatrix();
+                        .normalized()).toRotationMatrix();
   similarity_transformation.translation = Eigen::Vector3d(-1.3, 2.1, 0.5);
   similarity_transformation.scale = 0.8;
   ExecuteRandomTest(options,
@@ -232,7 +235,7 @@ TEST(EstimateSimilarityTransformation2D3D, OutliersWithNoise) {
   SimilarityTransformation similarity_transformation;
   similarity_transformation.rotation =
       Eigen::AngleAxisd(DegToRad(12.0), Eigen::Vector3d(1.0, 0.2, -0.8)
-                                            .normalized()).toRotationMatrix();
+                        .normalized()).toRotationMatrix();
   similarity_transformation.translation = Eigen::Vector3d(-1.3, 2.1, 0.5);
   similarity_transformation.scale = 0.8;
   ExecuteRandomTest(options,

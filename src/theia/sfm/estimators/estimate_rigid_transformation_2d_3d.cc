@@ -32,7 +32,7 @@
 // Please contact the author of this library if you have any questions.
 // Author: Victor Fragoso (victor.fragoso@mail.wvu.edu)
 
-#include "theia/sfm/estimators/estimate_non_central_camera_absolute_pose.h"
+#include "theia/sfm/estimators/estimate_rigid_transformation_2d_3d.h"
 
 #include <Eigen/Core>
 #include <Eigen/Geometry>
@@ -43,6 +43,7 @@
 #include "theia/sfm/estimators/feature_correspondence_2d_3d.h"
 #include "theia/sfm/estimators/non_central_camera_feature_correspondence.h"
 #include "theia/sfm/pose/upnp.h"
+#include "theia/sfm/rigid_transformation.h"
 #include "theia/solvers/estimator.h"
 #include "theia/solvers/sample_consensus_estimator.h"
 #include "theia/util/util.h"
@@ -55,7 +56,7 @@ namespace {
 // coordinate system as the points.
 class NonCentralCameraPoseEstimator
     : public Estimator<NonCentralCameraFeatureCorrespondence,
-                       NonCentralCameraAbsolutePose> {
+                       RigidTransformation> {
  public:
   NonCentralCameraPoseEstimator() {
     estimator_.reset(new class Upnp);
@@ -71,7 +72,7 @@ class NonCentralCameraPoseEstimator
   // estimation. Typically, this is a minimal set, but it is not required to be.
   bool EstimateModel(
       const std::vector<NonCentralCameraFeatureCorrespondence>& data,
-      std::vector<NonCentralCameraAbsolutePose>* models) const override {
+      std::vector<RigidTransformation>* models) const override {
     CHECK_GE(data.size(), static_cast<size_t>(SampleSize()));
     // Input datum for Upnp.
     std::vector<Eigen::Vector3d> ray_directions;
@@ -102,7 +103,7 @@ class NonCentralCameraPoseEstimator
     // Generate models.
     CHECK_NOTNULL(models)->resize(soln_rotations.size());
     for (int i = 0; i < soln_rotations.size(); ++i) {
-      models->at(i).rotation = soln_rotations[i];
+      models->at(i).rotation = soln_rotations[i].toRotationMatrix();
       models->at(i).translation = soln_translations[i];
     }
     return true;
@@ -111,12 +112,13 @@ class NonCentralCameraPoseEstimator
   // Given a model and a data point, calculate the error. Users should implement
   // this function appropriately for the task being solved.
   double Error(const NonCentralCameraFeatureCorrespondence& data,
-               const NonCentralCameraAbsolutePose& model) const override {
-    const double residual = Upnp::ComputeResidual(data.ray_origin,
-                                                  data.ray_direction,
-                                                  data.world_point,
-                                                  model.rotation,
-                                                  model.translation);
+               const RigidTransformation& model) const override {
+    const double residual =
+        Upnp::ComputeResidual(data.ray_origin,
+                              data.ray_direction,
+                              data.world_point,
+                              Eigen::Quaterniond(model.rotation),
+                              model.translation);
     return residual;
   }
   
@@ -127,13 +129,11 @@ class NonCentralCameraPoseEstimator
   DISALLOW_COPY_AND_ASSIGN(NonCentralCameraPoseEstimator);
 };
 
-}  // namespace
-
-bool EstimateNonCentralCameraAbsolutePose(
+bool EstimateRigidTransformation2D3D(
     const RansacParameters& ransac_params,
     const RansacType& ransac_type,
     const std::vector<NonCentralCameraFeatureCorrespondence>& correspondences,
-    NonCentralCameraAbsolutePose* estimated_pose,
+    RigidTransformation* estimated_pose,
     RansacSummary* ransac_summary) {
   NonCentralCameraPoseEstimator pose_estimator;
   std::unique_ptr<SampleConsensusEstimator<NonCentralCameraPoseEstimator> >
@@ -144,11 +144,29 @@ bool EstimateNonCentralCameraAbsolutePose(
   return ransac->Estimate(correspondences, estimated_pose, ransac_summary);
 }
 
-bool EstimateNonCentralCameraAbsolutePose(
+}  // namespace
+
+bool EstimateRigidTransformation2D3D(
+    const RansacParameters& ransac_params,
+    const RansacType& ransac_type,
+    const std::vector<CameraAndFeatureCorrespondence2D3D>& correspondences,
+    RigidTransformation* estimated_pose,
+    RansacSummary* ransac_summary) {
+  // NonCentralCameraPoseEstimator pose_estimator;
+  // std::unique_ptr<SampleConsensusEstimator<NonCentralCameraPoseEstimator> >
+  //     ransac = CreateAndInitializeRansacVariant(ransac_type,
+  //                                               ransac_params,
+  //                                               pose_estimator);
+  // // Estimate the pose.
+  // return ransac->Estimate(correspondences, estimated_pose, ransac_summary);
+  return false;
+}
+
+bool EstimateRigidTransformation2D3D(
     const RansacParameters& ransac_params,
     const RansacType& ransac_type,
     const std::vector<FeatureCorrespondence2D3D>& normalized_correspondences,
-    NonCentralCameraAbsolutePose* estimated_pose,
+    RigidTransformation* estimated_pose,
     RansacSummary* ransac_summary) {
   const int num_correspondences = normalized_correspondences.size();
   std::vector<NonCentralCameraFeatureCorrespondence> correspondences;
@@ -161,11 +179,11 @@ bool EstimateNonCentralCameraAbsolutePose(
         Eigen::Vector3d::Zero(),
         normalized_correspondence.world_point);
   }
-  return EstimateNonCentralCameraAbsolutePose(ransac_params,
-                                              ransac_type,
-                                              correspondences,
-                                              estimated_pose,
-                                              ransac_summary);
+  return EstimateRigidTransformation2D3D(ransac_params,
+                                         ransac_type,
+                                         correspondences,
+                                         estimated_pose,
+                                         ransac_summary);
 }
 
 }  // namespace theia

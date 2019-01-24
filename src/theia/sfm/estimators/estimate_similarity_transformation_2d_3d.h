@@ -39,28 +39,27 @@
 #include <Eigen/Core>
 #include <vector>
 
-#include "theia/sfm/camera/camera.h"
 #include "theia/sfm/create_and_initialize_ransac_variant.h"
-#include "theia/sfm/feature.h"
 
 namespace theia {
 
+struct CameraAndFeatureCorrespondence2D3D;
 struct RansacParameters;
 struct RansacSummary;
 struct SimilarityTransformation;
 
-// A struct to manage the correspondences between 3d points and the respective
-// camera and feature observation.
-struct CameraAndFeatureCorrespondence2D3D {
-  // A camera with known pose (i.e., extrinsics) and intrinsics.
-  Camera camera;
+// // A struct to manage the correspondences between 3d points and the respective
+// // camera and feature observation.
+// struct CameraAndFeatureCorrespondence2D3D {
+//   // A camera with known pose (i.e., extrinsics) and intrinsics.
+//   Camera camera;
 
-  // A feature observation in pixels.
-  Feature observation;
+//   // A feature observation in pixels.
+//   Feature observation;
 
-  // The homogeneous 3D point.
-  Eigen::Vector4d point3d;
-};
+//   // The homogeneous 3D point.
+//   Eigen::Vector4d point3d;
+// };
 
 // Estimates the similarity transformation that aligns the projection of the 3D
 // points to the 2D features observed by the corresponding camera. This assumes

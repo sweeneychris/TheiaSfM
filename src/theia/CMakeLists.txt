@@ -121,9 +121,9 @@ set(THEIA_SRC
   sfm/estimators/estimate_essential_matrix.cc
   sfm/estimators/estimate_fundamental_matrix.cc
   sfm/estimators/estimate_homography.cc
-  sfm/estimators/estimate_non_central_camera_absolute_pose.cc
   sfm/estimators/estimate_relative_pose_with_known_orientation.cc
   sfm/estimators/estimate_relative_pose.cc
+  sfm/estimators/estimate_rigid_transformation_2d_3d.cc
   sfm/estimators/estimate_similarity_transformation_2d_3d.cc
   sfm/estimators/estimate_triangulation.cc
   sfm/estimators/estimate_uncalibrated_absolute_pose.cc
@@ -294,9 +294,9 @@ if (BUILD_TESTING)
   gtest(sfm/estimators/estimate_essential_matrix)
   gtest(sfm/estimators/estimate_fundamental_matrix)
   gtest(sfm/estimators/estimate_homography)
-  gtest(sfm/estimators/estimate_non_central_camera_absolute_pose)
   gtest(sfm/estimators/estimate_relative_pose)
   gtest(sfm/estimators/estimate_relative_pose_with_known_orientation)
+  gtest(sfm/estimators/estimate_rigid_transformation_2d_3d)
   gtest(sfm/estimators/estimate_similarity_transformation_2d_3d)
   gtest(sfm/estimators/estimate_triangulation)
   gtest(sfm/estimators/estimate_uncalibrated_absolute_pose)
