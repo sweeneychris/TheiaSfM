@@ -49,6 +49,7 @@
 #include "theia/sfm/pose/test_util.h"
 #include "theia/sfm/pose/util.h"
 #include "theia/util/random.h"
+#include "theia/util/timer.h"
 
 namespace theia {
 namespace {
@@ -59,7 +60,7 @@ using Eigen::Vector3d;
 
 static const int kNumPoints = 100;
 static const double kFocalLength = 1000.0;
-static const double kReprojectionError = 4.0;
+static const double kReprojectionError = 10.0;
 static const double kErrorThreshold =
     (kReprojectionError * kReprojectionError) / (kFocalLength * kFocalLength);
 
@@ -101,11 +102,24 @@ void ExecuteRandomTestForCentralCamera(const RansacParameters& options,
   // Estimate the absolute pose.
   NonCentralCameraAbsolutePose pose;
   RansacSummary ransac_summary;
+  Timer timer;
+  timer.Reset();
   EXPECT_TRUE(EstimateNonCentralCameraAbsolutePose(options,
                                                    RansacType::RANSAC,
                                                    correspondences,
                                                    &pose,
                                                    &ransac_summary));
+  const double elapsed_time = timer.ElapsedTimeInSeconds();
+
+  VLOG(3) << "Ransac summary: \n Number of inliers: "
+          << ransac_summary.inliers.size()
+          << "\n Num. input data points: "
+          << ransac_summary.num_input_data_points
+          << "\n Num. iterations: "
+          << ransac_summary.num_iterations
+          << "\n Confidence: " << ransac_summary.confidence
+          << "\n Time [sec]: " << elapsed_time
+          << "\n Error threshold: " << kErrorThreshold;
 
   // Expect that the inlier ratio is close to the ground truth.
   EXPECT_GT(static_cast<double>(ransac_summary.inliers.size()), 3);
@@ -124,11 +138,12 @@ void ExecuteRandomTestForCentralCamera(const RansacParameters& options,
 
 }  // namespace
 
-TEST(EstimateCalibratedAbsolutePose, AllInliersNoNoise) {
+TEST(EstimateNonCentralCameraAbsolutePose, AllInliersNoNoise) {
   RansacParameters options;
   options.rng = std::make_shared<RandomNumberGenerator>(rng);
   options.error_thresh = kErrorThreshold;
   options.failure_probability = 0.001;
+  options.max_iterations = 1000;
   const double kInlierRatio = 1.0;
   const double kNoise = 0.0;
   const double kPoseTolerance = 1e-2;
@@ -145,11 +160,104 @@ TEST(EstimateCalibratedAbsolutePose, AllInliersNoNoise) {
   for (int i = 0; i < rotations.size(); i++) {
     for (int j = 0; j < translations.size(); j++) {
       ExecuteRandomTestForCentralCamera(options,
-                        rotations[i],
-                        translations[j],
-                        kInlierRatio,
-                        kNoise,
-                        kPoseTolerance);
+                                        rotations[i],
+                                        translations[j],
+                                        kInlierRatio,
+                                        kNoise,
+                                        kPoseTolerance);
+    }
+  }
+}
+
+TEST(EstimateNonCentralCameraAbsolutePose, AllInliersWithNoise) {
+  RansacParameters options;
+  options.rng = std::make_shared<RandomNumberGenerator>(rng);
+  options.error_thresh = kErrorThreshold;
+  options.failure_probability = 0.001;
+  //  options.max_iterations = 1000;
+  const double kInlierRatio = 1.0;
+  const double kNoise = 0.1;
+  const double kPoseTolerance = 1e-2;
+
+  const std::vector<Matrix3d> rotations = {
+    Matrix3d::Identity(),
+    AngleAxisd(DegToRad(12.0), Vector3d::UnitY()).toRotationMatrix(),
+    AngleAxisd(DegToRad(-9.0), Vector3d(1.0, 0.2, -0.8).normalized())
+        .toRotationMatrix()
+  };
+  const std::vector<Vector3d> translations = { Vector3d(-1.3, 0, 0),
+                                               Vector3d(0, 0, 0.5) };
+
+  for (int i = 0; i < rotations.size(); i++) {
+    for (int j = 0; j < translations.size(); j++) {
+      ExecuteRandomTestForCentralCamera(options,
+                                        rotations[i],
+                                        translations[j],
+                                        kInlierRatio,
+                                        kNoise,
+                                        kPoseTolerance);
+    }
+  }
+}
+
+TEST(EstimateNonCentralCameraAbsolutePose, OutliersNoNoise) {
+  RansacParameters options;
+  options.rng = std::make_shared<RandomNumberGenerator>(rng);
+  options.error_thresh = kErrorThreshold;
+  options.failure_probability = 0.001;
+  options.max_iterations = 1000;
+  const double kInlierRatio = 0.8;
+  const double kNoise = 0.0;
+  const double kPoseTolerance = 1e-2;
+
+  const std::vector<Matrix3d> rotations = {
+    Matrix3d::Identity(),
+    AngleAxisd(DegToRad(12.0), Vector3d::UnitY()).toRotationMatrix(),
+    AngleAxisd(DegToRad(-9.0), Vector3d(1.0, 0.2, -0.8).normalized())
+        .toRotationMatrix()
+  };
+  const std::vector<Vector3d> translations = { Vector3d(-1.3, 0, 0),
+                                               Vector3d(0, 0, 0.5) };
+
+  for (int i = 0; i < rotations.size(); i++) {
+    for (int j = 0; j < translations.size(); j++) {
+      ExecuteRandomTestForCentralCamera(options,
+                                        rotations[i],
+                                        translations[j],
+                                        kInlierRatio,
+                                        kNoise,
+                                        kPoseTolerance);
+    }
+  }
+}
+
+TEST(EstimateNonCentralCameraAbsolutePose, OutliersWithNoise) {
+  RansacParameters options;
+  options.rng = std::make_shared<RandomNumberGenerator>(rng);
+  options.error_thresh = kErrorThreshold;
+  options.failure_probability = 0.001;
+  options.max_iterations = 1000;
+  const double kInlierRatio = 0.8;
+  const double kNoise = 0.1;
+  const double kPoseTolerance = 1e-2;
+
+  const std::vector<Matrix3d> rotations = {
+    Matrix3d::Identity(),
+    AngleAxisd(DegToRad(12.0), Vector3d::UnitY()).toRotationMatrix(),
+    AngleAxisd(DegToRad(-9.0), Vector3d(1.0, 0.2, -0.8).normalized())
+        .toRotationMatrix()
+  };
+  const std::vector<Vector3d> translations = { Vector3d(-1.3, 0, 0),
+                                               Vector3d(0, 0, 0.5) };
+
+  for (int i = 0; i < rotations.size(); i++) {
+    for (int j = 0; j < translations.size(); j++) {
+      ExecuteRandomTestForCentralCamera(options,
+                                        rotations[i],
+                                        translations[j],
+                                        kInlierRatio,
+                                        kNoise,
+                                        kPoseTolerance);
     }
   }
 }

@@ -82,7 +82,8 @@ class GdlsSimilarityTransformationEstimator
   // Estimates candidate absolute poses from correspondences.
   bool EstimateModel(
       const std::vector<CameraAndFeatureCorrespondence2D3D>& correspondences,
-      std::vector<SimilarityTransformation>* similarity_transformations) const {
+      std::vector<SimilarityTransformation>* similarity_transformations)
+      const override {
     std::vector<Eigen::Vector3d> ray_origins(4), ray_directions(4),
         world_points(4);
     for (int i = 0; i < 4; i++) {
