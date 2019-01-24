@@ -112,11 +112,12 @@ class NonCentralCameraPoseEstimator
   // this function appropriately for the task being solved.
   double Error(const NonCentralCameraFeatureCorrespondence& data,
                const NonCentralCameraAbsolutePose& model) const override {
-    return Upnp::ComputeResidual(data.ray_direction,
-                                 data.ray_origin,
-                                 data.world_point,
-                                 model.rotation,
-                                 model.translation);
+    const double residual = Upnp::ComputeResidual(data.ray_origin,
+                                                  data.ray_direction,
+                                                  data.world_point,
+                                                  model.rotation,
+                                                  model.translation);
+    return residual;
   }
   
  private:

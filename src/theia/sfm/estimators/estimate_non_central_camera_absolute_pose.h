@@ -69,7 +69,7 @@ bool EstimateNonCentralCameraAbsolutePose(
     const RansacParameters& ransac_params,
     const RansacType& ransac_type,
     const std::vector<NonCentralCameraFeatureCorrespondence>& correspondences,
-    std::vector<NonCentralCameraAbsolutePose>* estimated_poses,
+    NonCentralCameraAbsolutePose* estimated_poses,
     RansacSummary* ransac_summary);
 
 // Estimates the calibrated absolute pose via Upnp, a non-central-camera pose
@@ -90,7 +90,7 @@ bool EstimateNonCentralCameraAbsolutePose(
     const RansacParameters& ransac_params,
     const RansacType& ransac_type,
     const std::vector<FeatureCorrespondence2D3D>& normalized_correspondences,
-    std::vector<NonCentralCameraAbsolutePose>* estimated_poses,
+    NonCentralCameraAbsolutePose* estimated_poses,
     RansacSummary* ransac_summary);
 
 }  // namespace theia

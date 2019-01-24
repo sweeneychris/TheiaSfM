@@ -365,10 +365,15 @@ double Upnp::ComputeResidual(const Eigen::Vector3d& ray_origin,
                              const Eigen::Vector3d& world_point,
                              const Eigen::Quaterniond& rotation,
                              const Eigen::Vector3d& translation) {
-  const Eigen::Vector3d estimated_ray_direction =
+  const Eigen::Quaterniond unrot =
+      Eigen::Quaterniond::FromTwoVectors(ray_direction,
+                                         Eigen::Vector3d::UnitZ());
+  const Eigen::Vector3d reprojected_point =
       rotation * world_point + translation - ray_origin;
-  const double depth = estimated_ray_direction.norm();
-  return (estimated_ray_direction - depth * ray_direction).squaredNorm();
+  const Eigen::Vector3d unrot_reprojected_point = unrot * reprojected_point;
+  const Eigen::Vector3d unrot_ray_direction = unrot * ray_direction;
+  return (unrot_reprojected_point.hnormalized() -
+          unrot_ray_direction.hnormalized()).norm();
 }
 
 std::vector<Eigen::Matrix3d> Upnp::ComputeCostParameters(

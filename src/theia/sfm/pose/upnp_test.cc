@@ -99,18 +99,12 @@ bool CheckReprojectionErrors(const InputDatum& input_datum,
   const int num_points = input_datum.world_points.size();
   double good_reprojection_errors = true;
   for (int i = 0; i < num_points; ++i) {
-    const Quaterniond unrot =
-        Quaterniond::FromTwoVectors(input_datum.ray_directions[i],
-                                    Vector3d(0, 0, 1));
-    const Vector3d reprojected_point =
-        soln_rotation * input_datum.world_points[i] + soln_translation -
-        input_datum.ray_origins[i];
-
-    const Vector3d unrot_cam_ray = unrot * input_datum.ray_directions[i];
-    const Vector3d unrot_reproj_pt = unrot * reprojected_point;
-
     const double reprojection_error =
-        (unrot_cam_ray.hnormalized() - unrot_reproj_pt.hnormalized()).norm();
+        Upnp::ComputeResidual(input_datum.ray_origins[i],
+                              input_datum.ray_directions[i],
+                              input_datum.world_points[i],
+                              soln_rotation,
+                              soln_translation);
 
     good_reprojection_errors = (good_reprojection_errors &&
                                 (reprojection_error < kMaxReprojectionError));
@@ -235,6 +229,25 @@ TEST(UpnpTests, ComputeCostParametersForNonCentralCameraPoseEstimation) {
 
   const double upnp_cost = Upnp::EvaluateCost(upnp_params, soln_rotation);
   EXPECT_NEAR(upnp_cost, 0.0, 1e-6);
+}
+
+// Verifies that the computation of the residual is correct.
+TEST(UpnpTests, EvaluateResidualAtOptimalSolution) {
+  const std::vector<Vector3d> kPoints3d = {
+    Vector3d(-1.0, 3.0, 3.0),
+    Vector3d(1.0, -1.0, 2.0),
+    Vector3d(-1.0, 1.0, 2.0),
+    Vector3d(2.0, 1.0, 3.0),
+    Vector3d(-1.0, -3.0, 2.0),
+    Vector3d(1.0, -2.0, 1.0),
+    Vector3d(-1.0, 4.0, 2.0),
+    Vector3d(-2.0, 2.0, 3.0)
+  };
+  const std::vector<Vector3d> kImageOrigins = { Vector3d(-1.0, 0.0, 0.0),
+                                                Vector3d(0.0, 0.0, 0.0),
+                                                Vector3d(2.0, 0.0, 0.0),
+                                                Vector3d(3.0, 0.0, 0.0) };
+  
 }
 
 // Checks the case of a minimal sample and central camera pose estimation.
