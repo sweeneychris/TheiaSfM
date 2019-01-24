@@ -77,7 +77,9 @@ class Upnp {
 
  public:
   // Constructors and destructors.
-  Upnp() = default;
+  Upnp(const bool use_minimal_template) :
+      use_minimal_template_(use_minimal_template) {}
+  Upnp() : Upnp(false) {}
   ~Upnp() = default;
 
   // The Upnp cost function can be rewritten as follows:
@@ -179,6 +181,12 @@ class Upnp {
   // Template matrices.
   RowMajorMatrixXd minimal_sample_template_matrix_;
   RowMajorMatrixXd non_minimal_sample_template_matrix_;
+
+  // Flag that controls which polynomial solver to use. If set true, the minimal
+  // samples will use the SolveForRotationsFromMinimalSample(), which is slow;
+  // and uses SolveForRotationsFromNonMinimalSample() when set true, which is
+  // faster than the former.
+  const bool use_minimal_template_;
 
   // Computes the entries of the cost parameters given 2D-3D correspondences.
   std::vector<Eigen::Matrix3d> ComputeCostParameters(

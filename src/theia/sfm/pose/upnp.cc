@@ -341,13 +341,13 @@ void DiscardBadSolutions(const InputDatum& input_datum,
 
 }  // namespace
 
-inline std::vector<Eigen::Quaterniond> Upnp::ComputeRotations(
-    const int num_correspondences) {
+inline std::vector<Eigen::Quaterniond>
+Upnp::ComputeRotations(const int num_correspondences) {
   // Build the action matrix.
-  if (num_correspondences > kNumMinCorrespondences) {
-    return SolveForRotationsFromNonMinimalSample();
+  if (use_minimal_template_ && num_correspondences <= kNumMinCorrespondences) {
+    return SolveForRotationsFromMinimalSample();
   }
-  return SolveForRotationsFromMinimalSample();
+  return SolveForRotationsFromNonMinimalSample();
 }
 
 double Upnp::EvaluateCost(const Upnp::CostParameters& parameters,
