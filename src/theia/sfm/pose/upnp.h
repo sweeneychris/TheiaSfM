@@ -156,7 +156,9 @@ class Upnp {
   // Computes the Upnp cost residual for a 3D point given a rotation and
   // translation. The evaluated residual is the following:
   //
-  // Residual = || depth * ray_direction + ray_origin - R * p - t||^2
+  // reprojected_point = (ray_direction + ray_origin - t).hnormalized()
+  // 
+  // residual = || reprojected_point - (R * p).hnormalized() ||
   //
   // where R is the rotation, t is the translation, and p is the 3D point.
   // The function returns the computed residual.
