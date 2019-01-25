@@ -173,6 +173,8 @@ bool EstimateRigidTransformation2D3D(
     correspondences[i].camera.SetPosition(Eigen::Vector3d::Zero());
     correspondences[i].camera.SetOrientationFromRotationMatrix(
         Eigen::Matrix3d::Identity());
+    correspondences[i].camera.SetFocalLength(1.0);
+    correspondences[i].camera.SetPrincipalPoint(0.0, 0.0);
   }
   return EstimateRigidTransformation2D3D(ransac_params,
                                          ransac_type,
