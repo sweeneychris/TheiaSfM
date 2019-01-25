@@ -45,6 +45,7 @@
 #include <vector>
 
 #include "theia/alignment/alignment.h"
+#include "theia/math/util.h"
 #include "theia/sfm/pose/build_upnp_action_matrix.h"
 #include "theia/sfm/pose/build_upnp_action_matrix_using_symmetry.h"
 
@@ -283,7 +284,6 @@ std::vector<double> ComputeCostsAndRankSolutions(
   return costs;
 }
 
-// TODO(vfragoso): Remove duplicate solutions.
 void DiscardBadSolutions(const InputDatum& input_datum,
                          std::vector<Eigen::Quaterniond>* solution_rotations,
                          std::vector<Eigen::Vector3d>* solution_translations) {
@@ -340,15 +340,47 @@ void DiscardBadSolutions(const InputDatum& input_datum,
   std::swap(*solution_translations, final_translations);
 }
 
+// The observed pattern is that duplicate rotations appear consequtively in the
+// vector, i.e., rotation[i] == rotation[i + 1] is common.
+std::vector<Eigen::Quaterniond> RemoveDuplicateRotations(
+    const std::vector<Eigen::Quaterniond>& candidate_rotations) {
+  const double kAngleThreshold = DegToRad(0.1);
+  std::vector<Eigen::Quaterniond> rotations;
+  rotations.reserve(candidate_rotations.size());
+
+  // If no rotations then return empty vector.
+  if (candidate_rotations.empty()) {
+    return rotations;
+  }
+
+  for (int i = 0; i < candidate_rotations.size(); ++i) {
+    bool duplicate_rotation = false;
+    const Eigen::Quaterniond& candidate_rotation = candidate_rotations[i];
+    for (int j = rotations.size() - 1; j >= 0; --j) {
+      if (candidate_rotation.angularDistance(rotations[j]) < kAngleThreshold) {
+        duplicate_rotation = true;
+        break;
+      }
+    }
+    if (!duplicate_rotation) {
+      rotations.push_back(candidate_rotation);
+    }
+  }
+  return rotations;
+}
+
 }  // namespace
 
 inline std::vector<Eigen::Quaterniond>
 Upnp::ComputeRotations(const int num_correspondences) {
   // Build the action matrix.
+  std::vector<Eigen::Quaterniond> candidate_rotations;
   if (use_minimal_template_ && num_correspondences <= kNumMinCorrespondences) {
-    return SolveForRotationsFromMinimalSample();
+    candidate_rotations = SolveForRotationsFromMinimalSample();
   }
-  return SolveForRotationsFromNonMinimalSample();
+  candidate_rotations = SolveForRotationsFromNonMinimalSample();
+  // Remove duplicate solutions.
+  return RemoveDuplicateRotations(candidate_rotations);
 }
 
 double Upnp::EvaluateCost(const Upnp::CostParameters& parameters,

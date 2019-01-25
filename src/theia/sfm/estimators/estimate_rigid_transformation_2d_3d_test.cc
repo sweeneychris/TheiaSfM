@@ -83,9 +83,10 @@ void ExecuteRandomTest(const RansacParameters& options,
                        const double inlier_ratio,
                        const double noise,
                        const double tolerance,
+                       const int num_cameras,
                        RandomNumberGenerator* rng) {
   // Generate cameras.
-  std::vector<Camera> cameras(kNumCameras);
+  std::vector<Camera> cameras(num_cameras);
   for (int i = 0; i < cameras.size(); ++i) {
     cameras[i] = RandomCamera(rng);
   }
@@ -98,7 +99,7 @@ void ExecuteRandomTest(const RansacParameters& options,
     CameraAndFeatureCorrespondence2D3D correspondence;
 
     // Set up random camera.
-    correspondence.camera = cameras[i % kNumCameras];
+    correspondence.camera = cameras[i % cameras.size()];
 
     // Set up random 3D point and reproject it into the image. Make sure the
     // point is in front of the camera.
@@ -204,7 +205,7 @@ RandomNumberGenerator* EstimateRigidTransformation::rng = nullptr;
 
 TEST_F(EstimateRigidTransformation, AllInliersNoNoise) {
   RansacParameters options;
-  options.rng = std::make_shared<RandomNumberGenerator>(kSeed);
+  options.rng = std::make_shared<RandomNumberGenerator>(*rng);
   options.use_mle = true;
   options.error_thresh = kReprojectionError;
   options.failure_probability = 0.001;
@@ -223,13 +224,14 @@ TEST_F(EstimateRigidTransformation, AllInliersNoNoise) {
                     kInlierRatio,
                     kNoise,
                     kPoseTolerance,
+                    kNumCameras,
                     rng);
 }
 
 
 TEST_F(EstimateRigidTransformation, AllInliersWithNoise) {
   RansacParameters options;
-  options.rng = std::make_shared<RandomNumberGenerator>(kSeed);
+  options.rng = std::make_shared<RandomNumberGenerator>(*rng);
   options.use_mle = true;
   options.error_thresh = kReprojectionError;
   options.failure_probability = 0.001;
@@ -248,13 +250,14 @@ TEST_F(EstimateRigidTransformation, AllInliersWithNoise) {
                     kInlierRatio,
                     kNoise,
                     kPoseTolerance,
+                    kNumCameras,
                     rng);
 }
 
 
 TEST_F(EstimateRigidTransformation, OutliersNoNoise) {
   RansacParameters options;
-  options.rng = std::make_shared<RandomNumberGenerator>(kSeed);
+  options.rng = std::make_shared<RandomNumberGenerator>(*rng);
   options.use_mle = true;
   options.error_thresh = kReprojectionError;
   options.failure_probability = 0.001;
@@ -273,13 +276,14 @@ TEST_F(EstimateRigidTransformation, OutliersNoNoise) {
                     kInlierRatio,
                     kNoise,
                     kPoseTolerance,
+                    kNumCameras,
                     rng);
 }
 
 
 TEST_F(EstimateRigidTransformation, OutliersWithNoise) {
   RansacParameters options;
-  options.rng = std::make_shared<RandomNumberGenerator>(kSeed);
+  options.rng = std::make_shared<RandomNumberGenerator>(*rng);
   options.use_mle = true;
   options.error_thresh = kReprojectionError;
   options.failure_probability = 0.001;
@@ -298,6 +302,7 @@ TEST_F(EstimateRigidTransformation, OutliersWithNoise) {
                     kInlierRatio,
                     kNoise,
                     kPoseTolerance,
+                    kNumCameras,
                     rng);
 }
 
