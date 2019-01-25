@@ -48,19 +48,6 @@ struct RansacParameters;
 struct RansacSummary;
 struct SimilarityTransformation;
 
-// // A struct to manage the correspondences between 3d points and the respective
-// // camera and feature observation.
-// struct CameraAndFeatureCorrespondence2D3D {
-//   // A camera with known pose (i.e., extrinsics) and intrinsics.
-//   Camera camera;
-
-//   // A feature observation in pixels.
-//   Feature observation;
-
-//   // The homogeneous 3D point.
-//   Eigen::Vector4d point3d;
-// };
-
 // Estimates the similarity transformation that aligns the projection of the 3D
 // points to the 2D features observed by the corresponding camera. This assumes
 // that there are multiple cameras observing the 3D points, but the cameras are
