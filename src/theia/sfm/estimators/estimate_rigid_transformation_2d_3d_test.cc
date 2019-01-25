@@ -198,6 +198,7 @@ class EstimateRigidTransformation : public ::testing::Test {
     delete rng;
   }
 
+  // TODO(vfragoso): Generate the cameras and points once.
   static RandomNumberGenerator* rng;
 };
 
@@ -205,7 +206,7 @@ RandomNumberGenerator* EstimateRigidTransformation::rng = nullptr;
 
 TEST_F(EstimateRigidTransformation, AllInliersNoNoise) {
   RansacParameters options;
-  options.rng = std::make_shared<RandomNumberGenerator>(*rng);
+  options.rng = std::make_shared<RandomNumberGenerator>(kSeed);
   options.use_mle = true;
   options.error_thresh = kReprojectionError;
   options.failure_probability = 0.001;
@@ -231,7 +232,7 @@ TEST_F(EstimateRigidTransformation, AllInliersNoNoise) {
 
 TEST_F(EstimateRigidTransformation, AllInliersWithNoise) {
   RansacParameters options;
-  options.rng = std::make_shared<RandomNumberGenerator>(*rng);
+  options.rng = std::make_shared<RandomNumberGenerator>(kSeed);
   options.use_mle = true;
   options.error_thresh = kReprojectionError;
   options.failure_probability = 0.001;
@@ -257,7 +258,7 @@ TEST_F(EstimateRigidTransformation, AllInliersWithNoise) {
 
 TEST_F(EstimateRigidTransformation, OutliersNoNoise) {
   RansacParameters options;
-  options.rng = std::make_shared<RandomNumberGenerator>(*rng);
+  options.rng = std::make_shared<RandomNumberGenerator>(kSeed);
   options.use_mle = true;
   options.error_thresh = kReprojectionError;
   options.failure_probability = 0.001;
@@ -283,7 +284,7 @@ TEST_F(EstimateRigidTransformation, OutliersNoNoise) {
 
 TEST_F(EstimateRigidTransformation, OutliersWithNoise) {
   RansacParameters options;
-  options.rng = std::make_shared<RandomNumberGenerator>(*rng);
+  options.rng = std::make_shared<RandomNumberGenerator>(kSeed);
   options.use_mle = true;
   options.error_thresh = kReprojectionError;
   options.failure_probability = 0.001;
