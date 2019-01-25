@@ -61,19 +61,17 @@ using Eigen::Matrix3d;
 using Eigen::Vector2d;
 using Eigen::Vector3d;
 
-static const int kNumCameras = 100;
+static const int kNumCameras = 10;
 static const int kNumPoints = 100;
 static const double kFocalLength = 1000.0;
-static const double kReprojectionError = 10.0;
-static const double kErrorThreshold =
-    (kReprojectionError * kReprojectionError) / (kFocalLength * kFocalLength);
+static const double kReprojectionError = 4.0;
+static const double kAngularErrorThresh = 1.0;  // 1 degree.
+static const int kSeed = 66;
 
-RandomNumberGenerator rng(66);
-
-inline Camera RandomCamera() {
+inline Camera RandomCamera(RandomNumberGenerator* rng) {
   Camera camera;
-  camera.SetPosition(rng.RandVector3d(-10.0, 10.0));
-  camera.SetOrientationFromRotationMatrix(RandomRotation(10.0, &rng));
+  camera.SetPosition(rng->RandVector3d(-10.0, 10.0));
+  camera.SetOrientationFromRotationMatrix(RandomRotation(10.0, rng));
   camera.SetImageSize(1000, 1000);
   camera.SetFocalLength(kFocalLength);
   camera.SetPrincipalPoint(kFocalLength / 2.0, kFocalLength / 2.0);
@@ -84,15 +82,23 @@ void ExecuteRandomTest(const RansacParameters& options,
                        const RigidTransformation& rigid_transformation,
                        const double inlier_ratio,
                        const double noise,
-                       const double tolerance) {
+                       const double tolerance,
+                       RandomNumberGenerator* rng) {
+  // Generate cameras.
+  std::vector<Camera> cameras(kNumCameras);
+  for (int i = 0; i < cameras.size(); ++i) {
+    cameras[i] = RandomCamera(rng);
+  }
+  
   // Create feature correspondences (inliers and outliers) and add noise if
   // appropriate.
   std::vector<CameraAndFeatureCorrespondence2D3D> correspondences;
+  correspondences.reserve(kNumPoints);
   for (int i = 0; i < kNumPoints; i++) {
     CameraAndFeatureCorrespondence2D3D correspondence;
 
     // Set up random camera.
-    correspondence.camera = RandomCamera();
+    correspondence.camera = cameras[i % kNumCameras];
 
     // Set up random 3D point and reproject it into the image. Make sure the
     // point is in front of the camera.
@@ -100,9 +106,9 @@ void ExecuteRandomTest(const RansacParameters& options,
     do {
       // Create a 3D point randomly, and try to ensure that it is in front of
       // the camera.
-      correspondence.point3d = Eigen::Vector4d(rng.RandDouble(-5, 5),
-                                               rng.RandDouble(-5, 5),
-                                               rng.RandDouble(10, 20),
+      correspondence.point3d = Eigen::Vector4d(rng->RandDouble(-5, 5),
+                                               rng->RandDouble(-5, 5),
+                                               rng->RandDouble(10, 20),
                                                1.0);
 
       depth = correspondence.camera.ProjectPoint(correspondence.point3d,
@@ -113,24 +119,26 @@ void ExecuteRandomTest(const RansacParameters& options,
 
   // Add noise to the image observations.
   if (noise) {
-    for (int i = 0; i < kNumCameras; ++i) {
-      correspondences[i].observation += noise * rng.RandVector2d();
+    for (int i = 0; i < kNumPoints; ++i) {
+      correspondences[i].observation += noise * rng->RandVector2d();
     }
   }
 
   // Add outliers.
-  for (int i = 0; i < kNumCameras; ++i) {
-    if (i > inlier_ratio * kNumCameras) {
-      correspondences[i].observation = kFocalLength * rng.RandVector2d();
+  for (int i = 0; i < kNumPoints; ++i) {
+    if (i > inlier_ratio * kNumPoints) {
+      correspondences[i].observation = kFocalLength * rng->RandVector2d();
     }
   }
 
   // Apply the rigid transformation to the 3d points.
-  for (int i = 0; i < kNumCameras; ++i) {
+  for (int i = 0; i < kNumPoints; ++i) {
     const Eigen::Vector3d old_point = correspondences[i].point3d.hnormalized();
+    // Since the 3d point is in front of the camera, we need to calculate the
+    // final 3d point to estimate the rigid transformation.
     const Eigen::Vector3d new_point =
-        rigid_transformation.rotation * old_point +
-        rigid_transformation.translation;
+        rigid_transformation.rotation.transpose() *
+        (old_point - rigid_transformation.translation);
     correspondences[i].point3d = new_point.homogeneous();
   }
 
@@ -153,150 +161,144 @@ void ExecuteRandomTest(const RansacParameters& options,
           << "\n Num. iterations: "
           << ransac_summary.num_iterations
           << "\n Confidence: " << ransac_summary.confidence
-          << "\n Time [sec]: " << elapsed_time
-          << "\n Error threshold: " << kErrorThreshold;
+          << "\n Time [sec]: " << elapsed_time;
+  VLOG(3) << "Expected rotation: \n" << rigid_transformation.rotation
+          << "\n Estimated rotation: \n"
+          << estimated_rigid_transformation.rotation
+          << "\n Expected translation: "
+          << rigid_transformation.translation.transpose()
+          << "\n Estimated translation: "
+          << estimated_rigid_transformation.translation.transpose();
 
   // Expect that the inlier ratio is close to the ground truth.
   EXPECT_GT(static_cast<double>(ransac_summary.inliers.size()), 3);
 
   // Expect rigid transforms are close.
-
-  EXPECT_TRUE(test::ArraysEqualUpToScale(
-      9,
-      rigid_transformation.rotation.data(),
-      estimated_rigid_transformation.rotation.data(),
-      tolerance));
-  EXPECT_TRUE(test::ArraysEqualUpToScale(
-      3,
-      estimated_rigid_transformation.translation.data(),
-      rigid_transformation.translation.data(),
-      tolerance));
+  const Eigen::Quaterniond gt_rotation(rigid_transformation.rotation);
+  const Eigen::Quaterniond estimated_rotation(
+      estimated_rigid_transformation.rotation);
+  EXPECT_NEAR(RadToDeg(gt_rotation.angularDistance(estimated_rotation)),
+              0.0, kAngularErrorThresh);
+  EXPECT_NEAR((estimated_rigid_transformation.translation -
+               rigid_transformation.translation).norm(),
+              0.0, tolerance);
 }
 
 }  // namespace
 
-// TEST(EstimateRigidTransformation, AllInliersNoNoise) {
-//   RansacParameters options;
-//   options.rng = std::make_shared<RandomNumberGenerator>(rng);
-//   options.error_thresh = kErrorThreshold;
-//   options.failure_probability = 0.001;
-//   options.max_iterations = 1000;
-//   const double kInlierRatio = 1.0;
-//   const double kNoise = 0.0;
-//   const double kPoseTolerance = 1e-2;
+class EstimateRigidTransformation : public ::testing::Test {
+ public:
+  static void SetUpTestCase() {
+    CHECK_GT(kNumPoints, kNumCameras);
+    rng = new RandomNumberGenerator(kSeed);
+  }
 
-//   const std::vector<Matrix3d> rotations = {
-//     Matrix3d::Identity(),
-//     AngleAxisd(DegToRad(12.0), Vector3d::UnitY()).toRotationMatrix(),
-//     AngleAxisd(DegToRad(-9.0), Vector3d(1.0, 0.2, -0.8).normalized())
-//         .toRotationMatrix()
-//   };
-//   const std::vector<Vector3d> translations = { Vector3d(-1.3, 0, 0),
-//                                                Vector3d(0, 0, 0.5) };
+  static void TearDownTestCase() {
+    delete rng;
+  }
 
-//   for (int i = 0; i < rotations.size(); i++) {
-//     for (int j = 0; j < translations.size(); j++) {
-//       ExecuteRandomTestForCentralCamera(options,
-//                                         rotations[i],
-//                                         translations[j],
-//                                         kInlierRatio,
-//                                         kNoise,
-//                                         kPoseTolerance);
-//     }
-//   }
-// }
+  static RandomNumberGenerator* rng;
+};
 
-// TEST(EstimateRigidTransformation, AllInliersWithNoise) {
-//   RansacParameters options;
-//   options.rng = std::make_shared<RandomNumberGenerator>(rng);
-//   options.error_thresh = kErrorThreshold;
-//   options.failure_probability = 0.001;
-//   //  options.max_iterations = 1000;
-//   const double kInlierRatio = 1.0;
-//   const double kNoise = 0.1;
-//   const double kPoseTolerance = 1e-2;
+RandomNumberGenerator* EstimateRigidTransformation::rng = nullptr;
 
-//   const std::vector<Matrix3d> rotations = {
-//     Matrix3d::Identity(),
-//     AngleAxisd(DegToRad(12.0), Vector3d::UnitY()).toRotationMatrix(),
-//     AngleAxisd(DegToRad(-9.0), Vector3d(1.0, 0.2, -0.8).normalized())
-//         .toRotationMatrix()
-//   };
-//   const std::vector<Vector3d> translations = { Vector3d(-1.3, 0, 0),
-//                                                Vector3d(0, 0, 0.5) };
+TEST_F(EstimateRigidTransformation, AllInliersNoNoise) {
+  RansacParameters options;
+  options.rng = std::make_shared<RandomNumberGenerator>(kSeed);
+  options.use_mle = true;
+  options.error_thresh = kReprojectionError;
+  options.failure_probability = 0.001;
+  options.max_iterations = 1000;
+  const double kInlierRatio = 1.0;
+  const double kNoise = 0.0;
+  const double kPoseTolerance = 1e-4;
 
-//   for (int i = 0; i < rotations.size(); i++) {
-//     for (int j = 0; j < translations.size(); j++) {
-//       ExecuteRandomTestForCentralCamera(options,
-//                                         rotations[i],
-//                                         translations[j],
-//                                         kInlierRatio,
-//                                         kNoise,
-//                                         kPoseTolerance);
-//     }
-//   }
-// }
+  RigidTransformation rigid_transformation;
+  rigid_transformation.rotation =
+      Eigen::AngleAxisd(DegToRad(12.0), Eigen::Vector3d(1.0, 0.2, -0.8)
+                        .normalized()).toRotationMatrix();
+  rigid_transformation.translation = Eigen::Vector3d(-1.3, 2.1, 0.5);
+  ExecuteRandomTest(options,
+                    rigid_transformation,
+                    kInlierRatio,
+                    kNoise,
+                    kPoseTolerance,
+                    rng);
+}
 
-// TEST(EstimateRigidTransformation, OutliersNoNoise) {
-//   RansacParameters options;
-//   options.rng = std::make_shared<RandomNumberGenerator>(rng);
-//   options.error_thresh = kErrorThreshold;
-//   options.failure_probability = 0.001;
-//   options.max_iterations = 1000;
-//   const double kInlierRatio = 0.8;
-//   const double kNoise = 0.0;
-//   const double kPoseTolerance = 1e-2;
 
-//   const std::vector<Matrix3d> rotations = {
-//     Matrix3d::Identity(),
-//     AngleAxisd(DegToRad(12.0), Vector3d::UnitY()).toRotationMatrix(),
-//     AngleAxisd(DegToRad(-9.0), Vector3d(1.0, 0.2, -0.8).normalized())
-//         .toRotationMatrix()
-//   };
-//   const std::vector<Vector3d> translations = { Vector3d(-1.3, 0, 0),
-//                                                Vector3d(0, 0, 0.5) };
+TEST_F(EstimateRigidTransformation, AllInliersWithNoise) {
+  RansacParameters options;
+  options.rng = std::make_shared<RandomNumberGenerator>(kSeed);
+  options.use_mle = true;
+  options.error_thresh = kReprojectionError;
+  options.failure_probability = 0.001;
+  options.max_iterations = 1000;
+  const double kInlierRatio = 1.0;
+  const double kNoise = 1.0;
+  const double kPoseTolerance = 1e-2;
 
-//   for (int i = 0; i < rotations.size(); i++) {
-//     for (int j = 0; j < translations.size(); j++) {
-//       ExecuteRandomTestForCentralCamera(options,
-//                                         rotations[i],
-//                                         translations[j],
-//                                         kInlierRatio,
-//                                         kNoise,
-//                                         kPoseTolerance);
-//     }
-//   }
-// }
+  RigidTransformation rigid_transformation;
+  rigid_transformation.rotation =
+      Eigen::AngleAxisd(DegToRad(12.0), Eigen::Vector3d(1.0, 0.2, -0.8)
+                        .normalized()).toRotationMatrix();
+  rigid_transformation.translation = Eigen::Vector3d(-1.3, 2.1, 0.5);
+  ExecuteRandomTest(options,
+                    rigid_transformation,
+                    kInlierRatio,
+                    kNoise,
+                    kPoseTolerance,
+                    rng);
+}
 
-// TEST(EstimateRigidTransformation, OutliersWithNoise) {
-//   RansacParameters options;
-//   options.rng = std::make_shared<RandomNumberGenerator>(rng);
-//   options.error_thresh = kErrorThreshold;
-//   options.failure_probability = 0.001;
-//   options.max_iterations = 1000;
-//   const double kInlierRatio = 0.8;
-//   const double kNoise = 0.1;
-//   const double kPoseTolerance = 1e-2;
 
-//   const std::vector<Matrix3d> rotations = {
-//     Matrix3d::Identity(),
-//     AngleAxisd(DegToRad(12.0), Vector3d::UnitY()).toRotationMatrix(),
-//     AngleAxisd(DegToRad(-9.0), Vector3d(1.0, 0.2, -0.8).normalized())
-//         .toRotationMatrix()
-//   };
-//   const std::vector<Vector3d> translations = { Vector3d(-1.3, 0, 0),
-//                                                Vector3d(0, 0, 0.5) };
+TEST_F(EstimateRigidTransformation, OutliersNoNoise) {
+  RansacParameters options;
+  options.rng = std::make_shared<RandomNumberGenerator>(kSeed);
+  options.use_mle = true;
+  options.error_thresh = kReprojectionError;
+  options.failure_probability = 0.001;
+  options.max_iterations = 1000;
+  const double kInlierRatio = 0.8;
+  const double kNoise = 0.0;
+  const double kPoseTolerance = 1e-4;
 
-//   for (int i = 0; i < rotations.size(); i++) {
-//     for (int j = 0; j < translations.size(); j++) {
-//       ExecuteRandomTestForCentralCamera(options,
-//                                         rotations[i],
-//                                         translations[j],
-//                                         kInlierRatio,
-//                                         kNoise,
-//                                         kPoseTolerance);
-//     }
-//   }
-// }
+  RigidTransformation rigid_transformation;
+  rigid_transformation.rotation =
+      Eigen::AngleAxisd(DegToRad(12.0), Eigen::Vector3d(1.0, 0.2, -0.8)
+                        .normalized()).toRotationMatrix();
+  rigid_transformation.translation = Eigen::Vector3d(-1.3, 2.1, 0.5);
+  ExecuteRandomTest(options,
+                    rigid_transformation,
+                    kInlierRatio,
+                    kNoise,
+                    kPoseTolerance,
+                    rng);
+}
+
+
+TEST_F(EstimateRigidTransformation, OutliersWithNoise) {
+  RansacParameters options;
+  options.rng = std::make_shared<RandomNumberGenerator>(kSeed);
+  options.use_mle = true;
+  options.error_thresh = kReprojectionError;
+  options.failure_probability = 0.001;
+  options.max_iterations = 1000;
+  const double kInlierRatio = 0.8;
+  const double kNoise = 1.0;
+  const double kPoseTolerance = 0.1;
+
+  RigidTransformation rigid_transformation;
+    rigid_transformation.rotation =
+      Eigen::AngleAxisd(DegToRad(12.0), Eigen::Vector3d(1.0, 0.2, -0.8)
+                        .normalized()).toRotationMatrix();
+  rigid_transformation.translation = Eigen::Vector3d(-1.3, 2.1, 0.5);
+  ExecuteRandomTest(options,
+                    rigid_transformation,
+                    kInlierRatio,
+                    kNoise,
+                    kPoseTolerance,
+                    rng);
+}
 
 }  // namespace theia
