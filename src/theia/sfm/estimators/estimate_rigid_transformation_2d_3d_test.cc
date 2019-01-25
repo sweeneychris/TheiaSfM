@@ -301,4 +301,6 @@ TEST_F(EstimateRigidTransformation, OutliersWithNoise) {
                     rng);
 }
 
+// TODO(vfragoso): Add unit tests to localize a single camera.
+
 }  // namespace theia

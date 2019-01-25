@@ -283,6 +283,7 @@ std::vector<double> ComputeCostsAndRankSolutions(
   return costs;
 }
 
+// TODO(vfragoso): Remove duplicate solutions.
 void DiscardBadSolutions(const InputDatum& input_datum,
                          std::vector<Eigen::Quaterniond>* solution_rotations,
                          std::vector<Eigen::Vector3d>* solution_translations) {

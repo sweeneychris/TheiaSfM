@@ -162,23 +162,23 @@ bool EstimateRigidTransformation2D3D(
     const std::vector<FeatureCorrespondence2D3D>& normalized_correspondences,
     RigidTransformation* estimated_pose,
     RansacSummary* ransac_summary) {
-  // const int num_correspondences = normalized_correspondences.size();
-  // std::vector<NonCentralCameraFeatureCorrespondence> correspondences;
-  // correspondences.reserve(num_correspondences);
-  // for (int i = 0; i < num_correspondences; ++i) {
-  //   const FeatureCorrespondence2D3D& normalized_correspondence =
-  //       normalized_correspondences[i];
-  //   correspondences.emplace_back(
-  //       normalized_correspondence.feature.homogeneous().normalized(),
-  //       Eigen::Vector3d::Zero(),
-  //       normalized_correspondence.world_point);
-  // }
-  // return EstimateRigidTransformation2D3D(ransac_params,
-  //                                        ransac_type,
-  //                                        correspondences,
-  //                                        estimated_pose,
-  //                                        ransac_summary);
-  return false;
+  const int num_correspondences = normalized_correspondences.size();
+  std::vector<CameraAndFeatureCorrespondence2D3D> correspondences(
+      num_correspondences);
+  for (int i = 0; i < num_correspondences; ++i) {
+    correspondences[i].point3d =
+        normalized_correspondences[i].world_point.homogeneous();
+    correspondences[i].observation =
+        normalized_correspondences[i].feature;
+    correspondences[i].camera.SetPosition(Eigen::Vector3d::Zero());
+    correspondences[i].camera.SetOrientationFromRotationMatrix(
+        Eigen::Matrix3d::Identity());
+  }
+  return EstimateRigidTransformation2D3D(ransac_params,
+                                         ransac_type,
+                                         correspondences,
+                                         estimated_pose,
+                                         ransac_summary);
 }
 
 }  // namespace theia
