@@ -78,7 +78,7 @@ class GdlsSimilarityTransformationEstimator
   GdlsSimilarityTransformationEstimator() {}
 
   // 3 correspondences are needed to determine the absolute pose.
-  double SampleSize() const { return 4; }
+  double SampleSize() const override { return 4; }
 
   // Estimates candidate absolute poses from correspondences.
   bool EstimateModel(
@@ -134,7 +134,8 @@ class GdlsSimilarityTransformationEstimator
   // reprojection error.
   double Error(
       const CameraAndFeatureCorrespondence2D3D& correspondence,
-      const SimilarityTransformation& similarity_transformation) const {
+      const SimilarityTransformation& similarity_transformation)
+      const override {
     // Apply the similarity transformation to the camera.
     Camera transformed_camera = correspondence.camera;
     TransformCamera(similarity_transformation, &transformed_camera);
