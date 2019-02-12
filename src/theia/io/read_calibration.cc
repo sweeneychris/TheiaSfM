@@ -34,58 +34,148 @@
 
 #include "theia/io/read_calibration.h"
 
+#include <stdio.h>
 #include <glog/logging.h>
-#include <fstream>  // NOLINT
-#include <iostream>  // NOLINT
 #include <string>
 #include <unordered_map>
+
+#include <rapidjson/document.h>
 
 #include "theia/sfm/camera_intrinsics_prior.h"
 
 namespace theia {
+namespace {
+
+static const char* kPriorsEntry = "priors";
+static const char* kCameraIntrinsicsPrior = "CameraIntrinsicsPrior";
+static const char* kImageName = "image_name";
+static const char* kFocalLength = "focal_length";
+
+bool ExtractCameraIntrinsicsPrior(const rapidjson::Value& entry,
+                                  std::string* view_name,
+                                  CameraIntrinsicsPrior* prior) {
+  // Get the view name.
+  if (!entry.HasMember(kImageName)) {
+    VLOG(1) << "Could not find the image name.";
+    return false;
+  }
+  *view_name = entry[kImageName].GetString();
+  VLOG(1) << "Loading camera intrinsics prior for image name: " << *view_name;
+
+  // Get the focal length.
+  if (entry.HasMember(kFocalLength)) {
+    prior->focal_length.is_set = true;
+    prior->focal_length.value[0] = entry[kFocalLength].GetDouble();
+  }
+
+  return true;
+}
+
+}  // namespace
+
+bool ExtractCameraIntrinsicPriorsFromJson(
+    const char* json_str,
+    std::unordered_map<std::string, CameraIntrinsicsPrior>* view_to_priors) {
+  using rapidjson::Document;
+  using rapidjson::SizeType;
+  using rapidjson::Value;
+
+  Document json;
+  json.Parse(json_str);
+
+  if (!json.HasMember(kPriorsEntry) || !json[kPriorsEntry].IsArray()) {
+    LOG(ERROR) << "Expected \"priors\" array entry in JSON.";
+    return false;
+  }
+
+  const Value& entries = json[kPriorsEntry];
+  CameraIntrinsicsPrior prior;
+  std::string view_name;
+  for (SizeType i = 0; i < entries.Size(); ++i) {
+    if (!entries[i].HasMember(kCameraIntrinsicsPrior) ||
+        !ExtractCameraIntrinsicsPrior(entries[i][kCameraIntrinsicsPrior],
+                                      &view_name,
+                                      &prior)) {
+      VLOG(1) << "Could not parse entry at position: " << i;
+      continue;
+    }
+    // Add to the map.
+    (*view_to_priors)[view_name] = prior;
+  }
+
+  return true;
+}
 
 bool ReadCalibration(const std::string& calibration_file,
                      std::unordered_map<std::string, CameraIntrinsicsPrior>*
-                         camera_intrinsics_prior) {
-  std::ifstream ifs(calibration_file.c_str(), std::ios::in);
-  if (!ifs.is_open()) {
+                         camera_intrinsics_priors) {
+  FILE* file = fopen(calibration_file.c_str(), "rb");
+  if (file == nullptr) {
     LOG(ERROR) << "Cannot read the list file from " << calibration_file;
     return false;
   }
 
-  while (!ifs.eof()) {
-    // Read in the filename.
-    std::string filename;
-    ifs >> filename;
-    if (filename.length() == 0) {
-      break;
-    }
+  // Get the size of the file.
+  fseek(file, 0, SEEK_END);
+  const size_t buffer_size = ftell(file);
+  fseek(file, 0, SEEK_SET);  
 
-    // Read camera_intrinsics_prior.
-    CameraIntrinsicsPrior temp_camera_intrinsics_prior;
-    temp_camera_intrinsics_prior.focal_length.is_set = true;
-    ifs >> temp_camera_intrinsics_prior.focal_length.value[0];
+  // Allocate a buffer
+  char* file_buffer = new char[buffer_size];
 
-    temp_camera_intrinsics_prior.principal_point.is_set = true;
-    ifs >> temp_camera_intrinsics_prior.principal_point.value[0];
-    ifs >> temp_camera_intrinsics_prior.principal_point.value[1];
-    temp_camera_intrinsics_prior.image_width =
-        2.0 * temp_camera_intrinsics_prior.principal_point.value[0];
-    temp_camera_intrinsics_prior.image_height =
-        2.0 * temp_camera_intrinsics_prior.principal_point.value[1];
+  // Read the whole file.
+  CHECK_LE(fread(file_buffer, buffer_size, 1, file), buffer_size);
+  fclose(file);
 
-    temp_camera_intrinsics_prior.aspect_ratio.is_set = true;
-    ifs >> temp_camera_intrinsics_prior.aspect_ratio.value[0];
+  const bool json_parsed =
+      ExtractCameraIntrinsicPriorsFromJson(file_buffer,
+                                           camera_intrinsics_priors);
 
-    temp_camera_intrinsics_prior.skew.is_set = true;
-    ifs >> temp_camera_intrinsics_prior.skew.value[0];
+  delete [] file_buffer;
+  file_buffer = nullptr;
 
-    temp_camera_intrinsics_prior.radial_distortion.is_set = true;
-    ifs >> temp_camera_intrinsics_prior.radial_distortion.value[0];
-    ifs >> temp_camera_intrinsics_prior.radial_distortion.value[1];
+  return json_parsed;
+  
+  // std::ifstream ifs(calibration_file.c_str(), std::ios::in);
+  // if (!ifs.is_open()) {
+  //   LOG(ERROR) << "Cannot read the list file from " << calibration_file;
+  //   return false;
+  // }
 
-    (*camera_intrinsics_prior)[filename] = temp_camera_intrinsics_prior;
-  }
+  // while (!ifs.eof()) {
+  //   // Read in the filename.
+  //   std::string filename;
+  //   ifs >> filename;
+  //   if (filename.length() == 0) {
+  //     break;
+  //   }
+
+  //   // Read camera_intrinsics_prior.
+  //   CameraIntrinsicsPrior temp_camera_intrinsics_prior;
+  //   temp_camera_intrinsics_prior.focal_length.is_set = true;
+  //   ifs >> temp_camera_intrinsics_prior.focal_length.value[0];
+
+  //   temp_camera_intrinsics_prior.principal_point.is_set = true;
+  //   ifs >> temp_camera_intrinsics_prior.principal_point.value[0];
+  //   ifs >> temp_camera_intrinsics_prior.principal_point.value[1];
+  //   temp_camera_intrinsics_prior.image_width =
+  //       2.0 * temp_camera_intrinsics_prior.principal_point.value[0];
+  //   temp_camera_intrinsics_prior.image_height =
+  //       2.0 * temp_camera_intrinsics_prior.principal_point.value[1];
+
+  //   temp_camera_intrinsics_prior.aspect_ratio.is_set = true;
+  //   ifs >> temp_camera_intrinsics_prior.aspect_ratio.value[0];
+
+  //   temp_camera_intrinsics_prior.skew.is_set = true;
+  //   ifs >> temp_camera_intrinsics_prior.skew.value[0];
+
+  //   temp_camera_intrinsics_prior.radial_distortion.is_set = true;
+  //   ifs >> temp_camera_intrinsics_prior.radial_distortion.value[0];
+  //   ifs >> temp_camera_intrinsics_prior.radial_distortion.value[1];
+
+  //   (*camera_intrinsics_prior)[filename] = temp_camera_intrinsics_prior;
+  // }
+
   return true;
 }
 
