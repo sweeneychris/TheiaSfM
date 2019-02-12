@@ -54,24 +54,21 @@ static const char* kCameraIntrinsicsPriorsJson =
     " \"principal_point_y\" : 240,"
     " \"aspect_ratio\" : 1.0,"
     " \"skew\" : 0.0,"
-    " \"radial_distortion_coeff_1\" : 0.1,"
-    " \"radial_distortion_coeff_2\" : 0.01, "
+    " \"radial_distortion_coeffs\" : [0.1, 0.1], "
     " \"camera_intrinsics_type\" : \"PINHOLE\""
     "}}, "
     "{\"CameraIntrinsicsPrior\": {"
     " \"image_name\" : \"view_2.jpg\","
-    " \"focal_length\" : 300,"
+    " \"focal_length\" : 350,"
     " \"principal_point_x\" : 240,"
     " \"principal_point_y\" : 240,"
-    " \"aspect_ratio\" : 1.0,"
-    " \"skew\" : 0.0,"
-    " \"radial_distortion_coeff_1\" : 0.1,"
-    " \"radial_distortion_coeff_2\" : 0.01, "
+    " \"aspect_ratio\" : 1.5,"
+    " \"skew\" : 0.25,"
+    " \"radial_distortion_coeffs\" : [0.1], "
     " \"camera_intrinsics_type\" : \"PINHOLE\""
     "}}, "
     "{\"CameraIntrinsicsPrior\": {"
     " \"image_name\" : \"view_3.jpg\","
-    " \"focal_length\" : 300,"
     " \"principal_point_x\" : 240,"
     " \"principal_point_y\" : 240,"
     " \"camera_intrinsics_type\" : \"PINHOLE\""
@@ -79,10 +76,51 @@ static const char* kCameraIntrinsicsPriorsJson =
     "]}";
 
 TEST(ReadCalibrationTest, ParseIntrinsicPriorsFromJsonStr) {
-  VLOG(1) << "Input JSON: \n" << kCameraIntrinsicsPriorsJson;
-  std::unordered_map<std::string, theia::CameraIntrinsicsPrior> view_to_prior;
+  VLOG(3) << "Input JSON: \n" << kCameraIntrinsicsPriorsJson;
+  std::unordered_map<std::string, CameraIntrinsicsPrior> view_to_prior;
   EXPECT_TRUE(ExtractCameraIntrinsicPriorsFromJson(
       kCameraIntrinsicsPriorsJson, &view_to_prior));
+  // Check first camera.
+  EXPECT_TRUE(view_to_prior.find("view_1.jpg") != view_to_prior.end());
+  const CameraIntrinsicsPrior prior1 = view_to_prior["view_1.jpg"];
+  EXPECT_TRUE(prior1.principal_point.is_set);
+  EXPECT_NEAR(prior1.image_width / 2.0, prior1.principal_point.value[0], 1e-6);
+  EXPECT_NEAR(prior1.image_height / 2.0, prior1.principal_point.value[1], 1e-6);
+  EXPECT_TRUE(prior1.focal_length.is_set);
+  EXPECT_NEAR(prior1.focal_length.value[0], 300, 1e-6);
+  EXPECT_TRUE(prior1.aspect_ratio.is_set);
+  EXPECT_NEAR(prior1.aspect_ratio.value[0], 1.0, 1e-6);
+  EXPECT_TRUE(prior1.skew.is_set);
+  EXPECT_NEAR(prior1.skew.value[0], 0.0, 1e-6);
+  EXPECT_TRUE(prior1.radial_distortion.is_set);
+  EXPECT_NEAR(prior1.radial_distortion.value[0], 0.1, 1e-6);
+  EXPECT_NEAR(prior1.radial_distortion.value[1], 0.1, 1e-6);
+  EXPECT_TRUE(view_to_prior.find("view_1.jpg") != view_to_prior.end());
+
+  // Check second camera.
+  const CameraIntrinsicsPrior prior2 = view_to_prior["view_2.jpg"];
+  EXPECT_TRUE(prior2.principal_point.is_set);
+  EXPECT_NEAR(prior2.image_width / 2.0, prior2.principal_point.value[0], 1e-6);
+  EXPECT_NEAR(prior2.image_height / 2.0, prior2.principal_point.value[1], 1e-6);
+  EXPECT_TRUE(prior2.focal_length.is_set);
+  EXPECT_NEAR(prior2.focal_length.value[0], 350, 1e-6);
+  EXPECT_TRUE(prior2.aspect_ratio.is_set);
+  EXPECT_NEAR(prior2.aspect_ratio.value[0], 1.5, 1e-6);
+  EXPECT_TRUE(prior2.skew.is_set);
+  EXPECT_NEAR(prior2.skew.value[0], 0.25, 1e-6);
+  EXPECT_TRUE(prior2.radial_distortion.is_set);
+  EXPECT_NEAR(prior2.radial_distortion.value[0], 0.1, 1e-6);
+  EXPECT_NEAR(prior2.radial_distortion.value[1], 0.0, 1e-6);
+
+  // Check third camera.
+  const CameraIntrinsicsPrior prior3 = view_to_prior["view_3.jpg"];
+  EXPECT_TRUE(prior3.principal_point.is_set);
+  EXPECT_NEAR(prior3.image_width / 2.0, prior3.principal_point.value[0], 1e-6);
+  EXPECT_NEAR(prior3.image_height / 2.0, prior3.principal_point.value[1], 1e-6);
+  EXPECT_FALSE(prior3.aspect_ratio.is_set);
+  EXPECT_FALSE(prior3.skew.is_set);
+  EXPECT_FALSE(prior3.radial_distortion.is_set);
+  EXPECT_FALSE(prior3.focal_length.is_set);
 }
 
 }  // namespace

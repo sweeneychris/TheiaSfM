@@ -42,31 +42,118 @@
 #include <rapidjson/document.h>
 
 #include "theia/sfm/camera_intrinsics_prior.h"
+#include "theia/sfm/camera/camera_intrinsics_model_type.h"
 
 namespace theia {
 namespace {
 
+static const char* kPinholeType = "PINHOLE";
 static const char* kPriorsEntry = "priors";
 static const char* kCameraIntrinsicsPrior = "CameraIntrinsicsPrior";
 static const char* kImageName = "image_name";
+static const char* kCameraType = "camera_intrinsics_type";
+
+// Pinhole camera parameters.
 static const char* kFocalLength = "focal_length";
+static const char* kImageWidth = "width";
+static const char* kImageHeight = "height";
+static const char* kPrincipalPointX = "principal_point_x";
+static const char* kPrincipalPointY = "principal_point_y";
+static const char* kAspectRatio = "aspect_ratio";
+static const char* kSkew = "skew";
+static const char* kRadialDistortionCoeffs = "radial_distortion_coeffs";
+
+bool ExtractPinholeCamera(const rapidjson::Value& entry,
+                          CameraIntrinsicsPrior* prior) {
+  // Get the focal length.
+  if (entry.HasMember(kFocalLength)) {
+    prior->focal_length.is_set = true;
+    prior->focal_length.value[0] = entry[kFocalLength].GetDouble();
+  }
+
+  // Get the principal points.
+  if (entry.HasMember(kPrincipalPointX) && entry.HasMember(kPrincipalPointY)) {
+    prior->principal_point.is_set = true;
+    prior->principal_point.value[0] = entry[kPrincipalPointX].GetDouble();
+    prior->principal_point.value[1] = entry[kPrincipalPointY].GetDouble();
+    prior->image_width = static_cast<int>(2 * prior->principal_point.value[0]);
+    prior->image_height = static_cast<int>(2 * prior->principal_point.value[1]);
+  }
+
+  // Get width.
+  if (entry.HasMember(kImageWidth)) {
+    prior->image_width = entry[kImageWidth].GetInt();
+  }
+
+  // Get height.
+  if (entry.HasMember(kImageHeight)) {
+    prior->image_height = entry[kImageHeight].GetInt();
+  }
+
+  // Get aspect ratio.
+  if (entry.HasMember(kAspectRatio)) {
+    prior->aspect_ratio.is_set = true;
+    prior->aspect_ratio.value[0] = entry[kAspectRatio].GetDouble();
+  }
+
+  // Get skew.
+  if (entry.HasMember(kSkew)) {
+    prior->skew.is_set = true;
+    prior->skew.value[0] = entry[kSkew].GetDouble();
+  }
+
+  // Get radial distortion coeffs.
+  if (entry.HasMember(kRadialDistortionCoeffs) &&
+      entry[kRadialDistortionCoeffs].IsArray()) {
+    const int num_dist_coeffs = std::min(
+        static_cast<int>(entry[kRadialDistortionCoeffs].Size()), 2);
+    for (int i = 0; i < num_dist_coeffs; ++i) {
+      prior->radial_distortion.value[i] =
+          entry[kRadialDistortionCoeffs][i].GetDouble();
+    }
+    prior->radial_distortion.is_set =
+        !entry[kRadialDistortionCoeffs].Empty();
+  }
+
+  return true;
+}
 
 bool ExtractCameraIntrinsicsPrior(const rapidjson::Value& entry,
                                   std::string* view_name,
                                   CameraIntrinsicsPrior* prior) {
   // Get the view name.
   if (!entry.HasMember(kImageName)) {
-    VLOG(1) << "Could not find the image name.";
+    LOG(ERROR) << "Could not find the image name.";
     return false;
   }
   *view_name = entry[kImageName].GetString();
-  VLOG(1) << "Loading camera intrinsics prior for image name: " << *view_name;
+  VLOG(3) << "Loading camera intrinsics prior for image name: " << *view_name;
 
-  // Get the focal length.
-  if (entry.HasMember(kFocalLength)) {
-    prior->focal_length.is_set = true;
-    prior->focal_length.value[0] = entry[kFocalLength].GetDouble();
+  // Get the camera type.
+  std::string camera_type_str;
+  if (!entry.HasMember(kCameraType)) {
+    LOG(WARNING) << "Unknown camera for view: " << *view_name
+                 << ". Setting to PINHOLE.";
+    camera_type_str = kPinholeType;
+  } else {
+    camera_type_str = entry[kCameraType].GetString();
   }
+  // Check if the camera type exists.
+  const CameraIntrinsicsModelType camera_type =
+      StringToCameraIntrinsicsModelType(camera_type_str);
+
+  switch (camera_type) {
+    case CameraIntrinsicsModelType::PINHOLE:
+      return ExtractPinholeCamera(entry, prior);
+    case CameraIntrinsicsModelType::PINHOLE_RADIAL_TANGENTIAL:
+    case CameraIntrinsicsModelType::FISHEYE:
+    case CameraIntrinsicsModelType::FOV:
+    case CameraIntrinsicsModelType::DIVISION_UNDISTORTION:
+      LOG(FATAL) << "Camera type not supported yet.";
+    default:
+      LOG(ERROR) << "Invalid camera type.";
+      return false;
+  };
 
   return true;
 }
@@ -89,14 +176,14 @@ bool ExtractCameraIntrinsicPriorsFromJson(
   }
 
   const Value& entries = json[kPriorsEntry];
-  CameraIntrinsicsPrior prior;
   std::string view_name;
   for (SizeType i = 0; i < entries.Size(); ++i) {
+    CameraIntrinsicsPrior prior;
     if (!entries[i].HasMember(kCameraIntrinsicsPrior) ||
         !ExtractCameraIntrinsicsPrior(entries[i][kCameraIntrinsicsPrior],
                                       &view_name,
                                       &prior)) {
-      VLOG(1) << "Could not parse entry at position: " << i;
+      LOG(WARNING) << "Could not parse entry at position: " << i;
       continue;
     }
     // Add to the map.
