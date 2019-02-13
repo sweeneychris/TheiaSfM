@@ -1,4 +1,4 @@
-// Copyright (C) 2015 The Regents of the University of California (Regents).
+// Copyright (C) 2019 The Regents of the University of California (Regents).
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -38,6 +38,7 @@
 #include <glog/logging.h>
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 #include <rapidjson/document.h>
 
@@ -57,15 +58,19 @@ static const char* kCameraType = "camera_intrinsics_type";
 static const char* kFocalLength = "focal_length";
 static const char* kImageWidth = "width";
 static const char* kImageHeight = "height";
-static const char* kPrincipalPointX = "principal_point_x";
-static const char* kPrincipalPointY = "principal_point_y";
+static const char* kPrincipalPoint = "principal_point";
 static const char* kAspectRatio = "aspect_ratio";
 static const char* kSkew = "skew";
 static const char* kRadialDistortionCoeffs = "radial_distortion_coeffs";
 static const char* kTangentialDistortionCoeffs = "tangential_distortion_coeffs";
+static const char* kPosition = "position";
+static const char* kOrientation = "orientation";
+static const char* kLatitude = "latitude";
+static const char* kLongitude = "longitude";
+static const char* kAltitude = "altitude";
 
-bool ExtractPinholeCamera(const rapidjson::Value& entry,
-                          CameraIntrinsicsPrior* prior) {
+bool ExtractPriorParameters(const rapidjson::Value& entry,
+                            CameraIntrinsicsPrior* prior) {
   // Get the focal length.
   if (entry.HasMember(kFocalLength)) {
     prior->focal_length.is_set = true;
@@ -73,32 +78,51 @@ bool ExtractPinholeCamera(const rapidjson::Value& entry,
   }
 
   // Get the principal points.
-  if (entry.HasMember(kPrincipalPointX) && entry.HasMember(kPrincipalPointY)) {
-    prior->principal_point.is_set = true;
-    prior->principal_point.value[0] = entry[kPrincipalPointX].GetDouble();
-    prior->principal_point.value[1] = entry[kPrincipalPointY].GetDouble();
-    prior->image_width = static_cast<int>(2 * prior->principal_point.value[0]);
-    prior->image_height = static_cast<int>(2 * prior->principal_point.value[1]);
+  if (entry.HasMember(kPrincipalPoint) && entry[kPrincipalPoint].IsArray()) {
+    const int num_entries =
+        std::min(static_cast<int>(entry[kPrincipalPoint].Size()), 2);
+
+    bool all_doubles = true;
+    for (int i = 0; i < num_entries; ++i) {
+      bool is_double =
+          entry[kPrincipalPoint][i].IsDouble() ||
+          entry[kPrincipalPoint][i].IsInt();
+      if (is_double) {
+        prior->principal_point.value[i] = entry[kPrincipalPoint][i].GetDouble();
+      }
+      all_doubles = all_doubles && is_double;
+    }
+    prior->principal_point.is_set =
+        !entry[kPrincipalPoint].Empty() && all_doubles;
+
+    if (prior->principal_point.is_set) {
+      prior->image_width =
+          static_cast<int>(2 * prior->principal_point.value[0]);
+      prior->image_height =
+          static_cast<int>(2 * prior->principal_point.value[1]);
+    }
   }
 
   // Get width.
-  if (entry.HasMember(kImageWidth)) {
+  if (entry.HasMember(kImageWidth) && entry[kImageWidth].IsInt()) {
     prior->image_width = entry[kImageWidth].GetInt();
   }
 
   // Get height.
-  if (entry.HasMember(kImageHeight)) {
+  if (entry.HasMember(kImageHeight) && entry[kImageHeight].IsInt()) {
     prior->image_height = entry[kImageHeight].GetInt();
   }
 
   // Get aspect ratio.
-  if (entry.HasMember(kAspectRatio)) {
+  if (entry.HasMember(kAspectRatio) &&
+      (entry[kAspectRatio].IsDouble() || entry[kAspectRatio].IsInt())) {
     prior->aspect_ratio.is_set = true;
     prior->aspect_ratio.value[0] = entry[kAspectRatio].GetDouble();
   }
 
   // Get skew.
-  if (entry.HasMember(kSkew)) {
+  if (entry.HasMember(kSkew) &&
+      (entry[kSkew].IsDouble() || entry[kSkew].IsInt())) {
     prior->skew.is_set = true;
     prior->skew.value[0] = entry[kSkew].GetDouble();
   }
@@ -107,81 +131,93 @@ bool ExtractPinholeCamera(const rapidjson::Value& entry,
   if (entry.HasMember(kRadialDistortionCoeffs) &&
       entry[kRadialDistortionCoeffs].IsArray()) {
     const int num_dist_coeffs = std::min(
-        static_cast<int>(entry[kRadialDistortionCoeffs].Size()), 2);
+        static_cast<int>(entry[kRadialDistortionCoeffs].Size()), 4);
+    bool all_doubles = true;
     for (int i = 0; i < num_dist_coeffs; ++i) {
-      prior->radial_distortion.value[i] =
-          entry[kRadialDistortionCoeffs][i].GetDouble();
+      bool is_double =
+          entry[kRadialDistortionCoeffs][i].IsDouble() ||
+          entry[kRadialDistortionCoeffs][i].IsInt();
+      if (is_double) {
+        prior->radial_distortion.value[i] =
+            entry[kRadialDistortionCoeffs][i].GetDouble();
+      }
+      all_doubles = all_doubles && is_double;
     }
     prior->radial_distortion.is_set =
-        !entry[kRadialDistortionCoeffs].Empty();
-  }
-
-  return true;
-}
-
-bool ExtractPinholeRadialTangentialCamera(const rapidjson::Value& entry,
-                                          CameraIntrinsicsPrior* prior) {
-  // Get the focal length.
-  if (entry.HasMember(kFocalLength)) {
-    prior->focal_length.is_set = true;
-    prior->focal_length.value[0] = entry[kFocalLength].GetDouble();
-  }
-
-  // Get the principal points.
-  if (entry.HasMember(kPrincipalPointX) && entry.HasMember(kPrincipalPointY)) {
-    prior->principal_point.is_set = true;
-    prior->principal_point.value[0] = entry[kPrincipalPointX].GetDouble();
-    prior->principal_point.value[1] = entry[kPrincipalPointY].GetDouble();
-    prior->image_width = static_cast<int>(2 * prior->principal_point.value[0]);
-    prior->image_height = static_cast<int>(2 * prior->principal_point.value[1]);
-  }
-
-  // Get width.
-  if (entry.HasMember(kImageWidth)) {
-    prior->image_width = entry[kImageWidth].GetInt();
-  }
-
-  // Get height.
-  if (entry.HasMember(kImageHeight)) {
-    prior->image_height = entry[kImageHeight].GetInt();
-  }
-
-  // Get aspect ratio.
-  if (entry.HasMember(kAspectRatio)) {
-    prior->aspect_ratio.is_set = true;
-    prior->aspect_ratio.value[0] = entry[kAspectRatio].GetDouble();
-  }
-
-  // Get skew.
-  if (entry.HasMember(kSkew)) {
-    prior->skew.is_set = true;
-    prior->skew.value[0] = entry[kSkew].GetDouble();
-  }
-
-  // Get radial distortion coeffs.
-  if (entry.HasMember(kRadialDistortionCoeffs) &&
-      entry[kRadialDistortionCoeffs].IsArray()) {
-    const int num_dist_coeffs = std::min(
-        static_cast<int>(entry[kRadialDistortionCoeffs].Size()), 3);
-    for (int i = 0; i < num_dist_coeffs; ++i) {
-      prior->radial_distortion.value[i] =
-          entry[kRadialDistortionCoeffs][i].GetDouble();
-    }
-    prior->radial_distortion.is_set =
-        !entry[kRadialDistortionCoeffs].Empty();
+        !entry[kRadialDistortionCoeffs].Empty() && all_doubles;
   }
 
   // Get tangential distortion coeffs.
   if (entry.HasMember(kTangentialDistortionCoeffs) &&
       entry[kTangentialDistortionCoeffs].IsArray()) {
     const int num_dist_coeffs = std::min(
-        static_cast<int>(entry[kTangentialDistortionCoeffs].Size()), 3);
+        static_cast<int>(entry[kTangentialDistortionCoeffs].Size()), 2);
+    bool all_doubles = true;
     for (int i = 0; i < num_dist_coeffs; ++i) {
-      prior->tangential_distortion.value[i] =
-          entry[kTangentialDistortionCoeffs][i].GetDouble();
+      bool is_double =
+          entry[kTangentialDistortionCoeffs][i].IsDouble() ||
+          entry[kTangentialDistortionCoeffs][i].IsInt();
+      if (is_double) {
+        prior->tangential_distortion.value[i] =
+            entry[kTangentialDistortionCoeffs][i].GetDouble();
+      }
+      all_doubles = all_doubles && is_double;
     }
     prior->tangential_distortion.is_set =
-        !entry[kTangentialDistortionCoeffs].Empty();
+        !entry[kTangentialDistortionCoeffs].Empty() && all_doubles;
+  }
+
+  // Get position.
+  if (entry.HasMember(kPosition) && entry[kPosition].IsArray()) {
+    const int num_entries = std::min(
+        static_cast<int>(entry[kPosition].Size()), 3);
+    bool all_doubles = true;
+    for (int i = 0; i < num_entries; ++i) {
+      bool is_double =
+          entry[kPosition][i].IsDouble() ||
+          entry[kPosition][i].IsInt();
+      if (is_double) {
+        prior->position.value[i] = entry[kPosition][i].GetDouble();
+      }
+      all_doubles = all_doubles && is_double;
+    }
+    prior->position.is_set = !entry[kPosition].Empty() && all_doubles;
+  }
+
+  // Get orientation using Angle-Axis.
+  if (entry.HasMember(kOrientation) && entry[kOrientation].IsArray()) {
+    const int num_entries = std::min(
+        static_cast<int>(entry[kOrientation].Size()), 3);
+    bool all_doubles = true;
+    for (int i = 0; i < num_entries; ++i) {
+      bool is_double =
+          entry[kOrientation][i].IsDouble() || entry[kOrientation][i].IsInt();
+      if (is_double) {
+        prior->orientation.value[i] = entry[kOrientation][i].GetDouble();
+      }
+      all_doubles = all_doubles && is_double;
+    }
+    prior->orientation.is_set = !entry[kOrientation].Empty() && all_doubles;
+  }
+
+  // Get GPS priors.
+  if (entry.HasMember(kLatitude) &&
+      (entry[kLatitude].IsDouble() || entry[kLatitude].IsInt())) {
+    prior->latitude.value[0] = entry[kLatitude].GetDouble();
+    prior->latitude.is_set = true;
+  }
+
+  if (entry.HasMember(kLongitude) &&
+      (entry[kLongitude].IsDouble() || entry[kLongitude].IsInt())) {
+    prior->longitude.value[0] = entry[kLongitude].GetDouble();
+    prior->longitude.is_set = true;
+  }
+
+  
+  if (entry.HasMember(kAltitude) &&
+      (entry[kAltitude].IsDouble() || entry[kAltitude].IsInt())) {
+    prior->altitude.value[0] = entry[kAltitude].GetDouble();
+    prior->altitude.is_set = true;
   }
   
   return true;
@@ -209,23 +245,9 @@ bool ExtractCameraIntrinsicsPrior(const rapidjson::Value& entry,
     VLOG(3) << "Camera type: [" << camera_type_str << "]";
   }
 
-  // Get the camera type.
-  const CameraIntrinsicsModelType camera_type =
-      StringToCameraIntrinsicsModelType(camera_type_str);
-
-  switch (camera_type) {
-    case CameraIntrinsicsModelType::PINHOLE:
-      return ExtractPinholeCamera(entry, prior);
-    case CameraIntrinsicsModelType::PINHOLE_RADIAL_TANGENTIAL:
-      return ExtractPinholeRadialTangentialCamera(entry, prior);
-    case CameraIntrinsicsModelType::FISHEYE:
-    case CameraIntrinsicsModelType::FOV:
-    case CameraIntrinsicsModelType::DIVISION_UNDISTORTION:
-      LOG(FATAL) << "Camera type not supported yet.";
-    default:
-      LOG(ERROR) << "Invalid camera type.";
-      return false;
-  };
+  // Get the camera type. This will verify if that the camera type is valid.
+  StringToCameraIntrinsicsModelType(camera_type_str);
+  ExtractPriorParameters(entry, prior);
 
   return true;
 }
@@ -280,62 +302,17 @@ bool ReadCalibration(const std::string& calibration_file,
   fseek(file, 0, SEEK_SET);  
 
   // Allocate a buffer
-  char* file_buffer = new char[buffer_size];
+  std::vector<char> file_buffer(buffer_size);
 
   // Read the whole file.
-  CHECK_LE(fread(file_buffer, buffer_size, 1, file), buffer_size);
+  CHECK_LE(fread(file_buffer.data(), buffer_size, 1, file), buffer_size);
   fclose(file);
 
   const bool json_parsed =
-      ExtractCameraIntrinsicPriorsFromJson(file_buffer,
+      ExtractCameraIntrinsicPriorsFromJson(file_buffer.data(),
                                            camera_intrinsics_priors);
 
-  delete [] file_buffer;
-  file_buffer = nullptr;
-
   return json_parsed;
-  
-  // std::ifstream ifs(calibration_file.c_str(), std::ios::in);
-  // if (!ifs.is_open()) {
-  //   LOG(ERROR) << "Cannot read the list file from " << calibration_file;
-  //   return false;
-  // }
-
-  // while (!ifs.eof()) {
-  //   // Read in the filename.
-  //   std::string filename;
-  //   ifs >> filename;
-  //   if (filename.length() == 0) {
-  //     break;
-  //   }
-
-  //   // Read camera_intrinsics_prior.
-  //   CameraIntrinsicsPrior temp_camera_intrinsics_prior;
-  //   temp_camera_intrinsics_prior.focal_length.is_set = true;
-  //   ifs >> temp_camera_intrinsics_prior.focal_length.value[0];
-
-  //   temp_camera_intrinsics_prior.principal_point.is_set = true;
-  //   ifs >> temp_camera_intrinsics_prior.principal_point.value[0];
-  //   ifs >> temp_camera_intrinsics_prior.principal_point.value[1];
-  //   temp_camera_intrinsics_prior.image_width =
-  //       2.0 * temp_camera_intrinsics_prior.principal_point.value[0];
-  //   temp_camera_intrinsics_prior.image_height =
-  //       2.0 * temp_camera_intrinsics_prior.principal_point.value[1];
-
-  //   temp_camera_intrinsics_prior.aspect_ratio.is_set = true;
-  //   ifs >> temp_camera_intrinsics_prior.aspect_ratio.value[0];
-
-  //   temp_camera_intrinsics_prior.skew.is_set = true;
-  //   ifs >> temp_camera_intrinsics_prior.skew.value[0];
-
-  //   temp_camera_intrinsics_prior.radial_distortion.is_set = true;
-  //   ifs >> temp_camera_intrinsics_prior.radial_distortion.value[0];
-  //   ifs >> temp_camera_intrinsics_prior.radial_distortion.value[1];
-
-  //   (*camera_intrinsics_prior)[filename] = temp_camera_intrinsics_prior;
-  // }
-
-  return true;
 }
 
 }  // namespace theia

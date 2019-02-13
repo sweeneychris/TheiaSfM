@@ -1,4 +1,4 @@
-// Copyright (C) 2015 The Regents of the University of California (Regents).
+// Copyright (C) 2019 The Regents of the University of California (Regents).
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -50,8 +50,7 @@ static const char* kCameraIntrinsicsPriorsJson =
     " \"focal_length\" : 300,"
     " \"width\" : 480,"
     " \"height\" : 480,"
-    " \"principal_point_x\" : 240,"
-    " \"principal_point_y\" : 240,"
+    " \"principal_point\" : [240, 240],"
     " \"aspect_ratio\" : 1.0,"
     " \"skew\" : 0.0,"
     " \"radial_distortion_coeffs\" : [0.1, 0.1], "
@@ -60,8 +59,7 @@ static const char* kCameraIntrinsicsPriorsJson =
     "{\"CameraIntrinsicsPrior\": {"
     " \"image_name\" : \"view_2.jpg\","
     " \"focal_length\" : 350,"
-    " \"principal_point_x\" : 240,"
-    " \"principal_point_y\" : 240,"
+    " \"principal_point\" : [240, 240],"
     " \"aspect_ratio\" : 1.5,"
     " \"skew\" : 0.25,"
     " \"radial_distortion_coeffs\" : [0.1], "
@@ -69,8 +67,7 @@ static const char* kCameraIntrinsicsPriorsJson =
     "}}, "
     "{\"CameraIntrinsicsPrior\": {"
     " \"image_name\" : \"view_3.jpg\","
-    " \"principal_point_x\" : 240,"
-    " \"principal_point_y\" : 240,"
+    " \"principal_point\" : [240, 240],"
     " \"camera_intrinsics_type\" : \"PINHOLE\""
     "}}, "
     "{\"CameraIntrinsicsPrior\": {"
@@ -78,12 +75,16 @@ static const char* kCameraIntrinsicsPriorsJson =
     " \"focal_length\" : 300,"
     " \"width\" : 480,"
     " \"height\" : 480,"
-    " \"principal_point_x\" : 240,"
-    " \"principal_point_y\" : 240,"
+    " \"principal_point\" : [240, 240],"
     " \"aspect_ratio\" : 1.0,"
     " \"skew\" : 0.0,"
     " \"radial_distortion_coeffs\" : [0.1, 0.1, 0.01], "
     " \"tangential_distortion_coeffs\" : [0.05, 0.05], "
+    " \"orientation\" : [0.1, 0.1, 0.1], "
+    " \"position\" : [1, 2.0, -3.0], "
+    " \"latitude\" : 128.0, "
+    " \"longitude\" : 256.0, "
+    " \"altitude\" : 512.0, "
     " \"camera_intrinsics_type\" : \"PINHOLE_RADIAL_TANGENTIAL\""
     "}} "
     "]}";
@@ -155,7 +156,25 @@ TEST(ReadCalibrationTest, ParseIntrinsicPriorsFromJsonStr) {
   EXPECT_TRUE(prior4.tangential_distortion.is_set);
   EXPECT_NEAR(prior4.tangential_distortion.value[0], 0.05, 1e-6);
   EXPECT_NEAR(prior4.tangential_distortion.value[1], 0.05, 1e-6);
+  EXPECT_TRUE(prior4.orientation.is_set);
+  EXPECT_NEAR(prior4.orientation.value[0], 0.1, 1e-6);
+  EXPECT_NEAR(prior4.orientation.value[1], 0.1, 1e-6);
+  EXPECT_NEAR(prior4.orientation.value[2], 0.1, 1e-6);
+  EXPECT_TRUE(prior4.position.is_set);
+  EXPECT_NEAR(prior4.position.value[0], 1, 1e-6);
+  EXPECT_NEAR(prior4.position.value[1], 2, 1e-6);
+  EXPECT_NEAR(prior4.position.value[2], -3.0, 1e-6);
+  EXPECT_TRUE(prior4.latitude.is_set);
+  EXPECT_NEAR(prior4.latitude.value[0], 128.0, 1e-6);
+  EXPECT_TRUE(prior4.altitude.is_set);
+  EXPECT_NEAR(prior4.altitude.value[0], 512.0, 1e-6);
+  EXPECT_TRUE(prior4.longitude.is_set);
+  EXPECT_NEAR(prior4.longitude.value[0], 256.0, 1e-6);
   EXPECT_TRUE(view_to_prior.find("view_4.jpg") != view_to_prior.end());
+}
+
+TEST(ReadCalibrationTest, ReadCalibrationFromJsonFile) {
+  
 }
 
 }  // namespace

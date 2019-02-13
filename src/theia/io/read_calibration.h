@@ -51,24 +51,24 @@ struct CameraIntrinsicsPrior;
 //         "focal_length" : 300,
 //         "width" : 480,
 //         "height" : 480,
-//         "principal_point_x" : 240,
-//         "principal_point_y" : 240,
+//         "principal_point" : [240, 240],
 //         "aspect_ratio" : 1.0,
 //         "skew" : 0.0,
-//         "radial_distortion_coeff_1" : 0.1,
-//         "radial_distortion_coeff_2" : 0.01,
+//         "radial_distortion_coeffs" : [0.1, 0.01],
 //         "camera_intrinsics_type" : "PINHOLE"
 //        }},
 //       {"CameraIntrinsicsPrior" : {
 //         "image_name" : "view_2.jpg",
 //         "focal_length" : 300,
-//         "principal_point_x" : 240,
-//         "principal_point_y" : 240,
+//         "principal_point" : [240, 240],
 //         "aspect_ratio" : 1.0,
 //         "skew" : 0.0,
-//         "radial_distortion_coeff_1" : 0.1,
-//         "radial_distortion_coeff_2" : 0.01,
-//         "camera_intrinsics_type" : "PINHOLE"
+//         "radial_distortion_coeffs" : [0.1, 0.01],
+//         "tangential_distortion_coeffs" : [0.05, 0.05],
+//         "latitude" : 120.0,
+//         "longitude" : 58.0,
+//         "altitude" : 64,
+//         "camera_intrinsics_type" : "PINHOLE_RADIAL_TANGENTIAL"
 //        }}
 //     ]
 //   }
