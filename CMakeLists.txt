@@ -209,7 +209,7 @@ message("-- Check for RapidJSON")
 find_package(RapidJSON REQUIRED)
 if (RapidJSON_FOUND)
   message("-- Found RapidJSON: ${RAPIDJSON_INCLUDE_DIRS}")
-else (ROCKSDB_FOUND)
+else (RapidJSON_FOUND)
   message(FATAL_ERROR "Can't find RapidJSON. Please set RAPIDJSON_INCLUDE_DIRS to use RapidJSON.")
 endif (RapidJSON_FOUND)
 
