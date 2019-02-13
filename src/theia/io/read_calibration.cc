@@ -62,6 +62,7 @@ static const char* kPrincipalPointY = "principal_point_y";
 static const char* kAspectRatio = "aspect_ratio";
 static const char* kSkew = "skew";
 static const char* kRadialDistortionCoeffs = "radial_distortion_coeffs";
+static const char* kTangentialDistortionCoeffs = "tangential_distortion_coeffs";
 
 bool ExtractPinholeCamera(const rapidjson::Value& entry,
                           CameraIntrinsicsPrior* prior) {
@@ -118,6 +119,74 @@ bool ExtractPinholeCamera(const rapidjson::Value& entry,
   return true;
 }
 
+bool ExtractPinholeRadialTangentialCamera(const rapidjson::Value& entry,
+                                          CameraIntrinsicsPrior* prior) {
+  // Get the focal length.
+  if (entry.HasMember(kFocalLength)) {
+    prior->focal_length.is_set = true;
+    prior->focal_length.value[0] = entry[kFocalLength].GetDouble();
+  }
+
+  // Get the principal points.
+  if (entry.HasMember(kPrincipalPointX) && entry.HasMember(kPrincipalPointY)) {
+    prior->principal_point.is_set = true;
+    prior->principal_point.value[0] = entry[kPrincipalPointX].GetDouble();
+    prior->principal_point.value[1] = entry[kPrincipalPointY].GetDouble();
+    prior->image_width = static_cast<int>(2 * prior->principal_point.value[0]);
+    prior->image_height = static_cast<int>(2 * prior->principal_point.value[1]);
+  }
+
+  // Get width.
+  if (entry.HasMember(kImageWidth)) {
+    prior->image_width = entry[kImageWidth].GetInt();
+  }
+
+  // Get height.
+  if (entry.HasMember(kImageHeight)) {
+    prior->image_height = entry[kImageHeight].GetInt();
+  }
+
+  // Get aspect ratio.
+  if (entry.HasMember(kAspectRatio)) {
+    prior->aspect_ratio.is_set = true;
+    prior->aspect_ratio.value[0] = entry[kAspectRatio].GetDouble();
+  }
+
+  // Get skew.
+  if (entry.HasMember(kSkew)) {
+    prior->skew.is_set = true;
+    prior->skew.value[0] = entry[kSkew].GetDouble();
+  }
+
+  // Get radial distortion coeffs.
+  if (entry.HasMember(kRadialDistortionCoeffs) &&
+      entry[kRadialDistortionCoeffs].IsArray()) {
+    const int num_dist_coeffs = std::min(
+        static_cast<int>(entry[kRadialDistortionCoeffs].Size()), 3);
+    for (int i = 0; i < num_dist_coeffs; ++i) {
+      prior->radial_distortion.value[i] =
+          entry[kRadialDistortionCoeffs][i].GetDouble();
+    }
+    prior->radial_distortion.is_set =
+        !entry[kRadialDistortionCoeffs].Empty();
+  }
+
+  // Get tangential distortion coeffs.
+  if (entry.HasMember(kTangentialDistortionCoeffs) &&
+      entry[kTangentialDistortionCoeffs].IsArray()) {
+    const int num_dist_coeffs = std::min(
+        static_cast<int>(entry[kTangentialDistortionCoeffs].Size()), 3);
+    for (int i = 0; i < num_dist_coeffs; ++i) {
+      prior->tangential_distortion.value[i] =
+          entry[kTangentialDistortionCoeffs][i].GetDouble();
+    }
+    prior->tangential_distortion.is_set =
+        !entry[kTangentialDistortionCoeffs].Empty();
+  }
+  
+  return true;
+}
+
 bool ExtractCameraIntrinsicsPrior(const rapidjson::Value& entry,
                                   std::string* view_name,
                                   CameraIntrinsicsPrior* prior) {
@@ -137,8 +206,10 @@ bool ExtractCameraIntrinsicsPrior(const rapidjson::Value& entry,
     camera_type_str = kPinholeType;
   } else {
     camera_type_str = entry[kCameraType].GetString();
+    VLOG(3) << "Camera type: [" << camera_type_str << "]";
   }
-  // Check if the camera type exists.
+
+  // Get the camera type.
   const CameraIntrinsicsModelType camera_type =
       StringToCameraIntrinsicsModelType(camera_type_str);
 
@@ -146,6 +217,7 @@ bool ExtractCameraIntrinsicsPrior(const rapidjson::Value& entry,
     case CameraIntrinsicsModelType::PINHOLE:
       return ExtractPinholeCamera(entry, prior);
     case CameraIntrinsicsModelType::PINHOLE_RADIAL_TANGENTIAL:
+      return ExtractPinholeRadialTangentialCamera(entry, prior);
     case CameraIntrinsicsModelType::FISHEYE:
     case CameraIntrinsicsModelType::FOV:
     case CameraIntrinsicsModelType::DIVISION_UNDISTORTION:

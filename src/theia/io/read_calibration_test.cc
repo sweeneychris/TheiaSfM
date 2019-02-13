@@ -72,7 +72,20 @@ static const char* kCameraIntrinsicsPriorsJson =
     " \"principal_point_x\" : 240,"
     " \"principal_point_y\" : 240,"
     " \"camera_intrinsics_type\" : \"PINHOLE\""
-    "}}"
+    "}}, "
+    "{\"CameraIntrinsicsPrior\": {"
+    " \"image_name\" : \"view_4.jpg\","
+    " \"focal_length\" : 300,"
+    " \"width\" : 480,"
+    " \"height\" : 480,"
+    " \"principal_point_x\" : 240,"
+    " \"principal_point_y\" : 240,"
+    " \"aspect_ratio\" : 1.0,"
+    " \"skew\" : 0.0,"
+    " \"radial_distortion_coeffs\" : [0.1, 0.1, 0.01], "
+    " \"tangential_distortion_coeffs\" : [0.05, 0.05], "
+    " \"camera_intrinsics_type\" : \"PINHOLE_RADIAL_TANGENTIAL\""
+    "}} "
     "]}";
 
 TEST(ReadCalibrationTest, ParseIntrinsicPriorsFromJsonStr) {
@@ -111,6 +124,7 @@ TEST(ReadCalibrationTest, ParseIntrinsicPriorsFromJsonStr) {
   EXPECT_TRUE(prior2.radial_distortion.is_set);
   EXPECT_NEAR(prior2.radial_distortion.value[0], 0.1, 1e-6);
   EXPECT_NEAR(prior2.radial_distortion.value[1], 0.0, 1e-6);
+  EXPECT_TRUE(view_to_prior.find("view_2.jpg") != view_to_prior.end());
 
   // Check third camera.
   const CameraIntrinsicsPrior prior3 = view_to_prior["view_3.jpg"];
@@ -121,6 +135,27 @@ TEST(ReadCalibrationTest, ParseIntrinsicPriorsFromJsonStr) {
   EXPECT_FALSE(prior3.skew.is_set);
   EXPECT_FALSE(prior3.radial_distortion.is_set);
   EXPECT_FALSE(prior3.focal_length.is_set);
+  EXPECT_TRUE(view_to_prior.find("view_3.jpg") != view_to_prior.end());
+
+  // Fourth camera is pinhole-radial-tangential.
+  const CameraIntrinsicsPrior prior4 = view_to_prior["view_4.jpg"];
+  EXPECT_TRUE(prior4.principal_point.is_set);
+  EXPECT_NEAR(prior4.image_width / 2.0, prior4.principal_point.value[0], 1e-6);
+  EXPECT_NEAR(prior4.image_height / 2.0, prior4.principal_point.value[1], 1e-6);
+  EXPECT_TRUE(prior4.focal_length.is_set);
+  EXPECT_NEAR(prior4.focal_length.value[0], 300, 1e-6);
+  EXPECT_TRUE(prior4.aspect_ratio.is_set);
+  EXPECT_NEAR(prior4.aspect_ratio.value[0], 1.0, 1e-6);
+  EXPECT_TRUE(prior4.skew.is_set);
+  EXPECT_NEAR(prior4.skew.value[0], 0.0, 1e-6);
+  EXPECT_TRUE(prior4.radial_distortion.is_set);
+  EXPECT_NEAR(prior4.radial_distortion.value[0], 0.1, 1e-6);
+  EXPECT_NEAR(prior4.radial_distortion.value[1], 0.1, 1e-6);
+  EXPECT_NEAR(prior4.radial_distortion.value[2], 0.01, 1e-6);
+  EXPECT_TRUE(prior4.tangential_distortion.is_set);
+  EXPECT_NEAR(prior4.tangential_distortion.value[0], 0.05, 1e-6);
+  EXPECT_NEAR(prior4.tangential_distortion.value[1], 0.05, 1e-6);
+  EXPECT_TRUE(view_to_prior.find("view_4.jpg") != view_to_prior.end());
 }
 
 }  // namespace
