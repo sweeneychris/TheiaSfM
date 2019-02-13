@@ -41,6 +41,7 @@
 #include <vector>
 
 #include <rapidjson/document.h>
+#include <stlplus3/file_system.hpp>
 
 #include "theia/sfm/camera_intrinsics_prior.h"
 #include "theia/sfm/camera/camera_intrinsics_model_type.h"
@@ -290,26 +291,36 @@ bool ExtractCameraIntrinsicPriorsFromJson(
 bool ReadCalibration(const std::string& calibration_file,
                      std::unordered_map<std::string, CameraIntrinsicsPrior>*
                          camera_intrinsics_priors) {
+  // Get the size of the file.
+  const size_t buffer_size = stlplus::file_size(calibration_file);
+
+  // Allocate a buffer
+  std::vector<char> file_buffer(buffer_size, 0);
+
+  // Open and read the whole file.
   FILE* file = fopen(calibration_file.c_str(), "rb");
   if (file == nullptr) {
-    LOG(ERROR) << "Cannot read the list file from " << calibration_file;
+    LOG(ERROR) << "Cannot read file: " << calibration_file;
     return false;
   }
 
-  // Get the size of the file.
-  fseek(file, 0, SEEK_END);
-  const size_t buffer_size = ftell(file);
-  fseek(file, 0, SEEK_SET);  
-
-  // Allocate a buffer
-  std::vector<char> file_buffer(buffer_size);
-
   // Read the whole file.
-  CHECK_LE(fread(file_buffer.data(), buffer_size, 1, file), buffer_size);
+  CHECK_EQ(fread(file_buffer.data(), sizeof(file_buffer[0]), buffer_size, file),
+           buffer_size);
   fclose(file);
 
+  // Remove spurious chars after the closing curly brace.
+  std::string file_content(file_buffer.begin(), file_buffer.end());
+  const size_t last_curly_idx = file_content.rfind('}');
+  if (last_curly_idx == std::string::npos) {
+    LOG(ERROR) << "Could not fid a proper JSON file: " << calibration_file;
+    return false;
+  }
+
+  file_content.resize(last_curly_idx + 1);
+
   const bool json_parsed =
-      ExtractCameraIntrinsicPriorsFromJson(file_buffer.data(),
+      ExtractCameraIntrinsicPriorsFromJson(file_content.c_str(),
                                            camera_intrinsics_priors);
 
   return json_parsed;
