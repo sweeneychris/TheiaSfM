@@ -40,8 +40,12 @@
 #include "theia/sfm/camera_intrinsics_prior.h"
 #include "theia/io/read_calibration.h"
 
+DEFINE_string(json_file, "io/calibration_test.json", "JSON testing file.");
+
 namespace theia {
 namespace {
+
+std::string json_filepath = THEIA_DATA_DIR + std::string("/") + FLAGS_json_file;
 
 static const char* kCameraIntrinsicsPriorsJson =
     "{\"priors\" : ["
@@ -174,7 +178,86 @@ TEST(ReadCalibrationTest, ParseIntrinsicPriorsFromJsonStr) {
 }
 
 TEST(ReadCalibrationTest, ReadCalibrationFromJsonFile) {
-  
+  std::unordered_map<std::string, CameraIntrinsicsPrior> view_to_prior;
+  EXPECT_TRUE(ReadCalibration(json_filepath, &view_to_prior));
+
+  // Check first camera.
+  EXPECT_TRUE(view_to_prior.find("view_1.jpg") != view_to_prior.end());
+  const CameraIntrinsicsPrior prior1 = view_to_prior["view_1.jpg"];
+  EXPECT_TRUE(prior1.principal_point.is_set);
+  EXPECT_NEAR(prior1.image_width / 2.0, prior1.principal_point.value[0], 1e-6);
+  EXPECT_NEAR(prior1.image_height / 2.0, prior1.principal_point.value[1], 1e-6);
+  EXPECT_TRUE(prior1.focal_length.is_set);
+  EXPECT_NEAR(prior1.focal_length.value[0], 300, 1e-6);
+  EXPECT_TRUE(prior1.aspect_ratio.is_set);
+  EXPECT_NEAR(prior1.aspect_ratio.value[0], 1.0, 1e-6);
+  EXPECT_TRUE(prior1.skew.is_set);
+  EXPECT_NEAR(prior1.skew.value[0], 0.0, 1e-6);
+  EXPECT_TRUE(prior1.radial_distortion.is_set);
+  EXPECT_NEAR(prior1.radial_distortion.value[0], 0.1, 1e-6);
+  EXPECT_NEAR(prior1.radial_distortion.value[1], 0.1, 1e-6);
+  EXPECT_TRUE(view_to_prior.find("view_1.jpg") != view_to_prior.end());
+
+  // Check second camera.
+  const CameraIntrinsicsPrior prior2 = view_to_prior["view_2.jpg"];
+  EXPECT_TRUE(prior2.principal_point.is_set);
+  EXPECT_NEAR(prior2.image_width / 2.0, prior2.principal_point.value[0], 1e-6);
+  EXPECT_NEAR(prior2.image_height / 2.0, prior2.principal_point.value[1], 1e-6);
+  EXPECT_TRUE(prior2.focal_length.is_set);
+  EXPECT_NEAR(prior2.focal_length.value[0], 350, 1e-6);
+  EXPECT_TRUE(prior2.aspect_ratio.is_set);
+  EXPECT_NEAR(prior2.aspect_ratio.value[0], 1.5, 1e-6);
+  EXPECT_TRUE(prior2.skew.is_set);
+  EXPECT_NEAR(prior2.skew.value[0], 0.25, 1e-6);
+  EXPECT_TRUE(prior2.radial_distortion.is_set);
+  EXPECT_NEAR(prior2.radial_distortion.value[0], 0.1, 1e-6);
+  EXPECT_NEAR(prior2.radial_distortion.value[1], 0.0, 1e-6);
+  EXPECT_TRUE(view_to_prior.find("view_2.jpg") != view_to_prior.end());
+
+  // Check third camera.
+  const CameraIntrinsicsPrior prior3 = view_to_prior["view_3.jpg"];
+  EXPECT_TRUE(prior3.principal_point.is_set);
+  EXPECT_NEAR(prior3.image_width / 2.0, prior3.principal_point.value[0], 1e-6);
+  EXPECT_NEAR(prior3.image_height / 2.0, prior3.principal_point.value[1], 1e-6);
+  EXPECT_FALSE(prior3.aspect_ratio.is_set);
+  EXPECT_FALSE(prior3.skew.is_set);
+  EXPECT_FALSE(prior3.radial_distortion.is_set);
+  EXPECT_FALSE(prior3.focal_length.is_set);
+  EXPECT_TRUE(view_to_prior.find("view_3.jpg") != view_to_prior.end());
+
+  // Fourth camera is pinhole-radial-tangential.
+  const CameraIntrinsicsPrior prior4 = view_to_prior["view_4.jpg"];
+  EXPECT_TRUE(prior4.principal_point.is_set);
+  EXPECT_NEAR(prior4.image_width / 2.0, prior4.principal_point.value[0], 1e-6);
+  EXPECT_NEAR(prior4.image_height / 2.0, prior4.principal_point.value[1], 1e-6);
+  EXPECT_TRUE(prior4.focal_length.is_set);
+  EXPECT_NEAR(prior4.focal_length.value[0], 300, 1e-6);
+  EXPECT_TRUE(prior4.aspect_ratio.is_set);
+  EXPECT_NEAR(prior4.aspect_ratio.value[0], 1.0, 1e-6);
+  EXPECT_TRUE(prior4.skew.is_set);
+  EXPECT_NEAR(prior4.skew.value[0], 0.0, 1e-6);
+  EXPECT_TRUE(prior4.radial_distortion.is_set);
+  EXPECT_NEAR(prior4.radial_distortion.value[0], 0.1, 1e-6);
+  EXPECT_NEAR(prior4.radial_distortion.value[1], 0.1, 1e-6);
+  EXPECT_NEAR(prior4.radial_distortion.value[2], 0.01, 1e-6);
+  EXPECT_TRUE(prior4.tangential_distortion.is_set);
+  EXPECT_NEAR(prior4.tangential_distortion.value[0], 0.05, 1e-6);
+  EXPECT_NEAR(prior4.tangential_distortion.value[1], 0.05, 1e-6);
+  EXPECT_TRUE(prior4.orientation.is_set);
+  EXPECT_NEAR(prior4.orientation.value[0], 0.1, 1e-6);
+  EXPECT_NEAR(prior4.orientation.value[1], 0.1, 1e-6);
+  EXPECT_NEAR(prior4.orientation.value[2], 0.1, 1e-6);
+  EXPECT_TRUE(prior4.position.is_set);
+  EXPECT_NEAR(prior4.position.value[0], 1, 1e-6);
+  EXPECT_NEAR(prior4.position.value[1], 2, 1e-6);
+  EXPECT_NEAR(prior4.position.value[2], -3.0, 1e-6);
+  EXPECT_TRUE(prior4.latitude.is_set);
+  EXPECT_NEAR(prior4.latitude.value[0], 128.0, 1e-6);
+  EXPECT_TRUE(prior4.altitude.is_set);
+  EXPECT_NEAR(prior4.altitude.value[0], 512.0, 1e-6);
+  EXPECT_TRUE(prior4.longitude.is_set);
+  EXPECT_NEAR(prior4.longitude.value[0], 256.0, 1e-6);
+  EXPECT_TRUE(view_to_prior.find("view_4.jpg") != view_to_prior.end());
 }
 
 }  // namespace
