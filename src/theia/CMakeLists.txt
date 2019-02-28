@@ -167,6 +167,7 @@ set(THEIA_SRC
   sfm/pose/relative_pose_from_two_points_with_known_rotation.cc
   sfm/pose/seven_point_fundamental_matrix.cc
   sfm/pose/sim_transform_partial_rotation.cc
+  sfm/pose/six_point_radial_distortion_homography.cc
   sfm/pose/test_util.cc
   sfm/pose/three_point_relative_pose_partial_rotation.cc
   sfm/pose/two_point_pose_partial_rotation.cc
@@ -329,6 +330,7 @@ if (BUILD_TESTING)
   gtest(sfm/pose/relative_pose_from_two_points_with_known_rotation)
   gtest(sfm/pose/seven_point_fundamental_matrix)
   gtest(sfm/pose/sim_transform_partial_rotation)
+  gtest(sfm/pose/six_point_radial_distortion_homography)
   gtest(sfm/pose/three_point_relative_pose_partial_rotation)
   gtest(sfm/pose/two_point_pose_partial_rotation)
   gtest(sfm/reconstruction)

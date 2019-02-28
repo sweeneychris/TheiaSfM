@@ -182,6 +182,7 @@
 #include "theia/sfm/pose/relative_pose_from_two_points_with_known_rotation.h"
 #include "theia/sfm/pose/seven_point_fundamental_matrix.h"
 #include "theia/sfm/pose/sim_transform_partial_rotation.h"
+#include "theia/sfm/pose/six_point_radial_distortion_homography.h"
 #include "theia/sfm/pose/test_util.h"
 #include "theia/sfm/pose/three_point_relative_pose_partial_rotation.h"
 #include "theia/sfm/pose/two_point_pose_partial_rotation.h"
