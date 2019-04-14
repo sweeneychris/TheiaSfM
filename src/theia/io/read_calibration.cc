@@ -30,7 +30,7 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //
 // Please contact the author of this library if you have any questions.
-// Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
+// Author: Victor Fragoso (victor.fragoso@mail.wvu.edu)
 
 #include "theia/io/read_calibration.h"
 
@@ -101,6 +101,17 @@ bool ExtractPriorParameters(const rapidjson::Value& entry,
           static_cast<int>(2 * prior->principal_point.value[0]);
       prior->image_height =
           static_cast<int>(2 * prior->principal_point.value[1]);
+    }
+  }
+
+  // Get the camera intrincisc type.
+  if (entry.HasMember(kCameraType) && entry[kCameraType].IsString()) {
+    std::string model_type_str = entry[kCameraType].GetString();
+    if (IsCameraIntrinsicsModelTypeValid(model_type_str)) {
+      prior->camera_intrinsics_model_type = std::move(model_type_str); 
+    } else {
+      LOG(WARNING) << "Could not identify camera intrinsics model type: "
+                   << model_type_str;
     }
   }
 

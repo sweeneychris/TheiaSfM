@@ -38,6 +38,7 @@
 #include <fstream>  // NOLINT
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 // Input/output files.
 DEFINE_string(images, "", "Wildcard of images to reconstruct.");
@@ -56,12 +57,7 @@ int main(int argc, char *argv[]) {
       << "Could not find images that matched the filepath: " << FLAGS_images
       << ". NOTE that the ~ filepath is not supported.";
 
-  std::ofstream ofs(FLAGS_output_calibration_file, std::ios::out);
-  if (!ofs.is_open()) {
-    LOG(ERROR) << "Could not open the calibration file: "
-               << FLAGS_output_calibration_file << " for writing.";
-    return -1;
-  }
+  std::unordered_map<std::string, theia::CameraIntrinsicsPrior> priors;
 
   theia::ExifReader exif_reader;
 
@@ -93,10 +89,15 @@ int main(int argc, char *argv[]) {
     // since those cannot be recovered from EXIF.
     LOG(INFO) << image_name << " has an EXIF focal length of "
               << prior.focal_length.value[0];
-    ofs << image_name << " " << prior.focal_length.value[0] << " "
-        << prior.principal_point.value[0] << " "
-        << prior.principal_point.value[1] << " 1.0 0.0 0.0 0.0\n";
+
+    priors[image_name] = prior;
   }
-  ofs.close();
+
+  if (!theia::WriteCalibration(FLAGS_output_calibration_file, priors)) {
+    LOG(ERROR) << "Could not write the calibration file: "
+               << FLAGS_output_calibration_file;
+    return -1;
+  }
+
   return 0;
 }

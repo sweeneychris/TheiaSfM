@@ -1,4 +1,4 @@
-// Copyright (C) 2015 The Regents of the University of California (Regents).
+// Copyright (C) 2019 The Regents of the University of California (Regents).
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -30,10 +30,10 @@
 // POSSIBILITY OF SUCH DAMAGE.
 //
 // Please contact the author of this library if you have any questions.
-// Author: Chris Sweeney (cmsweeney@cs.ucsb.edu)
+// Author: Victor Fragoso (victor.fragoso@mail.wvu.edu)
 
-#ifndef THEIA_IO_READ_CALIBRATION_H_
-#define THEIA_IO_READ_CALIBRATION_H_
+#ifndef THEIA_IO_WRITE_CALIBRATION_H_
+#define THEIA_IO_WRITE_CALIBRATION_H_
 
 #include <string>
 #include <unordered_map>
@@ -41,8 +41,8 @@
 namespace theia {
 struct CameraIntrinsicsPrior;
 
-// Reads calibration data for images that are to be reconstructed. The
-// calibration file should have the following JSON format:
+// Writes calibration data for images. The calibration file will have the
+// following JSON format:
 //
 //   {
 //     "priors" : [
@@ -86,25 +86,14 @@ struct CameraIntrinsicsPrior;
 //     have calibration.
 //
 // Params:
-//   calibration_file:  The input calibration filepath.
-//   camera_intrinsics_prior:  The parsed calibration priors organized into an
+//   output_calibration_file:  The output calibration filepath.
+//   camera_intrinsics_prior:  The source calibration priors organized into an
 //     unordered_map, where keys are the image names and values are the priors.
-bool ReadCalibration(const std::string& calibration_file,
-                     std::unordered_map<std::string, CameraIntrinsicsPrior>*
-                         camera_intrinsics_prior);
-
-// Extracts the camera intrinsics priors from a loaded JSON string, and creates
-// a map between view_name to camera intrinsics priors. The function returns
-// true upon successful parsing, and false otherwise.
-//
-// Params:
-//   json_str:  The JSON file into a C string.
-//   camera_intrinsics_prior:  A map from view name to camera intrinsic prior.
-bool ExtractCameraIntrinsicPriorsFromJson(
-    const char* json_str,
-    std::unordered_map<std::string, CameraIntrinsicsPrior>*
-      camera_intrinsics_prior);
+bool WriteCalibration(
+    const std::string& output_calibration_file,
+    const std::unordered_map<std::string, CameraIntrinsicsPrior>&
+        camera_intrinsics_priors);
 
 }  // namespace theia
 
-#endif  // THEIA_IO_READ_CALIBRATION_H_
+#endif  // THEIA_IO_WRITE_CALIBRATION_H_

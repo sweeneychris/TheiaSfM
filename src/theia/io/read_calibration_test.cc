@@ -47,6 +47,12 @@ namespace {
 
 std::string json_filepath = THEIA_DATA_DIR + std::string("/") + FLAGS_json_file;
 
+static const char* kPinholeStr = "PINHOLE";
+static const char* kPinholeRadialTangentialStr = "PINHOLE_RADIAL_TANGENTIAL";
+static const char* kFisheyeStr = "FISHEYE";
+static const char* kFovStr = "FOV";
+static const char* kDivisionUndistortion = "DIVISION_UNDISTORTION";
+
 static const char* kCameraIntrinsicsPriorsJson =
     "{\"priors\" : ["
     "{\"CameraIntrinsicsPrior\": {"
@@ -114,6 +120,7 @@ TEST(ReadCalibrationTest, ParseIntrinsicPriorsFromJsonStr) {
   EXPECT_NEAR(prior1.radial_distortion.value[0], 0.1, 1e-6);
   EXPECT_NEAR(prior1.radial_distortion.value[1], 0.1, 1e-6);
   EXPECT_TRUE(view_to_prior.find("view_1.jpg") != view_to_prior.end());
+  EXPECT_TRUE(prior1.camera_intrinsics_model_type == std::string(kPinholeStr));
 
   // Check second camera.
   const CameraIntrinsicsPrior prior2 = view_to_prior["view_2.jpg"];
@@ -130,6 +137,7 @@ TEST(ReadCalibrationTest, ParseIntrinsicPriorsFromJsonStr) {
   EXPECT_NEAR(prior2.radial_distortion.value[0], 0.1, 1e-6);
   EXPECT_NEAR(prior2.radial_distortion.value[1], 0.0, 1e-6);
   EXPECT_TRUE(view_to_prior.find("view_2.jpg") != view_to_prior.end());
+  EXPECT_TRUE(prior2.camera_intrinsics_model_type == std::string(kPinholeStr));
 
   // Check third camera.
   const CameraIntrinsicsPrior prior3 = view_to_prior["view_3.jpg"];
@@ -141,6 +149,7 @@ TEST(ReadCalibrationTest, ParseIntrinsicPriorsFromJsonStr) {
   EXPECT_FALSE(prior3.radial_distortion.is_set);
   EXPECT_FALSE(prior3.focal_length.is_set);
   EXPECT_TRUE(view_to_prior.find("view_3.jpg") != view_to_prior.end());
+  EXPECT_TRUE(prior3.camera_intrinsics_model_type == std::string(kPinholeStr));
 
   // Fourth camera is pinhole-radial-tangential.
   const CameraIntrinsicsPrior prior4 = view_to_prior["view_4.jpg"];
@@ -174,6 +183,8 @@ TEST(ReadCalibrationTest, ParseIntrinsicPriorsFromJsonStr) {
   EXPECT_NEAR(prior4.altitude.value[0], 512.0, 1e-6);
   EXPECT_TRUE(prior4.longitude.is_set);
   EXPECT_NEAR(prior4.longitude.value[0], 256.0, 1e-6);
+  EXPECT_TRUE(prior4.camera_intrinsics_model_type ==
+              std::string(kPinholeRadialTangentialStr));
   EXPECT_TRUE(view_to_prior.find("view_4.jpg") != view_to_prior.end());
 }
 
@@ -197,6 +208,7 @@ TEST(ReadCalibrationTest, ReadCalibrationFromJsonFile) {
   EXPECT_NEAR(prior1.radial_distortion.value[0], 0.1, 1e-6);
   EXPECT_NEAR(prior1.radial_distortion.value[1], 0.1, 1e-6);
   EXPECT_TRUE(view_to_prior.find("view_1.jpg") != view_to_prior.end());
+  EXPECT_TRUE(prior1.camera_intrinsics_model_type == std::string(kPinholeStr));
 
   // Check second camera.
   const CameraIntrinsicsPrior prior2 = view_to_prior["view_2.jpg"];
@@ -213,6 +225,7 @@ TEST(ReadCalibrationTest, ReadCalibrationFromJsonFile) {
   EXPECT_NEAR(prior2.radial_distortion.value[0], 0.1, 1e-6);
   EXPECT_NEAR(prior2.radial_distortion.value[1], 0.0, 1e-6);
   EXPECT_TRUE(view_to_prior.find("view_2.jpg") != view_to_prior.end());
+  EXPECT_TRUE(prior2.camera_intrinsics_model_type == std::string(kPinholeStr));
 
   // Check third camera.
   const CameraIntrinsicsPrior prior3 = view_to_prior["view_3.jpg"];
@@ -224,6 +237,7 @@ TEST(ReadCalibrationTest, ReadCalibrationFromJsonFile) {
   EXPECT_FALSE(prior3.radial_distortion.is_set);
   EXPECT_FALSE(prior3.focal_length.is_set);
   EXPECT_TRUE(view_to_prior.find("view_3.jpg") != view_to_prior.end());
+  EXPECT_TRUE(prior3.camera_intrinsics_model_type == std::string(kPinholeStr));
 
   // Fourth camera is pinhole-radial-tangential.
   const CameraIntrinsicsPrior prior4 = view_to_prior["view_4.jpg"];
@@ -258,6 +272,8 @@ TEST(ReadCalibrationTest, ReadCalibrationFromJsonFile) {
   EXPECT_TRUE(prior4.longitude.is_set);
   EXPECT_NEAR(prior4.longitude.value[0], 256.0, 1e-6);
   EXPECT_TRUE(view_to_prior.find("view_4.jpg") != view_to_prior.end());
+  EXPECT_TRUE(prior4.camera_intrinsics_model_type ==
+              std::string(kPinholeRadialTangentialStr));
 }
 
 }  // namespace
