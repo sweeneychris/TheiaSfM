@@ -123,6 +123,7 @@ set(THEIA_SRC
   sfm/estimators/estimate_homography.cc
   sfm/estimators/estimate_relative_pose_with_known_orientation.cc
   sfm/estimators/estimate_relative_pose.cc
+  sfm/estimators/estimate_rigid_transformation_2d_3d.cc
   sfm/estimators/estimate_similarity_transformation_2d_3d.cc
   sfm/estimators/estimate_triangulation.cc
   sfm/estimators/estimate_uncalibrated_absolute_pose.cc
@@ -151,6 +152,8 @@ set(THEIA_SRC
   sfm/hybrid_reconstruction_estimator.cc
   sfm/incremental_reconstruction_estimator.cc
   sfm/localize_view_to_reconstruction.cc
+  sfm/pose/build_upnp_action_matrix.cc
+  sfm/pose/build_upnp_action_matrix_using_symmetry.cc
   sfm/pose/dls_impl.cc
   sfm/pose/dls_pnp.cc
   sfm/pose/eight_point_fundamental_matrix.cc
@@ -171,6 +174,7 @@ set(THEIA_SRC
   sfm/pose/test_util.cc
   sfm/pose/three_point_relative_pose_partial_rotation.cc
   sfm/pose/two_point_pose_partial_rotation.cc
+  sfm/pose/upnp.cc
   sfm/pose/util.cc
   sfm/reconstruction_builder.cc
   sfm/reconstruction_estimator_utils.cc
@@ -293,6 +297,7 @@ if (BUILD_TESTING)
   gtest(sfm/estimators/estimate_homography)
   gtest(sfm/estimators/estimate_relative_pose)
   gtest(sfm/estimators/estimate_relative_pose_with_known_orientation)
+  gtest(sfm/estimators/estimate_rigid_transformation_2d_3d)
   gtest(sfm/estimators/estimate_similarity_transformation_2d_3d)
   gtest(sfm/estimators/estimate_triangulation)
   gtest(sfm/estimators/estimate_uncalibrated_absolute_pose)
@@ -316,6 +321,8 @@ if (BUILD_TESTING)
   gtest(sfm/gps_converter)
   gtest(sfm/hybrid_reconstruction_estimator)
   gtest(sfm/incremental_reconstruction_estimator)
+  gtest(sfm/pose/build_upnp_action_matrix)
+  gtest(sfm/pose/build_upnp_action_matrix_using_symmetry)
   gtest(sfm/pose/dls_pnp)
   gtest(sfm/pose/eight_point_fundamental_matrix)
   gtest(sfm/pose/essential_matrix_utils)
@@ -333,6 +340,7 @@ if (BUILD_TESTING)
   gtest(sfm/pose/six_point_radial_distortion_homography)
   gtest(sfm/pose/three_point_relative_pose_partial_rotation)
   gtest(sfm/pose/two_point_pose_partial_rotation)
+  gtest(sfm/pose/upnp)
   gtest(sfm/reconstruction)
   gtest(sfm/track)
   gtest(sfm/track_builder)

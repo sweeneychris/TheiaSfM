@@ -44,6 +44,7 @@
 #include "theia/sfm/camera/camera.h"
 #include "theia/sfm/create_and_initialize_ransac_variant.h"
 #include "theia/sfm/feature.h"
+#include "theia/sfm/estimators/camera_and_feature_correspondence_2d_3d.h"
 #include "theia/sfm/similarity_transformation.h"
 #include "theia/sfm/transformation/gdls_similarity_transform.h"
 #include "theia/solvers/estimator.h"
@@ -77,12 +78,13 @@ class GdlsSimilarityTransformationEstimator
   GdlsSimilarityTransformationEstimator() {}
 
   // 3 correspondences are needed to determine the absolute pose.
-  double SampleSize() const { return 4; }
+  double SampleSize() const override { return 4; }
 
   // Estimates candidate absolute poses from correspondences.
   bool EstimateModel(
       const std::vector<CameraAndFeatureCorrespondence2D3D>& correspondences,
-      std::vector<SimilarityTransformation>* similarity_transformations) const {
+      std::vector<SimilarityTransformation>* similarity_transformations)
+      const override {
     std::vector<Eigen::Vector3d> ray_origins(4), ray_directions(4),
         world_points(4);
     for (int i = 0; i < 4; i++) {
@@ -132,7 +134,8 @@ class GdlsSimilarityTransformationEstimator
   // reprojection error.
   double Error(
       const CameraAndFeatureCorrespondence2D3D& correspondence,
-      const SimilarityTransformation& similarity_transformation) const {
+      const SimilarityTransformation& similarity_transformation)
+      const override {
     // Apply the similarity transformation to the camera.
     Camera transformed_camera = correspondence.camera;
     TransformCamera(similarity_transformation, &transformed_camera);
