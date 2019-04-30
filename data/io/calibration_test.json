@@ -1,0 +1,44 @@
+{"priors" : [
+    {"CameraIntrinsicsPrior": {
+        "image_name" : "view_1.jpg",
+        "focal_length" : 300,
+        "width" : 480,
+        "height" : 480,
+        "principal_point" : [240, 240],
+        "aspect_ratio" : 1.0,
+        "skew" : 0.0,
+        "radial_distortion_coeffs" : [0.1, 0.1], 
+        "camera_intrinsics_type" : "PINHOLE"
+    }}, 
+    {"CameraIntrinsicsPrior": {
+        "image_name" : "view_2.jpg",
+        "focal_length" : 350,
+        "principal_point" : [240, 240],
+        "aspect_ratio" : 1.5,
+        "skew" : 0.25,
+        "radial_distortion_coeffs" : [0.1], 
+        "camera_intrinsics_type" : "PINHOLE"
+    }}, 
+    {"CameraIntrinsicsPrior": {
+        "image_name" : "view_3.jpg",
+        "principal_point" : [240, 240],
+        "camera_intrinsics_type" : "PINHOLE"
+    }}, 
+    {"CameraIntrinsicsPrior": {
+        "image_name" : "view_4.jpg",
+        "focal_length" : 300,
+        "width" : 480,
+        "height" : 480,
+        "principal_point" : [240, 240],
+        "aspect_ratio" : 1.0,
+        "skew" : 0.0,
+        "radial_distortion_coeffs" : [0.1, 0.1, 0.01], 
+        "tangential_distortion_coeffs" : [0.05, 0.05], 
+        "orientation" : [0.1, 0.1, 0.1], 
+        "position" : [1, 2.0, -3.0], 
+        "latitude" : 128.0, 
+        "longitude" : 256.0, 
+        "altitude" : 512.0, 
+        "camera_intrinsics_type" : "PINHOLE_RADIAL_TANGENTIAL"
+    }} 
+]}

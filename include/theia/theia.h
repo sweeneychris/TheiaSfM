@@ -60,6 +60,7 @@
 #include "theia/io/sift_binary_file.h"
 #include "theia/io/sift_text_file.h"
 #include "theia/io/write_bundler_files.h"
+#include "theia/io/write_calibration.h"
 #include "theia/io/write_keypoints_and_descriptors.h"
 #include "theia/io/write_nvm_file.h"
 #include "theia/io/write_ply_file.h"

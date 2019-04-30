@@ -93,6 +93,23 @@ inline std::string CameraIntrinsicsModelTypeToString(
   return "";
 }
 
+// Converts an input string to the corresponding camera intrinsics model type.
+inline bool IsCameraIntrinsicsModelTypeValid(
+    const std::string& camera_model_type_string) {
+  if (camera_model_type_string == "PINHOLE") {
+    return true;
+  } else if (camera_model_type_string == "PINHOLE_RADIAL_TANGENTIAL") {
+    return true;
+  } else if (camera_model_type_string == "FISHEYE") {
+    return true;
+  } else if (camera_model_type_string == "FOV") {
+    return true;
+  } else if (camera_model_type_string == "DIVISION_UNDISTORTION") {
+    return true;
+  }
+  return false;
+}
+
 }  // namespace theia
 
 #endif  // THEIA_SFM_CAMERA_CAMERA_INTRINSICS_MODEL_TYPE_H_

@@ -204,6 +204,15 @@ else (ROCKSDB_FOUND)
   message(FATAL_ERROR "Can't find RocksDB. Please set ROCKSDB_INCLUDE_DIR & ROCKSDB_LIBRARY to use RocksDB.")
 endif (ROCKSDB_FOUND)
 
+# RapidJSON.
+message("-- Check for RapidJSON")
+find_package(RapidJSON REQUIRED)
+if (RapidJSON_FOUND)
+  message("-- Found RapidJSON: ${RAPIDJSON_INCLUDE_DIRS}")
+else (RapidJSON_FOUND)
+  message(FATAL_ERROR "Can't find RapidJSON. Please set RAPIDJSON_INCLUDE_DIRS to use RapidJSON.")
+endif (RapidJSON_FOUND)
+
 include_directories(
   include
   src
@@ -211,6 +220,7 @@ include_directories(
   ${GFLAGS_INCLUDE_DIRS}
   ${GLOG_INCLUDE_DIRS}
   ${OPENIMAGEIO_INCLUDE_DIRS}
+  ${RAPIDJSON_INCLUDE_DIRS}
   ${ROCKSDB_INCLUDE_DIR}
   ${SUITESPARSE_INCLUDE_DIRS}
 )

@@ -75,6 +75,7 @@ set(THEIA_SRC
   io/sift_binary_file.cc
   io/sift_text_file.cc
   io/write_bundler_files.cc
+  io/write_calibration.cc
   io/write_colmap_files.cc
   io/write_keypoints_and_descriptors.cc
   io/write_nvm_file.cc
@@ -259,6 +260,8 @@ if (BUILD_TESTING)
   gtest(image/descriptor/sift_descriptor)
   gtest(image/image)
   gtest(image/keypoint_detector/sift_detector)
+  gtest(io/read_calibration)
+  gtest(io/write_calibration)
   gtest(matching/brute_force_feature_matcher)
   gtest(matching/cascade_hashing_feature_matcher)
   gtest(matching/distance)
