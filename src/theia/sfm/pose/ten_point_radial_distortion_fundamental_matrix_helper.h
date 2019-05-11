@@ -47,6 +47,7 @@ namespace theia {
 int TenPointRadialDistortionFundamentalMatrixHelper(
     Eigen::Matrix<double, 29, 1>& pr, Eigen::Matrix<double, 2, 10>& sols);
 
+
 template <typename Derived>
 inline void colEchelonForm(Eigen::MatrixBase<Derived>& M,
                            double pivtol = 1e-12) {
