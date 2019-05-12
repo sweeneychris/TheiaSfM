@@ -153,4 +153,85 @@ bool SixPointRadialDistortionHomography(
 
   return nsols > 0;
 }
+
+// Some helper functions
+void DistortPoint(const Vector3d& point_in_camera,
+                  const double focal_length, const double radial_distortion,
+                  Vector2d& distorted_point) {
+  Vector2d point_in_cam_persp_div;
+  point_in_cam_persp_div[0] =
+      focal_length * point_in_camera[0] / point_in_camera[2];
+  point_in_cam_persp_div[1] =
+      focal_length * point_in_camera[1] / point_in_camera[2];
+
+  // see also division_undistortion_camera_model.h
+  const double r_u_sq = point_in_cam_persp_div.dot(point_in_cam_persp_div);
+
+  const double denom = 2.0 * radial_distortion * r_u_sq;
+  const double inner_sqrt = 1.0 - 4.0 * radial_distortion * r_u_sq;
+
+  // If the denominator is nearly zero then we can evaluate the distorted
+  // coordinates as k or r_u^2 goes to zero. Both evaluate to the identity.
+  if (std::abs(denom) < std::numeric_limits<double>::epsilon() ||
+      inner_sqrt < 0.0) {
+    distorted_point = point_in_cam_persp_div;
+  } else {
+    const double scale = (1.0 - std::sqrt(inner_sqrt)) / denom;
+    distorted_point = point_in_cam_persp_div * scale;
+  }
+}
+
+void UndistortPoint(const Vector2d& distorted_point,
+                    const double focal_length, const double radial_distortion,
+                    Vector3d& undistorted_point) {
+  double px = distorted_point[0];
+  double py = distorted_point[1];
+  // The squared radius of the distorted image point.
+  const double r_d_sq = distorted_point.dot(distorted_point);
+
+  const double undistortion = 1.0 / (1.0 + radial_distortion * r_d_sq);
+  undistorted_point[0] = px * undistortion / focal_length;
+  undistorted_point[1] = py * undistortion / focal_length;
+  undistorted_point[2] = 1.0;
+}
+
+void ProjectCameraToCamera(const Matrix3d& H, const Vector3d& X, Vector3d* Y) {
+  (*Y) = H * X;
+  (*Y) /= (*Y)(2);
+}
+
+double CheckRadialSymmetricError(
+    const RadialHomographyResult& radial_homography, const Vector2d& pt_left,
+    const Vector2d& pt_right, const double focal_length1,
+    const double focal_length2) {
+  // todo: in the estimator this gets calculated for each sample every time
+  const double l1_scaled = radial_homography.l1 / (focal_length1 * focal_length1);
+  const double l2_scaled = radial_homography.l2 / (focal_length2 * focal_length2);
+
+  Vector3d bearing_vector_left, bearing_vector_right;
+  UndistortPoint(pt_left, focal_length1, l1_scaled,
+                 bearing_vector_left);
+  UndistortPoint(pt_right, focal_length2, l2_scaled,
+                 bearing_vector_right);
+
+  Vector3d ray2_in_1, ray1_in_2;
+  ProjectCameraToCamera(radial_homography.H, bearing_vector_right, &ray2_in_1);
+  ProjectCameraToCamera(radial_homography.H.inverse(), bearing_vector_left, &ray1_in_2);
+
+  Vector2d pt_left_from_right, pt_right_from_left;
+  DistortPoint(ray2_in_1, focal_length1, l1_scaled,
+               pt_left_from_right);
+  DistortPoint(ray1_in_2, focal_length2, l2_scaled,
+               pt_right_from_left);
+
+  const Vector2d diff_left = pt_left - pt_left_from_right;
+  const Vector2d diff_right = pt_right - pt_right_from_left;
+
+  const double square_left = diff_left.dot(diff_left);
+  const double square_right = diff_right.dot(diff_right);
+
+  double sym_error = 0.5 * (square_left + square_right);
+
+  return sym_error;
+}
 }
