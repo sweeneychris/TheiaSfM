@@ -155,9 +155,8 @@ bool SixPointRadialDistortionHomography(
 }
 
 // Some helper functions
-void DistortPoint(const Vector3d& point_in_camera,
-                  const double focal_length, const double radial_distortion,
-                  Vector2d& distorted_point) {
+void DistortPoint(const Vector3d& point_in_camera, const double focal_length,
+                  const double radial_distortion, Vector2d& distorted_point) {
   Vector2d point_in_cam_persp_div;
   point_in_cam_persp_div[0] =
       focal_length * point_in_camera[0] / point_in_camera[2];
@@ -181,8 +180,8 @@ void DistortPoint(const Vector3d& point_in_camera,
   }
 }
 
-void UndistortPoint(const Vector2d& distorted_point,
-                    const double focal_length, const double radial_distortion,
+void UndistortPoint(const Vector2d& distorted_point, const double focal_length,
+                    const double radial_distortion,
                     Vector3d& undistorted_point) {
   double px = distorted_point[0];
   double py = distorted_point[1];
@@ -205,24 +204,23 @@ double CheckRadialSymmetricError(
     const Vector2d& pt_right, const double focal_length1,
     const double focal_length2) {
   // todo: in the estimator this gets calculated for each sample every time
-  const double l1_scaled = radial_homography.l1 / (focal_length1 * focal_length1);
-  const double l2_scaled = radial_homography.l2 / (focal_length2 * focal_length2);
+  const double l1_scaled =
+      radial_homography.l1 / (focal_length1 * focal_length1);
+  const double l2_scaled =
+      radial_homography.l2 / (focal_length2 * focal_length2);
 
   Vector3d bearing_vector_left, bearing_vector_right;
-  UndistortPoint(pt_left, focal_length1, l1_scaled,
-                 bearing_vector_left);
-  UndistortPoint(pt_right, focal_length2, l2_scaled,
-                 bearing_vector_right);
+  UndistortPoint(pt_left, focal_length1, l1_scaled, bearing_vector_left);
+  UndistortPoint(pt_right, focal_length2, l2_scaled, bearing_vector_right);
 
   Vector3d ray2_in_1, ray1_in_2;
   ProjectCameraToCamera(radial_homography.H, bearing_vector_right, &ray2_in_1);
-  ProjectCameraToCamera(radial_homography.H.inverse(), bearing_vector_left, &ray1_in_2);
+  ProjectCameraToCamera(radial_homography.H.inverse(), bearing_vector_left,
+                        &ray1_in_2);
 
   Vector2d pt_left_from_right, pt_right_from_left;
-  DistortPoint(ray2_in_1, focal_length1, l1_scaled,
-               pt_left_from_right);
-  DistortPoint(ray1_in_2, focal_length2, l2_scaled,
-               pt_right_from_left);
+  DistortPoint(ray2_in_1, focal_length1, l1_scaled, pt_left_from_right);
+  DistortPoint(ray1_in_2, focal_length2, l2_scaled, pt_right_from_left);
 
   const Vector2d diff_left = pt_left - pt_left_from_right;
   const Vector2d diff_right = pt_right - pt_right_from_left;

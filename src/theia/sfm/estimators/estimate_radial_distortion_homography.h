@@ -42,10 +42,10 @@
 #include <Eigen/Core>
 #include <vector>
 
-#include "theia/sfm/create_and_initialize_ransac_variant.h"
-#include "theia/sfm/pose/six_point_radial_distortion_homography.h"
 #include "theia/sfm/camera/division_undistortion_camera_model.h"
+#include "theia/sfm/create_and_initialize_ransac_variant.h"
 #include "theia/sfm/feature.h"
+#include "theia/sfm/pose/six_point_radial_distortion_homography.h"
 
 namespace theia {
 
@@ -54,31 +54,31 @@ struct RansacSummary;
 
 // imitates std::pair
 // this is basically for radial fundamental matrix estimation
-struct RadialDistortionFeatureCorrespondence
-{
-public:
-    Feature feature_left;
-    Feature feature_right;
+struct RadialDistortionFeatureCorrespondence {
+ public:
+  Feature feature_left;
+  Feature feature_right;
 
-    Feature normalized_feature_left;
-    Feature normalized_feature_right;
+  Feature normalized_feature_left;
+  Feature normalized_feature_right;
 
-    double focal_length_estimate_left;
-    double focal_length_estimate_right;
+  double focal_length_estimate_left = 1000.0;
+  double focal_length_estimate_right = 1000.0;
 
-    double min_radial_distortion;
-    double max_radial_distortion;
-EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
+  double min_radial_distortion = -5.0;
+  double max_radial_distortion = 0.0;
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 };
 
 // Estimates the homography matrix from feature correspondences
 // using the 6-pt radial distortion homography algorithm.
-// Apart from the homography it also returns a distortion estimation for both cameras
-bool EstimateRadialHomographyMatrix(const RansacParameters& ransac_params,
-    const RansacType& ransac_type,
-    const std::vector<RadialDistortionFeatureCorrespondence>& normalized_correspondences,
-    RadialHomographyResult* result,
-    RansacSummary* ransac_summary);
+// Apart from the homography it also returns a distortion estimation for both
+// cameras
+bool EstimateRadialHomographyMatrix(
+    const RansacParameters& ransac_params, const RansacType& ransac_type,
+    const std::vector<RadialDistortionFeatureCorrespondence>&
+        normalized_correspondences,
+    RadialHomographyResult* result, RansacSummary* ransac_summary);
 
 }  // namespace theia
 

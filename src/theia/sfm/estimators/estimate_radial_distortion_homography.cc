@@ -47,50 +47,6 @@ using Vector3d = Eigen::Vector3d;
 using Vector2d = Eigen::Vector2d;
 using Matrix3d = Eigen::Matrix3d;
 
-// Vector3d Cam2CamH(const Matrix3d& H,
-//                  const Vector3d &X)
-//{
-//    Vector3d Y = H * X;
-//    Y /= Y(2);
-
-//    return Y;
-//}
-
-// double RadialHomographyError(const RadialHomographyResult& radial_homography,
-//                             const RadialDistortionFeatureCorrespondence
-//                             image_correspondence)
-//{
-//    // set estimated radial distortion parameters
-//    image_correspondence.camera_left->SetRadialDistortion(radial_homography.l1);
-//    image_correspondence.camera_right->SetRadialDistortion(radial_homography.l2);
-
-//    // unproject image points
-//    const Vector3d ray_left =
-//    image_correspondence.camera_left->ImageToCameraCoordinates(image_correspondence.feature_left);
-//    const Vector3d ray_right =
-//    image_correspondence.camera_right->ImageToCameraCoordinates(image_correspondence.feature_right);
-
-//    const Vector3d ray_right_in_left = Cam2CamH(radial_homography.H,
-//    ray_right);
-//    const Vector3d ray_left_in_right = Cam2CamH(radial_homography.H.inverse(),
-//    ray_left);
-
-//    const Feature pt_left_projected  =
-//    image_correspondence.camera_left->CameraToImageCoordinates(ray_right_in_left);
-//    const Feature pt_right_projected =
-//    image_correspondence.camera_right->CameraToImageCoordinates(ray_left_in_right);
-
-//    const Feature diff_left = image_correspondence.feature_left -
-//    pt_left_projected;
-//    const Feature diff_right = image_correspondence.feature_right -
-//    pt_right_projected;
-
-//    const double squared_sum_left = diff_left.dot(diff_left);
-//    const double squared_sum_right = diff_right.dot(diff_right);
-
-//    return 0.5 * (squared_sum_left + squared_sum_right);
-//}
-
 // An estimator for computing the homography matrix from 6 feature
 // correspondences.
 class RadialHomographyMatrixEstimator

@@ -130,8 +130,8 @@ void SixPointHomographyWithNoiseTest(
   for (int i = 0; i < radial_homography_result.size(); ++i) {
     // we need to scale the radial distortion values,
     // since we used normalized image points for estimation
-    //radial_homography_result[i].l1 /= (focal_length1 * focal_length1);
-    //radial_homography_result[i].l2 /= (focal_length2 * focal_length2);
+    // radial_homography_result[i].l1 /= (focal_length1 * focal_length1);
+    // radial_homography_result[i].l2 /= (focal_length2 * focal_length2);
 
     double sym_error = 0.0;
     for (int p = 0; p < image_1_points.size(); ++p) {
