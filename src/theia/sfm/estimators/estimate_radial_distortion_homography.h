@@ -53,7 +53,7 @@ struct RansacParameters;
 struct RansacSummary;
 
 // imitates std::pair
-// this is basically for radial fundamental matrix estimation
+// this is basically for radial homography matrix estimation
 struct RadialDistortionFeatureCorrespondence {
  public:
   Feature feature_left;

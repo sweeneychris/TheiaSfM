@@ -47,18 +47,18 @@ using Vector3d = Eigen::Vector3d;
 using Vector2d = Eigen::Vector2d;
 using Matrix3d = Eigen::Matrix3d;
 
-// An estimator for computing the homography matrix from 6 feature
-// correspondences.
+// An estimator for computing the radial distortion homography matrix from at
+// least 6 feature correspondences.
 class RadialHomographyMatrixEstimator
     : public Estimator<RadialDistortionFeatureCorrespondence,
                        RadialHomographyResult> {
  public:
   RadialHomographyMatrixEstimator() {}
 
-  // 5 correspondences are needed to determine an essential matrix.
+  // 6 correspondences are needed to determine an radial distortion homography.
   double SampleSize() const { return 6; }
 
-  // Estimates candidate essential matrices from correspondences.
+  // Estimates candidate matrices from correspondences.
   bool EstimateModel(
       const std::vector<RadialDistortionFeatureCorrespondence>& correspondences,
       std::vector<RadialHomographyResult>* results) const {
@@ -99,7 +99,7 @@ bool EstimateRadialHomographyMatrix(
       ransac = CreateAndInitializeRansacVariant(
           ransac_type, ransac_params, radial_homography_matrix_estimator);
 
-  // Estimate essential matrix.
+  // Estimate radial distortion homography matrix.
   return ransac->Estimate(normalized_correspondences, result, ransac_summary);
 }
 }

@@ -69,7 +69,7 @@ static constexpr double kRadialDistortion1 = -1e-7;
 static constexpr double kRadialDistortion2 = -5e-7;
 static constexpr double kReprojectionError = 3.0;
 
-// 10 percent error
+// allowing 10 percent error for radial distortion parameters
 static constexpr double kRadDistThreshold1 =
     0.1 * std::abs(kRadialDistortion1 * std::pow(kFocalLength1, 2));
 static constexpr double kRadDistThreshold2 =
@@ -111,8 +111,7 @@ void GenerateDistortedImagePoint(
     AddNoiseToProjection(projection_noise_std_dev, &rng, &image_2_point);
   }
 
-  // normalize points with focal length (and principal point) estimate for
-  // estimation
+  // normalize points with focal length (and principal point) estimate
   UndistortPoint(image_1_point, focal_length1, 0.0, image_1_point_normalized);
   UndistortPoint(image_2_point, focal_length2, 0.0, image_2_point_normalized);
 }
@@ -171,7 +170,7 @@ void ExecuteRandomTest(const RansacParameters& options,
       radial_distortion_1, radial_distortion_2, inlier_ratio,
       &image_1_points_normalized, &image_2_points_normalized, &image_1_points,
       &image_2_points);
-  // Get correspondence
+  // Get correspondences
   std::vector<RadialDistortionFeatureCorrespondence> correspondences;
   for (size_t i = 0; i < image_1_points.size(); ++i) {
     RadialDistortionFeatureCorrespondence correspondence;
