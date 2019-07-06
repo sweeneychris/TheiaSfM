@@ -164,6 +164,8 @@ set(THEIA_SRC
   sfm/pose/five_point_relative_pose.cc
   sfm/pose/four_point_focal_length_helper.cc
   sfm/pose/four_point_focal_length.cc
+  sfm/pose/four_point_focal_length_radial_distortion.cc
+  sfm/pose/four_point_focal_length_radial_distortion_helper.cc
   sfm/pose/four_point_homography.cc
   sfm/pose/four_point_relative_pose_partial_rotation.cc
   sfm/pose/fundamental_matrix_util.cc
@@ -334,6 +336,7 @@ if (BUILD_TESTING)
   gtest(sfm/pose/five_point_focal_length_radial_distortion)
   gtest(sfm/pose/five_point_relative_pose)
   gtest(sfm/pose/four_point_focal_length)
+  gtest(sfm/pose/four_point_focal_length_radial_distortion)
   gtest(sfm/pose/four_point_homography)
   gtest(sfm/pose/four_point_relative_pose_partial_rotation)
   gtest(sfm/pose/fundamental_matrix_util)
