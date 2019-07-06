@@ -134,6 +134,7 @@
 #include "theia/sfm/estimators/estimate_essential_matrix.h"
 #include "theia/sfm/estimators/estimate_fundamental_matrix.h"
 #include "theia/sfm/estimators/estimate_homography.h"
+#include "theia/sfm/estimators/estimate_radial_distortion_homography.h"
 #include "theia/sfm/estimators/estimate_relative_pose.h"
 #include "theia/sfm/estimators/estimate_relative_pose_with_known_orientation.h"
 #include "theia/sfm/estimators/estimate_rigid_transformation_2d_3d.h"

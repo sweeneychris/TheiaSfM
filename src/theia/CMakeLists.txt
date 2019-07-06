@@ -122,6 +122,7 @@ set(THEIA_SRC
   sfm/estimators/estimate_essential_matrix.cc
   sfm/estimators/estimate_fundamental_matrix.cc
   sfm/estimators/estimate_homography.cc
+  sfm/estimators/estimate_radial_distortion_homography.cc
   sfm/estimators/estimate_relative_pose_with_known_orientation.cc
   sfm/estimators/estimate_relative_pose.cc
   sfm/estimators/estimate_rigid_transformation_2d_3d.cc
@@ -297,6 +298,7 @@ if (BUILD_TESTING)
   gtest(sfm/estimators/estimate_dominant_plane_from_points)
   gtest(sfm/estimators/estimate_essential_matrix)
   gtest(sfm/estimators/estimate_fundamental_matrix)
+  gtest(sfm/estimators/estimate_radial_distortion_homography)
   gtest(sfm/estimators/estimate_homography)
   gtest(sfm/estimators/estimate_relative_pose)
   gtest(sfm/estimators/estimate_relative_pose_with_known_orientation)

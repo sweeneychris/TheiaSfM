@@ -59,18 +59,35 @@ struct RadialHomographyResult {
 };
 
 // Input:
-//   normalized_feature_points_left  - six normalized image positions  (inv(K)*p)
+//   normalized_feature_points_left  - six normalized image positions (inv(K)*p)
 //   normalized_feature_points_right - six normalized image positions (inv(K)*p)
 //   lmin - minimum radial distortion (can be used to speed up ransac loops)
 //   lmax - maximum radial distortion (can be used to speed up ransac loops)
 // Output: bool - returns true if at least one solution was found
 // Return: RadialHomographyResult - struct that contains homography and a radial
-// distortion parameter for each image (i.e. two-sided, called: H6_l1l2 in the paper)
+// distortion parameter for each image (i.e. two-sided, called: H6_l1l2 in the
+// paper)
 bool SixPointRadialDistortionHomography(
     const std::vector<Eigen::Vector2d>& normalized_feature_points_left,
     const std::vector<Eigen::Vector2d>& normalized_feature_points_right,
     std::vector<RadialHomographyResult>* results, double lmin = -5.0,
     double lmax = 0.0);
-}
 
+// Some helper functions, also needed by the estimator
+void DistortPoint(const Eigen::Vector3d& point_in_camera,
+                  const double focal_length, const double radial_distortion,
+                  Eigen::Vector2d& distorted_point);
+
+void UndistortPoint(const Eigen::Vector2d& distorted_point,
+                    const double focal_length, const double radial_distortion,
+                    Eigen::Vector3d& undistorted_point);
+
+void ProjectCameraToCamera(const Eigen::Matrix3d& H, const Eigen::Vector3d& X,
+                           Eigen::Vector3d* Y);
+
+double CheckRadialSymmetricError(
+    const RadialHomographyResult& radial_homography,
+    const Eigen::Vector2d& pt_left, const Eigen::Vector2d& pt_right,
+    const double focal_length1, const double focal_length2);
+}
 #endif
