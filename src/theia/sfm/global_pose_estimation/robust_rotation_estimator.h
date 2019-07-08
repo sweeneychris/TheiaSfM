@@ -41,6 +41,7 @@
 
 #include "theia/sfm/global_pose_estimation/rotation_estimator.h"
 #include "theia/sfm/types.h"
+#include "theia/math/util.h"
 #include "theia/util/hash.h"
 
 namespace theia {
@@ -66,8 +67,18 @@ class RobustRotationEstimator : public RotationEstimator {
     // convergence for L2 solving.
     int max_num_l1_iterations = 5;
 
+    // Average step size threshold to terminate the L1 minimization
+    double l1_step_convergence_threshold = 0.001;
+
     // The number of iterative reweighted least squares iterations to perform.
     int max_num_irls_iterations = 100;
+
+    // Average step size threshold to termininate the IRLS minimization
+    double irls_step_convergence_threshold = 0.001;
+
+    // This is the point where the Huber-like cost function switches from L1 to
+    // L2.
+    double irls_loss_parameter_sigma = DegToRad(5.0);
   };
 
   explicit RobustRotationEstimator(const Options& options)
@@ -104,10 +115,6 @@ class RobustRotationEstimator : public RotationEstimator {
   // called once.
   void SetupLinearSystem();
 
-  // Computes the relative rotation error based on the current global
-  // orientation estimates.
-  void ComputeRotationError();
-
   // Performs the L1 robust loss minimization.
   bool SolveL1Regression();
 
@@ -116,6 +123,15 @@ class RobustRotationEstimator : public RotationEstimator {
 
   // Updates the global rotations based on the current rotation change.
   void UpdateGlobalRotations();
+
+  // Computes the relative rotation (tangent space) residuals based on the
+  // current global orientation estimates.
+  void ComputeResiduals();
+
+  // Computes the average size of the most recent step of the algorithm.
+  // The is the average over all non-fixed global_orientations_ of their
+  // rotation magnitudes.
+  double ComputeAverageStepSize();
 
   // We keep one of the rotations as constant to remove the ambiguity of the
   // linear system.
@@ -130,19 +146,19 @@ class RobustRotationEstimator : public RotationEstimator {
   // The global orientation estimates for each camera.
   std::unordered_map<ViewId, Eigen::Vector3d>* global_orientations_;
 
-  // The sparse matrix used to maintain the linear system. This is matrix A in
-  // Ax = b.
-  Eigen::SparseMatrix<double> sparse_matrix_;
-
   // Map of ViewIds to the corresponding positions of the view's orientation in
   // the linear system.
   std::unordered_map<ViewId, int> view_id_to_index_;
 
+  // The sparse matrix used to maintain the linear system. This is matrix A in
+  // Ax = b.
+  Eigen::SparseMatrix<double> sparse_matrix_;
+
   // x in the linear system Ax = b.
-  Eigen::VectorXd rotation_change_;
+  Eigen::VectorXd tangent_space_step_;
 
   // b in the linear system Ax = b.
-  Eigen::VectorXd relative_rotation_error_;
+  Eigen::VectorXd tangent_space_residual_;
 };
 
 }  // namespace theia

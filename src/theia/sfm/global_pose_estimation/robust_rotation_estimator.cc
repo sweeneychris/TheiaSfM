@@ -42,7 +42,6 @@
 #include "theia/math/l1_solver.h"
 #include "theia/math/matrix/sparse_cholesky_llt.h"
 #include "theia/math/rotation.h"
-#include "theia/math/util.h"
 #include "theia/sfm/types.h"
 #include "theia/util/hash.h"
 #include "theia/util/map_util.h"
@@ -102,8 +101,8 @@ bool RobustRotationEstimator::EstimateRotations(
 void RobustRotationEstimator::SetupLinearSystem() {
   // The rotation change is one less than the number of global rotations because
   // we keep one rotation constant.
-  rotation_change_.resize((global_orientations_->size() - 1) * 3);
-  relative_rotation_error_.resize(relative_rotations_.size() * 3);
+  tangent_space_step_.resize((global_orientations_->size() - 1) * 3);
+  tangent_space_residual_.resize(relative_rotations_.size() * 3);
   sparse_matrix_.resize(relative_rotations_.size() * 3,
                         (global_orientations_->size() - 1) * 3);
 
@@ -147,44 +146,93 @@ void RobustRotationEstimator::SetupLinearSystem() {
   sparse_matrix_.setFromTriplets(triplet_list.begin(), triplet_list.end());
 }
 
-// Computes the relative rotation error based on the current global
-// orientation estimates.
-void RobustRotationEstimator::ComputeRotationError() {
-  int rotation_error_index = 0;
-  for (const auto& relative_rotation : relative_rotations_) {
-    const Eigen::Vector3d& relative_rotation_aa = relative_rotation.second;
-    const Eigen::Vector3d& rotation1 =
-        FindOrDie(*global_orientations_, relative_rotation.first.first);
-    const Eigen::Vector3d& rotation2 =
-        FindOrDie(*global_orientations_, relative_rotation.first.second);
-
-    // Compute the relative rotation error as:
-    //   R_err = R2^t * R_12 * R1.
-    relative_rotation_error_.segment<3>(3 * rotation_error_index) =
-        MultiplyRotations(-rotation2,
-                          MultiplyRotations(relative_rotation_aa, rotation1));
-    ++rotation_error_index;
-  }
-}
-
 bool RobustRotationEstimator::SolveL1Regression() {
-  static const double kConvergenceThreshold = 1e-3;
-
   L1Solver<Eigen::SparseMatrix<double> >::Options options;
   options.max_num_iterations = 5;
   L1Solver<Eigen::SparseMatrix<double> > l1_solver(options, sparse_matrix_);
 
-  rotation_change_.setZero();
+  tangent_space_step_.setZero();
+  ComputeResiduals();
   for (int i = 0; i < options_.max_num_l1_iterations; i++) {
-    ComputeRotationError();
-    l1_solver.Solve(relative_rotation_error_, &rotation_change_);
-    UpdateGlobalRotations();
 
-    if (relative_rotation_error_.norm() < kConvergenceThreshold) {
+    l1_solver.Solve(tangent_space_residual_, &tangent_space_step_);
+    UpdateGlobalRotations();
+    ComputeResiduals();
+
+    double avg_step_size = ComputeAverageStepSize();
+
+    if (avg_step_size < options_.l1_step_convergence_threshold) {
       break;
     }
     options.max_num_iterations *= 2;
     l1_solver.SetMaxIterations(options.max_num_iterations);
+  }
+  return true;
+}
+
+bool RobustRotationEstimator::SolveIRLS() {
+  const int kNumEdges = tangent_space_residual_.size() / 3;
+
+  // Set up the linear solver and analyze the sparsity pattern of the
+  // system. Since the sparsity pattern will not change with each linear solve
+  // this can help speed up the solution time.
+  SparseCholeskyLLt linear_solver;
+  linear_solver.AnalyzePattern(sparse_matrix_.transpose() * sparse_matrix_);
+  if (linear_solver.Info() != Eigen::Success) {
+    LOG(ERROR) << "Cholesky decomposition failed.";
+    return false;
+  }
+
+  VLOG(2) << "Iteration   SqError         Delta";
+  const std::string row_format = "  % 4d     % 4.4e     % 4.4e";
+
+  ComputeResiduals();
+
+
+  Eigen::ArrayXd weights(kNumEdges * 3);
+  Eigen::SparseMatrix<double> at_weight;
+  for (int i = 0; i < options_.max_num_irls_iterations; i++) {
+
+    // Compute the Huber-like weights for each error term.
+    for (int k = 0; k < kNumEdges; ++k) {
+      const double& kSigma = options_.irls_loss_parameter_sigma;
+      double e_sq = tangent_space_residual_.segment<3>(3 * k).squaredNorm();
+      double tmp = e_sq + kSigma * kSigma;
+      double w = kSigma / tmp / tmp;
+      weights[3*k + 0] = w;
+      weights[3*k + 1] = w;
+      weights[3*k + 2] = w;
+    }
+
+    // Update the factorization for the weighted values.
+    at_weight =
+        sparse_matrix_.transpose() * weights.matrix().asDiagonal();
+    linear_solver.Factorize(at_weight * sparse_matrix_);
+    if (linear_solver.Info() != Eigen::Success) {
+      LOG(ERROR) << "Failed to factorize the least squares system.";
+      return false;
+    }
+
+    // Solve the least squares problem..
+    tangent_space_step_ =
+        linear_solver.Solve(at_weight * tangent_space_residual_);
+    if (linear_solver.Info() != Eigen::Success) {
+      LOG(ERROR) << "Failed to solve the least squares system.";
+      return false;
+    }
+
+    UpdateGlobalRotations();
+    ComputeResiduals();
+    double avg_step_size = ComputeAverageStepSize();
+
+    VLOG(2) << StringPrintf(row_format.c_str(), i,
+                            tangent_space_residual_.squaredNorm(),
+                            avg_step_size);
+
+    if (avg_step_size < options_.irls_step_convergence_threshold) {
+      VLOG(1) << "IRLS Converged in " << i + 1 << " iterations.";
+      break;
+    }
   }
   return true;
 }
@@ -200,71 +248,39 @@ void RobustRotationEstimator::UpdateGlobalRotations() {
 
     // Apply the rotation change to the global orientation.
     const Eigen::Vector3d& rotation_change =
-        rotation_change_.segment<3>(3 * view_index);
+        tangent_space_step_.segment<3>(3 * view_index);
     rotation.second = MultiplyRotations(rotation.second, rotation_change);
   }
 }
 
-bool RobustRotationEstimator::SolveIRLS() {
-  static const double kConvergenceThreshold = 1e-3;
-  // This is the point where the Huber-like cost function switches from L1 to
-  // L2.
-  static const double kSigma = DegToRad(5.0);
+// Computes the relative rotation error based on the current global
+// orientation estimates.
+void RobustRotationEstimator::ComputeResiduals() {
+  int rotation_error_index = 0;
+  for (const auto& relative_rotation : relative_rotations_) {
+    const Eigen::Vector3d& relative_rotation_aa = relative_rotation.second;
+    const Eigen::Vector3d& rotation1 =
+        FindOrDie(*global_orientations_, relative_rotation.first.first);
+    const Eigen::Vector3d& rotation2 =
+        FindOrDie(*global_orientations_, relative_rotation.first.second);
 
-  // Set up the linear solver and analyze the sparsity pattern of the
-  // system. Since the sparsity pattern will not change with each linear solve
-  // this can help speed up the solution time.
-  SparseCholeskyLLt linear_solver;
-  linear_solver.AnalyzePattern(sparse_matrix_.transpose() * sparse_matrix_);
-  if (linear_solver.Info() != Eigen::Success) {
-    LOG(ERROR) << "Cholesky decomposition failed.";
-    return false;
+    // Compute the relative rotation error as:
+    //   R_err = R2^t * R_12 * R1.
+    tangent_space_residual_.segment<3>(3 * rotation_error_index) =
+        MultiplyRotations(-rotation2,
+                          MultiplyRotations(relative_rotation_aa, rotation1));
+    ++rotation_error_index;
   }
+}
 
-  VLOG(2) << "Iteration   Error           Delta";
-  const std::string row_format = "  % 4d     % 4.4e     % 4.4e";
-
-  Eigen::ArrayXd errors, weights;
-  Eigen::SparseMatrix<double> at_weight;
-  for (int i = 0; i < options_.max_num_irls_iterations; i++) {
-    const Eigen::VectorXd prev_rotation_change = rotation_change_;
-    ComputeRotationError();
-
-    // Compute the weights for each error term.
-    errors =
-        (sparse_matrix_ * rotation_change_ - relative_rotation_error_).array();
-    weights = kSigma / (errors.square() + kSigma * kSigma).square();
-
-    // Update the factorization for the weighted values.
-    at_weight =
-        sparse_matrix_.transpose() * weights.matrix().asDiagonal();
-    linear_solver.Factorize(at_weight * sparse_matrix_);
-    if (linear_solver.Info() != Eigen::Success) {
-      LOG(ERROR) << "Failed to factorize the least squares system.";
-      return false;
-    }
-
-    // Solve the least squares problem..
-    rotation_change_ =
-        linear_solver.Solve(at_weight * relative_rotation_error_);
-    if (linear_solver.Info() != Eigen::Success) {
-      LOG(ERROR) << "Failed to solve the least squares system.";
-      return false;
-    }
-
-    UpdateGlobalRotations();
-
-    // Log some statistics for the output.
-    const double rotation_change_sq_norm =
-        (prev_rotation_change - rotation_change_).squaredNorm();
-    VLOG(2) << StringPrintf(row_format.c_str(), i, errors.square().sum(),
-                            rotation_change_sq_norm);
-    if (rotation_change_sq_norm < kConvergenceThreshold) {
-      VLOG(1) << "IRLS Converged in " << i + 1 << " iterations.";
-      break;
-    }
+double RobustRotationEstimator::ComputeAverageStepSize() {
+  // compute the average step size of the update in tangent_space_step_
+  const int numVertices = tangent_space_step_.size() / 3;
+  double delta_V = 0;
+  for (int k = 0; k < numVertices; ++k) {
+    delta_V += tangent_space_step_.segment<3>(3 * k).norm();
   }
-  return true;
+  return delta_V / numVertices;
 }
 
 }  // namespace theia
