@@ -56,46 +56,6 @@ using Eigen::Vector3d;
 
 RandomNumberGenerator rng(53);
 
-void DistortPoint(const Eigen::Vector3d& point_in_camera,
-                  const double focal_length, const double radial_distortion,
-                  Eigen::Vector2d& distorted_point) {
-  Eigen::Vector2d point_in_cam_persp_div;
-  point_in_cam_persp_div[0] =
-      focal_length * point_in_camera[0] / point_in_camera[2];
-  point_in_cam_persp_div[1] =
-      focal_length * point_in_camera[1] / point_in_camera[2];
-  // see also division_undistortion_camera_model.h
-  const double r_u_sq = point_in_cam_persp_div[0] * point_in_cam_persp_div[0] +
-                        point_in_cam_persp_div[1] * point_in_cam_persp_div[1];
-
-  const double denom = 2.0 * radial_distortion * r_u_sq;
-  const double inner_sqrt = 1.0 - 4.0 * radial_distortion * r_u_sq;
-
-  // If the denominator is nearly zero then we can evaluate the distorted
-  // coordinates as k or r_u^2 goes to zero. Both evaluate to the identity.
-  if (std::abs(denom) < std::numeric_limits<double>::epsilon() ||
-      inner_sqrt < 0.0) {
-    distorted_point = point_in_cam_persp_div;
-  } else {
-    const double scale = (1.0 - std::sqrt(inner_sqrt)) / denom;
-    distorted_point = point_in_cam_persp_div * scale;
-  }
-}
-
-void UndistortPoint(const Eigen::Vector2d& distorted_point,
-                    const double focal_length, const double radial_distortion,
-                    Eigen::Vector3d& undistorted_point) {
-  double px = distorted_point[0];
-  double py = distorted_point[1];
-  // The squared radius of the distorted image point.
-  const double r_d_sq = px * px + py * py;
-
-  const double undistortion = 1.0 / (1.0 + radial_distortion * r_d_sq);
-  undistorted_point[0] = px * undistortion / focal_length;
-  undistorted_point[1] = py * undistortion / focal_length;
-  undistorted_point[2] = 1.0;
-}
-
 // Creates a test scenario from ground truth 3D points and ground truth rotation
 // and translation. Projection noise is optional (set to 0 for no
 // noise).
@@ -144,45 +104,6 @@ void GenerateDistortedImagePoints(
     image_1_points_normalized->push_back(points2d_1.hnormalized());
     image_2_points_normalized->push_back(points2d_2.hnormalized());
   }
-
-
-}
-
-Vector3d ProjectCameraToCamera(const Matrix3d& H, const Vector3d& X, Vector3d* Y) {
-  (*Y) = H * X;
-  (*Y) /= (*Y)(2);
-}
-
-double CheckRadialSymmetricError(
-    const RadialHomographyResult& radial_homography, const Vector2d& pt_left,
-    const Vector2d& pt_right, const double focal_length1,
-    const double focal_length2) {
-  Vector3d bearing_vector_left, bearing_vector_right;
-  UndistortPoint(pt_left, focal_length1, radial_homography.l1,
-                 bearing_vector_left);
-  UndistortPoint(pt_right, focal_length2, radial_homography.l2,
-                 bearing_vector_right);
-
-  Eigen::Vector3d ray2_in_1, ray1_in_2;
-  ProjectCameraToCamera(radial_homography.H, bearing_vector_right, &ray2_in_1);
-  ProjectCameraToCamera(radial_homography.H.inverse(), bearing_vector_left, &ray1_in_2);
-
-  Vector2d pt_left_from_right, pt_right_from_left;
-  DistortPoint(ray2_in_1, focal_length1, radial_homography.l1,
-               pt_left_from_right);
-  DistortPoint(ray1_in_2, focal_length2, radial_homography.l2,
-               pt_right_from_left);
-
-  double dleft_x = pt_left(0) - pt_left_from_right(0);
-  double dleft_y = pt_left(1) - pt_left_from_right(1);
-
-  double dright_x = pt_right(0) - pt_right_from_left(0);
-  double dright_y = pt_right(1) - pt_right_from_left(1);
-
-  double sym_error = 0.5 * (dleft_x * dleft_x + dleft_y * dleft_y +
-                            dright_x * dright_x + dright_y * dright_y);
-
-  return sym_error;
 }
 
 // Run a test for the homography with at least 4 points.
@@ -209,8 +130,8 @@ void SixPointHomographyWithNoiseTest(
   for (int i = 0; i < radial_homography_result.size(); ++i) {
     // we need to scale the radial distortion values,
     // since we used normalized image points for estimation
-    radial_homography_result[i].l1 /= (focal_length1 * focal_length1);
-    radial_homography_result[i].l2 /= (focal_length2 * focal_length2);
+    // radial_homography_result[i].l1 /= (focal_length1 * focal_length1);
+    // radial_homography_result[i].l2 /= (focal_length2 * focal_length2);
 
     double sym_error = 0.0;
     for (int p = 0; p < image_1_points.size(); ++p) {

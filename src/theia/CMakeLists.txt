@@ -122,6 +122,7 @@ set(THEIA_SRC
   sfm/estimators/estimate_essential_matrix.cc
   sfm/estimators/estimate_fundamental_matrix.cc
   sfm/estimators/estimate_homography.cc
+  sfm/estimators/estimate_radial_distortion_homography.cc
   sfm/estimators/estimate_relative_pose_with_known_orientation.cc
   sfm/estimators/estimate_relative_pose.cc
   sfm/estimators/estimate_rigid_transformation_2d_3d.cc
@@ -163,6 +164,8 @@ set(THEIA_SRC
   sfm/pose/five_point_relative_pose.cc
   sfm/pose/four_point_focal_length_helper.cc
   sfm/pose/four_point_focal_length.cc
+  sfm/pose/four_point_focal_length_radial_distortion.cc
+  sfm/pose/four_point_focal_length_radial_distortion_helper.cc
   sfm/pose/four_point_homography.cc
   sfm/pose/four_point_relative_pose_partial_rotation.cc
   sfm/pose/fundamental_matrix_util.cc
@@ -297,6 +300,7 @@ if (BUILD_TESTING)
   gtest(sfm/estimators/estimate_dominant_plane_from_points)
   gtest(sfm/estimators/estimate_essential_matrix)
   gtest(sfm/estimators/estimate_fundamental_matrix)
+  gtest(sfm/estimators/estimate_radial_distortion_homography)
   gtest(sfm/estimators/estimate_homography)
   gtest(sfm/estimators/estimate_relative_pose)
   gtest(sfm/estimators/estimate_relative_pose_with_known_orientation)
@@ -332,6 +336,7 @@ if (BUILD_TESTING)
   gtest(sfm/pose/five_point_focal_length_radial_distortion)
   gtest(sfm/pose/five_point_relative_pose)
   gtest(sfm/pose/four_point_focal_length)
+  gtest(sfm/pose/four_point_focal_length_radial_distortion)
   gtest(sfm/pose/four_point_homography)
   gtest(sfm/pose/four_point_relative_pose_partial_rotation)
   gtest(sfm/pose/fundamental_matrix_util)
