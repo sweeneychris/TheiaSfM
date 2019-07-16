@@ -161,7 +161,7 @@ bool RobustRotationEstimator::SolveL1Regression() {
 
     double avg_step_size = ComputeAverageStepSize();
 
-    if (avg_step_size < options_.l1_step_convergence_threshold) {
+    if (avg_step_size <= options_.l1_step_convergence_threshold) {
       break;
     }
     options.max_num_iterations *= 2;
@@ -171,7 +171,7 @@ bool RobustRotationEstimator::SolveL1Regression() {
 }
 
 bool RobustRotationEstimator::SolveIRLS() {
-  const int kNumEdges = tangent_space_residual_.size() / 3;
+  const int num_edges = tangent_space_residual_.size() / 3;
 
   // Set up the linear solver and analyze the sparsity pattern of the
   // system. Since the sparsity pattern will not change with each linear solve
@@ -189,19 +189,17 @@ bool RobustRotationEstimator::SolveIRLS() {
   ComputeResiduals();
 
 
-  Eigen::ArrayXd weights(kNumEdges * 3);
+  Eigen::ArrayXd weights(num_edges * 3);
   Eigen::SparseMatrix<double> at_weight;
   for (int i = 0; i < options_.max_num_irls_iterations; i++) {
 
     // Compute the Huber-like weights for each error term.
-    for (int k = 0; k < kNumEdges; ++k) {
-      const double& kSigma = options_.irls_loss_parameter_sigma;
+    const double& sigma = options_.irls_loss_parameter_sigma;
+    for (int k = 0; k < num_edges; ++k) {
       double e_sq = tangent_space_residual_.segment<3>(3 * k).squaredNorm();
-      double tmp = e_sq + kSigma * kSigma;
-      double w = kSigma / tmp / tmp;
-      weights[3*k + 0] = w;
-      weights[3*k + 1] = w;
-      weights[3*k + 2] = w;
+      double tmp = e_sq + sigma * sigma;
+      double w = sigma / (tmp * tmp);
+      weights.segment<3>(3 * k).setConstant(w);
     }
 
     // Update the factorization for the weighted values.
@@ -223,7 +221,7 @@ bool RobustRotationEstimator::SolveIRLS() {
 
     UpdateGlobalRotations();
     ComputeResiduals();
-    double avg_step_size = ComputeAverageStepSize();
+    const double avg_step_size = ComputeAverageStepSize();
 
     VLOG(2) << StringPrintf(row_format.c_str(), i,
                             tangent_space_residual_.squaredNorm(),
