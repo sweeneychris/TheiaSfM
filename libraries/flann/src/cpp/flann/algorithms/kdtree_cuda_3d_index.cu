@@ -33,6 +33,7 @@
 // #define THRUST_DEBUG 1
 #include <cuda.h>
 #include <thrust/copy.h>
+#include <thrust/gather.h>
 #include <thrust/device_vector.h>
 #include <vector_types.h>
 #include <flann/util/cutil_math.h>
