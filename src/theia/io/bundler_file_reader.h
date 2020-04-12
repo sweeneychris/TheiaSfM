@@ -64,8 +64,8 @@ struct FeatureInfo {
   // Index of the feature in the SIFT file.
   int sift_index;
   // Pixel position.
-  int kpt_x;
-  int kpt_y;
+  float kpt_x;
+  float kpt_y;
 };
 
 // Reconstructed 3D point.
