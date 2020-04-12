@@ -69,10 +69,10 @@ static constexpr double kRadialDistortion1 = -1e-7;
 static constexpr double kRadialDistortion2 = -5e-7;
 static constexpr double kReprojectionError = 3.0;
 
-// allowing 10 percent error for radial distortion parameters
-static constexpr double kRadDistThreshold1 =
+// Allowing 10 percent error for radial distortion parameters.
+static const double kRadDistThreshold1 =
     0.1 * std::abs(kRadialDistortion1 * std::pow(kFocalLength1, 2));
-static constexpr double kRadDistThreshold2 =
+static const double kRadDistThreshold2 =
     0.1 * std::abs(kRadialDistortion2 * std::pow(kFocalLength2, 2));
 
 // Generate points on a plane so that a homography can accurately estimate the
@@ -111,7 +111,7 @@ void GenerateDistortedImagePoint(
     AddNoiseToProjection(projection_noise_std_dev, &rng, &image_2_point);
   }
 
-  // normalize points with focal length (and principal point) estimate
+  // Normalize points with focal length (and principal point) estimate.
   UndistortPoint(image_1_point, focal_length1, 0.0, image_1_point_normalized);
   UndistortPoint(image_2_point, focal_length2, 0.0, image_2_point_normalized);
 }
@@ -164,13 +164,13 @@ void ExecuteRandomTest(const RansacParameters& options,
   std::vector<Vector2d> image_1_points_normalized, image_2_points_normalized;
   std::vector<Vector2d> image_1_points, image_2_points;
 
-  // Generate distorted points
+  // Generate distorted points.
   GenerateDistortedImagePoints(
       points3d, noise, rotation, position, focal_length_1, focal_length_2,
       radial_distortion_1, radial_distortion_2, inlier_ratio,
       &image_1_points_normalized, &image_2_points_normalized, &image_1_points,
       &image_2_points);
-  // Get correspondences
+  // Get correspondences.
   std::vector<RadialDistortionFeatureCorrespondence> correspondences;
   for (size_t i = 0; i < image_1_points.size(); ++i) {
     RadialDistortionFeatureCorrespondence correspondence;
