@@ -134,6 +134,7 @@ bool ReadViewList(FILE* in, std::vector<FeatureInfo>* view_list) {
   int num_views = 0;
   if (fscanf(in, "%d", &num_views) != 1) {
     VLOG(3) << "Unable to read number of views for point.";
+    return false;
   }
   VLOG(3) << "Num. views to read: " << num_views;
   view_list->resize(num_views);
@@ -153,12 +154,12 @@ bool ReadViewList(FILE* in, std::vector<FeatureInfo>* view_list) {
     if (fscanf(in, "%f", &entry) != 1) {
       return false;
     }
-    (*view_list)[i].kpt_x = static_cast<int>(entry);
+    (*view_list)[i].kpt_x = entry;
     // Kpt y.
     if (fscanf(in, "%f", &entry) != 1) {
       return false;
     }
-    (*view_list)[i].kpt_y = static_cast<int>(entry);
+    (*view_list)[i].kpt_y = entry;
   }
   return true;
 }
