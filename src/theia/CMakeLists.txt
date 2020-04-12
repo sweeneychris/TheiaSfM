@@ -75,6 +75,7 @@ set(THEIA_SRC
   io/sift_binary_file.cc
   io/sift_text_file.cc
   io/write_bundler_files.cc
+  io/write_calibration.cc
   io/write_colmap_files.cc
   io/write_keypoints_and_descriptors.cc
   io/write_nvm_file.cc
@@ -121,8 +122,10 @@ set(THEIA_SRC
   sfm/estimators/estimate_essential_matrix.cc
   sfm/estimators/estimate_fundamental_matrix.cc
   sfm/estimators/estimate_homography.cc
+  sfm/estimators/estimate_radial_distortion_homography.cc
   sfm/estimators/estimate_relative_pose_with_known_orientation.cc
   sfm/estimators/estimate_relative_pose.cc
+  sfm/estimators/estimate_rigid_transformation_2d_3d.cc
   sfm/estimators/estimate_similarity_transformation_2d_3d.cc
   sfm/estimators/estimate_triangulation.cc
   sfm/estimators/estimate_uncalibrated_absolute_pose.cc
@@ -151,6 +154,8 @@ set(THEIA_SRC
   sfm/hybrid_reconstruction_estimator.cc
   sfm/incremental_reconstruction_estimator.cc
   sfm/localize_view_to_reconstruction.cc
+  sfm/pose/build_upnp_action_matrix.cc
+  sfm/pose/build_upnp_action_matrix_using_symmetry.cc
   sfm/pose/dls_impl.cc
   sfm/pose/dls_pnp.cc
   sfm/pose/eight_point_fundamental_matrix.cc
@@ -159,6 +164,8 @@ set(THEIA_SRC
   sfm/pose/five_point_relative_pose.cc
   sfm/pose/four_point_focal_length_helper.cc
   sfm/pose/four_point_focal_length.cc
+  sfm/pose/four_point_focal_length_radial_distortion.cc
+  sfm/pose/four_point_focal_length_radial_distortion_helper.cc
   sfm/pose/four_point_homography.cc
   sfm/pose/four_point_relative_pose_partial_rotation.cc
   sfm/pose/fundamental_matrix_util.cc
@@ -167,9 +174,11 @@ set(THEIA_SRC
   sfm/pose/relative_pose_from_two_points_with_known_rotation.cc
   sfm/pose/seven_point_fundamental_matrix.cc
   sfm/pose/sim_transform_partial_rotation.cc
+  sfm/pose/six_point_radial_distortion_homography.cc
   sfm/pose/test_util.cc
   sfm/pose/three_point_relative_pose_partial_rotation.cc
   sfm/pose/two_point_pose_partial_rotation.cc
+  sfm/pose/upnp.cc
   sfm/pose/util.cc
   sfm/reconstruction_builder.cc
   sfm/reconstruction_estimator_utils.cc
@@ -254,6 +263,8 @@ if (BUILD_TESTING)
   gtest(image/descriptor/sift_descriptor)
   gtest(image/image)
   gtest(image/keypoint_detector/sift_detector)
+  gtest(io/read_calibration)
+  gtest(io/write_calibration)
   gtest(matching/brute_force_feature_matcher)
   gtest(matching/cascade_hashing_feature_matcher)
   gtest(matching/distance)
@@ -289,9 +300,11 @@ if (BUILD_TESTING)
   gtest(sfm/estimators/estimate_dominant_plane_from_points)
   gtest(sfm/estimators/estimate_essential_matrix)
   gtest(sfm/estimators/estimate_fundamental_matrix)
+  gtest(sfm/estimators/estimate_radial_distortion_homography)
   gtest(sfm/estimators/estimate_homography)
   gtest(sfm/estimators/estimate_relative_pose)
   gtest(sfm/estimators/estimate_relative_pose_with_known_orientation)
+  gtest(sfm/estimators/estimate_rigid_transformation_2d_3d)
   gtest(sfm/estimators/estimate_similarity_transformation_2d_3d)
   gtest(sfm/estimators/estimate_triangulation)
   gtest(sfm/estimators/estimate_uncalibrated_absolute_pose)
@@ -315,12 +328,15 @@ if (BUILD_TESTING)
   gtest(sfm/gps_converter)
   gtest(sfm/hybrid_reconstruction_estimator)
   gtest(sfm/incremental_reconstruction_estimator)
+  gtest(sfm/pose/build_upnp_action_matrix)
+  gtest(sfm/pose/build_upnp_action_matrix_using_symmetry)
   gtest(sfm/pose/dls_pnp)
   gtest(sfm/pose/eight_point_fundamental_matrix)
   gtest(sfm/pose/essential_matrix_utils)
   gtest(sfm/pose/five_point_focal_length_radial_distortion)
   gtest(sfm/pose/five_point_relative_pose)
   gtest(sfm/pose/four_point_focal_length)
+  gtest(sfm/pose/four_point_focal_length_radial_distortion)
   gtest(sfm/pose/four_point_homography)
   gtest(sfm/pose/four_point_relative_pose_partial_rotation)
   gtest(sfm/pose/fundamental_matrix_util)
@@ -329,8 +345,10 @@ if (BUILD_TESTING)
   gtest(sfm/pose/relative_pose_from_two_points_with_known_rotation)
   gtest(sfm/pose/seven_point_fundamental_matrix)
   gtest(sfm/pose/sim_transform_partial_rotation)
+  gtest(sfm/pose/six_point_radial_distortion_homography)
   gtest(sfm/pose/three_point_relative_pose_partial_rotation)
   gtest(sfm/pose/two_point_pose_partial_rotation)
+  gtest(sfm/pose/upnp)
   gtest(sfm/reconstruction)
   gtest(sfm/track)
   gtest(sfm/track_builder)
