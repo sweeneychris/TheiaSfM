@@ -25,11 +25,17 @@ Theia relies on a number of open source libraries. Luckily, most of the will be 
 
 5. `Ceres Solver <https://code.google.com/p/ceres-solver/>`_ is a library for solving non-linear least squares problems. In particular, Theia uses it for Bundle Adjustment.
 
+6. `RocksDB <http://rocksdb.org/>`_ is a persistent key-value store for Flash and RAM storage.
+
+7. `RapidJSON <https://rapidjson.org/>`__ is a fast JSON parser and generator.
+
+Many of these libraries can be installed quickly with ``conda``. It is suggested to install a build of Ceres which uses ``libsuitesparse``.
+
 **NOTE**: Theia also depends on the following libraries, but they are included in the installation of Ceres so it is likely that you do not need to reinstall them.
 
-6. `google-glog <http://code.google.com/p/google-glog>`_ is used for error checking and logging. Ceres needs glog version 0.3.1 or later. Version 0.3 (which ships with Fedora 16) has a namespace bug which prevents Ceres from building.
+8. `google-glog <http://code.google.com/p/google-glog>`_ is used for error checking and logging. Ceres needs glog version 0.3.1 or later. Version 0.3 (which ships with Fedora 16) has a namespace bug which prevents Ceres from building.
 
-7. `gflags <http://code.google.com/p/gflags>`_ is a library for processing command line flags. It is used by some of the examples and tests.
+9. `gflags <http://code.google.com/p/gflags>`_ is a library for processing command line flags. It is used by some of the examples and tests.
 
 Make sure all of these libraries are installed properly before proceeding. Improperly installing any of these libraries can cause Theia to not build.
 

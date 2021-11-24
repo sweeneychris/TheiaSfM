@@ -41,8 +41,10 @@
 namespace theia {
 struct CameraIntrinsicsPrior;
 
-// Reads calibration data for images that are to be reconstructed. The
-// calibration file should have the following JSON format:
+// Reads calibration data for images that are to be reconstructed in 
+// the JSON format. The calibration file has the image name, dimensions,
+// camera model, and intrinsics. Examples are shown below for three types
+// of camera models:
 //
 //   {
 //     "priors" : [
@@ -69,6 +71,14 @@ struct CameraIntrinsicsPrior;
 //         "longitude" : 58.0,
 //         "altitude" : 64,
 //         "camera_intrinsics_type" : "PINHOLE_RADIAL_TANGENTIAL"
+//        }}
+//       {"CameraIntrinsicsPrior" : {
+//         "image_name" : "view_3.jpg",
+//         "focal_length" : 600,
+//         "principal_point" : [640, 520],
+//         "aspect_ratio" : 1.0,
+//         "radial_distortion_1" : 0.998693
+//         "camera_intrinsics_type" : "FOV"
 //        }}
 //     ]
 //   }
