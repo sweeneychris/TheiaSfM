@@ -191,7 +191,7 @@ void ComputeMeanVariance(
   for (const auto& translation : relative_translations) {
     *variance += (translation.second - *mean).cwiseAbs2();
   }
-  *variance /= static_cast<double>(relative_translations.size() - 1);
+  *variance /= static_cast<double>(relative_translations.size());
 }
 
 // Performs a single iterations of the translation filtering. This method is
