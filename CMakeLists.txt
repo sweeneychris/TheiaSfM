@@ -110,6 +110,9 @@ if (EIGEN_FOUND)
   message("-- Found Eigen version ${EIGEN_VERSION}: ${EIGEN_INCLUDE_DIRS}")
 endif (EIGEN_FOUND)
 
+# Use C++14 as the standard for compilation
+set(CMAKE_CXX_STANDARD 14)
+
 # Use a larger inlining threshold for Clang, since it hobbles Eigen,
 # resulting in an unreasonably slow version of the blas routines. The
 # -Qunused-arguments is needed because CMake passes the inline
